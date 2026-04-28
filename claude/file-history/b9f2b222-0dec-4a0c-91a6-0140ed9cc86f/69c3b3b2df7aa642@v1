@@ -1,0 +1,58 @@
+# XPMotors 车控团队 — Claude Code AI 工作流规范
+
+> 本配置由 `XPAIWorkflow` submodule 统一管理，仅适用于车控团队成员。
+> 其他团队无需关注此文件，主工程已通过 `.gitignore` 隔离。
+
+---
+
+## 项目背景
+
+- **主工程**：XPMotors_IOS（多团队共享）
+- **所属团队**：车控 SDK 团队
+- **核心模块**：XPCarControlCore / XPVehicleSDK / XPPollingSDK / XPCarBusiCH
+
+---
+
+## AI 工作流入口
+
+| 场景 | 命令 | 说明 |
+|------|------|------|
+| 新功能开发 | `/feature-dev` | 含需求分析 → 方案设计 → 实现 → review |
+| 代码审查 | `/code-review` | 逐点列问题 + 优先级 |
+| OC 转 Swift | `/xp-oc-to-swift` | XPeng 项目特定 API 映射 |
+| AI 配置管理 | `/add-ai-submodule` | 维护本 submodule 结构 |
+
+---
+
+## Skill 编排规则
+
+```
+新功能开发：
+  brainstorming → writing-plans → feature-dev → code-review → git-commit
+
+Bug 修复：
+  systematic-debugging → fix → verification-before-completion → git-commit
+
+OC 转 Swift：
+  xp-oc-to-swift → simplify → code-review
+
+代码重构：
+  refactor → simplify → code-review
+```
+
+---
+
+## 团队代码约束
+
+- AI 生成代码必须经 `/code-review` 通过后合并，禁止直接 push main
+- 涉及 SDK 公开接口变更，必须同步更新对应 `.podspec`
+- 不得在 AI 会话中直接修改主工程 `Podfile` / `Podfile.lock`
+- OC 代码迁移 Swift 时，使用 `/xp-oc-to-swift` 确保 XPeng 特定 API 正确映射
+
+---
+
+## AI 配置维护
+
+- 配置变更提交到 `XPAIWorkflow` 仓库，走团队 MR 流程
+- 新成员加入后执行：`bash submodule/XPAIWorkflow/setup.sh`
+- 个人偏好覆盖请在 `~/.claude/` 全局目录配置，不提交到本仓库

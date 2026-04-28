@@ -1,0 +1,39 @@
+# XPIntentsExtension — Target 规范
+
+## 模块定位
+
+Siri Intents Extension。为 Widget 提供 Intent 数据解析，支持 Siri 快捷指令。
+
+## 本层加载时机
+
+knowledge-recall 路径命中对应 target 目录时加载。
+
+## 语言与架构规范
+
+Swift（主）+ OC（XPWidgetVehicleInfo 共享模型）。IntentHandler 入口模式。
+
+## 运行环境约束
+
+Extension 内存受限（≤ 24MB 建议）。不可使用 UIApplication.shared。系统超时限制严格。
+
+## Extension 生命周期
+
+系统在 Widget 配置或 Siri 调用时唤醒。IntentHandler.swift 为唯一入口。数据通过 App Group UserDefaults 获取。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止执行车控指令
+- 禁止使用 UIApplication.shared
+- 禁止在 Intent 处理中执行耗时操作
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言语法细节 → `.claude/rules/ios-coding.md`
+- 主工程 App 架构规则 → L2 `CLAUDE.app.md`
+- **target 内部实现细节下沉到 `.claude/targets/<target>/rules/`**

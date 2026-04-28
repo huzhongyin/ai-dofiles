@@ -1,0 +1,34 @@
+//
+//  CarKeyInteraction.swift
+//  XPVehicleSDK
+//
+//  Created by huzy2 on 2024/12/11.
+//
+
+import Foundation
+import XPVehicleSDK
+
+public typealias XPCarKeyInteractionCallBack<T> = (_ error: CarKeyPassEventError, _ data: T?) -> Void
+
+@objc(XPCarKeyPassInteraction)
+public protocol CarKeyPassInteraction: NSObjectProtocol {
+    
+    func startCarKeyPair(autoMakerId: String!, profileTemplateId: String!, brandName: String!, delegate: CarKeyPassEventDelegate, result: @escaping XPCarKeyInteractionCallBack<UIViewController>)
+    
+    func startCarKeyShare(isPromptToShareUrl: Bool, delegate: CarKeyPassEventDelegate, result: @escaping XPCarKeyInteractionCallBack<UIViewController>)
+    
+    func currentCarIsSupportCarKey() -> Bool
+    
+    func openCarKeyPass() -> Void
+    
+    func supportCarKeyType() -> CarKeyPairType
+    
+    func getLocalKeyId() -> String?
+    
+    func getLocalKeyInfo() -> Dictionary<String, Any>?
+    
+    func localKeyIsAvailable() -> Bool
+
+
+    
+}

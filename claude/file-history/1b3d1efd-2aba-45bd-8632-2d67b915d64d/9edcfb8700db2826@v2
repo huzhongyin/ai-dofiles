@@ -1,0 +1,103 @@
+# 模块名: XPAppBiz
+
+## 模块职责
+App 级业务公共组件层（LocalPod），提供跨业务模块共用的基础业务能力。核心功能包括：CTMediator 模块间路由（20+ 个业务模块路由扩展）、HTTP API 请求分类扩展（按业务域拆分的 XPAPIRequestManager 分类）、主题管理、版本管理、位置服务、授权管理、Toast 提示、以及 ReactiveCocoa 业务封装。
+
+## 语言构成
+- OC 文件数: ~49（.h + .m，共 98 个文件）
+- Swift 文件数: 0
+- 混编说明: **纯 OC 模块**，本地 Pod（`LocalPods/XPAppBiz/`），可直接修改
+
+## 核心 API
+
+### BizMediator（模块路由中间件）
+通过 CTMediator 分类提供 20+ 个业务模块的路由入口：
+
+| 分类 | 用途 |
+|------|------|
+| `CTMediator+Account` | 账户模块路由 |
+| `CTMediator+Login` | 登录模块路由 |
+| `CTMediator+Community` | 社区模块路由 |
+| `CTMediator+LBS` | 位置服务模块路由 |
+| `CTMediator+Message` | 消息模块路由 |
+| `CTMediator+UserCenter` | 用户中心路由 |
+| `CTMediator+FaceVerify` | 人脸认证路由 |
+| `CTMediator+QRCode` | 二维码扫描路由 |
+| `CTMediator+Service` | 服务模块路由 |
+| `CTMediator+NoCarHome` | 无车首页路由 |
+| `CTMediator+LittleP` / `+LittleP3` | 小 P 助手路由 |
+| `CTMediator+WeChat` / `+WechatMiniProgram` | 微信/小程序路由 |
+| `CTMediator+Splash` | 开屏页路由 |
+| `CTMediator+TabBarCenter` | TabBar 路由 |
+| `CTMediator+NIM` | IM 消息路由 |
+| `CTMediator+Xlab` | Xlab 路由 |
+
+### BizService / XPAPIRequestManager 分类（HTTP API 分类扩展）
+| 分类 | 用途 |
+|------|------|
+| `XPAPIRequestManager+HTTP` | 通用 HTTP 请求封装 |
+| `XPAPIRequestManager+Vehicle` | 车辆相关 API |
+| `XPAPIRequestManager+SendToVehicle` | 车机指令下发 API |
+| `XPAPIRequestManager+Account` | 账户 API |
+| `XPAPIRequestManager+Charge` | 充电 API |
+| `XPAPIRequestManager+Camera` | 摄像头 API |
+| `XPAPIRequestManager+Warrant` | 授权 API |
+| `XPAPIRequestManager+Services` | 服务 API |
+| `XPAPIRequestManager+Oss` | OSS 存储 API |
+| `XPAPIRequestManager+OrderPark` | 代客泊车 API |
+| `XPAPIRequestManager+Unity` | Unity 相关 API |
+| `XPAPIRequestManager+Plan` | 计划 API |
+| `XPAPIRequestManager+System` | 系统 API |
+
+### 其他子模块
+| 子模块 | 核心类 | 用途 |
+|--------|--------|------|
+| `BizTheme` | — | 主题管理（依赖 KeyValueStore） |
+| `BizVersions` | — | App 版本管理 |
+| `BizLocation` | `XPLocationManager` | 位置服务封装 |
+| `BizAuthorization` | `XPAuthorization` | 系统权限授权管理 |
+| `BizControl/Toast` | `XPToast` | Toast 提示（壳子，车控引用中） |
+| `BizReact` | — | ReactiveCocoa 业务封装 |
+| `BizAlert` | — | 弹窗（壳子，车控引用中） |
+
+## 依赖关系
+- **上游依赖**:
+  - `XPNetwork` — HTTP 请求底层
+  - `CTMediator` — 模块路由框架
+  - `ReactiveObjC` — 响应式编程
+  - `YYModel` — JSON 解析
+  - `XPBucket/KeyValueStore` — KV 存储（BizTheme 依赖）
+  - `XPBase_Router` — 路由基础
+  - `bBox` — 基础工具箱
+  - `RiskPerception` — 风控感知
+  - `XPAMap` — 高德地图
+  - `AliyunOSSiOS` — 阿里云 OSS
+  - `XPBucket/XPSecurityPassword` — 安全密码
+- **下游被依赖**:
+  - `XPCarControlCore` — 车控核心（BizAlert/BizControl/BizMediator/BizService/BizTheme）
+  - `XPCarBusiCH` — 国内版壳
+  - 主 App 各业务模块
+
+## 架构层次
+```
+主 App 业务模块
+    ↓ 路由调用
+XPAppBiz
+    ├── BizMediator/    — CTMediator 路由扩展（20+ 模块）
+    ├── BizService/     — HTTP API 分类扩展（15+ 业务域）
+    ├── BizTheme/       — 主题管理
+    ├── BizVersions/    — 版本管理
+    ├── BizLocation/    — 位置服务
+    ├── BizAuthorization/ — 权限授权
+    ├── BizControl/     — UI 控件（Toast）
+    ├── BizAlert/       — 弹窗
+    └── BizReact/       — RAC 业务封装
+    ↓ 调用
+XPNetwork / CTMediator / ReactiveObjC (底层)
+```
+
+## 已知限制/陷阱
+- `BizControl`、`BizAlert` 注释标注"只保留个壳子，因为车控还在引用，需要修改"——这些是待清理的遗留壳
+- `BizService` 中多个 XPAPIRequestManager 分类通过 `exclude_files` 被移到独立 subspec（`BizHTTP`/`BizVehicle`/`BizSendToVehicle`），修改时注意 podspec 中的排除规则
+- 本地 Pod，修改后需 `pod install` 生效
+- `XPToast.h` 是接口声明壳，实际实现可能在其他位置

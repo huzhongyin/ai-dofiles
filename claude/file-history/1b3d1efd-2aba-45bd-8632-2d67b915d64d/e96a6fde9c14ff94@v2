@@ -1,0 +1,30 @@
+# XPVehicleExt Extension 模式
+
+## 元信息
+- 触发关键词: ["XPVehicleExt", "extension模式", "扩展功能", "Ext目录", "车端扩展"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`XPVehicleExt` 通过 Swift extension 模式扩展功能，每个子功能一个 extension 文件：
+
+```swift
+extension XPVehicleExt {  // Xcombo 场景
+    func getXComboMine(...) { ... }
+}
+
+extension XPVehicleExt {  // 行程报告
+    func requestTripList(...) { ... }
+}
+
+extension XPVehicleExt {  // 充电记录
+    func requestLatestChargingRecord(...) { ... }
+}
+```
+
+**13 个子功能目录**: AiCalendar / BLEKey / BleCheckManager / CarKey / DBModel / Ext(4个子目录) / FileTransfer / MonaSDKSpecialManager / VehicleCameraManager / Wifi / Xcombo
+
+**HTTP API**: 通过 `VehicleHttpRequest`（XPVehicleSDK 提供）发起网络请求
+
+**代码位置**: `submodule/XPVehicleExt/XPVehicleExt/`

@@ -1,0 +1,566 @@
+"""
+小鹏汽车AI编码治理系统统一配置管理器
+提供标准化的配置格式和验证机制
+"""
+
+# Try to import yaml, fallback to json if not available
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
+
+import json
+import time
+from pathlib import Path
+from typing import Dict, List, Optional, Any, Union
+from dataclasses import dataclass, asdict
+from datetime import datetime
+
+from scripts.models.standards_model import StandardRule, StandardType, SeverityLevel
+from scripts.models.permission_model import ActionType
+
+@dataclass
+class XPAICodingConfig:
+    """小鹏AI编码治理系统统一配置"""
+
+    # 基本信息
+    version: str = "1.0.0"
+    project_name: str = "XPMotors_iOS"
+    team_name: str = "小鹏汽车iOS团队"
+    created_at: str = ""
+    updated_at: str = ""
+
+    # 项目配置
+    project_settings: Dict[str, Any] = None
+
+    # 权限配置
+    permission_config: Dict[str, Any] = None
+
+    # 标准配置
+    standards_config: Dict[str, Any] = None
+
+    # AI辅助配置
+    ai_assist_config: Dict[str, Any] = None
+
+    # 集成配置
+    integration_config: Dict[str, Any] = None
+
+    def __post_init__(self):
+        if not self.created_at:
+            self.created_at = datetime.now().isoformat()
+        self.updated_at = datetime.now().isoformat()
+
+        # 初始化默认配置
+        if self.project_settings is None:
+            self.project_settings = self._default_project_settings()
+        if self.permission_config is None:
+            self.permission_config = self._default_permission_config()
+        if self.standards_config is None:
+            self.standards_config = self._default_standards_config()
+        if self.ai_assist_config is None:
+            self.ai_assist_config = self._default_ai_assist_config()
+        if self.integration_config is None:
+            self.integration_config = self._default_integration_config()
+
+    def _default_project_settings(self) -> Dict[str, Any]:
+        return {
+            "language": "mixed",  # swift, objective-c, mixed
+            "platform": "ios",
+            "minimum_ios_version": "12.0",
+            "architecture_patterns": ["MVVM", "MVC", "VIPER"],
+            "dependency_manager": "cocoapods",
+
+            "scan_paths": {
+                "include": [
+                    "LocalPods/**/*",
+                    "XPApp/**/*",
+                    "submodule/**/*"
+                ],
+                "exclude": [
+                    "**/Pods/**",
+                    "**/build/**",
+                    "**/DerivedData/**",
+                    "**/.git/**",
+                    "**/Carthage/**",
+                    "**/ThirdParty/**"
+                ]
+            },
+
+            "file_patterns": {
+                "source_files": ["**/*.swift", "**/*.h", "**/*.m", "**/*.mm"],
+                "config_files": ["**/Podfile", "**/*.podspec", "**/*.xcconfig"],
+                "resource_files": ["**/*.storyboard", "**/*.xib", "**/*.xcassets"]
+            }
+        }
+
+    def _default_permission_config(self) -> Dict[str, Any]:
+        return {
+            "rbac_enabled": True,
+            "cache_enabled": True,
+            "cache_ttl_seconds": 300,
+            "audit_enabled": True,
+            "degraded_mode_enabled": True,
+
+            "roles": {
+                "senior_architect": {
+                    "description": "高级架构师",
+                    "permissions": [
+                        "vehicle_sdk:read", "vehicle_sdk:write",
+                        "business_modules:read", "business_modules:write",
+                        "base_modules:read", "base_modules:write",
+                        "ai_assist:all_modules",
+                        "admin:system_config"
+                    ]
+                },
+                "vehicle_team_member": {
+                    "description": "车控团队成员",
+                    "permissions": [
+                        "vehicle_sdk:read", "vehicle_sdk:write",
+                        "ai_assist:vehicle_modules",
+                        "base_modules:read"
+                    ]
+                },
+                "business_developer": {
+                    "description": "业务开发人员",
+                    "permissions": [
+                        "business_modules:read", "business_modules:write",
+                        "base_modules:read", "base_modules:write",
+                        "ai_assist:business_modules"
+                    ]
+                },
+                "intern": {
+                    "description": "实习生",
+                    "permissions": [
+                        "base_modules:read",
+                        "ai_assist:basic_only"
+                    ]
+                },
+                "external_contractor": {
+                    "description": "外包人员",
+                    "permissions": [
+                        "business_modules:read"
+                    ]
+                }
+            },
+
+            "module_permissions": {
+                "XPVehicleSDK": {
+                    "permission_level": "restricted",
+                    "owners": ["vehicle-team", "senior-architect"],
+                    "read_roles": ["vehicle_team_member", "senior_architect"],
+                    "write_roles": ["vehicle_team_member", "senior_architect"],
+                    "ai_assist_roles": ["vehicle_team_member", "senior_architect"]
+                },
+                "XPBusiness_*": {
+                    "permission_level": "team_managed",
+                    "owners": ["business-team"],
+                    "read_roles": ["business_developer", "senior_architect"],
+                    "write_roles": ["business_developer", "senior_architect"],
+                    "ai_assist_roles": ["business_developer", "senior_architect"]
+                },
+                "XPBase_*": {
+                    "permission_level": "public",
+                    "owners": ["platform-team"],
+                    "read_roles": ["*"],
+                    "write_roles": ["business_developer", "senior_architect"],
+                    "ai_assist_roles": ["business_developer", "senior_architect"]
+                }
+            },
+
+            "temporary_grants": {
+                "enabled": True,
+                "max_duration_hours": 24,
+                "requires_approval": True,
+                "approvers": ["senior_architect"]
+            }
+        }
+
+    def _default_standards_config(self) -> Dict[str, Any]:
+        return {
+            "enabled": True,
+            "fail_on_error": False,
+            "fail_on_warning": False,
+            "max_violations_per_file": 50,
+
+            "enabled_rule_categories": [
+                "naming_conventions",
+                "code_style",
+                "architecture",
+                "security",
+                "performance"
+            ],
+
+            "severity_levels": {
+                "error": {
+                    "description": "必须修复的严重问题",
+                    "block_commit": True,
+                    "auto_fix": False
+                },
+                "warning": {
+                    "description": "建议修复的问题",
+                    "block_commit": False,
+                    "auto_fix": True
+                },
+                "info": {
+                    "description": "信息提示",
+                    "block_commit": False,
+                    "auto_fix": True
+                }
+            },
+
+            "rule_sets": {
+                "swift": {
+                    "enabled": True,
+                    "rules": ["swift_naming_conventions", "swift_best_practices"]
+                },
+                "objective_c": {
+                    "enabled": True,
+                    "rules": ["objc_naming_conventions", "objc_memory_management"]
+                },
+                "xiaopeng_specific": {
+                    "enabled": True,
+                    "rules": ["xp_api_usage_patterns", "xp_architecture_compliance"]
+                }
+            },
+
+            "auto_fix": {
+                "enabled": True,
+                "backup_enabled": True,
+                "rules": ["import_organization", "trailing_whitespace"]
+            }
+        }
+
+    def _default_ai_assist_config(self) -> Dict[str, Any]:
+        return {
+            "enabled": True,
+            "max_suggestions_per_request": 10,
+            "cache_suggestions": True,
+            "cache_ttl_seconds": 600,
+
+            "suggestion_types": {
+                "code_completion": {"enabled": True, "priority": 1},
+                "refactoring": {"enabled": True, "priority": 2},
+                "best_practices": {"enabled": True, "priority": 3},
+                "architecture_guidance": {"enabled": True, "priority": 4},
+                "security_recommendations": {"enabled": True, "priority": 5}
+            },
+
+            "module_specific_guidance": {
+                "XPVehicleSDK": {
+                    "focus_areas": ["thread_safety", "error_handling", "performance"],
+                    "forbidden_patterns": ["ui_operations_on_background_thread"],
+                    "required_patterns": ["xp_prefix_naming", "error_callbacks"]
+                },
+                "XPBusiness_*": {
+                    "focus_areas": ["mvvm_compliance", "network_handling", "ui_responsiveness"],
+                    "architecture_patterns": ["MVVM", "Observer"],
+                    "networking_guidelines": ["timeout_configuration", "retry_logic"]
+                },
+                "XPBase_*": {
+                    "focus_areas": ["reusability", "documentation", "api_design"],
+                    "design_principles": ["single_responsibility", "interface_segregation"]
+                }
+            },
+
+            "quality_metrics": {
+                "suggestion_relevance_threshold": 0.8,
+                "false_positive_rate_threshold": 0.1,
+                "response_time_sla_ms": 500
+            }
+        }
+
+    def _default_integration_config(self) -> Dict[str, Any]:
+        return {
+            "claude_code": {
+                "enabled": True,
+                "hooks": {
+                    "pre_tool_use": True,
+                    "post_tool_use": True,
+                    "session_start": False
+                },
+                "auto_validation": True,
+                "auto_suggestions": True
+            },
+
+            "git_integration": {
+                "enabled": True,
+                "pre_commit_hooks": ["standards_validation", "permission_check"],
+                "commit_message_templates": True,
+                "branch_protection": ["main", "develop"]
+            },
+
+            "ide_integration": {
+                "xcode": {
+                    "enabled": True,
+                    "build_phase_scripts": True,
+                    "analyzer_integration": True
+                }
+            },
+
+            "ci_cd": {
+                "enabled": True,
+                "validation_on_pr": True,
+                "auto_fix_on_merge": False,
+                "notification_channels": ["slack", "email"]
+            },
+
+            "feishu_sync": {
+                "enabled": True,
+                "sync_interval_hours": 24,
+                "auto_update_standards": True,
+                "document_ids": []
+            }
+        }
+
+class XPConfigManager:
+    """小鹏AI编码治理配置管理器"""
+
+    def __init__(self, config_dir: str = "config"):
+        self.config_dir = Path(config_dir)
+        self.config_dir.mkdir(exist_ok=True)
+
+        self.main_config_file = self.config_dir / "xp_ai_coding_config.yaml"
+        self.backup_dir = self.config_dir / "backups"
+        self.backup_dir.mkdir(exist_ok=True)
+
+        self._config: Optional[XPAICodingConfig] = None
+
+    def load_config(self, config_file: Optional[str] = None) -> XPAICodingConfig:
+        """加载配置文件"""
+        config_path = Path(config_file) if config_file else self.main_config_file
+
+        if config_path.exists():
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    if YAML_AVAILABLE and config_path.suffix.lower() in ['.yaml', '.yml']:
+                        data = yaml.safe_load(f)
+                    else:
+                        data = json.load(f)
+
+                # 将字典转换为XPAICodingConfig对象
+                self._config = self._dict_to_config(data)
+                return self._config
+
+            except Exception as e:
+                print(f"Warning: Failed to load config from {config_path}: {e}")
+                print("Using default configuration...")
+
+        # 使用默认配置
+        self._config = XPAICodingConfig()
+        return self._config
+
+    def save_config(self, config: Optional[XPAICodingConfig] = None,
+                   backup: bool = True) -> bool:
+        """保存配置文件"""
+        if config is None:
+            config = self._config
+
+        if config is None:
+            return False
+
+        try:
+            # 备份现有配置
+            if backup and self.main_config_file.exists():
+                self._create_backup()
+
+            # 保存配置
+            config_dict = asdict(config)
+            if YAML_AVAILABLE:
+                # 使用YAML格式保存
+                self.main_config_file = self.main_config_file.with_suffix('.yaml')
+                with open(self.main_config_file, 'w', encoding='utf-8') as f:
+                    yaml.dump(config_dict, f, default_flow_style=False,
+                             allow_unicode=True, sort_keys=False)
+            else:
+                # 使用JSON格式保存
+                self.main_config_file = self.main_config_file.with_suffix('.json')
+                with open(self.main_config_file, 'w', encoding='utf-8') as f:
+                    json.dump(config_dict, f, ensure_ascii=False, indent=2)
+
+            return True
+
+        except Exception as e:
+            print(f"Error: Failed to save config: {e}")
+            return False
+
+    def validate_config(self, config: Optional[XPAICodingConfig] = None) -> Dict[str, List[str]]:
+        """验证配置完整性和有效性"""
+        if config is None:
+            config = self._config
+
+        if config is None:
+            return {"error": ["No configuration to validate"]}
+
+        validation_errors = {}
+
+        # 验证基本信息
+        if not config.project_name:
+            validation_errors.setdefault("project", []).append("Project name is required")
+
+        # 验证权限配置
+        permission_errors = self._validate_permissions(config.permission_config)
+        if permission_errors:
+            validation_errors["permissions"] = permission_errors
+
+        # 验证标准配置
+        standards_errors = self._validate_standards(config.standards_config)
+        if standards_errors:
+            validation_errors["standards"] = standards_errors
+
+        # 验证AI配置
+        ai_errors = self._validate_ai_config(config.ai_assist_config)
+        if ai_errors:
+            validation_errors["ai_assist"] = ai_errors
+
+        return validation_errors
+
+    def _validate_permissions(self, permission_config: Dict[str, Any]) -> List[str]:
+        """验证权限配置"""
+        errors = []
+
+        if not permission_config.get("roles"):
+            errors.append("No roles defined")
+
+        if not permission_config.get("module_permissions"):
+            errors.append("No module permissions defined")
+
+        # 验证角色权限的一致性
+        roles = permission_config.get("roles", {})
+        module_permissions = permission_config.get("module_permissions", {})
+
+        for module_name, module_config in module_permissions.items():
+            for role_type in ["read_roles", "write_roles", "ai_assist_roles"]:
+                role_list = module_config.get(role_type, [])
+                if "*" not in role_list:  # 跳过通配符
+                    for role in role_list:
+                        if role not in roles:
+                            errors.append(f"Role '{role}' referenced in {module_name}.{role_type} not defined")
+
+        return errors
+
+    def _validate_standards(self, standards_config: Dict[str, Any]) -> List[str]:
+        """验证标准配置"""
+        errors = []
+
+        if not standards_config.get("enabled_rule_categories"):
+            errors.append("No rule categories enabled")
+
+        rule_sets = standards_config.get("rule_sets", {})
+        if not rule_sets:
+            errors.append("No rule sets defined")
+
+        return errors
+
+    def _validate_ai_config(self, ai_config: Dict[str, Any]) -> List[str]:
+        """验证AI配置"""
+        errors = []
+
+        if not ai_config.get("enabled"):
+            return errors  # AI未启用，跳过验证
+
+        if not ai_config.get("suggestion_types"):
+            errors.append("No suggestion types defined")
+
+        if not ai_config.get("module_specific_guidance"):
+            errors.append("No module-specific guidance defined")
+
+        return errors
+
+    def _create_backup(self):
+        """创建配置备份"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = self.backup_dir / f"xp_ai_coding_config_{timestamp}.yaml"
+
+        try:
+            import shutil
+            shutil.copy2(self.main_config_file, backup_file)
+        except Exception as e:
+            print(f"Warning: Failed to create backup: {e}")
+
+    def _dict_to_config(self, data: Dict[str, Any]) -> XPAICodingConfig:
+        """将字典转换为配置对象"""
+        return XPAICodingConfig(
+            version=data.get("version", "1.0.0"),
+            project_name=data.get("project_name", "XPMotors_iOS"),
+            team_name=data.get("team_name", "小鹏汽车iOS团队"),
+            created_at=data.get("created_at", ""),
+            updated_at=data.get("updated_at", ""),
+            project_settings=data.get("project_settings"),
+            permission_config=data.get("permission_config"),
+            standards_config=data.get("standards_config"),
+            ai_assist_config=data.get("ai_assist_config"),
+            integration_config=data.get("integration_config")
+        )
+
+    def export_config(self, format: str = "yaml", output_file: Optional[str] = None) -> str:
+        """导出配置为指定格式"""
+        if self._config is None:
+            raise ValueError("No configuration loaded")
+
+        config_dict = asdict(self._config)
+
+        if format.lower() == "json":
+            content = json.dumps(config_dict, ensure_ascii=False, indent=2)
+            extension = "json"
+        elif format.lower() == "yaml" and YAML_AVAILABLE:
+            content = yaml.dump(config_dict, default_flow_style=False,
+                              allow_unicode=True, sort_keys=False)
+            extension = "yaml"
+        elif format.lower() == "yaml" and not YAML_AVAILABLE:
+            # Fallback to JSON if YAML not available
+            content = json.dumps(config_dict, ensure_ascii=False, indent=2)
+            extension = "json"
+            print("Warning: YAML not available, exporting as JSON instead")
+        else:
+            raise ValueError(f"Unsupported format: {format}")
+
+        if output_file:
+            output_path = Path(output_file)
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.config_dir / f"export_config_{timestamp}.{extension}"
+
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        return str(output_path)
+
+    def get_current_config(self) -> Optional[XPAICodingConfig]:
+        """获取当前配置"""
+        return self._config
+
+    def update_config_section(self, section: str, updates: Dict[str, Any]) -> bool:
+        """更新配置的特定部分"""
+        if self._config is None:
+            return False
+
+        try:
+            if section == "project_settings":
+                self._config.project_settings.update(updates)
+            elif section == "permission_config":
+                self._config.permission_config.update(updates)
+            elif section == "standards_config":
+                self._config.standards_config.update(updates)
+            elif section == "ai_assist_config":
+                self._config.ai_assist_config.update(updates)
+            elif section == "integration_config":
+                self._config.integration_config.update(updates)
+            else:
+                return False
+
+            self._config.updated_at = datetime.now().isoformat()
+            return True
+
+        except Exception:
+            return False
+
+# 配置管理器单例
+_config_manager = None
+
+def get_config_manager(config_dir: str = "config") -> XPConfigManager:
+    """获取配置管理器单例"""
+    global _config_manager
+    if _config_manager is None:
+        _config_manager = XPConfigManager(config_dir)
+    return _config_manager

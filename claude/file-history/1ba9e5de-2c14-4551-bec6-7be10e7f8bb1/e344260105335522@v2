@@ -1,0 +1,43 @@
+# XPCarBusiCH — Submodule 规范
+
+> ⚠️ 本仓库为独立 git 仓，本文件与同目录 `.ai-knowledge/` 需在子仓单独提交
+
+## 模块定位
+
+国内市场车控业务 UI 层（Pod: XPCarBusiCH）。提供车控首页和 Demo 演示视图，依赖 XPCarControlCore 获取车控数据与能力。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `submodule/XPCarBusiCH/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+纯 Objective-C。MVC 架构，ViewController 为页面入口，ReactiveObjC 做数据绑定。
+
+## 对外 API 边界
+
+对外暴露车控首页 ViewController 和 BusiDemo 演示入口（通过 Router 或直接实例化）。注意 XPCarHomePageViewController 已从 Pod 中排除。
+
+## 仓内部架构
+
+- `Sources/HomePage/` — 车控首页（XPCarHomePageViewController 排除出 Pod）
+- `Sources/BusiDemo/` — 车控功能演示视图
+- Resources: XPCarControl.bundle、XPCarControl.plist、Assets/*.xcassets
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。依赖 XPCarControlCore、XPAppBiz、ReactiveObjC、lottie-ios、XPBucket、XPCarControlUtils。
+
+## 禁止行为
+
+- 禁止绕过 XPCarControlCore 直接调用 XPVehicleSDK 车控接口
+- 禁止在 ViewController 中直接发起网络请求或车控指令
+- 禁止硬编码车型判断，通过 Core 层能力配置获取
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → 主仓 `.claude/rules/ios-coding.md`
+- 主工程 App 如何调用本 submodule → L2 `CLAUDE.app.md` 的"与 submodule 的边界"
+- 本 submodule 的演进历史与设计决策 → 子仓 ADR 文档

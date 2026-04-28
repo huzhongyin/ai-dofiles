@@ -1,0 +1,135 @@
+# 变更提案: BLE V3 协议新增 RtAuth/RtNotification 消息类型
+
+> 阶段: Proposal (Why & What)
+> 创建日期: 2026-04-08
+> 状态: Approved
+
+---
+
+## 需求概述
+在 BLE 3.0 蓝牙解析协议中新增两个 msgID：**RtAuth (11/0x0B)** 和 **RtNotification (12/0x0C)**，用于支持 RobotTaxi(RT) 小程序的蓝牙鉴权和车端状态通知功能。RtAuth 负责 RT 小程序与车端之间的蓝牙连接凭证验证，RtNotification 负责双向状态同步（如 Polling 解锁结果通知）。
+
+## 变更背景
+RT（RobotTaxi）小程序需要通过蓝牙与车端通信，实现：
+1. 小程序蓝牙连接时的身份凭证鉴权（RtAuth）
+2. 车端与小程序之间的状态通知交换（RtNotification），包括 Polling 解锁结果反馈
+
+现有 BLE V3 协议的 msgID 范围为 0x01-0x05 + 0x14，需要扩展支持新的 RT 业务消息类型。
+
+## 影响范围
+
+### 涉及模块
+| 模块 | 文件/目录 | 变更类型 | 说明 |
+|------|----------|----------|------|
+| XPBLEDataProcessor (C++) | `cross-platform/BLEDataParser/BLEKeyV3Message.hpp` | 修改 | 新增 `BLEKeyV3MessageTypeRtAuth=0x0B` 和 `BLEKeyV3MessageTypeRtNotification=0x0C` 枚举值 |
+| XPBLEDataProcessor (C++) | `cross-platform/BLEDataParser/BLEKeyV3Message.cpp` | 修改 | `isEffectiveBLEKeyV3MessageData` 白名单新增两个 msgId |
+| XPBLEDataProcessor (C++) | `cross-platform/BLEDataParser/BLEKeyV3DecodeMessage.hpp` | 修改 | 新增 `BleKeyV3OutputMessageType` 输出类型枚举（RtAuth response / RtNotification） |
+| XPBLEDataProcessor (C++) | `cross-platform/BLEDataParser/BLEKeyV3DecodeMessage.cpp` | 修改 | 解码 switch 分支新增 RtAuth/RtNotification 处理 |
+| XPBLEDataProcessor (C++) | `cross-platform/BLEDataParser/BLEKeyV3EncodeMessage.cpp` | 修改 | 新增 RtAuth request 编码函数（如需 App 主动发送凭证） |
+| XPBLEDataProcessor (C++) | `cross-platform/BLEDataParser/` | 新增 | RtAuth/RtNotification 的 TLV 解析结构体（RtAuthResponseMessage, RtNotificationMessage） |
+| XPBLEDataProcessor (OC) | `iOS/XPDataProcessor/XPBleKeyV3DataProcessor.h/.mm` | 修改 | 新增 OC 桥接方法暴露给 iOS 上层 |
+| XPVehicleSDK (Swift) | `BLEDataParser/BleCanMessage.swift` | 修改 | `BLECppParserCanEventType` 新增 rtAuthResult / rtNotification 枚举 |
+| XPVehicleSDK (Swift) | `BLEDataParser/BLEDataParser+cpp.swift` | 修改 | `handleCanEvent` 新增 RT 事件路由分支 |
+| XPVehicleSDK (Swift) | `BLEDataParser/BLEKeyV3Parser.swift` | 修改 | 新增 RT 事件处理回调方法 |
+
+### 涉及车型
+- [x] 仅小鹏系 (XiaopengVehicle) — V3 协议车型（F30 等）
+- [ ] 不涉及 Mona（Mona 有独立协议 MonaBleDataProcessor）
+- [ ] 不涉及 V1/V2 协议车型
+
+### 涉及连接通道
+- [x] BLE 蓝牙通道 — RT 小程序蓝牙鉴权和通知均通过 BLE 通道
+- [ ] 不涉及 TCP/MQTT 远程通道
+
+## 核心功能点
+
+### F1: RtAuth (msgID=11) 鉴权消息
+- [ ] C++ 层：组装 RtAuth request 包体（tag=0x7F54）
+  - 编码 certificate 字段 (type=0x01, var字节: RT凭证数据)
+  - 编码 deviceModel 字段 (type=0x02, var字节: 设备类型)
+- [ ] C++ 层：解析 RtAuth response 包体（tag=0x7F6F）
+  - 解析鉴权结果 (type=0x10, 1字节: 0x00 成功 / 0x01 失败)
+  - 解析错误码 (type=0x11, 1字节: 0x01 凭证失效 / 0x02 不匹配 / 0x03 其他)
+- [ ] OC 桥接层：暴露 RtAuth 编码/解析 API 给 iOS
+- [ ] Swift SDK 层：新增 `didReceiveRtAuthResult` 回调
+
+### F2: RtNotification (msgID=12) 通知消息
+- [ ] C++ 层：解析车向手机的 RtNotification 包体
+  - Polling 解锁结果 (type=0xD0, 1字节: 0x00 成功 / 0x01 失败)
+- [ ] OC 桥接层：暴露 RtNotification 解析 API 给 iOS
+- [ ] Swift SDK 层：新增 `didReceiveRtNotification` 回调
+- [ ] 注意：手机向车方向暂不实现，等具体内容确定后新增
+
+### F3: 协议框架扩展
+- [ ] `BLEKeyV3MessageType` 枚举新增 RtAuth=0x0B, RtNotification=0x0C
+- [ ] `isEffectiveBLEKeyV3MessageData` 白名单新增两个 msgId
+- [ ] 解码流程 switch 分支新增对应处理
+- [ ] 明文传输（需求文档标注为"明文"，不走 sessionKey 加密）
+
+## 技术要点
+
+### 1. 明文传输
+需求文档明确标注 RtAuth 和 RtNotification 为**明文**，这意味着在 `decodeBleKeyV3CanMessage` 的加解密 switch 分支中，这两个 msgId 需要走非加密路径（类似 Auth0 或直接 memcpy）。
+
+### 2. TLV 结构复用
+RtAuth response 的包体格式（tag=0x7F6F + type/len/value）与现有 RKE response 格式类似，可以复用 `handleXPBleKeyV3Content` 的 TLV 解析框架，新增 RtAuth 特有的 type 处理分支。
+
+### 3. RtNotification type=0xD0 与现有 CarState type=0xD0 重叠
+**关键技术风险**：车端状态类型 `BLEKeyV3CarStateTypeCommon = 0xD0` 与 RtNotification 的 Polling 解锁结果 `type=0xD0` 的值相同，但含义完全不同。**必须通过 msgId 级别（0x0C vs 0x04）区分**，不能在 content 解析层混淆。
+
+### 4. 跨平台同步
+XPBLEDataProcessor 是跨平台共享库（iOS/Android/Harmony/小程序），C++ 核心修改需与其他平台团队同步。
+
+## 疑问点
+
+- **Q1**: RtAuth request 是否需要 App 主动组装发送？还是仅解析车端返回的 response？
+  - 建议 A: 同时实现 encode(request) + decode(response) ✅
+  - 建议 B: 仅实现 decode(response)
+  - 用户回复: **选 A — encode + decode 都实现**
+
+- **Q2**: RtAuth request 的包体结构是什么？
+  - 用户回复: **已补充完整定义**
+    - tag = 0x7F54, len = var(<180)
+    - type=0x01, len=var: certificate（RT凭证，与车管后台 MQTT 下发的凭证相同）
+    - type=0x02, len=var: deviceModel（设备类型）
+
+- **Q3**: RtNotification 手机向车同步的状态（4.8.1）当前无具体内容，是否需要预留编码接口？
+  - 建议 A: 预留空的 encode 函数框架
+  - 建议 B: 当前不实现 ✅
+  - 用户回复: **选 B — 暂不实现，等具体内容确定后再新增**
+
+- **Q4**: RtNotification 的 Polling 解锁结果 type=0xD0 与现有 `BLEKeyV3CarStateTypeCommon=0xD0` 值冲突
+  - 用户回复: **确认通过 msgId 级别区分**。msgId=0x0C 的 0xD0 是 Polling 解锁结果，msgId=0x04 的 0xD0 是车辆通用状态
+
+## 风险评估
+| 风险 | 影响 | 概率 | 应对策略 |
+|------|------|------|---------|
+| type=0xD0 含义冲突 | 高 — 解析出错误的车态数据 | 低 — 通过 msgId 区分 | 严格按 msgId 分流后再解析 content |
+| C++ packed 结构体修改影响其他车型 | 高 — 蓝牙协议不兼容 | 低 — 仅新增枚举值和结构体 | 新增结构体追加，不修改现有字段；运行全车型单测 |
+| 跨平台不同步 | 中 — 其他平台解析不一致 | 中 | 与 Android/Harmony 团队同步 msgId 定义 |
+| 小程序版本 bleMethod.cpp 未同步 | 低 — 小程序端也需支持 RT | 中 | 同步更新 xiaochengxu/ 目录的枚举定义 |
+
+## 关联知识
+> 由 knowledge-recall 自动填充
+
+### 知识点（5 条命中）
+1. **蓝牙协议版本选择** (`ble-protocol-versions.kp.md`) — V3 协议使用 `XPBleKeyV3DataProcessor`，需 sessionKey + hmacKey（但 RT 为明文）
+2. **BLE 消息类型说明** (`ble-message-types.kp.md`) — msgType 枚举定义，本次新增的是 V3 层的 msgId 而非 V1/V2 的 msgType
+3. **C++ 结构体紧凑排列** (`ble-packed-struct.kp.md`) — 新增结构体必须使用 `__attribute__((packed))`，字段追加到末尾
+4. **BLE 数据双通道输出** (`ble-data-dual-channel.kp.md`) — RT 消息仅走 BLE 通道，不走 tboxData
+5. **V3 鉴权两步流程** (`ble-auth-v3-flow.kp.md`) — RtAuth 是 RT 专用鉴权，独立于现有 Auth0→Auth1 流程
+
+### 踩坑记录（1 文件命中）
+- **蓝牙通信踩坑** (`pitfalls/ble-communication.md`)
+  - 坑3: 修改 C++ packed 结构体导致协议不兼容 → 新增 RT 结构体应独立定义，不修改现有结构体
+  - 坑5: BLE 解析器跨车型影响 → RT 功能仅限 V3 协议车型，验证不影响 V1/V2 解析
+
+### 模块文档（1 篇命中）
+- **XPBLEDataProcessor** (`modules/XPBLEDataProcessor.md`) — 跨平台架构图、核心 API、解析→组装双向流程
+
+## 预估工作量
+| 阶段 | 工作量 | 说明 |
+|------|--------|------|
+| 开发 | 1 天 | C++ 核心 + OC 桥接 + Swift 回调（3 层修改） |
+| 自测 | 0.5 天 | 单元测试 + 模拟数据包解析验证 |
+| 联调 | 0.5 天 | 与车端/RT 小程序联调蓝牙通信 |

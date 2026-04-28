@@ -1,0 +1,25 @@
+# 切车与生命周期踩坑记录
+
+> 涉及模块: VehicleManager, BaseVehicle, VehicleConnection
+
+---
+
+## 坑1: 主线程创建车控实例导致卡顿
+- **现象**: 切车时 UI 卡顿 1-2 秒
+- **根因**: `XiaopengVehicle` 和 `MonaVehicle` 构造函数有耗时操作，必须在子线程创建
+- **修复**: VehicleManager 在 `switchVehicleQueue`（后台线程）上创建实例
+
+## 坑2: 切车未完成就使用新 presenter
+- **现象**: 切车后调用车控方法崩溃或无响应
+- **根因**: 切车在后台线程异步执行，业务层在 `vehicleSwitchedEvent` 之前就尝试使用新 presenter
+- **修复**: 监听 `vehicleSwitchedEvent` 或 `vehicleInfoUpdatedEvent`，收到事件后才使用 presenter
+
+## 坑3: 退出登录后 VehicleData 未标记 invalid
+- **现象**: 退出登录后仍然显示车辆相关 UI
+- **根因**: 退出登录清空车辆列表时，业务层缓存了旧的 VehicleData 引用
+- **修复**: 退出登录时所有 VehicleData 被标记为 `invalid=true`，业务层需检查此标志
+
+## 坑4: Mona 不支持 createVehicle 独立实例
+- **现象**: 调用 `createVehicle(vin:)` 创建 Mona 车辆实例返回 nil
+- **根因**: MonaVehicle 不支持独立实例创建，这是设计限制
+- **修复**: Mona 车型不走多车车控流程

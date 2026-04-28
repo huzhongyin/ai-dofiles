@@ -1,0 +1,191 @@
+//
+//  D55DataParser.cpp
+//  iOS-BLEDataProcessor
+//
+//  Created by xp on 2024/5/27.
+//
+
+#include "D55DataParser.hpp"
+#include "../tools/log/log.h"
+
+D55CaniBCMFirst D55DataParser::iBCMFirst() const {
+    D55CaniBCMFirst result = {.raw = swappedPayload};
+    return result;
+}
+
+D55CaniBCMSecond D55DataParser::iBCMSecond() const {
+    D55CaniBCMSecond result = {.raw = swappedPayload};
+    return result;
+}
+
+D55CanAppMsgSecond D55DataParser::appMsgSecond() const {
+    D55CanAppMsgSecond result = {.raw = swappedPayload};
+    return result;
+}
+
+D55CanBLEReq D55DataParser::bleReq() const {
+    D55CanBLEReq result = {.raw = swappedPayload};
+    return result;
+}
+
+D55CanXpuBleRemotePk D55DataParser::xpuBleRemotePk() const {
+    D55CanXpuBleRemotePk result = {.raw = swappedPayload};
+    return result;
+}
+
+D55CaniBCMPepsReq D55DataParser::iBCMPepsReq() const {
+    D55CaniBCMPepsReq result = {.raw = swappedPayload};
+    return result;
+}
+
+D55CanVehSysState D55DataParser::vehSysState() const {
+    D55CanVehSysState result = {.raw = swappedPayload};
+    return result;
+}
+
+D55CanAppMsg1 D55DataParser::appMsg1() const {
+    D55CanAppMsg1 result = {.raw = swappedPayload};
+    return result;
+}
+
+void D55DataParser::parseIBCMFirst() {
+    D55CaniBCMFirst canData = iBCMFirst();
+    DoorMessage doorMessage;
+    doorMessage.driver_door_lock_st = canData.iBCM_DriverDoorLockSt;
+    doorMessage.driver_door_ajar_st = canData.iBCM_DriverDoorAjarSt;
+    doorMessage.passenger_door_ajar_st = canData.iBCM_PsngrDoorAjarSt;
+    doorMessage.rear_left_door_ajar_st = canData.iBCM_RLDoorAjarSt;
+    doorMessage.rear_right_door_ajar_st = canData.iBCM_RRDoorAjarSt;
+    doorMessage.bonnet_ajar_st = canData.iBCM_BonnetAjarSt;
+    doorMessage.temp_lock_st = canData.iBCM_TemporaryLockFB;
+    doorMessage.trunk_ajar_st = canData.iBCM_TrunkAjarSt == 1 ? 2 : 0;
+    buildDoorMessage(&doorMessage);
+    
+    PollingMessage pollingMessage;
+    pollingMessage.driverSeatOccupied = canData.iBCM_DriverSeatOccupied;
+    pollingMessage.alarmState = canData.iBCM_AlarmSt;
+    pollingMessage.powerMode = canData.iBCM_PowerMode;
+    pollingMessage.trunkReleaseState = canData.iBCM_TrunkReleaseState;
+    buildPollingMessage(&pollingMessage);
+}
+
+void D55DataParser::parseIBCMSecond() {
+    D55CaniBCMSecond canData = iBCMSecond();
+    ChargePortMessage chargePortMessage;
+    chargePortMessage.slow_charge_port_status = canData.iBCM_LChargerPortAjarSt;
+    chargePortMessage.fast_charge_port_status = canData.iBCM_RChargerPortAjarSt;
+    buildChargePortMessage(&chargePortMessage);
+}
+
+void D55DataParser::parseAppMsgSecond() {
+    D55CanAppMsgSecond canData = appMsgSecond();
+    WindowMessage windowMessage;
+    windowMessage.front_left_window_position = converWindowState(canData.BCM_FLWinPosStFBSt);
+    windowMessage.front_right_window_position = converWindowState(canData.BCM_FRWinPosStFBSt);
+    windowMessage.rear_left_window_position = converWindowState(canData.BCM_RLWinPosStFBSt);
+    windowMessage.rear_right_window_position = converWindowState(canData.BCM_RRWinPosStFBSt);
+    buildWindowMessage(&windowMessage);
+}
+
+void D55DataParser::parseBleReq() {
+    D55CanBLEReq canData = bleReq();
+    CdcuLoginMessage loginStateMessage;
+    loginStateMessage.loginState = canData.loginState;
+    buildCdcuLoginMessage(&loginStateMessage);
+}
+
+void D55DataParser::parseXpuBleRemotePk() {
+    D55CanXpuBleRemotePk canData = xpuBleRemotePk();
+    ParkingMessage parkingEventMessage;
+    parkingEventMessage.parkingState = canData.parkingState;
+    parkingEventMessage.parkingExpType = canData.parkingExpType;
+    parkingEventMessage.gear = canData.parkingGearValue;
+    parkingEventMessage.parkingAnimate = canData.parkingAnimationValue;
+    parkingEventMessage.parkingProcess = canData.parkingProcess;
+    buildParkingEventMessage(&parkingEventMessage);
+    
+    ParkingMessage parkingStateMessage;
+    parkingStateMessage.gear = canData.parkingGearValue;
+    parkingStateMessage.parkingAnimate = canData.parkingAnimationValue;
+    buildParkingStateMessage(&parkingStateMessage);
+}
+
+void D55DataParser::parseIBCMPepsReq() {
+    D55CaniBCMPepsReq canData = iBCMPepsReq();
+    BleRequestLoactionMessage locationMessage;
+    locationMessage.singalValue = canData.requestBleLocation;
+    buildBleRequestLoactionMessage(&locationMessage);
+}
+
+void D55DataParser::parseVehSysState() {
+    D55CanVehSysState canData = vehSysState();
+    PollingMessage pollingMessage;
+    pollingMessage.sleepModeState = canData.sleepModeState;
+    buildPollingMessage(&pollingMessage);
+}
+
+void D55DataParser::parseAppMsg1() {
+    D55CanAppMsg1 canData = appMsg1();
+    DriveMessage driveMessage;
+    driveMessage.gearValue = canData.gearValue;
+    buildDriveMessage(&driveMessage);
+    
+    PollingMessage pollingMessage;
+    pollingMessage.tBox4GState = canData.tBox4GState;
+    buildPollingMessage(&pollingMessage);
+}
+
+void D55DataParser::specificityMessage()  {
+    XP_LOG_INFO("CPPBle", "D55DataParser::specificityMessage: type--%{public}d", type);
+    switch ((D55CanType)type) {
+        case D55CanType_iBCM_First:
+        {
+            parseIBCMFirst();
+        }
+            break;
+        case D55CanType_iBCM_Second:
+        {
+            parseIBCMSecond();
+        }
+            break;
+        case D55CanType_App_Msg2:
+        {
+            parseAppMsgSecond();
+        }
+            break;
+        case D55CanType_BLE_Req:
+        {
+            parseBleReq();
+        }
+            break;
+        case D55CanType_XPU_BLE_RemotePk:
+        {
+            parseXpuBleRemotePk();
+        }
+            break;
+        case D55CanType_iBCM_PEPSReq:
+        {
+            parseIBCMPepsReq();
+        }
+            break;
+            
+        case D55CanType_VehSysState:
+        {
+            parseVehSysState();
+        }
+            break;
+        case D55CanType_App_Msg1:
+        {
+            parseVehSysState();
+        }
+            break;
+        case D55CanType_ControlState:
+        {
+            parseControlResult();
+        }
+            break;
+        default:
+            break;
+    }
+}
+

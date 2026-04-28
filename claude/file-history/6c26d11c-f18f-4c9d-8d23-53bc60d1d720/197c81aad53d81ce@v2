@@ -1,0 +1,417 @@
+//
+//  XPIBeaconPullAlive.m
+//  XiaoPengQiChe
+//
+//  Created by yangcy on 2021/7/27.
+//  Copyright © 2021 xiaopeng.com. All rights reserved.
+//
+
+#import "XPIBeaconPullAlive.h"
+#import <CoreLocation/CoreLocation.h>
+#import <XPBucket/DDLogDefine.h>
+#import "XPBLEKeepAliveBussiness.h"
+#import "SystemConfig.h"
+#import "XPApplicationState.h"
+
+//#define USES_IBEACON_RSSI
+
+#define kiBeaconTag @"iBeaconAlive<PA>"
+
+static NSString * const REGISTERED_IBEACONS_KEY = @"XPCAR_REGISTERED_IBEACON_UUIDS";
+
+@interface XPIBeaconPullAlive () <CLLocationManagerDelegate>
+
+@property (nonatomic, strong) CLLocationManager * locationManager;
+
+@property (nonatomic, strong) NSMutableArray<NSString *> * iBeaconUUIDs;
+
+@property (nonatomic, assign) BOOL enableiBeaconNotifyRSSI;
+
+@end
+
+@implementation XPIBeaconPullAlive
+
+/**
+ 禅与Objective-C编程艺术，单例优雅写法，复制粘贴即可使用
+ */
++ (instancetype)sharedInstance
+{
+    static id instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        if (nil == instance)
+        {
+            instance = [[[self class] alloc] init];
+        }
+    });
+
+    return instance;
+}
+
+- (id)init
+{
+    self = [super init];
+    if (self)
+    {
+        if ([CLLocationManager isMonitoringAvailableForClass:[CLBeaconRegion class]]) {
+            DLogTagInfo(kiBeaconTag, @"iBeacon CLLocationManager 实例初始化 applicationState:%@", @([XPApplicationState sharedApplication].applicationState));
+            self.locationManager = [[CLLocationManager alloc] init];
+            self.locationManager.delegate = self;
+            self.locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters;
+            self.locationManager.pausesLocationUpdatesAutomatically = NO;
+            //[self.locationManager requestAlwaysAuthorization]; // 安全合规要求 必须用户使用才触发
+            if ([self.locationManager respondsToSelector:@selector(allowsBackgroundLocationUpdates)]) {
+                [self.locationManager setAllowsBackgroundLocationUpdates:YES];
+            }
+        }
+        else
+        {
+            DLogTagInfo(kiBeaconTag, @"^^^硬件不支持iBeacon拉活");
+        }
+        
+        // ✅ 修复：使用异步方式获取权限状态，避免主线程 IPC 阻塞
+        [[PrivacyPermission sharedInstance] authorizationStatusWithType:PrivacyPermissionTypeLocation completion:^(PrivacyPermissionAuthorizationStatus status) {
+            // 转换 PrivacyPermissionAuthorizationStatus 到 CLAuthorizationStatus
+            CLAuthorizationStatus clStatus = kCLAuthorizationStatusNotDetermined;
+            switch (status) {
+                case PrivacyPermissionAuthorizationStatusLocationAlways:
+                    clStatus = kCLAuthorizationStatusAuthorizedAlways;
+                    break;
+                case PrivacyPermissionAuthorizationStatusLocationWhenInUse:
+                    clStatus = kCLAuthorizationStatusAuthorizedWhenInUse;
+                    break;
+                case PrivacyPermissionAuthorizationStatusDenied:
+                    clStatus = kCLAuthorizationStatusDenied;
+                    break;
+                case PrivacyPermissionAuthorizationStatusRestricted:
+                    clStatus = kCLAuthorizationStatusRestricted;
+                    break;
+                default:
+                    clStatus = kCLAuthorizationStatusNotDetermined;
+                    break;
+            }
+            self.locationAuthorizationStatus = clStatus;
+        }];
+        
+#ifdef USES_IBEACON_RSSI
+        _enableiBeaconNotifyRSSI = [XPOTAConfig boolForKey:@"xp_car_ibeacon_notifyRSSI"];
+        DLogTagInfo(kiBeaconTag, @"iBeacon RSSI 测距监听开关:%@", _enableiBeaconNotifyRSSI ? @"开启，开启RSSI监听" : @"关闭");
+#endif
+    }
+    
+    return self;
+}
+
+- (BOOL)_accuracyLocationSwitch
+{
+    if (@available(iOS 14.0, *))
+    {
+        return CLAccuracyAuthorizationFullAccuracy == self.locationManager.accuracyAuthorization;
+    }
+    
+    return NO;
+}
+
+- (CLAuthorizationStatus)authorizationStatus
+{
+    // ✅ 修复：复用 PrivacyPermission 的缓存，避免重复的主线程 IPC
+    PrivacyPermissionAuthorizationStatus status = [[PrivacyPermission sharedInstance] authorizationStatus:PrivacyPermissionTypeLocation];
+    switch (status) {
+        case PrivacyPermissionAuthorizationStatusLocationAlways:
+            return kCLAuthorizationStatusAuthorizedAlways;
+        case PrivacyPermissionAuthorizationStatusLocationWhenInUse:
+            return kCLAuthorizationStatusAuthorizedWhenInUse;
+        case PrivacyPermissionAuthorizationStatusDenied:
+            return kCLAuthorizationStatusDenied;
+        case PrivacyPermissionAuthorizationStatusRestricted:
+            return kCLAuthorizationStatusRestricted;
+        default:
+            return kCLAuthorizationStatusNotDetermined;
+    }
+}
+
+// ios(4.2, 14.0)
+- (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status
+{
+    // ✅ 修复：异步刷新权限缓存，避免主线程 IPC
+    [[PrivacyPermission sharedInstance] refreshAuthorizationStatus:PrivacyPermissionTypeLocation completion:^(PrivacyPermissionAuthorizationStatus refreshedStatus) {
+        // 转换并更新本地缓存
+        CLAuthorizationStatus clStatus = kCLAuthorizationStatusNotDetermined;
+        switch (refreshedStatus) {
+            case PrivacyPermissionAuthorizationStatusLocationAlways:
+                clStatus = kCLAuthorizationStatusAuthorizedAlways;
+                break;
+            case PrivacyPermissionAuthorizationStatusLocationWhenInUse:
+                clStatus = kCLAuthorizationStatusAuthorizedWhenInUse;
+                break;
+            case PrivacyPermissionAuthorizationStatusDenied:
+                clStatus = kCLAuthorizationStatusDenied;
+                break;
+            case PrivacyPermissionAuthorizationStatusRestricted:
+                clStatus = kCLAuthorizationStatusRestricted;
+                break;
+            default:
+                clStatus = kCLAuthorizationStatusNotDetermined;
+                break;
+        }
+        self.locationAuthorizationStatus = clStatus;
+    }];
+    self.accuracyLocationSwitch = [self _accuracyLocationSwitch];
+}
+
+// iOS 14.0
+- (void)locationManagerDidChangeAuthorization:(CLLocationManager *)manager
+{
+    // ✅ 修复：异步刷新权限缓存，避免主线程 IPC
+    [[PrivacyPermission sharedInstance] refreshAuthorizationStatus:PrivacyPermissionTypeLocation completion:^(PrivacyPermissionAuthorizationStatus refreshedStatus) {
+        // 转换并更新本地缓存
+        CLAuthorizationStatus clStatus = kCLAuthorizationStatusNotDetermined;
+        switch (refreshedStatus) {
+            case PrivacyPermissionAuthorizationStatusLocationAlways:
+                clStatus = kCLAuthorizationStatusAuthorizedAlways;
+                break;
+            case PrivacyPermissionAuthorizationStatusLocationWhenInUse:
+                clStatus = kCLAuthorizationStatusAuthorizedWhenInUse;
+                break;
+            case PrivacyPermissionAuthorizationStatusDenied:
+                clStatus = kCLAuthorizationStatusDenied;
+                break;
+            case PrivacyPermissionAuthorizationStatusRestricted:
+                clStatus = kCLAuthorizationStatusRestricted;
+                break;
+            default:
+                clStatus = kCLAuthorizationStatusNotDetermined;
+                break;
+        }
+        self.locationAuthorizationStatus = clStatus;
+    }];
+    self.accuracyLocationSwitch = [self _accuracyLocationSwitch];
+}
+
+- (NSString *)makeiBeaconIdentifierFromUUID:(NSString *)uuidStr
+{
+    static NSString * g_BundleId = nil;
+    if (nil == g_BundleId)
+    {
+        g_BundleId = [[NSBundle mainBundle] bundleIdentifier];
+    }
+    NSString * iid = [NSString stringWithFormat:@"%@.iBeacon.%@", g_BundleId, uuidStr];
+    return iid;
+}
+
+- (void)startWithUUIDs:(NSArray<NSString *> *)uuids vin:(NSString *)vin
+{
+    DLogTagInfo(kiBeaconTag, @"尝试注册iBeacon beaconUUIDs:%@", uuids);
+    if (![CLLocationManager isRangingAvailable])
+    {
+        DLogTagInfo(kiBeaconTag, @"<PA>错误：不能启动ibeacon扫描");
+        return;
+    }
+    
+    DLogTagInfo(kiBeaconTag, @"已注册iBeacons:%@", self.locationManager.monitoredRegions);
+
+    _iBeaconUUIDs = [uuids copy];
+    NSMutableArray<NSString *> * startNewUUIDs = [NSMutableArray arrayWithCapacity:4];
+
+    [uuids enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSString * uuidStr = obj;
+        
+        NSString * iBeaconIdentifier = [self makeiBeaconIdentifierFromUUID:uuidStr];
+        CLBeaconRegion *region = [[CLBeaconRegion alloc] initWithProximityUUID:[NSUUID UUID] identifier:iBeaconIdentifier];
+        CLBeaconRegion *regionExists = [self.locationManager.monitoredRegions member:region];
+        DLogTagInfo(kiBeaconTag, @"regionExists:%@",regionExists);
+        if (nil == regionExists)
+        {
+            BOOL notifyEntryStateOnDisplay = [XPOTAConfig boolForKey:@"xp_car_ibeacon_notifyOnDisplay"];
+            DLogTagInfo(kiBeaconTag, @"向iOS注册iBeacon:%@ vin:%@ OnlineConfig OnDisplay:%@", uuidStr, vin, notifyEntryStateOnDisplay ? @"开启" : @"关闭");
+
+            if (region != nil)
+            {
+                [self.locationManager stopMonitoringForRegion:region];
+            }
+ 
+            CLBeaconRegion * ibeacon = nil;
+            @try {
+                ibeacon = [[CLBeaconRegion alloc] initWithProximityUUID:[[NSUUID alloc] initWithUUIDString:uuidStr] identifier:iBeaconIdentifier];
+                } @catch (NSException *exception) {
+                DLogTagWarn(kiBeaconTag, @"^^^向iOS注册iBeacon失败，uuidStr转CBUUID出现异常 %@", uuidStr);
+            } @finally {
+            }
+            
+            if (nil != ibeacon)
+            {
+                ibeacon.notifyEntryStateOnDisplay = notifyEntryStateOnDisplay; // YES可能会影响拉活效果，将来使用线上配置
+                ibeacon.notifyOnExit = YES;
+                ibeacon.notifyOnEntry = YES;
+                [self.locationManager startMonitoringForRegion:ibeacon];
+
+                 [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:[NSString stringWithFormat:@"%@_REGTIME", uuidStr]];
+                
+                [startNewUUIDs addObject:uuidStr];
+                
+                DLogTagInfo(kiBeaconTag, @"iBeacon 注册参数 notifyEntryStateOnDisplay=%@, notifyOnExit=%@, notifyOnEntry=%@", @(ibeacon.notifyEntryStateOnDisplay), @(ibeacon.notifyOnExit), @(ibeacon.notifyOnEntry));
+            }
+       }
+    }];
+    
+    if ([startNewUUIDs count] > 0)
+    {
+        NSMutableArray * allRegisterdUUIDs = [NSMutableArray arrayWithCapacity:10];
+        NSArray * oldRegisteredUUIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:REGISTERED_IBEACONS_KEY];
+        if (nil != oldRegisteredUUIDs)
+        {
+            [allRegisterdUUIDs addObjectsFromArray:oldRegisteredUUIDs];
+        }
+        
+        [allRegisterdUUIDs addObjectsFromArray:startNewUUIDs];
+        [[NSUserDefaults standardUserDefaults] setObject:allRegisterdUUIDs forKey:REGISTERED_IBEACONS_KEY];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        
+        DLogTagInfo(kiBeaconTag, @"新注册iBeacon(%@) 所有已注册iBeacon(%@) UUIDs:%@", @([startNewUUIDs count]), @([allRegisterdUUIDs count]), allRegisterdUUIDs);
+    }
+}
+
+- (void)stopiBeaconUUID:(NSString *)uuidStr
+{
+    DLogTagInfo(kiBeaconTag, @"注销iBeacon:%@", uuidStr);
+
+    NSString * iid = [self makeiBeaconIdentifierFromUUID:uuidStr];
+    CLBeaconRegion *region = [[CLBeaconRegion alloc] initWithProximityUUID:[NSUUID UUID] identifier:iid];
+    if(region != nil)
+    {
+        [self.locationManager stopMonitoringForRegion:region];
+    }
+
+    NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:uuidStr];
+    CLBeaconIdentityConstraint *beaconIdentityConstraint = [[CLBeaconIdentityConstraint alloc] initWithUUID:uuid];
+    [self.locationManager stopRangingBeaconsSatisfyingConstraint:beaconIdentityConstraint];
+    DLogTagInfo(kiBeaconTag, @"stopRangingBeaconsSatisfyingConstraint");
+
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:uuidStr]; // 将来可以去除
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:[NSString stringWithFormat:@"%@_REGTIME", uuidStr]];
+}
+
+
+- (void)stopCurrentCarUUIDs
+{
+    DLogTagInfo(kiBeaconTag, @"注销当前车辆iBeacon拉活信息:%@", _iBeaconUUIDs);
+    NSString * bundleId = [[NSBundle mainBundle] bundleIdentifier];
+
+    [_iBeaconUUIDs enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [self stopiBeaconUUID:obj];
+    }];
+    
+    NSMutableArray * updateRegisterdUUIDs = [NSMutableArray arrayWithCapacity:10];
+    NSArray * oldRegisteredUUIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:REGISTERED_IBEACONS_KEY];
+    if (nil != oldRegisteredUUIDs)
+    {
+        [updateRegisterdUUIDs addObjectsFromArray:oldRegisteredUUIDs];
+    }
+    
+    [updateRegisterdUUIDs removeObjectsInArray:_iBeaconUUIDs];
+    [[NSUserDefaults standardUserDefaults] setObject:updateRegisterdUUIDs forKey:REGISTERED_IBEACONS_KEY];
+}
+
+- (void)stopAllCarUUIDs
+{
+    DLogTagInfo(kiBeaconTag, @"注销所有iBeacon拉活信息");
+    NSArray * oldRegisteredUUIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:REGISTERED_IBEACONS_KEY];
+    if (nil != oldRegisteredUUIDs)
+    {
+        [oldRegisteredUUIDs enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            [self stopiBeaconUUID:obj];
+        }];
+    }
+
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:REGISTERED_IBEACONS_KEY];
+    
+    _iBeaconUUIDs = nil;
+}
+
++ (BOOL)isiBeaconExists // 是否存在iBeacon拉活信息
+{
+    NSArray * oldRegisteredUUIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:REGISTERED_IBEACONS_KEY];
+    return [oldRegisteredUUIDs count] > 0;
+}
+
+- (void)clearAllSysiBeacons // 清理所有系统iBeacon信息
+{
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        NSSet<CLBeaconRegion *> * monitoredRegions = self.locationManager.monitoredRegions;
+        DLogTagInfo(kBLEKeyPollingTag, @"清理系统iBeacon信息：%@", monitoredRegions);
+        [monitoredRegions enumerateObjectsUsingBlock:^(CLBeaconRegion * _Nonnull obj, BOOL * _Nonnull stop) {
+            NSString * uuidStr = [obj.UUID UUIDString];
+            if (uuidStr)
+            {
+                [self stopiBeaconUUID:uuidStr];
+            }
+        }];
+        
+    });
+}
+
+- (void)checkUUIDInSysInfo:(NSArray<NSString *> *)uuids vin:(NSString *)vin // 监测iBeacon UUID是否已经注册到系统中
+{
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        NSSet<CLBeaconRegion *> * monitoredRegions = self.locationManager.monitoredRegions;
+        
+        [uuids enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            NSString * iBeaconIdentifier = [self makeiBeaconIdentifierFromUUID:obj];
+            CLBeaconRegion *ibeacon = [[CLBeaconRegion alloc] initWithProximityUUID:[NSUUID UUID] identifier:iBeaconIdentifier];
+            CLBeaconRegion * regionExists = [monitoredRegions member:ibeacon];
+            
+            DLogTagInfo(kBLEKeyPollingTag, @"iBeacon拉活检测 蓝牙UUID%@ 系统现有的拉活设备：%@ %@ vin:%@", obj, monitoredRegions, regionExists ? @"已包含当前车辆蓝牙UUID" : @"未包含当前车辆蓝牙UUID", vin);
+        }];
+    });
+}
+
+- (void)locationManager:(CLLocationManager *)manager didStartMonitoringForRegion:(CLRegion *)region {
+    DLogTagInfo(kiBeaconTag, @"iBeacon已启动: %@", [((CLBeaconRegion *)region).proximityUUID UUIDString]);
+    if ([_iBeaconUUIDs containsObject:[((CLBeaconRegion *)region).proximityUUID UUIDString]])
+    {
+        self.iBeaconState = XPIBeaconStateStart;
+    }
+}
+
+- (void)locationManager:(CLLocationManager *)manager didEnterRegion:(CLRegion *)region {
+    DLogTagInfo(kiBeaconTag, @"进入圈子: %@", [((CLBeaconRegion *)region).proximityUUID UUIDString]);
+    if ([_iBeaconUUIDs containsObject:[((CLBeaconRegion *)region).proximityUUID UUIDString]])
+    {
+        self.iBeaconState = XPIBeaconStateEnter;
+        
+        if (_enableiBeaconNotifyRSSI)
+        {
+            NSString * uuidStr = [((CLBeaconRegion *)region).proximityUUID UUIDString];
+            NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:uuidStr];
+            CLBeaconIdentityConstraint *beaconIdentityConstraint = [[CLBeaconIdentityConstraint alloc] initWithUUID:uuid];
+            [self.locationManager startRangingBeaconsSatisfyingConstraint:beaconIdentityConstraint];
+            DLogTagInfo(kiBeaconTag, @"startRangingBeaconsSatisfyingConstraint");
+        }
+    }
+}
+
+- (void)locationManager:(CLLocationManager *)manager didExitRegion:(CLRegion *)region {
+    DLogTagInfo(kiBeaconTag, @"离开圈子: %@", [((CLBeaconRegion *)region).proximityUUID UUIDString]);
+    if ([_iBeaconUUIDs containsObject:[((CLBeaconRegion *)region).proximityUUID UUIDString]])
+    {
+        self.iBeaconState = XPIBeaconStateLeave;
+        
+        if (_enableiBeaconNotifyRSSI)
+        {
+            [self.locationManager stopRangingBeaconsInRegion:(CLBeaconRegion *)region];
+        }
+    }
+}
+
+- (void)locationManager:(CLLocationManager *)manager didRangeBeacons:(NSArray<CLBeacon *> *)beacons inRegion:(CLBeaconRegion *)region {
+    CLBeacon *beacon = [beacons firstObject];
+    DLogTagInfo(kiBeaconTag, @"didRangeBeacons[%@]: %@ iBeacon RSSI:%@", @(beacons.count),  [region.proximityUUID UUIDString], @(beacon.rssi));
+}
+
+- (void)locationManager:(CLLocationManager *)manager
+    didDetermineState:(CLRegionState)state forRegion:(CLRegion *)region
+{
+    DLogTagInfo(kiBeaconTag, @"didDetermineState %@ iBeacon 亮屏回调", @(state));
+}
+
+@end

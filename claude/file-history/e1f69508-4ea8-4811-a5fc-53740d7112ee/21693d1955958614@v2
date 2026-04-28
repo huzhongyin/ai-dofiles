@@ -1,0 +1,54 @@
+---
+name: spec-proposal
+description: 为存量迭代需求生成结构化的变更提案（proposal.md），包含影响分析、知识关联和疑问点机制
+---
+
+## 触发条件
+当任务涉及以下关键词时激活: "提案", "proposal", "需求分析", "变更提案", "新需求"
+
+## 输入
+- $ARGUMENTS: PRD 内容、需求描述或产品文档链接
+
+## 执行步骤
+
+### Phase 1: Constitution 加载
+1. 读取 `.ai-knowledge/specs/constitution.md`，将其作为方案生成的最高优先级约束
+
+### Phase 2: 知识召回
+2. 从需求描述中提取关键词
+3. 执行 knowledge-recall 逻辑:
+   - 扫描 `.ai-knowledge/knowledge-points/*.kp.md` 匹配触发关键词
+   - 扫描 `.ai-knowledge/pitfalls/*.md` 匹配涉及模块
+   - 加载相关 `.ai-knowledge/modules/*.md` 模块文档
+4. 汇总已加载的知识列表
+
+### Phase 3: 影响分析
+5. 使用 grep/glob 搜索需求涉及的代码
+6. 识别受影响的模块、文件、车型
+7. 分析现有代码的架构和调用链路
+8. 对照 constitution.md 检查是否涉及约束边界
+
+### Phase 4: 疑问点识别
+9. 列出需求描述中不明确的点
+10. 列出技术实现上需要确认的点（特别是车型差异、多通道选择、语言选择）
+11. 对每个疑问点给出建议方案（A/B 选项）
+
+### Phase 5: 生成 Proposal
+12. 读取模板 `.ai-knowledge/specs/template-proposal.md`
+13. 填充模板生成 proposal.md
+14. 确保"关联知识"部分填充了 Phase 2 的知识召回结果
+
+### Phase 6: 用户确认
+15. 使用 AskUserQuestion 工具向用户确认所有疑问点
+16. 将确认后的答案回填到 proposal.md 的疑问点部分
+17. 将完成的 proposal.md 保存到 `.ai-knowledge/specs/[需求名]/proposal.md`
+
+## 约束
+- 必须先加载 constitution.md，方案不可违反宪法约束
+- 疑问点必须显性输出，不在假设基础上继续
+- 知识召回最多加载 5 个知识点 + 2 个踩坑文件 + 2 个模块文档
+- proposal 生成后必须等用户确认疑问点，再进入 design 阶段
+
+## 输出
+- 文件: `.ai-knowledge/specs/[需求名]/proposal.md`
+- 交互: AskUserQuestion 确认疑问点

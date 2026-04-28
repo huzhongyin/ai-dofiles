@@ -1,0 +1,576 @@
+//
+//  BLEKeyV3DecodeMessage.cpp
+//  AFNetworking
+//
+//  Created by huzy2 on 2024/8/22.
+//
+
+#include "BLEKeyV3DecodeMessage.hpp"
+#include "ble_key_apdu_parser.hpp"
+#include "BLEKeyV3MsgAlgorithm.hpp"
+#include "../tools/DataCovertTool.h"
+#include "BLEKeyV3Message.hpp"
+#include <stddef.h>
+#include <cstdlib>
+#include <cstring>
+
+
+using namespace SDKBleKeyV3;
+    
+BLEKeyV3Message * nextBleKeyV3Message(const uint8_t *data,size_t dataSize) {
+    if (data == NULL || dataSize < 0) {
+        return NULL;
+    }
+    size_t msgSize = sizeOfBLEKeyV3Message((BLEKeyV3Message *)data);
+    if (!msgSize || msgSize > dataSize) {
+        return NULL;
+    }
+    
+    BLEKeyV3Message *v3Message = (BLEKeyV3Message *)malloc(sizeof(BLEKeyV3Message));
+    memcpy((uint8_t *)v3Message+offsetof(BLEKeyV3Message, msgId), data, sizeof(v3Message->msgId));
+    memcpy((uint8_t *)v3Message+offsetof(BLEKeyV3Message, msgLength), data+offsetof(BLEKeyV3Message, msgLength), sizeof(v3Message->msgLength));
+    v3Message->messageData = (uint8_t *)malloc(v3Message->msgLength);
+    memcpy(v3Message->messageData, data+offsetof(BLEKeyV3Message, messageData), v3Message->msgLength);
+    memcpy((uint8_t *)v3Message+offsetof(BLEKeyV3Message, checkSum), data+offsetof(BLEKeyV3Message, messageData)+v3Message->msgLength, sizeof(v3Message->checkSum));
+    return v3Message;
+}
+
+BLEKeyV3Conent * nextBleKeyV3Content(const void *data,size_t dataSize) {
+    if (data == NULL || dataSize == 0) {
+        return NULL;
+    }
+    uint8_t *tlv = (uint8_t *)tlvMessageGetNext(data, dataSize);
+    if (!tlv) {
+        return NULL;
+    }
+    size_t totalSize = getTlvTotalSize(tlv);
+    if (!totalSize || totalSize > dataSize) {
+        return NULL;
+    }
+    tlvTag tlvTag = getTlvTag(tlv);
+    tlvLength tlvLength = getTlvLength(tlv);
+    uint8_t *tlvData = (uint8_t *)getTlvDataValue(tlv);
+    if (!tlvTag.tagSize || !tlvTag.tag || !tlvLength.lenSize || !tlvLength.dataSize || !tlvData) {
+        safe_free(tlv);
+        return NULL;
+    } else {
+        BLEKeyV3Conent *v3Content = (BLEKeyV3Conent *)malloc(sizeof(BLEKeyV3Conent));
+        v3Content->contentType = (BLEKeyV3ContentType)tlvTag.tagSize;
+        v3Content->contentSize = totalSize;
+        v3Content->tag = tlvTag.tag;
+        v3Content->contentDataLength = tlvLength.dataSize;
+        v3Content->contentData = (uint8_t *)malloc(tlvLength.dataSize);
+        memcpy(v3Content->contentData, tlvData, tlvLength.dataSize);
+        safe_free(tlv);
+        return v3Content;
+    }
+}
+
+void handleSpecialLargeContentData(uint8_t *data,uint8_t dataSize,uint16_t tag,BleKeyV3OutputMessage *outputMessage) {
+    __CHECK(outputMessage != NULL);
+    switch (tag) {
+        case BLEKeyV3CarStateTypeCommon:
+        {
+            BleKeyV3CarStateD0 *d0States = (BleKeyV3CarStateD0 *)malloc(sizeof(BleKeyV3CarStateD0));
+            memset(d0States, 0xFF, sizeof(BleKeyV3CarStateD0));
+            if (sizeof(BleKeyV3CarStateD0) > dataSize) {
+                memcpy(d0States, data, dataSize);
+            } else {
+                memcpy(d0States, data, sizeof(BleKeyV3CarStateD0));
+            }
+            outputMessage->messageType = BleKeyV3OutputMessageTypeCommonCarState;
+            outputMessage->messageData.len = sizeof(BleKeyV3CarStateD0);
+            outputMessage->messageData.value = (uint8_t *)d0States;
+        }
+           
+            break;
+        case BLEKeyV3CarStateTypeCharge:
+        {
+            BleKeyV3CarStateD1 *d1States = (BleKeyV3CarStateD1 *)malloc(sizeof(BleKeyV3CarStateD1));
+            memset(d1States, 0xFF, sizeof(BleKeyV3CarStateD1));
+            if (sizeof(BleKeyV3CarStateD1) > dataSize) {
+                memcpy(d1States, data, dataSize);
+            } else {
+                memcpy(d1States, data, sizeof(BleKeyV3CarStateD1));
+            }
+            outputMessage->messageType = BleKeyV3OutputMessageTypeChargeState;
+            outputMessage->messageData.len = sizeof(BleKeyV3CarStateD1);
+            outputMessage->messageData.value = (uint8_t *)d1States;
+        }
+            break;
+        case BLEKeyV3CarStateTypeParking:
+        {
+            BleKeyV3CarStateD2 *d2States = (BleKeyV3CarStateD2 *)malloc(sizeof(BleKeyV3CarStateD2));
+            memset(d2States, 0xFF, sizeof(BleKeyV3CarStateD2));
+            if (sizeof(BleKeyV3CarStateD2) > dataSize) {
+                memcpy(d2States, data, dataSize);
+            } else {
+                memcpy(d2States, data, sizeof(BleKeyV3CarStateD2));
+            }
+            outputMessage->messageType = BleKeyV3OutputMessageTypeParkingState;
+            outputMessage->messageData.len = sizeof(BleKeyV3CarStateD2);
+            outputMessage->messageData.value = (uint8_t *)d2States;
+        }
+            break;
+        case BLEKeyV3CarStateTypeNumerical:
+        {
+            BleKeyV3CarStateD3 *d3States = (BleKeyV3CarStateD3 *)malloc(sizeof(BleKeyV3CarStateD3));
+            memset(d3States, 0xFF, sizeof(BleKeyV3CarStateD3));
+            if (sizeof(BleKeyV3CarStateD3) > dataSize) {
+                memcpy(d3States, data, dataSize);
+            } else {
+                memcpy(d3States, data, sizeof(BleKeyV3CarStateD3));
+            }
+            outputMessage->messageType = BleKeyV3OutputMessageTypeNumeric;
+            outputMessage->messageData.len = sizeof(BleKeyV3CarStateD3);
+            outputMessage->messageData.value = (uint8_t *)d3States;
+        }
+            break;
+            
+        case BLEKeyV3CarStateTypeSelfCalibrationResult:
+        {
+            BleKeyV3CarStateD4 *d4States = (BleKeyV3CarStateD4 *)malloc(sizeof(BleKeyV3CarStateD4));
+            memcpy(d4States, data, offsetof(BleKeyV3CarStateD4, resultData));
+            uint32_t offset = offsetof(BleKeyV3CarStateD4, resultData);
+            memcpy(&d4States->resultData, data + offset, offsetof(BleKeyV3ByteBaseMessage, value));
+            offset += offsetof(BleKeyV3ByteBaseMessage, value);
+            if (d4States->resultData.len > 0) {
+                d4States->resultData.value = (uint8_t *)malloc(d4States->resultData.len);
+                memcpy(d4States->resultData.value, data + offset, d4States->resultData.len);
+                offset += d4States->resultData.len;
+            }
+            memcpy(&d4States->direction, data+offset, offsetof(BleKeyV3CarStateD4, deviceModel) - offsetof(BleKeyV3CarStateD4, direction));
+            little_endian_to_host((uint8_t *)(&d4States->uid), sizeof(d4States->uid));
+            offset += offsetof(BleKeyV3CarStateD4, deviceModel) - offsetof(BleKeyV3CarStateD4, direction);
+            uint32_t leftSize = (uint32_t)dataSize - offset;
+            d4States->deviceModel.len = (uint8_t)leftSize;
+            d4States->deviceModel.value = (uint8_t *)malloc(leftSize);
+            memcpy(d4States->deviceModel.value, data+offset, d4States->deviceModel.len);
+            outputMessage->messageType = BleKeyV3OutputMessageTypeSelfCalibration;
+            outputMessage->messageData.len = sizeof(BleKeyV3CarStateD4);
+            outputMessage->messageData.value = (uint8_t *)d4States;
+        }
+            break;
+        case BLEKeyV3CarStateTypeRssiCollectResult:
+        {
+            BleKeyV3CarStateD6 *d6States = (BleKeyV3CarStateD6 *)malloc(sizeof(BleKeyV3CarStateD6));
+            memcpy(d6States, data, offsetof(BleKeyV3CarStateD6, deviceModel));
+            little_endian_to_host((uint8_t *)(&d6States->uid), sizeof(d6States->uid));
+            uint32_t offset = offsetof(BleKeyV3CarStateD6, deviceModel);
+            uint32_t leftSize = (uint32_t)dataSize - offset;
+            d6States->deviceModel.len = (uint8_t)leftSize;
+            d6States->deviceModel.value = (uint8_t *)malloc(leftSize);
+            memcpy(d6States->deviceModel.value, data+offset, d6States->deviceModel.len);
+            outputMessage->messageType = BleKeyV3OutputMessageTypeRssiCollect;
+            outputMessage->messageData.len = sizeof(BleKeyV3CarStateD6);
+            outputMessage->messageData.value = (uint8_t *)d6States;
+        }
+            break;
+        case BLEKeyV3CarStateTypeParkingLimitControlState:
+        {
+            BleKeyV3CarStateD8 *d8State = (BleKeyV3CarStateD8 *)malloc(sizeof(BleKeyV3CarStateD8));
+            memset(d8State, 0xFF, sizeof(BleKeyV3CarStateD8));
+            if (sizeof(BleKeyV3CarStateD8) > dataSize) {
+                memcpy(d8State, data, dataSize);
+            } else {
+                memcpy(d8State, data, sizeof(BleKeyV3CarStateD8));
+            }
+            outputMessage->messageType = BleKeyV3OutputMessageTypeParkingControlState;
+            outputMessage->messageData.len = sizeof(BleKeyV3CarStateD8);
+            outputMessage->messageData.value = (uint8_t *)d8State;
+        }
+            break;
+        case BLEKeyV3CarStateTypePollingFuncState:
+        {
+            BleKeyV3CarStateD9 *d9State = (BleKeyV3CarStateD9 *)malloc(sizeof(BleKeyV3CarStateD9));
+            memset(d9State, 0xFF, sizeof(BleKeyV3CarStateD9));
+            if (sizeof(BleKeyV3CarStateD9) > dataSize) {
+                memcpy(d9State, data, dataSize);
+            } else {
+                memcpy(d9State, data, sizeof(BleKeyV3CarStateD9));
+            }
+            outputMessage->messageType = BleKeyV3OutputMessageTypePollingFuncState;
+            outputMessage->messageData.len = sizeof(BleKeyV3CarStateD9);
+            outputMessage->messageData.value = (uint8_t *)d9State;
+        }
+            break;
+            
+        default:
+            outputMessage->messageType = BleKeyV3OutputMessageTypeUnknown;
+            outputMessage->messageData.len = dataSize;
+            uint8_t *copyData = (uint8_t *)malloc(dataSize);
+            memcpy(copyData, data, dataSize);
+            outputMessage->messageData.value = copyData;
+            break;
+    }
+}
+
+void handleSingleTlvNormalData(uint8_t contentTag,uint8_t *contentData,uint8_t contentLength,BleKeyV3OutputMessage *outputMessage) {
+    switch (contentTag) {
+        case BLEKeyV3CommonResponseTypeStatus:
+        {
+            outputMessage->messageType = BleKeyV3OutputMessageTypeCommonStatus;
+            outputMessage->messageData.len = contentLength;
+            outputMessage->messageData.value = (uint8_t *)calloc(1,contentLength);
+            memcpy(outputMessage->messageData.value, contentData, contentLength);
+            little_endian_to_host(outputMessage->messageData.value, sizeof(outputMessage->messageData.len));
+        }
+            break;
+        case BLEKeyV3CommonResponseTypeErrorCode:
+        {
+            outputMessage->messageType = BleKeyV3OutputMessageTypeCommonErrorCode;
+            outputMessage->messageData.len = contentLength;
+            outputMessage->messageData.value = (uint8_t *)calloc(1, contentLength);
+            memcpy(outputMessage->messageData.value, contentData, contentLength);
+            little_endian_to_host(outputMessage->messageData.value, sizeof(outputMessage->messageData.len));
+        }
+            break;
+        case BLEKeyV3CommonResponseTypeErrorReason:
+        {
+            outputMessage->messageType = BleKeyV3OutputMessageTypeCommonErrorReason;
+            outputMessage->messageData.len = contentLength;
+            outputMessage->messageData.value = (uint8_t *)calloc(1, contentLength);
+            memcpy(outputMessage->messageData.value, contentData, contentLength);
+        }
+            break;
+            
+        default:
+            break;
+    }
+}
+
+void handleRkeResponseTlvData(uint8_t contentTag, uint8_t *contentData, uint8_t contentLength, BleKeyV3RkeResponse *rkeResponse) {
+    __CHECK(rkeResponse != NULL);
+    switch (contentTag) {
+        case BLEKeyV3RKEResponseTypeRkeId:
+            rkeResponse->rkeId.len = contentLength;
+            memcpy(&rkeResponse->rkeId.value, contentData, contentLength);
+            little_endian_to_host((uint8_t *)(&rkeResponse->rkeId.value), sizeof(rkeResponse->rkeId.value));
+            break;
+        case BLEKeyV3RKEResponseTypeStatus:
+            rkeResponse->status.len = contentLength;
+            memcpy(&rkeResponse->status.value, contentData, contentLength);
+            little_endian_to_host((uint8_t *)(&rkeResponse->status.value), sizeof(rkeResponse->status.value));
+            break;
+        case BLEKeyV3RKEResponseTypeErrorCode:
+            rkeResponse->errorCode.len = contentLength;
+            memcpy(&rkeResponse->errorCode.value, contentData, contentLength);
+            little_endian_to_host((uint8_t *)(&rkeResponse->errorCode.value), sizeof(rkeResponse->errorCode.value));
+            break;
+        case BLEKeyV3RKEResponseTypeErrorReason:
+            rkeResponse->errorReason.len = contentLength;
+            rkeResponse->errorReason.value = (uint8_t *)calloc(1, contentLength);
+            memcpy(rkeResponse->errorReason.value, contentData, contentLength);
+            break;
+        default:
+            break;
+    }
+}
+
+void handleAuth0ResponseTlvData(uint8_t contentTag,uint8_t *contentData,uint8_t contentLength,BleKeyV3Auth0Response *auth0Response) {
+    __CHECK(auth0Response != NULL);
+    switch (contentTag) {
+        case BLEKeyV3Auth0ResponseFactorTypeRand1:
+            auth0Response->rand1.len = contentLength;
+            memcpy(&auth0Response->rand1.value, contentData, contentLength);
+            little_endian_to_host((uint8_t *)(&auth0Response->rand1.value), sizeof(auth0Response->rand1.value));
+            break;
+        case BLEKeyV3Auth0ResponseFactorTypeRand01:
+            auth0Response->rand01.len = contentLength;
+            memcpy(&auth0Response->rand01.value, contentData, contentLength);
+            little_endian_to_host((uint8_t *)(&auth0Response->rand01.value), sizeof(auth0Response->rand01.value));
+            break;
+            
+        default:
+            break;
+    }
+}
+
+
+void handleDualTlvNormalData(uint16_t classTag, BleKeyV3OutputMessage *outputMessage) {
+    __CHECK(outputMessage != NULL);
+    switch (classTag) {
+        case BLEKeyV3RKEResponseTag:
+        {
+            BleKeyV3RkeResponse *rkeResponse = (BleKeyV3RkeResponse *)calloc(1, sizeof(BleKeyV3RkeResponse));
+            outputMessage->messageType = BleKeyV3OutputMessageTypeRkeResponse;
+            outputMessage->messageData.len = sizeof(BleKeyV3RkeResponse);
+            outputMessage->messageData.value = (uint8_t *)rkeResponse;
+            
+        }
+            break;
+        case BLEKeyV3AuthDataTypeAuth0ResponseFactor:
+        {
+            BleKeyV3Auth0Response *auth0Response = (BleKeyV3Auth0Response *)calloc(1, sizeof(BleKeyV3Auth0Response));
+            outputMessage->messageType = BleKeyV3OutputMessageTypeAuth0Response;
+            outputMessage->messageData.len = sizeof(BleKeyV3Auth0Response);
+            outputMessage->messageData.value = (uint8_t *)auth0Response;
+        }
+            break;
+            
+        default:
+            break;
+    }
+}
+
+void handleTlvLevel2Data(BLEKeyV3Conent *level2Data,BleKeyV3OutputMessage *outputMessage) {
+    __CHECK(outputMessage != NULL);
+    switch (outputMessage->messageType) {
+        case BleKeyV3OutputMessageTypeRkeResponse:
+            handleRkeResponseTlvData(level2Data->tag, level2Data->contentData, level2Data->contentDataLength, (BleKeyV3RkeResponse *)outputMessage->messageData.value);
+            break;
+        case BleKeyV3OutputMessageTypeAuth0Response:
+            handleAuth0ResponseTlvData(level2Data->tag, level2Data->contentData, level2Data->contentDataLength, (BleKeyV3Auth0Response *)outputMessage->messageData.value);
+            break;
+            
+        default:
+            break;
+    }
+}
+    
+
+void handleXPBleKeyV3Content(BLEKeyV3Conent *content,BleKeyV3OutputMessage *outputMessage) {
+    if (content->contentType == BLEKeyV3ContentTypeDualType) {
+        uint8_t *contentData = (uint8_t *)content->contentData;
+        handleDualTlvNormalData(content->tag, outputMessage);
+        while (contentData) {
+            BLEKeyV3Conent *level2Content = nextBleKeyV3Content(contentData, content->contentDataLength);
+            if (level2Content && isEffectiveBLEKeyV3ContentData(level2Content)) {
+                handleTlvLevel2Data(level2Content,outputMessage);
+                contentData = contentData + level2Content->contentSize;
+                free(level2Content->contentData);
+                level2Content->contentData = NULL;
+                safe_free(level2Content);
+            } else {
+                break;
+            }
+        }
+    } else {
+        uint8_t tag = (uint8_t)content->tag;
+        uint8_t vaildTag = tag & 0xF0;
+        if (vaildTag >= BLEKeyV3CarStateTypeCommon && vaildTag <= BLEKeyV3CarStateTypeParkingLimitControlState) {
+            handleSpecialLargeContentData(content->contentData,content->contentDataLength,tag,outputMessage);
+        } else {
+            handleSingleTlvNormalData(tag, content->contentData,content->contentDataLength, outputMessage);
+        }
+    }
+}
+
+void handleRtAuthResponseTlvData(uint8_t contentTag, uint8_t *contentData, uint8_t contentLength, BleKeyV3RtAuthResponse *rtAuthResponse) {
+    __CHECK(rtAuthResponse != NULL);
+    switch (contentTag) {
+        case BLEKeyV3RtAuthResponseTypeResult:
+            rtAuthResponse->authResult.len = contentLength;
+            memcpy(&rtAuthResponse->authResult.value, contentData, contentLength);
+            little_endian_to_host((uint8_t *)(&rtAuthResponse->authResult.value), sizeof(rtAuthResponse->authResult.value));
+            break;
+        case BLEKeyV3RtAuthResponseTypeErrorCode:
+            rtAuthResponse->errorCode.len = contentLength;
+            memcpy(&rtAuthResponse->errorCode.value, contentData, contentLength);
+            little_endian_to_host((uint8_t *)(&rtAuthResponse->errorCode.value), sizeof(rtAuthResponse->errorCode.value));
+            break;
+        default:
+            break;
+    }
+}
+
+void handleRtAuthContent(uint8_t *data, uint32_t dataSize, BleKeyV3OutputMessageParams *outputMessageParams) {
+    // 解析一级 TLV: tag=0x7F6F
+    BLEKeyV3Conent *content = nextBleKeyV3Content(data, dataSize);
+    if (!content || !isEffectiveBLEKeyV3ContentData(content)) {
+        return;
+    }
+    if (content->contentType == BLEKeyV3ContentTypeDualType && content->tag == BLEKeyV3RtAuthResponseTag2) {
+        if (outputMessageParams->outputSize == outputMessageParams->capacity) {
+            int newCapacity = outputMessageParams->capacity * 2;
+            BleKeyV3OutputMessage *newItems = (BleKeyV3OutputMessage *)realloc(outputMessageParams->outputMessages, newCapacity * sizeof(BleKeyV3OutputMessage));
+            outputMessageParams->outputMessages = newItems;
+            outputMessageParams->capacity = newCapacity;
+        }
+        BleKeyV3OutputMessage *outputMessage = &(outputMessageParams->outputMessages[outputMessageParams->outputSize]);
+        outputMessageParams->outputSize += 1;
+
+        BleKeyV3RtAuthResponse *rtAuthResponse = (BleKeyV3RtAuthResponse *)calloc(1, sizeof(BleKeyV3RtAuthResponse));
+        outputMessage->messageType = BleKeyV3OutputMessageTypeRtAuthResponse;
+        outputMessage->messageData.len = sizeof(BleKeyV3RtAuthResponse);
+        outputMessage->messageData.value = (uint8_t *)rtAuthResponse;
+
+        // 解析二级 TLV
+        uint8_t *contentData = (uint8_t *)content->contentData;
+        uint32_t remainSize = content->contentDataLength;
+        while (remainSize > 0) {
+            BLEKeyV3Conent *level2Content = nextBleKeyV3Content(contentData, remainSize);
+            if (level2Content && isEffectiveBLEKeyV3ContentData(level2Content)) {
+                handleRtAuthResponseTlvData(level2Content->tag, level2Content->contentData, level2Content->contentDataLength, rtAuthResponse);
+                contentData = contentData + level2Content->contentSize;
+                remainSize -= level2Content->contentSize;
+                free(level2Content->contentData);
+                level2Content->contentData = NULL;
+                safe_free(level2Content);
+            } else {
+                break;
+            }
+        }
+    }
+    free(content->contentData);
+    content->contentData = NULL;
+    safe_free(content);
+}
+
+void handleRtNotificationContent(uint8_t *data, uint32_t dataSize, BleKeyV3OutputMessageParams *outputMessageParams) {
+    // 解析 TLV: type=0xD0 → pollingResult
+    BLEKeyV3Conent *content = nextBleKeyV3Content(data, dataSize);
+    if (!content || !isEffectiveBLEKeyV3ContentData(content)) {
+        return;
+    }
+    uint8_t tag = (uint8_t)content->tag;
+    if (tag == BLEKeyV3RtNotificationTypePollingResult) {
+        if (outputMessageParams->outputSize == outputMessageParams->capacity) {
+            int newCapacity = outputMessageParams->capacity * 2;
+            BleKeyV3OutputMessage *newItems = (BleKeyV3OutputMessage *)realloc(outputMessageParams->outputMessages, newCapacity * sizeof(BleKeyV3OutputMessage));
+            outputMessageParams->outputMessages = newItems;
+            outputMessageParams->capacity = newCapacity;
+        }
+        BleKeyV3OutputMessage *outputMessage = &(outputMessageParams->outputMessages[outputMessageParams->outputSize]);
+        outputMessageParams->outputSize += 1;
+
+        BleKeyV3RtNotificationPolling *rtPolling = (BleKeyV3RtNotificationPolling *)calloc(1, sizeof(BleKeyV3RtNotificationPolling));
+        if (content->contentDataLength >= sizeof(uint8_t)) {
+            memcpy(&rtPolling->pollingResult, content->contentData, sizeof(uint8_t));
+        }
+        outputMessage->messageType = BleKeyV3OutputMessageTypeRtNotificationPolling;
+        outputMessage->messageData.len = sizeof(BleKeyV3RtNotificationPolling);
+        outputMessage->messageData.value = (uint8_t *)rtPolling;
+    }
+    free(content->contentData);
+    content->contentData = NULL;
+    safe_free(content);
+}
+
+void handleBleKeyV3Message(BleKeyV3CanMessageParams *v3CanMessageParams,BleKeyV3OutputMessageParams *outputMessageParams,BLEKeyV3Message *message,uint8_t messageSize) {
+    if (!message || !message->messageData || !messageSize) {
+        return;
+    }
+    uint8_t *decodeData = (uint8_t *)malloc(256);
+    uint32_t decodeDataSize =  message->msgLength;
+    if (!v3CanMessageParams->isEncrypted) {
+        memcpy(decodeData, message->messageData, decodeDataSize);
+    } else {
+        switch (message->msgId) {
+            case BLEKeyV3MessageTypeAuth0:
+            {
+                unsigned char iv_copy[16];
+                memcpy(iv_copy, bleKeyV3IvData, 16);
+                unsigned char *plainText = aes_256_cbc_decrypt((unsigned char *)message->messageData, message->msgLength, (unsigned char *)v3CanMessageParams->authKeyMessage.value, (unsigned char *)iv_copy);
+                memcpy(decodeData, plainText, decodeDataSize);
+                safe_free(plainText);
+            }
+                break;
+            case BLEKeyV3MessageTypeAuth1:
+            case BLEKeyV3MessageTypeRKE:
+            case BLEKeyV3MessageTypeNotification:
+            {
+                uint32_t resultSize = 0;
+                uint8_t *xorResult = getXorResult(&resultSize, message->messageData, message->msgLength, (uint8_t *)v3CanMessageParams->sessionKeyMessage.value, v3CanMessageParams->sessionKeyMessage.len);
+                memcpy(decodeData, xorResult, resultSize);
+                safe_free(xorResult);
+                decodeDataSize = resultSize;
+            }
+                break;
+            case BLEKeyV3MessageTypeRtAuth:
+            case BLEKeyV3MessageTypeRtNotification:
+            {
+                // 明文传输 — 不走加密路径
+                memcpy(decodeData, message->messageData, decodeDataSize);
+            }
+                break;
+
+            default:
+                break;
+        }
+    }
+    uint8_t *messaageData = decodeData;
+
+    // RtAuth/RtNotification 走独立解析路径，避免 tag/type 与现有消息冲突
+    if (message->msgId == BLEKeyV3MessageTypeRtAuth) {
+        handleRtAuthContent(messaageData, decodeDataSize, outputMessageParams);
+        safe_free(decodeData);
+        return;
+    }
+    if (message->msgId == BLEKeyV3MessageTypeRtNotification) {
+        handleRtNotificationContent(messaageData, decodeDataSize, outputMessageParams);
+        safe_free(decodeData);
+        return;
+    }
+
+    while (decodeDataSize > 0) {
+        BLEKeyV3Conent *content = nextBleKeyV3Content(messaageData,decodeDataSize);
+        if (content && isEffectiveBLEKeyV3ContentData(content)) {
+            if (outputMessageParams->outputSize == outputMessageParams->capacity) {
+                int newCapacity = outputMessageParams->capacity * 2;
+                BleKeyV3OutputMessage *newItems = (BleKeyV3OutputMessage *)realloc(outputMessageParams->outputMessages, newCapacity * sizeof(BleKeyV3OutputMessage));
+                outputMessageParams->outputMessages = newItems;
+                outputMessageParams->capacity = newCapacity;
+            }
+            BleKeyV3OutputMessage *outputMessage = &(outputMessageParams->outputMessages[outputMessageParams->outputSize]);
+            outputMessageParams->outputSize += 1;
+            handleXPBleKeyV3Content(content,outputMessage);
+            messaageData = messaageData + content->contentSize;
+            decodeDataSize = decodeDataSize - content->contentSize;
+            free(content->contentData);
+            content->contentData = NULL;
+            safe_free(content);
+        } else {
+            break;
+        }
+    }
+    safe_free(decodeData);
+}
+
+void decodeBleKeyV3CanMessage(BleKeyV3CanMessageParams *v3CanMessageParams,BleKeyV3OutputMessageParams *outputMessageParams) {
+    if (v3CanMessageParams == NULL) {
+        outputMessageParams->result = BleKeyV3DecodeV3CanMessageDataIsNull;
+        return ;
+    }
+    if (v3CanMessageParams->canMessage.value == NULL || v3CanMessageParams->canMessage.len == 0) {
+        outputMessageParams->result = BleKeyV3DecodeV3CanMessageDataIsNull;
+        return ;
+    }
+    int isEected = isEffectiveBLEKeyV3MessageData((BLEKeyV3Message *)v3CanMessageParams->canMessage.value,v3CanMessageParams->canMessage.len);
+    if (isEected) {
+        outputMessageParams->capacity = BleKeyV3CanMessageMaxCount;
+        outputMessageParams->outputMessages = (BleKeyV3OutputMessage *)calloc(BleKeyV3CanMessageMaxCount, sizeof(BleKeyV3OutputMessage));
+        size_t dataSize = v3CanMessageParams->canMessage.len;
+        uint8_t *messageData = v3CanMessageParams->canMessage.value;
+        while (dataSize > 0) {
+            BLEKeyV3Message *message = nextBleKeyV3Message(messageData, dataSize);
+            if (message) {
+                size_t msgSize = sizeOfBLEKeyV3Message(message);
+                handleBleKeyV3Message(v3CanMessageParams,outputMessageParams,message,msgSize);
+                messageData = messageData + msgSize;
+                dataSize -= msgSize;
+                free(message->messageData);
+                message->messageData = NULL;
+                safe_free(message);
+            } else {
+                break;
+            }
+        }
+        outputMessageParams->result = BleKeyV3DecodeV3CanMessageSuccess;
+    } else {
+        outputMessageParams->result = BleKeyV3DecodeV3CanMessageNotExpectedData;
+    }
+}
+
+
+void freeBleV3OutputMessages(BleKeyV3OutputMessageParams *outputMessageParams) {
+    for (int i = 0; i<outputMessageParams->outputSize; i++) {
+        BleKeyV3OutputMessage *outputMessage = &(outputMessageParams->outputMessages[i]);
+        if (outputMessage->messageData.len > 0 && outputMessage->messageData.value != NULL) {
+            free(outputMessage->messageData.value);
+            outputMessage->messageData.value = NULL;
+        }
+    }
+    free(outputMessageParams->outputMessages);
+    outputMessageParams->outputMessages = NULL;
+}

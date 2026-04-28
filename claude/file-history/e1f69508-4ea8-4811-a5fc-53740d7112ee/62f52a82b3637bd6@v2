@@ -1,0 +1,29 @@
+# Polling 9 级距离模型
+
+## 元信息
+- 触发关键词: ["PLBLEKeyDistanceLevel", "距离等级", "解锁圈", "闭锁圈", "缓冲圈", "迎宾圈", "Polling距离"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+Polling 系统定义了 9 级同心圆距离模型（`PLBLEKeyDistanceLevel`），从近到远：
+
+```
+车辆中心
+  ← InCar (车内)
+  ← 1m圈 (OneMetreCircle)
+  ← 解锁圈 (UnlockCircle)     ← 靠近到此距离触发解锁
+  ← 授权圈 (EnableCircle)
+  ← 缓冲圈 (BufferCircle)     ← 防止乒乓抖动的缓冲区
+  ← 闭锁圈 (LockCircle)       ← 远离到此距离触发闭锁
+  ← 迎宾圈 (WelcomeCircle)
+  ← 连接圈 (ConnectCircle)    ← 蓝牙可连接范围
+  ← 初始化圈 (InitCircle)
+```
+
+**核心机制**: 用户靠近穿过解锁圈 → 自动解锁；远离穿过闭锁圈 → 自动闭锁。缓冲圈防止在边界反复触发。
+
+**配置不当风险**: 解锁/闭锁距离过近会导致"乒乓问题"（反复解锁闭锁）。
+
+**代码位置**: `submodule/XPPollingSDK/XPPollingSDK/sourceFile/BLELocation/PLXPBleLocationDefined.h`

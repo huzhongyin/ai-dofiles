@@ -1,0 +1,95 @@
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "dummy",
+    "ANTHROPIC_BASE_URL": "http://localhost:4141",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4.6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4.6",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4.6",
+    "ANTHROPIC_MODEL": "claude-opus-4.6",
+    "API_TIMEOUT_MS": "30000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "MultiEdit",
+      "NotebookEdit",
+      "TodoWrite",
+      "WebFetch",
+      "WebSearch",
+      "mcp__*",
+      "Edit(/.claude/skills/code-review-ios/**)"
+    ],
+    "deny": [
+      "Bash(sudo *)",
+      "Bash(rm -rf /)",
+      "Bash(chmod -R 777 *)"
+    ],
+    "additionalDirectories": [
+      "/Users/xpeng/.claude/profile",
+      "/Users/xpeng/XPMotors_IOS/submodule/XPCarControlCore/.claude",
+      "/Users/xpeng/XPMotors_IOS/.claude/targets/XPWidget/.ai-knowledge/pitfalls"
+    ],
+    "defaultPermissionMode": "acceptEdits"
+  },
+  "model": "claude-opus-4.6",
+  "availableModels": [
+    "claude-sonnet-4.6",
+    "claude-haiku-4.6",
+    "claude-opus-4.6"
+  ],
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "feishu-mcp"
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/xpeng/.git-ai/bin/git-ai checkpoint claude --hook-input stdin"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/xpeng/.git-ai/bin/git-ai checkpoint claude --hook-input stdin"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "agent-sdk-dev@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "greptile@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "plugin-dev@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "language": "chinese",
+  "alwaysThinkingEnabled": true
+}

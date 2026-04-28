@@ -1,0 +1,55 @@
+---
+name: new-swift-module
+description: 创建符合项目共版模块化设计规范的新 Swift 功能模块
+---
+
+## 触发条件
+当任务涉及以下关键词时激活: "新建模块", "新模块", "创建模块", "新功能模块"
+
+## 输入
+- $ARGUMENTS: 模块名称和简要功能描述
+
+## 输出
+- 格式: Swift 源文件目录结构
+- 位置: `XiaoPengQiChe/Modules/<ModuleName>/` 或 `LocalPods/XPBusiness_<ModuleName>/`
+
+## 约束
+- IMPORTANT: 必须遵循共版模块化设计，通过配置区分国内/国际差异
+- 使用项目已有的 XPBase_Router 进行路由注册
+- 使用项目已有的 XPBase_UI 基础组件
+- 网络请求使用项目已有的网络层封装
+- 需要暴露给 OC 的接口添加 @objc 标注
+
+## 执行步骤
+
+1. 确认模块类型:
+   - 业务模块 → `XiaoPengQiChe/Modules/<ModuleName>/`
+   - 独立组件 → `LocalPods/XPBusiness_<ModuleName>/`
+
+2. 创建标准目录结构:
+```
+<ModuleName>/
+├── Models/              # 数据模型（Codable）
+├── ViewModels/          # ViewModel 层
+├── Views/               # 视图层
+├── Services/            # 模块内部服务
+├── Router/              # 路由注册
+└── Config/              # 配置（共版差异化）
+```
+
+3. 生成基础文件:
+   - `<ModuleName>Router.swift` — 路由注册
+   - `<ModuleName>ViewModel.swift` — 主 ViewModel
+   - `<ModuleName>ViewController.swift` — 主 VC
+   - `<ModuleName>Config.swift` — 共版配置
+
+4. 注册路由
+
+5. 生成该模块的 Context 文档到 `.ai-knowledge/modules/`
+
+6. 生成创建清单:
+   - [ ] 目录结构创建
+   - [ ] 基础文件生成
+   - [ ] 路由注册
+   - [ ] 编译验证
+   - [ ] Context 文档生成

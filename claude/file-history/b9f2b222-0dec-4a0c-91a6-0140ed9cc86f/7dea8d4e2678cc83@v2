@@ -1,0 +1,236 @@
+---
+name: xp-ai-coding
+description: 小鹏汽车iOS团队AI编码治理系统，提供基于团队规范的智能编码指导和权限控制
+---
+
+# 小鹏汽车AI编码治理系统
+
+为小鹏汽车iOS开发团队提供AI编码指导、权限控制和代码规范验证的综合解决方案。
+
+## 触发条件
+
+当用户：
+- 请求编码建议或AI辅助时（"给我编码建议"、"帮我写代码"、"AI辅助"）
+- 需要权限检查时（"检查权限"、"能否修改"、"访问控制"）
+- 要求代码标准验证时（"检查代码"、"验证规范"、"代码质量"）
+- 询问项目架构或模块依赖时（"项目结构"、"模块关系"、"依赖分析"）
+- 提到小鹏特定术语时（"XPVehicle"、"XPBusiness"、"LocalPods"、"车控模块"）
+
+## 核心功能
+
+### 1. 智能项目分析
+自动扫描iOS项目架构，识别：
+- LocalPods模块结构和依赖关系
+- 权限层级和所有者信息
+- 代码标准符合性状态
+- 项目健康度评估
+
+### 2. 基于角色的权限控制
+根据团队成员角色和模块类型，控制：
+- 代码读取权限
+- 代码修改权限
+- AI辅助使用权限
+- 安全敏感操作权限
+
+### 3. 智能编码建议
+提供针对性的编码指导：
+- **车控模块**：线程安全、错误处理、XP前缀命名
+- **业务模块**：MVVM架构、网络请求最佳实践
+- **基础模块**：通用性设计、接口设计原则
+- **通用建议**：小鹏编码规范、单元测试、可读性
+
+### 4. 代码标准验证
+自动检查8大类编码标准：
+- Swift/Objective-C命名规范
+- 文件头版权声明格式
+- Import语句组织
+- 硬编码字符串检查
+- 内存管理规范
+- 线程安全检查
+- API使用模式
+- 小鹏特定规范
+
+## 使用流程
+
+```markdown
+1. 初始化项目扫描
+   ↓
+2. 权限验证和用户上下文构建
+   ↓
+3. 基于模块类型提供特定建议
+   ↓
+4. 实时代码标准验证
+   ↓
+5. 生成项目健康状态报告
+```
+
+## 实现方式
+
+### 项目初始化
+```python
+# 初始化AI编码治理系统
+from scripts.claude_code_adapter import ClaudeCodeAdapter
+
+adapter = ClaudeCodeAdapter()
+result = adapter.initialize_project()
+```
+
+### 权限检查
+```python
+# 检查模块访问权限
+access = adapter.check_module_access(
+    user_id="developer_id",
+    module_name="XPVehicleSDK",
+    action="write",
+    user_context={"roles": ["vehicle_team_member"]}
+)
+```
+
+### 获取编码建议
+```python
+# 获取模块特定的编码建议
+suggestions = adapter.get_ai_coding_suggestions({
+    "module": "XPBusiness_AI",
+    "action": "ai_assist",
+    "user_id": "developer_id"
+})
+```
+
+### 代码验证
+```python
+# 验证代码标准符合性
+validation = adapter.validate_code_standards([
+    "LocalPods/XPVehicleSDK/Classes/XPVehicle.h"
+])
+```
+
+## 支持的模块类型
+
+- **XPVehicleSDK**：车控核心模块，高权限控制
+- **XPBusiness_AI**：AI业务模块，团队管理权限
+- **XPBusiness_Media**：媒体业务模块，团队管理权限
+- **XPBase_***：基础公共模块，开放权限
+- **第三方Pod**：只读权限
+
+## 编码标准
+
+### Swift命名规范
+- 类名、结构体、枚举、协议：UpperCamelCase
+- 方法、属性、变量：lowerCamelCase
+- 常量：UpperCamelCase或UPPER_CASE
+
+### Objective-C命名规范
+- 类名必须以"XP"前缀开头
+- 方法名使用描述性命名
+- 属性使用点语法访问
+
+### 文件组织
+- 每个文件必须包含版权声明
+- Import语句按系统框架、第三方库、项目内部的顺序组织
+- 避免硬编码字符串，使用本地化文件
+
+### 安全规范
+- 禁止手动内存管理，使用ARC
+- UI操作必须在主线程执行
+- 敏感API调用需要错误处理
+
+## 集成Claude Code工作流
+
+### Pre-tool使用钩子
+在文件编辑前检查权限：
+```python
+def pre_tool_use_hook(tool_name, parameters, context):
+    if tool_name in ["Edit", "Write"]:
+        file_path = parameters.get("file_path")
+        module = extract_module_from_path(file_path)
+        return check_module_access(user_id, module, "write")
+```
+
+### Post-tool使用钩子
+在文件编辑后验证标准：
+```python
+def post_tool_use_hook(tool_name, parameters, result, context):
+    if tool_name in ["Edit", "Write"] and is_source_file(parameters["file_path"]):
+        return validate_code_standards([parameters["file_path"]])
+```
+
+## 示例场景
+
+### 场景1：新功能开发
+```
+用户: "我要在XPVehicleSDK中添加新的车控功能"
+系统:
+1. 检查用户对XPVehicleSDK的写权限
+2. 提供车控模块编码建议（线程安全、错误处理等）
+3. 监控编辑过程，实时验证代码标准
+4. 生成符合小鹏规范的代码模板
+```
+
+### 场景2：代码审查
+```
+用户: "帮我检查这段代码的质量"
+系统:
+1. 扫描代码违反的编码标准
+2. 识别安全风险和性能问题
+3. 提供具体的修复建议
+4. 评估代码对项目健康度的影响
+```
+
+### 场景3：架构咨询
+```
+用户: "这个功能应该放在哪个模块？"
+系统:
+1. 分析项目模块结构和依赖关系
+2. 基于功能性质推荐合适的模块
+3. 评估对现有架构的影响
+4. 提供模块间接口设计建议
+```
+
+## 配置和扩展
+
+### 自定义规则
+支持添加团队特定的编码规则：
+```yaml
+custom_rules:
+  - id: xp_custom_naming
+    name: "小鹏自定义命名规范"
+    pattern: "^XP[A-Z][a-zA-Z0-9]*$"
+    severity: error
+    file_patterns: ["**/*.h"]
+```
+
+### 权限矩阵配置
+灵活配置不同角色的权限：
+```yaml
+roles:
+  senior_architect:
+    permissions:
+      - "vehicle_sdk:write"
+      - "ai_assist:all_modules"
+  vehicle_team_member:
+    permissions:
+      - "vehicle_sdk:read"
+      - "vehicle_sdk:write"
+  business_developer:
+    permissions:
+      - "business_modules:read"
+      - "business_modules:write"
+```
+
+## 质量指标
+
+- **权限控制覆盖率**：100%的文件操作都经过权限验证
+- **标准检查覆盖率**：支持8类共20+项编码标准检查
+- **响应时间**：权限检查<50ms，代码验证<200ms
+- **准确率**：编码建议相关性>90%，误报率<5%
+
+## 团队协作
+
+- **审计日志**：记录所有权限检查和代码修改操作
+- **健康度追踪**：持续监控项目代码质量趋势
+- **知识沉淀**：将常见问题和最佳实践固化为规则
+- **持续改进**：基于团队反馈优化建议算法
+
+---
+
+*该skill为小鹏汽车iOS团队量身定制，集成了团队多年的开发经验和最佳实践。*

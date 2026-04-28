@@ -1,0 +1,55 @@
+---
+name: spec-tasks
+description: 基于已审批的 design.md 生成可执行的任务清单（tasks.md），包含具体文件路径、代码约束和验证步骤
+---
+
+## 触发条件
+当任务涉及以下关键词时激活: "任务清单", "tasks", "开始实施", "执行清单", "spec-tasks"
+
+## 前置条件
+- design.md 已生成且技术方案已确认
+- 如果 design.md 不存在，提示用户先执行 spec-design
+
+## 输入
+- $ARGUMENTS: design.md 路径或需求名称
+
+## 执行步骤
+
+### Phase 1: 加载上下文
+1. 读取 `.ai-knowledge/specs/constitution.md`（宪法约束）
+2. 读取对应的 `design.md`（已审批的技术方案）
+3. 读取对应的 `proposal.md`（需求背景）
+
+### Phase 2: 任务拆解
+4. 将 design.md 的调用链路拆解为有序的实施步骤
+5. 每个步骤明确:
+   - 具体文件路径
+   - 变更类型（新增/修改/删除）
+   - 代码约束（从 constitution.md 和知识点中提取）
+   - 验证方式
+6. 按依赖关系排序，确定实施顺序
+
+### Phase 3: 约束注入
+7. 对每个涉及 submodule 的任务，标注"需在独立仓库提交"
+8. 对每个涉及 OC/Swift 互操作的任务，标注 @objc 和 Bridging-Header 要求
+9. 对每个涉及车型差异的任务，标注车型隔离约束
+10. 对每个涉及蓝牙协议的任务，标注 packed 结构体和协议版本约束
+
+### Phase 4: 生成 Tasks
+11. 读取模板 `.ai-knowledge/specs/template-tasks.md`
+12. 填充任务清单
+13. 生成提交计划（特别是 submodule 的提交顺序）
+
+### Phase 5: 输出
+14. 保存 tasks.md 到 `.ai-knowledge/specs/[需求名]/tasks.md`
+15. 使用 TodoWrite 工具创建对应的 todo 项，便于跟踪执行进度
+
+## 约束
+- 每个 Task 必须精确到文件路径级别
+- 每个 Task 必须有明确的验证方式
+- submodule 的提交顺序必须明确（先 submodule 后主仓库）
+- 知识沉淀步骤必须作为最后一个 Phase 出现
+
+## 输出
+- 文件: `.ai-knowledge/specs/[需求名]/tasks.md`
+- 工具: TodoWrite 创建跟踪项

@@ -1,0 +1,123 @@
+# 模块名: XPCarControlUtils
+
+## 模块职责
+车控 SDK 工具集，为 XPCarControlCore/XPCarBusiCH 等车控业务模块提供共用的资源加载、国际化、配置读取、App 设置等基础工具。核心功能包括：SDK 内部资源 Bundle 加载（图片/Lottie 动画/YYImage）、多语言国际化支持（`sdkString`/`xpString` 统一接口）、OTA 云端配置读取、本地 plist 配置读取、OCM 平台 ABTest/灰度配置、以及 App 启动工具和定时器代理。
+
+## 语言构成
+- OC 文件数: ~10（.h + .m）
+- Swift 文件数: 0
+- 混编说明: **纯 OC 模块**，通过 CocoaPods 远程引入
+
+## 核心 API
+
+### XPCarControlUtils.h（SDK 资源加载宏）
+| 宏/方法 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `XPCarResBundle` | OC | 获取车控资源 Bundle | `XPCarResBundle` → `XPCarControl.bundle` |
+| `imageNamed` → `sdk_imageNamed` | OC | 重定向 UIImage 加载到 SDK Bundle | `[UIImage imageNamed:@"icon"]` 自动走 SDK Bundle |
+| `xpString` → `sdkString` | OC | 重定向国际化到 SDK 方案 | `@"key".xpString` |
+| `XP_CAR_CONTROL_LOCALIZED_STRING` | OC | 车控本地化字符串（带 fallback） | `XP_CAR_CONTROL_LOCALIZED_STRING(@"key", @"")` |
+
+### UIImage+Bundle / YYImage+Bundle / CompatibleAnimationView+Bundle
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `+sdk_imageNamed:` | OC | 从 SDK Bundle 加载 UIImage | `[UIImage sdk_imageNamed:@"icon"]` |
+| `+sdk_imageNamed:inBundleName:` | OC | 从指定 Bundle 加载 UIImage | `[UIImage sdk_imageNamed:@"icon" inBundleName:@"XPCarControl"]` |
+| YYImage/Lottie 同理 | OC | 从 SDK Bundle 加载动画/WebP 图片 | 类似接口模式 |
+
+### XPLocalization（国际化工具）
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `.languageCode` | OC | 获取当前语言编码 | `XPLocalization.languageCode` |
+| `.regionCode` | OC | 获取当前区域编码 | `XPLocalization.regionCode` |
+| `+changeToLanguage:` | OC | 切换语言 | `[XPLocalization changeToLanguage:@"en"]` |
+| `+changeToRegion:language:` | OC | 切换区域和语言 | `[XPLocalization changeToRegion:@"NO" language:@"nb"]` |
+| `.sdkString` (NSString 分类) | OC | 获取 SDK 本地化字符串 | `@"lock_door".sdkString` |
+| `-xpNumberString` (NSNumber 分类) | OC | 本地化数字格式 | `@(123.45).xpOneFractionDigitNumberString` |
+
+### XPOTAConfig（OTA 云端配置）
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `+startup:` | OC | 初始化配置 | `[XPOTAConfig startup:param]` |
+| `+stringForKey:` | OC | 读取字符串配置 | `[XPOTAConfig stringForKey:@"feature_flag"]` |
+| `+boolForKey:` | OC | 读取布尔配置 | `[XPOTAConfig boolForKey:@"enable_xxx"]` |
+| `+dictionaryForKey:` | OC | 读取字典配置 | `[XPOTAConfig dictionaryForKey:@"config"]` |
+
+### XPCarLocalConfig（本地 plist 配置）
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `+startup:` | OC | 初始化（读取 XPCarControl.plist） | `[XPCarLocalConfig startup:param]` |
+| `+stringForKey:` | OC | 读取本地配置 | `[XPCarLocalConfig stringForKey:@"key"]` |
+
+### XPAppSettings（OCM 平台配置 — ABTest/灰度）
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `+enterAccount:` | OC | 登录后初始化 | `[XPAppSettings enterAccount:uid]` |
+| `+requestSettings:vehicleTypeCode:vehicleTypeName:callback:` | OC | 联网拉取配置（切车时调用） | 见下方用法 |
+| `+stringForKey:vin:` | OC | 按 VIN 读取配置 | `[XPAppSettings stringForKey:@"flag" vin:vin]` |
+| `+addDataChangedObserver:forKey:` | OC | 监听配置变更 | 见下方用法 |
+| `+deleteAllSettings` | OC | 退出登录时清除缓存 | `[XPAppSettings deleteAllSettings]` |
+
+### 工具类
+| 类 | 用途 |
+|----|------|
+| `XPAppStartTool` | App 启动辅助工具 |
+| `XPTimerProxy` | NSTimer 安全代理（防循环引用） |
+
+## 依赖关系
+- **上游依赖**: 无显式 Pod 依赖（轻量工具集）
+- **下游被依赖**:
+  - `XPCarControlCore` — 车控核心
+  - `XPCarBusiCH` — 国内版资源壳（通过 PCH 全局引入）
+  - `XPCarBusiIntl`（国际版，如有）
+
+## 架构层次
+```
+XPCarControlCore / XPCarBusiCH
+    ↓ 引用
+XPCarControlUtils
+    ├── 资源加载 (UIImage+Bundle / YYImage+Bundle / Lottie+Bundle)
+    ├── 国际化 (XPLocalization / sdkString)
+    ├── 配置读取 (XPOTAConfig / XPCarLocalConfig / XPAppSettings)
+    └── 工具 (XPAppStartTool / XPTimerProxy)
+    ↓ 读取
+XPCarControl.bundle (资源) + XPCarControl.plist (本地配置) + OCM 平台 (远程配置)
+```
+
+## 常见用法
+
+### 从 SDK Bundle 加载图片
+```objc
+// 自动重定向（通过宏替换）
+UIImage *img = [UIImage imageNamed:@"icon_lock"];
+// → 实际调用 [UIImage sdk_imageNamed:@"icon_lock"]
+// → 从 XPCarControl.bundle 加载
+
+// 显式调用
+UIImage *img = [UIImage sdk_imageNamed:@"icon_lock"];
+```
+
+### 国际化字符串
+```objc
+NSString *text = @"lock_door".xpString;
+// → 先查 SDK Bundle 的本地化字符串
+// → 未找到则 fallback 到 NSLocalizedStringFromTable
+```
+
+### 监听 OCM 配置变更
+```objc
+[XPAppSettings addDataChangedObserver:^(NSString *key, NSString *vin) {
+    // 配置项变更，更新 UI
+} forKey:@"feature_flag"];
+```
+
+## 关键机制
+- **宏重定向**: 通过 `#define imageNamed sdk_imageNamed` 和 `#define xpString sdkString`，在不修改业务代码的情况下将资源加载和国际化重定向到 SDK Bundle
+- **三层配置体系**: XPCarLocalConfig（本地 plist）→ XPOTAConfig（OTA 云端）→ XPAppSettings（OCM 平台 ABTest/灰度），优先级递增
+- **国内/国际版隔离**: 资源 Bundle 由 XPCarBusiCH（国内版）或 XPCarBusiIntl（国际版）提供，XPCarControlUtils 只负责加载
+
+## 已知限制/陷阱
+- `imageNamed` 宏会全局替换 `[UIImage imageNamed:]` 为 `sdk_imageNamed:`，**仅在车控 SDK 内部生效**（通过 PCH 引入），不会影响主 App
+- `XPAppSettings` 的数据监听在切车后需要重新建立（按 VIN 监听的方式），推荐使用不带 VIN 的 `addDataChangedObserver:forKey:` 方法
+- `XPOTAConfig` 注释标明"如果需要变化监听，可以直接使用 XPConfigCenter"——但 XPAppSettings 是其替代品
+- 远程 Pod，源码不在项目 submodule 中

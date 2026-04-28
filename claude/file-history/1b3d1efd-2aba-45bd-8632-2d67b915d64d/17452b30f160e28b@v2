@@ -1,0 +1,185 @@
+# 01 — 快速入门
+
+> 目标: 30 分钟内完成 Claude Code 首次任务
+> 前置条件: 已安装 Claude Code CLI
+
+---
+
+## 1. 项目初始化（3 分钟）
+
+### 启动 Claude Code
+
+```bash
+# 进入项目目录
+cd ~/XPMotors_IOS
+
+# 启动 Claude Code
+claude
+```
+
+Claude Code 启动后会自动加载：
+- `CLAUDE.md` — 项目级规则（架构分层、编码规范、语言策略）
+- `.claude/rules/*.md` — 3 个专项规则（架构/编码/车控 SDK）
+- `.claude/settings.json` — Hooks 配置
+
+> **你不需要手动配置任何东西** — 项目已配置好所有规则，Claude 会自动遵循。
+
+### 验证加载成功
+
+在 Claude Code 中输入：
+```
+我们项目使用什么语言策略？
+```
+
+如果 Claude 回答涉及"新功能 Swift + 存量 OC 保持 + 底层 C++"，说明 CLAUDE.md 已正确加载。
+
+---
+
+## 2. 理解 CLAUDE.md（5 分钟）
+
+### CLAUDE.md 是什么？
+
+CLAUDE.md 是给 AI 看的"项目说明书"，它告诉 Claude：
+- **架构约束** — 项目分层、模块边界、命名规范
+- **语言策略** — 什么时候用 Swift、什么时候用 OC
+- **安全红线** — 车控代码不能乱改、submodule 独立提交
+
+### 文件层级
+
+```
+~/.claude/CLAUDE.md              → 个人全局（你的私人偏好）
+项目根目录/CLAUDE.md              → 项目级（团队共享，提交 Git）
+项目根目录/CLAUDE.local.md        → 个人项目级（不提交 Git）
+```
+
+### 我们的 CLAUDE.md 做了什么？
+
+| 段落 | 效果 |
+|------|------|
+| 语言策略 | Claude 不会在存量 OC 代码中混入 Swift |
+| 架构分层 | Claude 知道 Modules/ 放业务、LocalPods/ 放组件 |
+| 编码规范 | Claude 生成的代码遵循命名规范（XP 前缀等） |
+| 重要约束 | Claude 修改车控代码时会检查调用链完整性 |
+
+---
+
+## 3. 五个最常用 Skill（10 分钟）
+
+Skills 是预定义的 AI 工作流。输入触发关键词即可自动激活。
+
+### 3.1 `knowledge-recall` — 知识自动召回
+
+**触发方式**: 自动触发（当你的任务涉及已知领域时）
+
+**效果**: Claude 在处理任务前，自动加载相关的知识点和踩坑记录
+
+**示例**:
+```
+帮我看一下蓝牙 V3 鉴权流程的代码
+```
+> Claude 会自动加载 `ble-auth-v3-flow.kp.md`、`ble-protocol-versions.kp.md` 等知识点
+
+### 3.2 `module-context` — 模块文档生成
+
+**触发方式**: 说 "模块文档" / "Context" / "文档生成"
+
+**效果**: 为指定模块生成结构化的 Context 文档（职责/API/依赖/限制）
+
+**示例**:
+```
+帮我生成 XPChargeStationManager 的模块文档
+```
+
+### 3.3 `bug-analysis` — Bug 分析定位
+
+**触发方式**: 说 "Bug 分析" / "定位" / "崩溃分析"
+
+**效果**: 系统化分析 Bug，追踪调用链，定位根因
+
+**示例**:
+```
+分析一下这个崩溃: Thread 1: Fatal error: unexpectedly found nil while unwrapping an Optional value
+堆栈: VehicleManager.swift:line 142
+```
+
+### 3.4 `code-review-ios` — 代码审查
+
+**触发方式**: 说 "审查" / "Review" / "检查"
+
+**效果**: 按 iOS 最佳实践审查代码（内存泄漏、线程安全、命名规范等）
+
+**示例**:
+```
+帮我审查一下 XPChargeStationViewController.swift 的代码
+```
+
+### 3.5 `spec-proposal` — 变更提案
+
+**触发方式**: 说 "提案" / "proposal" / "需求分析"
+
+**效果**: 为新需求生成结构化的变更提案（影响范围、疑问点、风险评估）
+
+**示例**:
+```
+新需求：在车辆列表页增加远程诊断入口，需要对接新的 HTTP 接口
+帮我生成提案
+```
+
+---
+
+## 4. 第一个任务实操（10 分钟）
+
+### 任务 A：用 bug-analysis 定位问题
+
+```
+请分析一下最近切车后蓝牙连接断开的问题：
+- 症状：切车完成后，BLE 连接状态一直显示"未连接"
+- 复现频率：约 30%
+请帮我分析可能的原因
+```
+
+观察 Claude 的行为：
+- ✅ 它会自动加载切车相关的知识点（`vehicle-switch-flow.kp.md`）
+- ✅ 它会搜索 VehicleManager 和 BLEConnection 的调用链
+- ✅ 它会参考踩坑记录（`vehicle-lifecycle.md`）
+
+### 任务 B：用 module-context 生成文档
+
+```
+帮我生成 XPVehicleSDK 中 VehicleManager 的模块文档
+```
+
+观察 Claude 的行为：
+- ✅ 它会读取源代码，提取核心 API
+- ✅ 它会分析依赖关系
+- ✅ 它会标注 OC/Swift 互操作注意事项
+
+---
+
+## 5. 上下文管理要点（2 分钟）
+
+### 黄金法则
+
+| 规则 | 说明 |
+|------|------|
+| **任务切换时用 `/clear`** | 不相关的任务不要在同一个会话里混合 |
+| **长对话注意截断** | 上下文满了 Claude 会变笨，及时开新会话 |
+| **复杂探索用 Plan Mode** | 先探索再实施：Explore → Plan → Implement |
+| **一次做一件事** | 不要在同一轮对话里又改 Bug 又加新功能 |
+
+### 常用命令
+
+| 命令 | 用途 |
+|------|------|
+| `/clear` | 清空当前上下文 |
+| `/help` | 查看帮助 |
+
+---
+
+## 下一步
+
+恭喜！你现在已经可以开始用 Claude Code 工作了。
+
+- 想了解更多日常操作 → [03-日常使用指南](03-daily-usage-guide.md)
+- 想了解 Spec 驱动开发 → [04-Spec 实战教程](04-spec-driven-development.md)
+- 遇到问题 → [06-FAQ](06-faq.md)

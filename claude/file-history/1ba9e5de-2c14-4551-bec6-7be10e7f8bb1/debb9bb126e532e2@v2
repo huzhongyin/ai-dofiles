@@ -1,0 +1,39 @@
+# XPBase_Theme — LocalPod 规范
+
+## 模块定位
+
+新版 Swift 主题/换肤基础库，提供统一颜色定义（XPThemeColor）、Hex 转 UIColor 扩展（UIColor.xp.hex）、明暗主题色切换（UIColor.xp.color(default:dark:)）、字体扩展（UIFont.xp.font）及颜色缓存（XPThemeColorCache）。替代 XPBase_UI/Theme 的 OC 层 XPTheme。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPBase_Theme/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+纯 Swift 模块，无 OC 代码。通过 `XPNamespaceCompatible` 协议扩展 UIKit 类型（UIColor/UIFont）。暴露给 OC 需在调用侧桥接，本模块不添加 `@objc`。
+
+## Podspec 依赖约束
+
+依赖 QMUIKit（主题协议 XPThemeProtocol）。无其他 Pod 依赖。私有源 `gitlab.x-peng.com`，语义化版本。单一职责，无 subspec 划分。
+
+## 命名前缀与 API 稳定性
+
+Swift 类无前缀，通过命名空间扩展（`.xp.`）访问。公开 API（XPThemeColor 枚举值、UIColor.xp/UIFont.xp 扩展）需保持稳定。新增色值在 XPThemeColor 枚举中追加。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止在本模块中引入业务逻辑或 UI 组件
+- 禁止直接使用 UIColor 字面量，必须通过 XPThemeColor 枚举
+- 禁止绕过 XPThemeColorCache 手动解析 Hex 颜色
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

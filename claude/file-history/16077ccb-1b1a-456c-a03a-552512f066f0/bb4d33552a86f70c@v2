@@ -1,0 +1,155 @@
+---
+name: knowledge-recall
+description: 按「路径 + 关键词 + 依赖图」三路触发，从五层规范体系中按需加载与当前任务最相关的规范与知识，输出分层加载清单，在开始任何代码修改 / 方案设计 / 问题排查任务前自动激活。
+---
+
+## Phase 1: 输入收集
+
+收集两类输入：
+
+1. **任务描述**：用户提供的自然语言需求（必填）
+2. **预期涉及的文件路径列表**：
+   - 若用户已显式给出 → 直接使用
+   - 若未给出 → 从任务描述关键词推断（仅用于路径命中，推断结果仅作参考）
+
+## Phase 2: 常驻加载 (L1)
+
+**始终**加载以下 project 根层文件（不受命中影响）：
+
+- `CLAUDE.md`（L1 瘦身版根）
+- `.claude/rules/project-common.md`
+- `.ai-knowledge/specs/constitution.md`（若存在，不存在则跳过并登记为 `missing`）
+
+## Phase 3: 模块命中 (Path + Keyword)
+
+1. 读取 `.ai-knowledge/module-registry.md`，解析所有 ```yaml module 块
+2. **路径命中**：对 Phase 1 得到的每一条任务路径 `p`，遍历 registry 中每个 module，若 `p` 以该 module 的 `path` 为前缀 → 命中该 module
+3. **关键词命中**：对 registry 中每个 module 的 `keywords` 列表做包含匹配（不区分大小写，中文按字符匹配），任一关键词出现在任务描述中 → 命中该 module
+4. 合并：路径命中 ∪ 关键词命中 = 候选命中集合 `C`（去重）
+
+## Phase 4: 核心模块选择（单主模块模型）
+
+从候选集合 `C` 中选择 **1 个核心功能模块**，作为本次任务的知识加载驱动源：
+
+**选择优先级**：
+1. **路径命中优先**：若有路径命中的模块，取路径最具体（最长前缀匹配）的模块
+2. **路径命中多个同级**：取与任务描述关键词匹配度最高的（命中 keywords 数量最多）
+3. **仅关键词命中**：取命中 keywords 数量最多的模块
+4. **仍有歧义**：用 AskUserQuestion 让用户确认核心模块
+
+选出的核心模块记为 `P`（Primary）。
+
+## Phase 5: 核心模块知识加载
+
+对核心模块 `P` 执行完整知识加载：
+
+1. 加载 `P` 的 CLAUDE.md + rules + constitution
+2. 加载 `P` 的 module-context（`modules/<Module>.md`）
+3. **Feature-spec 匹配**：扫描 `P` 的 `features/*.feature.md`，用任务描述关键词匹配 `trigger_keywords`
+   - 命中的 feature-spec → 加载完整内容
+   - 未命中任何 feature-spec → 仅加载 module-context
+4. **@ref 级联加载**：解析已加载 feature-spec 中的所有 `@ref()` 引用
+   - `@ref(<node-id>)` → 加载同模块 shared-node
+   - `@ref(module:<id>, node:<node-id>)` → 加载跨模块 shared-node（仅该 node，不加载目标模块的完整知识）
+   - `[待创建]` 的 @ref → 登记为 `[ref-pending]`，不报错
+
+## Phase 6: 非核心模块降级加载
+
+候选集合 `C` 中的非核心模块（`C - {P}`），按以下规则降级加载：
+
+- **被 feature-spec @ref 引用的模块**：仅加载被引用的 shared-node（已在 Phase 5 完成）
+- **未被引用的关键词命中模块**：仅在清单中登记 id 和命中来源，标记为 `[secondary]`，不加载知识内容
+- 若后续分析过程中发现需要非核心模块的详细知识，可手动触发加载
+
+## Phase 7: 依赖扩展 (Deps)
+
+对核心模块 `P`，按以下步骤扩展依赖：
+
+1. 读取 `<P.knowledge>/deps.yml`（不存在则跳过）
+2. 解析 `depends_on[]`：每一项形如 `{ id, trigger_keywords?: [...], critical_constraints?: [path#anchor, ...] }`
+3. **trigger_keywords 精细化过滤**：
+   - 若该依赖项声明了 `trigger_keywords` 且非空：遍历其中每个关键词，只要任一关键词出现在任务描述或涉及路径中 → 命中，继续步骤 4；否则跳过（标记为 `[dep-skipped]`）
+   - 若 `trigger_keywords` 缺省或为空数组 → 始终进入步骤 4
+4. **依赖加载粒度**：
+   - 命中的依赖模块：仅加载 `critical_constraints` 指定的锚点（不加载完整知识）
+   - 使用 visited set 防环，depth 上限 = 5
+
+**锚点解析**：`path/to/file.md#heading` 以 markdown 二级标题（`##`）为准匹配 heading slug；未找到则登记为 `anchor missing` 警告并跳过。
+
+## Phase 8: 加载清单输出
+
+按层级分组打印，示例格式：
+
+```
+加载规范层级：
+  [L1 project] CLAUDE.md + project-common.md + constitution.md
+  [L4 primary] XPPollingSDK [hit:path] ← 核心模块
+               → CLAUDE.md + rules
+               → modules/XPPollingSDK.md
+               → features/auto-lock.feature.md [hit:keyword:感应闭锁]
+               → shared-nodes/gear-state-update.node.md [@ref from auto-lock]
+  [L4 ref]     XPVehicleSDK [@ref:polling-command-dispatch, pending]
+  [L4 ref]     XPBLEDataProcessor [@ref:dataparser-drive-output, pending]
+  [L4 secondary] XPVehicleSDK [hit:keyword:车控] — 仅登记，未加载完整知识
+```
+
+标记说明：
+- `[primary]` — 核心功能模块，完整加载
+- `[ref]` — 被 feature-spec @ref 引用，仅加载 shared-node
+- `[secondary]` — 关键词命中但非核心，仅登记
+- `[dep-skipped]` — 依赖项被 trigger_keywords 过滤
+- `[ref-pending]` — @ref 目标 shared-node 尚未创建
+
+## Phase 9: 覆盖度声明
+
+输出结构化统计：
+
+- **registry 总模块数**：N
+- **核心模块**：`P`（来源：path/keyword）
+- **feature-spec 命中**：X 个（列出 feature_id）
+- **@ref 级联加载**：同模块 A 个 / 跨模块 B 个 / pending C 个
+- **非核心模块**：secondary D 个 / dep-skipped E 个
+- **未解析项**：`anchor missing` / `deps.yml missing` / `subrepo inaccessible` / `ref-pending` 清单
+- **未命中时提示**：仅保留 L1 常驻，并提示「建议通过 post-task-review 沉淀该场景的 module 或 keywords」
+
+## 约束
+
+- **单主模块原则**：每次任务只选 1 个核心模块完整加载，其余降级
+- **feature-spec 驱动**：依赖模块的加载由核心模块 feature-spec 的 @ref 引用驱动，而非关键词广撒网
+- **每层**最多加载 1 个 `constitution.md` + 2 条具体 anchor（来自 `critical_constraints`）
+- **安全深度上限 = 5**（防异常环路）
+- **锚点格式**：`path/to/file.md#heading`，heading 以 markdown 二级标题为准
+- **subrepo 降级**：若某 module `owner_repo: subrepo` 且其 `knowledge` 路径不可访问，降级为仅在清单中打印 registry 条目 + 警告 `subrepo inaccessible`
+- **pending 模块**：若某 module 含 `status: pending`，仅在关键词命中时返回 registry 条目信息
+- **未命中时**：仅保留 L1 常驻，输出空命中声明 + 沉淀建议
+- **不得全量**加载所有模块知识库（避免上下文膨胀）
+- **必须声明覆盖度**（见 Phase 9）
+
+## 示例输出
+
+任务描述：「排查 D55/P5 感应闭锁失败」
+涉及路径：`submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/PLXPPollingManager.mm`
+
+```
+核心模块选择：XPPollingSDK（路径命中，最具体前缀）
+
+加载规范层级：
+  [L1 project] CLAUDE.md + .claude/rules/project-common.md + .ai-knowledge/specs/constitution.md
+  [L4 primary] XPPollingSDK [hit:path]
+               → submodule/XPPollingSDK/.claude/CLAUDE.md
+               → modules/XPPollingSDK.md
+               → features/auto-lock.feature.md [hit:keyword:感应闭锁]
+               → @ref(gear-state-update) → shared-nodes/gear-state-update.node.md
+  [L4 ref]     XPVehicleSDK [@ref:polling-command-dispatch] [ref-pending]
+  [L4 ref]     XPBLEDataProcessor [@ref:dataparser-drive-output] [ref-pending]
+  [L4 secondary] XPVehicleSDK [hit:keyword:车控] — 仅登记
+  [L4 secondary] XPBLEDataProcessor [hit:keyword:蓝牙解析] — 仅登记
+
+覆盖度：
+  registry 模块数 = 8
+  核心模块 = XPPollingSDK（来源：path）
+  feature-spec 命中 = 1（auto-lock）
+  @ref 级联 = 同模块 1 / 跨模块 2 / pending 2
+  非核心模块 = secondary 2
+  未解析 = ref-pending: polling-command-dispatch, dataparser-drive-output
+```

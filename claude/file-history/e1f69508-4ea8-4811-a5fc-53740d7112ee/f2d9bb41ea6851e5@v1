@@ -1,0 +1,714 @@
+//
+//  XPKeyManageBleHeaderCell.m
+//  XiaoPengQiChe
+//
+//  Created by Xpeng on 2024/9/18.
+//  Copyright © 2024 xiaopeng.com. All rights reserved.
+//
+
+#import "XPKeyManageBleHeaderCell.h"
+#import "XPThemeButton.h"
+#import "QMUIButton.h"
+#import "XPTheme.h"
+#import "UIColor+YCF.h"
+#import <Masonry/Masonry.h>
+#import "UIView+BlocksKit.h"
+#import "XPBLEHandlerManager.h"
+#import "XPBleGuideViewController.h"
+#import "UIViewController+Display.h"
+#import "PollingEffectDataManager.h"
+
+#import "NetworkMonitorManager.h"
+#import "XPCreateSelfKeyViewController.h"
+#import "XPSelfConfigPollingViewController.h"
+#import "CTMediator+BLEKey.h"
+
+#import "XPKeyManageHelp.h"
+#import "XPStatisticsKit.h"
+#import "XPThemeManager.h"
+#import "XPEvent.h"
+#import "XWCentralManager.h"
+#import "XPCarStateViewModel.h"
+#import "XPAlertViewControllerCommonly.h"
+#import "XPKeyThreeUpgradeViewController.h"
+#import "XPKeyOtherDeviceViewController.h"
+#import "XPKeyThreeBindingViewController.h"
+#import "XPKeyThreeCarKeyAuthDoneViewController.h"
+#import "XPKeyThreePollingMoreSettingViewController.h"
+#import "JRPermissionViewController.h"
+#import "UIViewController+Display.h"
+#import <YYText/YYText.h>
+#import "XPRouterUtil.h"
+#import "XPCarKeyCellTipView.h"
+#import "PrivacyPermission.h"
+
+@import XPVehicleSDK;
+@import XPVehicleExt;
+
+typedef NS_ENUM(NSInteger, XPKeyManageSetUpType) {
+    XPKeyManageSetUpTypeDefault = 0,
+    XPKeyManageSetUpTypeNotAlways, //没始终允许
+    XPKeyManageSetUpTypeOthers, //其他
+};
+
+#define kDidCloseDriverModeGuide @"com.xiaopeng.didCloseDriverModeGuide"
+
+@interface XPKeyManageBleHeaderCell ()<CBCentralManagerDelegate>
+
+@property (nonatomic, strong) UIImageView              *bleIcon;
+@property (nonatomic, strong) UILabel                  *bleDes;
+@property (nonatomic, strong) UIButton                 *turnOnButton;
+@property (nonatomic, strong) QMUIButton               *checkButton;
+
+@property (nonatomic, strong) UIView                   *noteBgView;
+@property (nonatomic, strong) YYLabel                  *noteLable;
+@property (nonatomic, strong) UIButton                 *noteHitBtn;
+@property (nonatomic, strong) UIButton                 *closeNoteBtn;
+@property (nonatomic, strong) UIImageView              *closeNoteIco;
+
+@property (nonatomic, assign) XPKeyManageSetUpType     setUpType; //点击立即设置会有不同情况
+
+@property (nonatomic, strong) RACDisposable            *carKeyPairDispose;
+
+@property (nonatomic, assign) CBManagerState           state;
+@property (nonatomic, strong) XPCarKeyCellTipView      *tipView;
+
+//蓝牙开关监控
+@property(nonatomic) CBCentralManager *centralManager;
+
+@end
+
+@implementation XPKeyManageBleHeaderCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+        [self addViews];
+        [self configStatus];
+        [self addObservers];
+    }
+    return self;
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    [super traitCollectionDidChange: previousTraitCollection];
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        self.noteBgView.backgroundColor = [XPThemeManager isDarkTheme] ? [UIColor colorWithHex:@"#1A1B1F"] : [UIColor colorWithHex:@"#E5E5E5"];
+    }
+    
+}
+
+//懒加载tipview
+- (XPCarKeyCellTipView *)tipView {
+    if (!_tipView) {
+        _tipView = [[XPCarKeyCellTipView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, 40)];
+        _tipView.hidden = YES;
+        [_tipView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tipViewClickTurnOn)]];
+    }
+    return _tipView;
+}
+
+#pragma mark - UI
+
+- (void)addViews{
+    self.bleIcon = [UIImageView new];
+    self.bleIcon.image = [UIImage imageNamed:@"dk_ble_status_offline"];
+    [self.contentView addSubview:self.bleIcon];
+    [self.bleIcon mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo((kScreenWidth-106)/2);
+        make.top.mas_equalTo(20);
+        make.size.mas_equalTo(CGSizeMake(106, 130));
+    }];
+    
+    self.noteBgView = [UIView new];
+    self.noteBgView.backgroundColor = [XPThemeManager isDarkTheme] ? [UIColor colorWithHex:@"#1A1B1F"] : [UIColor colorWithHex:@"#E5E5E5"];
+    [self.contentView addSubview:self.noteBgView];
+    [self.noteBgView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.top.mas_equalTo(0);
+        make.size.mas_equalTo(CGSizeMake(kScreenWidth, 32));
+    }];
+    
+    self.noteLable = [YYLabel new];
+    self.noteLable.font = [XPTheme semiboldPingFangSCFontWithSize:12];
+    self.noteLable.textColor = UIColor.xp_primaryTextColor;
+    self.noteLable.textAlignment = NSTextAlignmentLeft;
+    [self.noteBgView addSubview:self.noteLable];
+    [self.noteLable mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(24);
+        make.right.mas_equalTo(-56);
+        make.centerY.mas_equalTo(0);
+        make.height.mas_equalTo(20);
+    }];
+    [self noteForDriverModeConfig];
+    
+    self.closeNoteIco = [UIImageView new];
+    [self.closeNoteIco setImage:[UIImage imageNamed:@"navigation_close"]];
+    [self.noteBgView addSubview:self.closeNoteIco];
+
+    self.closeNoteBtn = [UIButton new];
+    [self.noteBgView addSubview:self.closeNoteBtn];
+    [self.closeNoteBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.top.mas_equalTo(0);
+        make.size.mas_equalTo(CGSizeMake(56, 32));
+    }];
+    
+    [self.closeNoteIco mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.center.mas_equalTo(self.closeNoteBtn);
+        make.size.mas_equalTo(CGSizeMake(13, 13));
+    }];
+    
+    self.noteHitBtn = [UIButton new];
+    [self.noteBgView addSubview:self.noteHitBtn];
+    [self.noteHitBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.mas_equalTo(0);
+        make.right.equalTo(self.noteLable.mas_right);
+        make.height.mas_equalTo(32);
+    }];
+    
+    self.bleDes = [UILabel new];
+    self.bleDes.font = [XPTheme regularPingFangSCFontWithSize:16];
+    self.bleDes.textColor = UIColor.xp_secondaryTextColor;
+    self.bleDes.textAlignment = NSTextAlignmentCenter;
+    [self.contentView addSubview:self.bleDes];
+    [self.bleDes mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.mas_equalTo(0);
+        make.top.mas_equalTo(self.bleIcon.mas_bottom);
+        make.height.mas_equalTo(24);
+    }];
+    
+    self.turnOnButton = [UIButton new];
+    [self.turnOnButton setBackgroundColor:UIColor.xp_buttonColor];
+    self.turnOnButton.layer.cornerRadius = 4.0;
+    [self.turnOnButton setTitleColor:UIColor.xp_buttonTextColor forState:UIControlStateNormal];
+    [self.turnOnButton setTitle:@"" forState:UIControlStateNormal];
+    self.turnOnButton.titleLabel.font = [XPTheme regularPingFangSCFontWithSize:15];
+    [self addSubview:self.turnOnButton];
+    [self.turnOnButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo((kScreenWidth-109)/2);
+        make.top.mas_equalTo(self.bleDes.mas_bottom).offset(12);
+        make.size.mas_equalTo(CGSizeMake(109, 40));
+    }];
+    self.turnOnButton.hidden = YES;
+    @weakify(self);
+    [self.turnOnButton bk_whenTapped:^{
+        @strongify(self);
+        [self clickTurnOn];
+    }];
+    
+    self.checkButton = [QMUIButton new];
+    [self.checkButton setTitle:@"如在附近，请避免其他手机钥匙连接" forState:UIControlStateNormal];
+    [self.checkButton setTitleColor:UIColor.xp_secondaryTextColor forState:UIControlStateNormal];
+    self.checkButton.titleLabel.font = [XPTheme regularPingFangSCFontWithSize:14];
+    [self.checkButton setImage:[UIImage imageNamed:@"coh_ic_arrow"] forState:UIControlStateNormal];
+    [self.contentView addSubview:self.checkButton];
+    self.checkButton.imagePosition = QMUIButtonImagePositionRight;
+    [self.checkButton bk_whenTapped:^{
+        @strongify(self);
+        //[self clickCheckButton];
+    }];
+    [self.checkButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_equalTo(self.bleDes.mas_bottom).offset(11);
+        make.height.mas_equalTo(20);
+        make.centerX.mas_equalTo(self);
+    }];
+    self.checkButton.hidden = YES;
+    
+    [self addSubview:self.tipView];
+    [self.tipView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.top.mas_equalTo(0);
+        make.size.mas_equalTo(CGSizeMake(kScreenWidth, 40));
+    }];
+}
+
+- (void)noteForDriverModeConfig {
+    NSString *tipStr = @"新增「多人用车模式」，点击了解详情";
+    NSString *highlighText = @"点击了解详情";
+    NSDictionary *attributes = @{
+                                 NSFontAttributeName               :    [XPTheme semiboldPingFangSCFontWithSize:12],
+                                 NSForegroundColorAttributeName    :    UIColor.xp_primaryTextColor
+                                 };
+    NSMutableAttributedString *attriStr = [[NSMutableAttributedString alloc] initWithString:tipStr attributes:attributes];
+    NSRange serviceRange = [tipStr rangeOfString:highlighText];
+    [attriStr yy_setColor:UIColor.xp_successColor range:serviceRange];
+    _noteLable.numberOfLines = 1;
+    _noteLable.attributedText = attriStr;
+//    if ([self showDriverModelNewFeatureNoteView]) {
+//        self.noteBgView.hidden = NO;
+//    } else {
+//        self.noteBgView.hidden = YES;
+//    }
+    self.noteBgView.hidden = YES;
+}
+
+
+- (BOOL)showDriverModelNewFeatureNoteView {
+    NSString *keyWithVin = [NSString stringWithFormat:@"%@.%@.%lld", kDidCloseDriverModeGuide, [CTMediator defaultCarVin], [CTMediator uid]];
+    return
+    XPVehicleSDK.currentAbilityConfig.bleKeyVersion != BleKeyProtocolVesionV3 &&
+    [[XPMultiBleManager sharedManager] supportPassengerMode] &&
+    ![CTMediator isE28] &&
+    ![CTMediator isMona] &&
+    [self bleKeyExist] && // 钥匙已激活
+    ![MMKV.defaultMMKV getBoolForKey:keyWithVin] && // 未关闭引导
+    (([CTMediator defaultCarInfo].releationType == ReleationType_Owner && !self.isPendingAuthList && self.authListCount > 0) || [CTMediator defaultCarInfo].releationType != ReleationType_Owner); // 当前车的授权人数量大于0
+}
+
+- (void)setBleStatus:(XPKeyManageBleStatus)bleStatus{
+    _bleStatus = bleStatus;
+    [self refreshUI];
+}
+
+- (void)refreshUI{
+    
+}
+
+#pragma mark - 逻辑
+
+- (void)configStatus{
+    self.tipView.hidden = YES;
+    if(XPCarStateViewModel.sharedInstance.bleConnectState == XPCarConnectStateConnected){
+       DLogTagInfo(kBLEKeyTag, @"蓝牙连接上");
+        self.bleIcon.image = [UIImage imageNamed:@"dk_ble_status_online"];
+       [self refreshConnectStatus];
+   }else if(self.state != CBManagerStatePoweredOn){
+        DLogTagInfo(kBLEKeyTag, @"没打开蓝牙开关");
+       self.bleIcon.image = [UIImage imageNamed:@"dk_ble_status_offline"];
+        [self refreshNotOpenBleStatus];
+    }else{
+        DLogTagInfo(kBLEKeyTag, @"蓝牙开关已经打开但是没连上");
+        self.bleIcon.image = [UIImage imageNamed:@"dk_ble_status_offline"];
+        [self refreshBleDisConnectStatus];
+    }
+//    if ([self showDriverModelNewFeatureNoteView]) {
+//        self.noteBgView.hidden = NO;
+//    } else {
+//        self.noteBgView.hidden = YES;
+//    }
+    self.noteBgView.hidden = YES;
+}
+
+- (void)addObservers{
+    @weakify(self);
+    [self.rac_deallocDisposable addDisposable:[[NSNotificationCenter.defaultCenter rac_addObserverForName:XPVehicleNotification.DigitalKeyStateChanged object:nil].deliverOnMainThread subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self)
+        [self configStatus];
+    }]];
+    
+    [self.noteHitBtn bk_whenTapped:^{
+//        @strongify(self);
+//        [XPToast showMessage:@"点击了解详情"];
+        [XPRouterUtil openURL:@"xiaopeng://bbs/article?tid=3313223"];
+    }];
+    
+    [self.closeNoteBtn bk_whenTapped:^{
+        @strongify(self);
+        [UIView animateWithDuration:0.3 animations:^{
+            self.noteBgView.alpha = 0;
+        } completion:^(BOOL finished) {
+            self.noteBgView.hidden = YES;
+            self.noteBgView.alpha = 1;
+            NSString *keyWithVin = [NSString stringWithFormat:@"%@.%@.%lld", kDidCloseDriverModeGuide, [CTMediator defaultCarVin], [CTMediator uid]];
+            [MMKV.defaultMMKV setBool:YES forKey:keyWithVin];
+        }];
+    }];
+    
+    [self.rac_deallocDisposable addDisposable:[XWCentralManager.shared.stateSignal subscribeNext:^(NSNumber * _Nullable x) {
+        //DLogTagError(kBluetoothPileTag, @"XWCentralManager state %ld", [x integerValue]);
+        @strongify(self);
+        self.state = [x integerValue];
+        [self configStatus];
+    }]];
+    self.centralManager = [[CBCentralManager alloc] initWithDelegate:self
+                                                               queue:dispatch_get_main_queue()
+                                                             options:@{CBCentralManagerOptionShowPowerAlertKey:@NO}];
+}
+
+#pragma mark CBCentralManagerDelegate
+- (void)centralManagerDidUpdateState:(CBCentralManager *)central{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self configStatus];
+    });
+    
+}
+
+#pragma mark - 复杂逻辑-https://xiaopeng.feishu.cn/docx/FVtddRIacoSP3PxvHupclVG3nmF
+- (void)refreshConnectStatus{
+    self.checkButton.hidden = YES;
+    self.turnOnButton.hidden = YES;
+    //条件1 polling开关
+    PollingRunMode pollingModel = [self getPollingStatus];
+    if ([XPKeyManageHelp notSupportPolling]) {
+        DLogTagInfo(kBLEKeyTag, @"P7&数字钥匙1.0不支持Polling");
+        self.bleDes.text = @"蓝牙钥匙已连接";
+    }else if ([XPKeyManageHelp supportPolling] || [CTMediator isMona]) {
+        DLogTagInfo(kBLEKeyTag, @"数字钥匙1.0支持Polling 或 数字钥匙2.0 或 mona mode:%lu", (unsigned long)pollingModel);
+        if (pollingModel == PollingRunModeLockAndUnlock) {
+            self.bleDes.text = @"靠近自动解锁,离开自动闭锁";
+        }else if (pollingModel == PollingRunModeUnLock) {
+            self.bleDes.text = @"靠近自动解锁";
+            if ([CTMediator isMona] && [self getMonaUnlockType] == 1) {
+                self.bleDes.text = @"触摸把手按键解锁车辆";
+            }
+        }else if (pollingModel == PollingRunModeLock) {
+            self.bleDes.text = @"离开自动闭锁";
+        }else {
+            self.bleDes.text = @"点击“车锁”解锁启动或闭锁车辆";
+        }
+    }else if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+        BOOL isUWBKey = XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager.vaildBleKeyCategory == XPDigitalKeyCategoryPHONE_UWB_KEY;
+        DLogTagInfo(kBLEKeyTag, @"数字钥匙3.0 isUWBKey:%d passEntryState:%ld", isUWBKey,(long)self.passEntryState);
+        if (isUWBKey) {
+            BOOL doorHandleLockUnlockOn = [[XPMultiBleManager sharedManager] getCurrentKeyPollingEnable];
+            if (self.passEntryState == XPCarKeyPollingSwitchStateOn|| self.passEntryState == XPCarKeyPollingSwitchStateUnknown) {
+                 self.bleDes.text = @"蓝牙已连接";
+             } else {
+                 if (doorHandleLockUnlockOn || pollingModel != PollingRunModeNone) {
+                     self.tipView.hidden = NO;
+                 }
+                 self.turnOnButton.hidden = NO;
+                 [self.turnOnButton setTitle:@"立即开启" forState:UIControlStateNormal];
+                 self.bleDes.text = @"开启“舒适进入”以恢复钥匙定位";
+                 
+             }
+        }else {
+            self.bleDes.text = @"蓝牙已连接";
+        }
+    }
+}
+
+- (void)refreshNotOpenBleStatus{
+    if(![self bleKeyExist]){
+        [self refreshBleDisConnectStatus];
+        return;
+    }
+    if ([XPCarKeyHelp.shared localCarKeyIsVaild] && ![self hasBindedCarkey]) {
+        DLogTagInfo(kBLEKeyTag, @"钱包钥匙生效但是没绑定");
+        self.bleDes.text = @"请绑定帐号解锁将自动登录";
+        [self.turnOnButton setTitle:@"立即绑定" forState:UIControlStateNormal];
+        self.turnOnButton.hidden = NO;
+        return;
+    }
+    self.turnOnButton.hidden = NO;
+    self.checkButton.hidden = YES;
+    self.bleDes.text = @"蓝牙未开启";
+    [self.turnOnButton setTitle:@"立即开启" forState:UIControlStateNormal];
+}
+
+- (void)refreshBleDisConnectStatus{
+    self.checkButton.hidden = YES;
+    self.turnOnButton.hidden = YES;
+    
+    if ([XPKeyManageHelp notSupportPolling]) {
+        DLogTagInfo(kBLEKeyTag, @"P7&数字钥匙1.0不支持Polling");
+        if (![self bleKeyExist]) {
+            DLogTagInfo(kBLEKeyTag, @"没私有钥匙");
+            self.bleDes.text = @"蓝牙钥匙未激活";
+            [self.turnOnButton setTitle:@"立即激活" forState:UIControlStateNormal];
+            self.turnOnButton.hidden = NO;
+            return;
+        }
+        self.bleDes.text = @"请靠近车辆连接蓝牙";
+        //self.checkButton.hidden = NO;
+    }else if([XPKeyManageHelp supportPolling] || CTMediator.isMona || (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3 && [XPCarKeyHelp.shared supportCarKeyPairType] == XPCarKeyPairTypeNfc)){
+        DLogTagInfo(kBLEKeyTag, @"数字钥匙1.0支持Polling 或 数字钥匙2.0 或 mona 或数字钥匙3.0的SE");
+        if (![self bleKeyExist]) {
+            DLogTagInfo(kBLEKeyTag, @"没私有钥匙");
+            self.bleDes.text = @"蓝牙钥匙未激活";
+            [self.turnOnButton setTitle:@"立即激活" forState:UIControlStateNormal];
+            self.turnOnButton.hidden = NO;
+            return;
+        }
+        
+        [self privateKeyCheck];
+        
+    }else if(XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3){
+        DLogTagInfo(kBLEKeyTag, @"数字钥匙3.0");
+        if (XPCarKeyHelp.shared.localCarKeyIsVaild) {
+            if (![self hasBindedCarkey]) {
+                DLogTagInfo(kBLEKeyTag, @"钱包钥匙生效但是没绑定");
+                self.bleDes.text = @"请绑定帐号解锁将自动登录";
+                [self.turnOnButton setTitle:@"立即绑定" forState:UIControlStateNormal];
+                self.turnOnButton.hidden = NO;
+            } else {
+                DLogTagInfo(kBLEKeyTag, @"钱包钥匙生效");
+                self.bleDes.text = @"请靠近车辆连接蓝牙";
+                self.turnOnButton.hidden = YES;
+                PollingRunMode mode = [[XPMultiBleManager sharedManager] getPollingSettingFromMMKV];
+                BOOL doorHandleLockUnlockOn = [[XPMultiBleManager sharedManager] getCurrentKeyPollingEnable];
+
+                if (self.passEntryState == XPCarKeyPollingSwitchStateOn || self.passEntryState == XPCarKeyPollingSwitchStateUnknown) {
+                     self.bleDes.text = @"请靠近车辆连接蓝牙";
+                    self.turnOnButton.hidden = YES;
+                 } else {
+                     if (doorHandleLockUnlockOn || mode != PollingRunModeNone) {
+                         self.tipView.hidden = NO;
+                     }
+                     self.turnOnButton.hidden = NO;
+                     [self.turnOnButton setTitle:@"立即开启" forState:UIControlStateNormal];
+                     self.bleDes.text = @"开启“舒适进入”以恢复钥匙定位";
+                 }
+            }
+        }else{
+            if (![self bleKeyExist]) {
+                DLogTagInfo(kBLEKeyTag, @"没私有钥匙");
+                self.bleDes.text = @"蓝牙钥匙未激活";
+                [self.turnOnButton setTitle:@"立即激活" forState:UIControlStateNormal];
+                self.turnOnButton.hidden = NO;
+                return;
+            }else{
+                [self privateKeyCheck];
+            }
+        }
+    }
+}
+
+- (BOOL)hasBindedCarkey{
+    return XPCarKeyHelp.shared.bindType == XPCarKeyBindTypeBinded;
+}
+
+//私有钥匙检查
+- (void)privateKeyCheck{
+    PollingRunMode pollingModel = [self getPollingStatus];
+    BOOL peEnable = [[XPMultiBleManager sharedManager] getCurrentKeyPollingEnable];
+    //判断条件区分（1.0&2.0）和 3.0
+    BOOL enable = XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3 ? pollingModel == PollingRunModeNone && !peEnable : pollingModel == PollingRunModeNone;
+    if (([CTMediator isMona] && pollingModel == PollingRunModeNone) || (enable)) {
+        DLogTagInfo(kBLEKeyTag, @"没开polling");
+        if (([XPMultiBleManager checkIfAccuracyLocationPermissionGranted] && [XPMultiBleManager checkIfLocationPermissionGranted] && [XPMultiBleManager checkIfBackgroundPermissionGranted]) || ![[XPMultiBleManager sharedManager] getIsDriverMode]){
+            DLogTagInfo(kBLEKeyTag, @"已经都有三个权限了");
+            self.bleDes.text = @"请靠近车辆连接蓝牙";
+            //self.checkButton.hidden = NO;
+        }else{
+            // 这里必定支持Polling，不需要再判断
+//            XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV2 ||
+//            XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3
+            // https://xiaopeng.feishu.cn/docx/P0Msd4uV1ok6SGxs9TMcVlein1b
+            self.bleDes.text = @"提升启动稳定性";
+            [self.turnOnButton setTitle:@"立即优化" forState:UIControlStateNormal];
+            self.turnOnButton.hidden = NO;
+        }
+    }else{
+        DLogTagInfo(kBLEKeyTag, @"开了polling");
+        if ([XPMultiBleManager checkIfAccuracyLocationPermissionGranted] && [XPMultiBleManager checkIfLocationPermissionGranted] && [XPMultiBleManager checkIfBackgroundPermissionGranted]) {
+            DLogTagInfo(kBLEKeyTag, @"已经都有三个权限了");
+            self.bleDes.text = @"请靠近车辆连接蓝牙";
+            //self.checkButton.hidden = NO;
+        }else{
+            //只有位置不满足
+            if ([XPMultiBleManager checkIfAccuracyLocationPermissionGranted] && [XPMultiBleManager checkIfBackgroundPermissionGranted]) {
+                DLogTagInfo(kBLEKeyTag, @"没始终允许");
+                self.bleDes.text = @"请选择“始终”允许访问位置信息";
+                [self.turnOnButton setTitle:@"立即设置" forState:UIControlStateNormal];
+                self.setUpType = XPKeyManageSetUpTypeNotAlways;
+                self.turnOnButton.hidden = NO;
+            }else{
+                DLogTagInfo(kBLEKeyTag, @"除没始终允许，其他");
+                self.bleDes.text = @"权限未开启";
+                [self.turnOnButton setTitle:@"立即设置" forState:UIControlStateNormal];
+                self.turnOnButton.hidden = NO;
+                self.setUpType = XPKeyManageSetUpTypeOthers;
+            }
+        }
+    }
+}
+    
+- (void)clickTurnOn{
+    NSInteger errorStyle = 0;
+    if ([self.turnOnButton.titleLabel.text isEqualToString:@"立即开启"]) {
+        errorStyle = 3;
+        if (self.state == CBManagerStateUnauthorized) {
+            DLogTagInfo(kBLEKeyTag, @"蓝牙没授权");
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:@{} completionHandler:nil];
+        }else if(self.state != CBManagerStatePoweredOn) {
+            DLogTagInfo(kBLEKeyTag, @"蓝牙没开");
+            XPBleGuideViewController *vc = [XPBleGuideViewController new];
+            [vc showInViewController:[UIViewController currentFrontViewController]];
+        }else {
+            if (self.passEntryState == XPCarKeyPollingSwitchStateClose) {
+                DLogTagInfo(kBLEKeyTag, @"启用舒适进入");
+                if (self.delegate && [self.delegate respondsToSelector:@selector(activateComfortEnterWithTitle:)]) {
+                    [self.delegate activateComfortEnterWithTitle:@" "];
+                }
+            }
+        }
+    }else if([self.turnOnButton.titleLabel.text isEqualToString:@"立即激活"]){
+        errorStyle = 1;
+        if (![[NetworkMonitorManager sharedManager] isReachable]) {
+            [XPToast showMessage:@"网络未连接，请检查手机网络"];
+            return;
+        }
+        if (CTMediator.isMona) {
+            
+            if (XPVehicleSDK.shared.vehicleManager.bleSysState != XPBLESysStatePoweredOn) {
+                [QMUIAlertController showAlertWithTitle:nil
+                                                message:@"激活钥匙需先开启手机蓝牙，请前往系统设置"
+                                       leftButtionTitle:@"取消"
+                                         leftButtonType:QMUIAlertActionStyleCancel
+                                             leftAction:nil
+                                       rightButtonTitle:@"设置"
+                                        rightButtonType:QMUIAlertActionStyleDefault
+                                            rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+                    NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                    if ([[UIApplication sharedApplication] canOpenURL:url])
+                    {
+                        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+                    }
+                }];
+                return;
+            }
+            
+            if ([self monaWaitToActive]) {
+                [XPToast showMessage:@"请先靠近车辆激活钥匙"];
+                return;
+            }
+        }
+        DLogTagInfo(kBLEKeyTag, @"创建蓝牙钥匙");
+        XPCreateDigitalKeyViewModel *createViewModel = [[XPCreateDigitalKeyViewModel alloc] init];
+        [createViewModel createKeyWithViewController:[UIViewController currentFrontViewController] andCarInfo:CTMediator.defaultCarInfo preventPopToRootViewController:NO];
+        
+//        XPCreateSelfKeyViewController *keyViewController = [XPCreateSelfKeyViewController new];
+//        keyViewController.carInfo = CTMediator.defaultCarInfo;
+//        keyViewController.preventPopToRootViewController = self;
+//        [[UIViewController currentFrontViewController].navigationController pushViewController:keyViewController animated:YES];
+    }else if([self.turnOnButton.titleLabel.text isEqualToString:@"立即优化"]){
+        errorStyle = 4;
+        DLogTagInfo(kBLEKeyTag, @"立即优化");
+        DLogTagInfo(kBLEKeyTag, @"保活页");
+        JRPermissionViewController *permissionVC = [[JRPermissionViewController alloc] init];
+        [[UIViewController currentFrontViewController].navigationController pushViewController:permissionVC animated:YES];
+        
+    }else if([self.turnOnButton.titleLabel.text isEqualToString:@"立即设置"]){
+        errorStyle = 5;
+        if (self.setUpType == XPKeyManageSetUpTypeNotAlways) {
+            PrivacyPermissionAuthorizationStatus locationAuthorizationStatus = [[PrivacyPermission sharedInstance] authorizationStatus:PrivacyPermissionTypeLocation];
+            DLogTagInfo(kBLEKeyTag, @"始终允许跳转：%d", (int)locationAuthorizationStatus);
+            if (locationAuthorizationStatus == PrivacyPermissionAuthorizationStatusNotDetermined ||
+                locationAuthorizationStatus == PrivacyPermissionAuthorizationStatusUnkonwn) {
+                JRPermissionViewController *permissionVC = [[JRPermissionViewController alloc] init];
+                [[UIViewController currentFrontViewController].navigationController pushViewController:permissionVC animated:YES];
+            }else {
+                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:@{} completionHandler:nil];
+            }
+        }else if(self.setUpType == XPKeyManageSetUpTypeOthers){
+            DLogTagInfo(kBLEKeyTag, @"保活页");
+            JRPermissionViewController *permissionVC = [[JRPermissionViewController alloc] init];
+            [[UIViewController currentFrontViewController].navigationController pushViewController:permissionVC animated:YES];
+            //[self.navigationController pushViewController:permissionVC animated:YES];
+            //[XPSelfConfigPollingViewController enterSelfConfigWithAnimated:YES currentVC:[UIViewController currentFrontViewController] delegate:nil];
+        }
+    }else if([self.turnOnButton.titleLabel.text containsString:@"点此解决"]){
+        errorStyle = 6;
+        UIViewController *vc = [CTMediator createBleCheckViewController:@{}];
+        [[UIViewController currentFrontViewController] safePushViewController:vc animated:YES];
+    }else if([self.turnOnButton.titleLabel.text containsString:@"查看钥匙状态"]){
+        errorStyle = 2;
+        DLogTagInfo(kBLEKeyTag, @"跳转钱包钥匙");
+        [XPCarKeyHelp.shared openCarKeyPass];
+    } else if ([self.turnOnButton.titleLabel.text containsString:@"立即绑定"]) {
+        DLogTagInfo(kBLEKeyTag, @"绑定钱包钥匙");
+        if (self.delegate && [self.delegate respondsToSelector:@selector(bindCarkeyAction)]) {
+            [self.delegate bindCarkeyAction];
+        }
+    }
+    NSDictionary *data = @{@"type":@(errorStyle)};
+    [XPStatisticsMgr sendEvent:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_CONNECT_CLICK module:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_MODULE data:data];
+}
+
+- (void)tipViewClickTurnOn {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(activateComfortEnterWithTitle:)]) {
+        [self.delegate activateComfortEnterWithTitle:@" "];
+    }
+}
+
+- (BOOL)checkBluetooth{
+    if (XPVehicleSDK.shared.vehicleManager.bleSysState != XPBLESysStatePoweredOn) {
+        [QMUIAlertController showAlertWithTitle:nil
+                                        message:@"激活钥匙需先开启手机蓝牙，请前往系统设置"
+                               leftButtionTitle:@"取消"
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:nil
+                               rightButtonTitle:@"设置"
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+            if ([[UIApplication sharedApplication] canOpenURL:url])
+            {
+                [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+            }
+        }];
+        return YES;
+    }
+    return NO;
+}
+
+- (void)clickCheckButton{
+    UIViewController *vc = [CTMediator createBleCheckViewController:@{}];
+    [[UIViewController currentFrontViewController] safePushViewController:vc animated:YES];
+    
+    NSDictionary *data = @{@"type":@(6)};
+    [XPStatisticsMgr sendEvent:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_CONNECT_CLICK module:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_MODULE data:data];
+    return;
+    
+}
+
+- (BOOL)bleKeyExist{
+    if ([CTMediator isSDK2ndCar]){
+        return [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager existValidBlePrivateKey];
+    }
+    return [XPBLEKeyManager.instance isSafeKeyOrCertKeyExisted];
+}
+
+- (BOOL)monaWaitToActive {
+    BOOL waitToActive = NO;
+    
+    NSString *keyWithVin = [NSString stringWithFormat:@"com.xiaopeng.XPCreateMonaKeyViewController.waitNearCar.%@.%lld", XPVehicleSDK.shared.vehicleManager.currentVehicle.vehiclePreference.vin, [CTMediator uid]];
+    
+    if (CTMediator.isMona) {
+        if (![XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager existValidBleKey] && [MMKV.defaultMMKV getBoolForKey:keyWithVin] && [XPVehicleSDK existToBeActivateBLEKey]) {
+            waitToActive = YES;
+        }
+    }
+    return waitToActive;
+}
+
+- (BOOL)allowTurnOnLockWithSelfConfig{
+    if ([CTMediator isPollingSecond]) {
+        return YES;
+    } else if ([CTMediator isPollingFirst]){
+        if ([PollingEffectDataManager sharedManager].isGuanfangConfig) {
+            return YES;
+        } else {
+            return [[PollingEffectDataManager sharedManager].keySettingTool getSelfCalibrationIsUse];
+        }
+    }
+    return YES;
+}
+
+- (PollingRunMode)getPollingStatus{
+    if (CTMediator.isMona) {
+        if([XPMonaSDKSpecialManager.shared getUnlock] || [XPMonaSDKSpecialManager.shared getLock]){
+            if ([XPMonaSDKSpecialManager.shared getUnlock] && [XPMonaSDKSpecialManager.shared getLock]) {
+                return PollingRunModeLockAndUnlock;
+            }else if([XPMonaSDKSpecialManager.shared getUnlock]){
+                return PollingRunModeUnLock;
+            }else {
+                return PollingRunModeLock;
+            }
+        }else{
+            return PollingRunModeNone;
+        }
+    }else{
+        return [[XPMultiBleManager sharedManager] getPollingSettingFromMMKV];
+    }
+    
+}
+
+- (NSInteger)getMonaUnlockType {
+    return [XPMonaSDKSpecialManager.shared getUnlockType];
+}
+    
+
+@end

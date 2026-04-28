@@ -1,0 +1,142 @@
+# XPMotors iOS — AI 知识库索引
+
+> 最后更新: 2026-04-08 (L5 自进化机制)
+> 说明: 本文件是 AI 知识库的全局导航，knowledge-recall Skill 会首先读取此文件
+
+---
+
+## 模块 Context 文档
+> 路径: `.ai-knowledge/modules/`
+
+| 模块 | 文件 | 状态 | 说明 |
+|------|------|------|------|
+| XPBLEDataProcessor | `modules/XPBLEDataProcessor.md` | ✅ 已完成 | 蓝牙数据解析与组装库（C++/OC） |
+| MQTTPublisher | `modules/MQTTPublisher.md` | ✅ 已完成 | MQTT 远程连接与消息收发层（Swift） |
+| XPCarAbilityConfig | `modules/XPCarAbilityConfig.md` | ✅ 已完成 | 差异化能力配置层（OC，100+ 属性） |
+| VehicleConnection | `modules/VehicleConnection.md` | ✅ 已完成 | 车辆连接层协议（BLE/TCP/NFC） |
+| BaseVehicle | `modules/BaseVehicle.md` | ✅ 已完成 | 基础车辆协议（含 XiaopengVehicle/MonaVehicle） |
+| VehicleManager | `modules/VehicleManager.md` | ✅ 已完成 | 车辆管理器（切车/列表/生命周期） |
+| XPVehicleExt | `modules/XPVehicleExt.md` | ✅ 已完成 | 车端扩展（BLEKey/Xcombo/AI日历/行程/WiFi） |
+| XPPollingSDK | `modules/XPPollingSDK.md` | ✅ 已完成 | 蓝牙无感进入/闭锁 SDK（OC/C++ 混编） |
+
+## 业务术语映射
+> 路径: `.ai-knowledge/term-mapping.md`
+
+| 域 | 覆盖术语数 | 状态 |
+|----|-----------|------|
+| 车控核心域 | 16 | ✅ 已完成 |
+| 蓝牙钥匙域 | 5 | ✅ 已完成 |
+| 泊车域 | 5 | ✅ 已完成 |
+| 充电域 | 4 | ✅ 已完成 |
+| 服务层 | 7 | ✅ 已完成 |
+| 组件层 | 11 | ✅ 已完成 |
+| 子模块 | 7 | ✅ 已完成 |
+
+## 知识点
+> 路径: `.ai-knowledge/knowledge-points/`
+> 格式: `*.kp.md`，每个文件含触发关键词 + 分类 + 优先级 + 内容
+
+### BLE 蓝牙通信域（7 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| 蓝牙协议版本选择 | `ble-protocol-versions.kp.md` | 蓝牙协议, BLE协议版本, V1V2V3, bleKeyVersion | 高 |
+| BLE 数据双通道输出 | `ble-data-dual-channel.kp.md` | XPBLEData, tboxData, 双通道, BLE通道 | 高 |
+| C++ 结构体紧凑排列 | `ble-packed-struct.kp.md` | packed, __attribute__, 结构体对齐 | 高 |
+| 各车型解析器隔离 | `ble-vehicle-parser-isolation.kp.md` | DataParser, 车型解析器, 蓝牙解析 | 中 |
+| BLE 消息类型说明 | `ble-message-types.kp.md` | BLEKeyMessageType, 0xEF, 0xED, Control消息 | 中 |
+| V3 鉴权两步流程 | `ble-auth-v3-flow.kp.md` | Auth0, Auth1, V3鉴权, sessionKey | 高 |
+| Mona 蓝牙协议独立 | `ble-mona-independent.kp.md` | Mona蓝牙, MonaBleDataProcessor, Mona协议 | 高 |
+
+### MQTT 远程通信域（4 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| MQTT 连接状态判定 | `mqtt-connected-state.kp.md` | MQTT连接, MQTTConnectionState, connected状态 | 高 |
+| 消息回调 ID 匹配 | `mqtt-message-id-matching.kp.md` | msg_ref, msgRef, messageId, MQTT回调 | 中 |
+| MQTT 单例与切车 | `mqtt-singleton-switch-vehicle.kp.md` | MQTTPublisher单例, 切车MQTT, MQTT disconnect | 中 |
+| 自动重连重发机制 | `mqtt-auto-reconnect.kp.md` | needReconnect, 重连重发, MQTT断线 | 中 |
+
+### 车控架构域（6 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| 车控双通道架构 | `vehicle-dual-channel.kp.md` | 双通道, BLE和TCP, 连接通道, connectionType | 高 |
+| 切车流程与安全 | `vehicle-switch-flow.kp.md` | 切车, switchVehicle, vehicleSwitchedEvent | 高 |
+| BaseVehicle 协议组合 | `vehicle-protocol-composition.kp.md` | BaseVehicle, VehiclePresenter, 协议组合 | 中 |
+| 车辆事件系统 | `vehicle-event-system.kp.md` | VehicleEvent, subscribe, 事件订阅, 观察者模式 | 中 |
+| SDK 门面模式 | `vehicle-sdk-facade.kp.md` | XPVehicleSDK, currentVehicle, 门面模式 | 中 |
+| 连接基类 fatalError | `vehicle-connection-fatalerror.kp.md` | VehicleConnection, fatalError, send方法 | 中 |
+
+### 车型差异化域（5 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| 配置四层覆盖 | `config-four-layer-override.kp.md` | XPCarAbilityConfig, 配置覆盖, OCM配置 | 高 |
+| 车型编码映射 | `config-vehicle-type-codes.kp.md` | vehicleTypeCode, 车型编码, VehicleType枚举 | 中 |
+| 小鹏 vs Mona 差异 | `config-xiaopeng-vs-mona.kp.md` | XiaopengVehicle, MonaVehicle, isMona | 高 |
+| SDK 开放车型白名单 | `config-sdk-opened-vehicles.kp.md` | isOpenedVehicleTypeCode, SDK开放车型, 白名单 | 中 |
+| 配置属性增长管理 | `config-property-growth.kp.md` | isSupportBleKey, 能力开关, 新增属性 | 中 |
+
+### Polling 无感进入域（6 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| 9 级距离模型 | `polling-distance-levels.kp.md` | PLBLEKeyDistanceLevel, 距离等级, 解锁圈 | 高 |
+| 三代预测算法共存 | `polling-predict-generations.kp.md` | Predict算法, FirstPolling, KNN算法 | 中 |
+| Proxy 依赖注入模式 | `polling-proxy-pattern.kp.md` | PLDataProxyProtocol, PLPollingProxyProtocol, Proxy注入 | 高 |
+| 指令码差异 | `polling-command-codes.kp.md` | PLXPTBoxCommand, PollingUnlock, Polling指令 | 高 |
+| OTA 数据版本化 | `polling-ota-versioning.kp.md` | Polling OTA, V1V2V3数据, XPPollingSDK.bundle | 中 |
+| 多蓝牙天线聚合 | `polling-multi-ble-antenna.kp.md` | 多蓝牙件, PLXPMultiBleManager, RSSI聚合 | 中 |
+
+### 工程规范域（5 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| OC/Swift 互操作规范 | `oc-swift-bridge.kp.md` | OC调用Swift, @objc, Bridging-Header | 高 |
+| submodule 独立仓库管理 | `submodule-management.kp.md` | submodule, 独立仓库, git submodule | 高 |
+| Combine 与 @Published | `combine-published-usage.kp.md` | @Published, Combine, 响应式 | 中 |
+| GRDB 数据库使用 | `grdb-database-usage.kp.md` | GRDB, XPDBManager, 数据库 | 中 |
+| 存量拼写错误不修改 | `legacy-typo-no-rename.kp.md` | VEVeihcle, 拼写错误, remuseBlePolling | 中 |
+
+### 业务扩展域（5 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| BleKeyCard 钥匙有效性 | `blekey-card-validity.kp.md` | BleKeyCard, isValid, 钥匙有效性 | 中 |
+| AI 日历同步机制 | `ai-calendar-sync.kp.md` | AiCalendar, 日历同步, MD5比对 | 低 |
+| 文件传输走 TCP Socket | `file-transfer-tcp-socket.kp.md` | FileTransfer, 文件传输, TCP Socket | 中 |
+| 后台保活 iBeacon | `polling-ibeacon-keepalive.kp.md` | iBeacon, 后台保活, KeepAlive | 中 |
+| VehicleExt Extension 模式 | `vehicle-ext-pattern.kp.md` | XPVehicleExt, extension模式, 车端扩展 | 中 |
+| VehicleState 只读机制 | `vehicle-state-readonly.kp.md` | VehicleState, vehicleState, 状态更新 | 中 |
+
+**知识点总计: 39 条**（高优先级 14 / 中优先级 23 / 低优先级 2）
+
+## 踩坑记录
+> 路径: `.ai-knowledge/pitfalls/`
+
+| 记录 | 文件 | 涉及模块 | 坑数 |
+|------|------|----------|------|
+| 蓝牙通信踩坑 | `pitfalls/ble-communication.md` | XPBLEDataProcessor, VehicleConnection, XPPollingSDK | 5 |
+| MQTT 通信踩坑 | `pitfalls/mqtt-communication.md` | MQTTPublisher, MQTTHandler, MqttServiceManager | 4 |
+| 切车与生命周期踩坑 | `pitfalls/vehicle-lifecycle.md` | VehicleManager, BaseVehicle, VehicleConnection | 4 |
+| Polling 无感进入踩坑 | `pitfalls/polling-proximity.md` | XPPollingSDK | 4 |
+| OC/Swift 互操作踩坑 | `pitfalls/oc-swift-interop.md` | 全局 | 4 |
+| 车型配置踩坑 | `pitfalls/car-ability-config.md` | XPCarAbilityConfig | 4 |
+
+**踩坑记录总计: 6 个文件, 25 条踩坑**
+
+## Spec 驱动开发体系
+> 路径: `.ai-knowledge/specs/`
+
+### 项目宪法
+| 文件 | 用途 | 说明 |
+|------|------|------|
+| `specs/constitution.md` | 项目宪法（最高优先级约束） | 6 大约束域：架构分层、语言策略、车控安全、共版设计、代码质量、知识库维护 |
+
+### Spec 模板
+| 模板 | 文件 | 阶段 | 用途 |
+|------|------|------|------|
+| 变更提案模板 | `specs/template-proposal.md` | Why/What | 需求概述、影响分析、疑问点机制、知识关联 |
+| 技术方案模板 | `specs/template-design.md` | How | 调用链路、数据模型、状态管理、Constitution 检查 |
+| 任务清单模板 | `specs/template-tasks.md` | Execute | 分 Phase 任务拆解、提交计划、验证步骤、知识沉淀 |
+
+### Spec Skills
+| Skill | 路径 | 触发关键词 | 说明 |
+|-------|------|------------|------|
+| spec-proposal | `.claude/skills/spec-proposal/` | 提案, proposal, 需求分析 | 6 阶段：Constitution 加载→知识召回→影响分析→疑问点→生成→确认 |
+| spec-design | `.claude/skills/spec-design/` | 技术方案, design, 调用链 | 5 阶段：上下文加载→调用链分析→方案设计→Constitution 检查→确认 |
+| spec-tasks | `.claude/skills/spec-tasks/` | 任务清单, tasks, 开始实施 | 5 阶段：上下文加载→任务拆解→约束注入→生成→输出 |

@@ -1,0 +1,37 @@
+//
+//  BLEKeyV3Parser.swift
+//  XPVehicleSDK
+//
+//  Created by huzy2 on 2024/8/28.
+//
+
+import Foundation
+import XPDataProcessor
+
+protocol BLEKeyV3DataParserResultDelegate: BLEDataParserResultDelegate {
+    func didReceiveSelfCalirationResult(reseult: Int, resultLen: Int, resultData: String?, direction: Int, distance: Int, deviceModel: String);
+    func didReceiveRssiCollectResult(reseult: Int, direction: Int, distance: Int, deviceModel: String);
+    func didReceiveParkingControlState(result: Int);
+    func didReceiveTboxRunStateEvent(result: Int);
+}
+
+class BLEKeyV3Parser: BLEDataParser {
+    
+    var isEncrypt: Bool = true
+    var sessionKey: Data?
+    var authKey: Data?
+    
+    weak var carControlDelegate: BLECarControlDelegate?
+    weak var v3Delegate: BLEKeyV3DataParserResultDelegate?
+    
+    init(vehicleTypeCode: String, isEncrypt: Bool, delegate: BLEDataParserResultDelegate) {
+        self.v3Delegate = delegate as? BLEKeyV3DataParserResultDelegate
+        self.carControlDelegate = delegate as? BLECarControlDelegate
+        self.isEncrypt = isEncrypt
+        super.init(vehicleTypeCode: vehicleTypeCode, delegate: delegate)
+    }
+    
+    override func cppParser(_ data: Data) -> String? {
+        return XPBleKeyV3DataProcessor.parseBleKeyV3Message(withVehicleCode: vehicleTypeCode, bleData: data, sessionKey: sessionKey ?? Data(), authKey: authKey ?? Data(), isEncrypted: isEncrypt)
+    }
+}

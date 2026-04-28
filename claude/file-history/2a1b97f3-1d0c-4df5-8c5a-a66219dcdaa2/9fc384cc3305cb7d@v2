@@ -1,0 +1,151 @@
+# XPMotors iOS 团队 — Claude Code 使用规范
+
+> 版本: v2.0 | 更新日期: 2026-04-20
+
+---
+
+## 一、工具定位
+
+| 工具 | 定位 | 使用场景 |
+|---|---|---|
+| **Claude Code** | 主力 Agent | 功能开发、Bug 修复、代码审查、重构、文档生成、Spec 驱动开发 |
+| **Copilot** | 行内补全 | 打字时的代码补全提示，不用于复杂任务 |
+
+## 二、五层规范体系
+
+项目采用五层分层架构（tiered architecture），知识和规则按层级就近存放、按需加载：
+
+| 层级 | 路径 | 内容 | 加载策略 |
+|---|---|---|---|
+| **L1 Project Root** | `CLAUDE.md` + `.claude/rules/` + `.ai-knowledge/` | 通用规则、跨模块知识 | 常驻加载 |
+| **L2 App** | `XiaoPengQiChe/.claude/` + `.ai-knowledge/` | 主工程特化规则 | 路径命中时加载 |
+| **L3 Target** | `.claude/targets/<target>/` | Target 特化 | 路径命中时加载 |
+| **L4 Submodule** | `submodule/<name>/.claude/` + `.ai-knowledge/` | 模块专属知识 | 路径/关键词命中时加载 |
+| **L5 LocalPod** | `LocalPods/<pod>/.claude/` + `.ai-knowledge/` | Pod 专属知识 | 路径/关键词命中时加载 |
+
+**核心原则**: module-registry.md 是所有模块元数据的单一数据源。
+
+## 三、CLAUDE.md 规范
+
+### 文件层级
+```
+~/.claude/CLAUDE.md                    → 个人全局配置（不提交 Git）
+项目根目录/CLAUDE.md                   → 项目级配置（L1，提交 Git）
+XiaoPengQiChe/.claude/CLAUDE.md        → 主工程配置（L2）
+submodule/<name>/.claude/CLAUDE.md     → Submodule 配置（L4）
+LocalPods/<pod>/.claude/CLAUDE.md      → LocalPod 配置（L5）
+```
+
+### 维护原则
+1. **精简**: 对每一行问——"删掉它 Claude 会犯错吗？" 如果不会，删掉
+2. **可验证**: 添加规则后观察 Claude 行为是否改变
+3. **定期审视**: 每月检查一次，删除过时或无效的规则
+4. **就近存放**: 模块专属规则放在模块层级，不要堆在根级
+
+## 四、Skills 使用规范
+
+### 当前可用 Skills（15 个）
+
+#### 基础工具
+| Skill 名称 | 触发方式 | 用途 |
+|---|---|---|
+| `module-context` | `/module-context <模块名>` | 为模块生成 Context 文档 |
+| `knowledge-recall` | 自动触发 | 匹配加载知识点（三阶段召回） |
+| `oc-to-swift` | `/oc-to-swift <文件>` | OC 代码迁移到 Swift |
+| `new-swift-module` | `/new-swift-module <模块名>` | 创建新 Swift 模块 |
+| `code-review-ios` | `/code-review-ios <路径>` | iOS 代码审查 |
+| `bug-analysis` | `/bug-analysis <描述>` | Bug 分析定位 |
+
+#### Spec 驱动开发
+| Skill 名称 | 触发方式 | 用途 |
+|---|---|---|
+| `spec-proposal` | `/spec-proposal <需求>` | 生成变更提案（Why/What） |
+| `spec-design` | `/spec-design` | 生成技术方案（How，含冲突风险标注） |
+| `spec-tasks` | `/spec-tasks` | 生成任务清单（Execute，含隐含依赖检测） |
+
+#### 自进化
+| Skill 名称 | 触发方式 | 用途 |
+|---|---|---|
+| `post-task-review` | 任务完成后 | 知识沉淀（新发现/纠错/补充） |
+| `knowledge-audit` | `/knowledge-audit` | 知识健康度审计（4 维度 8 阶段） |
+| `spec-quality-score` | `/spec-quality-score` | Spec 质量评测（F1-doc + F1-code） |
+
+#### 五层架构支撑
+| Skill 名称 | 触发方式 | 用途 |
+|---|---|---|
+| `spec-coding-scaffold` | `/spec-coding-scaffold` | 为 submodule/LocalPod 初始化 .claude/ + .ai-knowledge/ |
+| `deps-sync` | `/deps-sync` | 依赖关系同步检查 |
+| `deps-lint` | `/deps-lint` | 检测未注册/循环/废弃依赖 |
+
+### Spec 驱动开发流程
+```
+proposal（Why/What）→ design（How）→ tasks（Execute）→ post-task-review（沉淀）
+```
+已完成 2 个案例: BLE V3 RT Protocol + CarKey Freeze Private Key Strategy
+
+## 五、知识库使用规范
+
+### 目录结构（五层分布式）
+```
+.ai-knowledge/                          # L1 根级 — 通用知识
+├── knowledge-points/                   # 通用知识点（13 条）
+├── pitfalls/                           # 通用踩坑（2 文件）
+├── specs/                              # Spec 模板 + 案例
+├── module-registry.md                  # 模块注册表（单一数据源）
+├── term-mapping.md                     # 术语映射
+└── index.md                            # 全局索引
+
+submodule/<name>/.ai-knowledge/         # L4 — 模块专属知识
+├── knowledge-points/                   # 模块相关 KP
+├── pitfalls/                           # 模块相关踩坑
+└── modules/                            # 模块文档
+
+LocalPods/<pod>/.ai-knowledge/          # L5 — Pod 专属知识
+```
+
+### 知识沉淀 SOP
+每次需求开发完成后:
+1. **回顾**: 有哪些新发现？哪些决策是关键的？
+2. **提炼**: 抽象为结构化知识点
+3. **分层存放**: 模块专属 → 对应 submodule/LocalPod；跨模块通用 → 根级
+4. **索引**: 更新对应层级的 index.md
+5. **注册**: 新模块需在 module-registry.md 中注册
+
+## 六、工作流最佳实践
+
+### 开始任务前
+1. 确认涉及模块的 `.claude/CLAUDE.md` 和 `.ai-knowledge/` 是最新的
+2. 如涉及不熟悉模块，先用 `/module-context` 生成文档
+3. 复杂需求先走 Spec 流程: `/spec-proposal` → `/spec-design` → `/spec-tasks`
+
+### 开发过程中
+1. 使用 Plan Mode 先探索再实现（Explore → Plan → Implement）
+2. 频繁使用 `/clear` 清理上下文，尤其在切换不相关任务时
+3. 修改存量 OC 代码保持 OC 风格，新建模块用 Swift
+4. 修改车控相关代码后，务必验证调用链完整性
+
+### 任务完成后
+1. 使用 `/code-review-ios` 自审
+2. 执行 `/post-task-review` 沉淀知识
+3. 如有新踩坑经验，补充到对应层级的 `.ai-knowledge/pitfalls/`
+
+## 七、上下文管理
+
+### 避免上下文污染
+- 不相关任务之间使用 `/clear`
+- 复杂探索性任务使用 SubAgent
+- 单次会话不要混合多个不相关的修改
+
+### CLAUDE.md 常见错误
+| 错误 | 正确做法 |
+|---|---|
+| 写入 Claude 能从代码推断的内容 | 只写无法推断的约束和规则 |
+| 规则太多太详细 | 精简，每条规则都要有实际效果 |
+| 所有规则堆在根级 | 模块专属规则放到对应层级的 CLAUDE.md |
+| 从不更新 | 每月审视一次 |
+
+## 八、安全注意事项
+
+1. 不要在 CLAUDE.md 或知识库中写入密钥、Token 等敏感信息
+2. 车控相关代码修改需要额外的人工审查
+3. submodule 中的代码有独立仓库，修改需注意版本管理

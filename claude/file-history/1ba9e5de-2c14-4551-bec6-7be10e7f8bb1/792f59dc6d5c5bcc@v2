@@ -1,0 +1,141 @@
+# 通用复用能力抽取分析报告
+
+> 子项目 ②：分析当前五层规范架构中哪些能力可跨小鹏 iOS repo 通用复用
+
+## 1. 分析维度
+
+对每个组件评估：
+- **绑定程度**：与小鹏 iOS 项目的耦合度（命名、路径、业务逻辑）
+- **通用化成本**：参数化/解耦所需的改造量
+- **复用价值**：其他 iOS/跨平台项目是否有类似需求
+
+## 2. 组件通用性评估
+
+### 2.1 高通用性（可直接抽取）
+
+| 组件 | 当前绑定点 | 通用化方案 | 改造量 |
+|------|-----------|-----------|--------|
+| **module-registry.md 格式** | 无绑定，纯 schema | 直接复用，YAML block 格式通用 | 零 |
+| **deps.yml schema** | 无绑定 | 直接复用（depends_on + trigger_keywords + critical_constraints） | 零 |
+| **deps-lint skill** | 引用 module-registry 路径 | 路径参数化即可 | 低 |
+| **knowledge-recall skill** | 三路触发逻辑通用 | 路径前缀和 registry 路径参数化 | 低 |
+| **spec-quality-score skill** | 评分维度通用 | 直接复用 | 零 |
+| **post-task-review skill** | 知识沉淀方法论通用 | 直接复用 | 零 |
+| **knowledge-audit skill** | 审计逻辑通用 | 直接复用 | 零 |
+
+### 2.2 中通用性（需参数化改造）
+
+| 组件 | 当前绑定点 | 通用化方案 | 改造量 |
+|------|-----------|-----------|--------|
+| **spec-coding-scaffold skill** | 模板中 XP 前缀、submodule/LocalPods 路径 | 模板参数化（`{{prefix}}`、`{{pod_dir}}`） | 中 |
+| **spec-proposal/design/tasks 三件套** | constitution.md 引用、调用链分析方法论通用，但具体约束绑定 XP | 分离方法论（通用）和项目约束（配置化） | 中 |
+| **五层架构模式** (L1-L5) | 层级名称绑定（submodule/LocalPod/target） | 层级可配置（如改为 packages/modules/extensions） | 中 |
+| **template-proposal/design/tasks.md** | 模板结构通用，个别字段绑定 | 去掉 XP 特定字段 | 低 |
+
+### 2.3 低通用性（项目特定）
+
+| 组件 | 原因 |
+|------|------|
+| **constitution.md 内容** | 每项目必须定制（模块边界、架构约束、语言策略） |
+| **rules/*.md** | 项目编码规范，无法通用 |
+| **knowledge-points/*.kp.md** | 项目特定知识 |
+| **pitfalls/*.md** | 项目特定踩坑 |
+| **code-review-ios skill** | iOS 特定审查规则 |
+| **oc-to-swift skill** | XP 项目 OC→Swift 迁移特定 |
+| **bug-analysis skill** | 项目特定日志格式 |
+
+## 3. 推荐抽取方案
+
+### Phase 1：零成本直接复用（Day 1）
+
+以下组件可直接复制到新项目使用：
+
+```
+可直接复用/
+├── schemas/
+│   ├── module-registry-format.md    # YAML block 注册表格式
+│   └── deps-yml-schema.md           # deps.yml schema 定义
+├── skills/
+│   ├── deps-lint/SKILL.md           # 依赖校验
+│   ├── knowledge-audit/SKILL.md     # 知识审计
+│   ├── post-task-review/SKILL.md    # 任务后复盘
+│   └── spec-quality-score/SKILL.md  # Spec 质量评分
+└── methodology/
+    ├── knowledge-recall-3route.md   # 三路触发方法论
+    └── spec-driven-development.md   # Spec 驱动开发方法论
+```
+
+### Phase 2：参数化改造后复用
+
+```
+需参数化/
+├── spec-coding-scaffold/SKILL.md   # 模板变量化
+├── spec-proposal/SKILL.md          # 分离方法论和项目约束
+├── spec-design/SKILL.md            # 同上
+├── spec-tasks/SKILL.md             # 同上
+└── templates/
+    ├── template-proposal.md        # 去 XP 特定字段
+    ├── template-design.md
+    └── template-tasks.md
+```
+
+**参数化方案：**
+- 创建 `project-config.yml`（项目级配置）：
+  ```yaml
+  project_name: XPMotors_IOS
+  prefix: XP
+  pod_directory: LocalPods
+  submodule_directory: submodule
+  levels: [project, app, target, submodule, localpod]
+  constitution_path: .ai-knowledge/specs/constitution.md
+  registry_path: .ai-knowledge/module-registry.md
+  ```
+- Skill 中用 `$PROJECT_CONFIG.prefix` 替代硬编码 `XP`
+
+### Phase 3：方法论文档化
+
+将以下隐含方法论显式文档化，使其可被其他团队学习和适配：
+
+1. **五层按需加载模式** — 层级可配置，核心是"路径命中 + 关键词匹配 + 依赖扩展"三路触发
+2. **Spec 驱动开发流程** — proposal → design → tasks 三阶段，每阶段有质量门禁
+3. **知识沉淀闭环** — 分析产物 → 知识点 → 踩坑记录 → 下次分析时召回
+4. **deps.yml 语义过滤** — trigger_keywords 避免全量加载，critical_constraints 锚定关键信息
+
+## 4. 不建议抽取的部分
+
+| 组件 | 原因 |
+|------|------|
+| constitution.md 内容 | 内容绑定项目，模板已通用 |
+| rules/*.md | 编码规范因项目而异 |
+| 知识点/踩坑 | 项目特定知识 |
+| module-context skill | 过于绑定 XP 项目结构 |
+| new-swift-module skill | 绑定 XP 命名和模块化约定 |
+
+## 5. 预计产物形态
+
+**推荐：独立文档化 + 模板仓库**（而非独立 npm/gem 包）
+
+```
+xp-spec-framework/          # 方法论 + 模板仓库
+├── README.md                # 使用指南
+├── methodology/             # 方法论文档
+├── schemas/                 # 通用 schema
+├── skills-templates/        # 可参数化的 skill 模板
+├── project-config.example.yml  # 项目配置示例
+└── bootstrap.sh             # 初始化脚本（在新项目中生成骨架）
+```
+
+原因：
+- Skill 是 Markdown 文件，不需要包管理器分发
+- 每个项目的 constitution/rules 必须定制，不适合做成"安装即用"的包
+- 文档化 + 模板 > 代码库 — 核心价值在方法论而非实现
+
+## 6. 总结
+
+| 分类 | 组件数 | 占比 |
+|------|--------|------|
+| 可直接复用 | 7 | 50% |
+| 需参数化改造 | 5 | 36% |
+| 项目特定 | 5+ | — |
+
+**核心结论：** 当前架构的 ~50% 组件可零成本复用，~36% 组件经参数化后可复用。真正绑定项目的只有 constitution 内容、rules 和知识点——这也是预期内的，因为它们本质是项目知识而非框架。

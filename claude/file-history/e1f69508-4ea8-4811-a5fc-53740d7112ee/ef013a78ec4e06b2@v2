@@ -1,0 +1,58 @@
+# iOS 编码规则
+
+## Swift 编码规范
+
+### 命名
+- 类/结构体/协议：大驼峰，无前缀（如 `VehicleManager`, `BaseVehicle`）
+- 方法：小驼峰，动词开头（如 `requestVehicleState()`, `parseContentMsg()`）
+- 回调方法：did/will + 动词（如 `didChangeState()`, `willCreateKey()`）
+- 变量：小驼峰（如 `vehicleState`, `mqttHandler`）
+- 静态常量：k 前缀（如 `static let kTag = "XP车控"`）
+- 服务端字段：蛇形命名，与 JSON key 一致（如 `driver_door_lock_st`）
+
+### 安全编码
+- 闭包中必须使用 `[weak self]` 防止循环引用
+- 使用 `guard let` 提前返回，避免深层嵌套
+- 网络请求回调使用 `@escaping` 标注
+- 异步操作优先使用 async/await（Swift 5.5+），存量代码保持回调风格
+
+### 日志规范
+- 使用项目统一日志 `Log.i/e/w/d`，带 tag 标识模块来源
+- 格式：`Log.i(tag: Self.kTag, "请求维修模式状态成功")`
+- 禁止使用 `print()` 输出日志（调试临时使用后必须删除）
+
+### 错误处理
+- 统一使用 `VehicleError` 类型（XPVehicleSDK 内部）
+- 错误码定义在 VehicleError.Code 枚举中
+- 网络不可达检查：`NetworkMonitor.shared.isNetworkReachable()`
+
+### Model 规范
+- 网络响应 Model 使用 Codable 协议，禁止手写 JSON 解析
+- 使用 `@XPDefault*` 属性包装器处理可选字段默认值（`@XPDefaultInt`, `@XPDefaultString` 等）
+- Model 属性使用 `public var`，添加文档注释
+
+## OC 编码规范
+
+### 命名
+- 类名使用 XP 前缀（如 `XPChargeStationManager`, `XPCarAbilityConfig`）
+- 方法名遵循 Apple 命名规范（如 `parseMessageWithVehicleCode:bleData:`）
+- 枚举使用 `NS_ENUM` 宏，确保 Swift 可用
+
+### 内存管理
+- Block 中使用 `__weak typeof(self) weakSelf = self` 防止循环引用
+- 大对象及时置 nil，避免内存峰值
+
+## OC/Swift 互操作
+
+### Swift 暴露给 OC
+- 公开类必须添加 `@objc(XPClassName)` 注解
+- 公开枚举添加 `@objc` 且必须是 Int 原始值类型
+- 公开协议添加 `@objc` 标注
+
+### OC 暴露给 Swift
+- 通过 Bridging-Header 引入
+- 禁止在 Swift 中直接 import OC 的 .h 文件
+
+### 跨语言数据传递
+- 使用 VehicleBridge 层中的桥接类
+- 复杂数据结构互传使用中间层 Model

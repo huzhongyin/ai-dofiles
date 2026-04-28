@@ -1,0 +1,83 @@
+//
+//  XiaopengBLEConnection+Heartbeat.swift
+//  XPVehicleSDK
+//
+//  Created by xpeng on 2024/10/21.
+//
+
+import Foundation
+import Combine
+
+let XiaopengBLEConnectionHeartbeat = "[BLE心跳]"
+extension XiaopengBLEConnection {
+    func startHeartbeat() {
+        let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
+            self?.checkIfNeedSendHeartbeat()
+        }
+        RunLoop.current.add(timer, forMode: .common)
+        self.heartBeatTimer = timer
+    }
+    
+    func stopHeartbeat() {
+        Log.i(XiaopengBLEConnectionHeartbeat, "BLE心跳定时器关闭")
+        if self.heartBeatTimer != nil {
+            self.heartBeatTimer?.invalidate()
+            self.heartBeatTimer = nil
+        }
+    }
+    
+    private func checkIfNeedSendHeartbeat() {
+        if self.bleSwitcheCheck.isNeedsHeartbeat {
+            // 发送心跳
+            sendHeartbeat()
+        }
+    }
+    
+    private func sendHeartbeat() {
+        guard connectState == .Available else {
+            return
+        }
+        
+        // 发送心跳 polling 1.0 同时使用从蓝牙发送，这里暂时全部使用主蓝牙发
+        // 组装
+        Log.i(XiaopengBLEConnectionHeartbeat, "BLE心跳开始发送")
+       
+        if presenter?.vehiclePreference.function.IS_POLLINGFIRST == true,
+           let vehicle = presenter as? XiaopengVehicle,
+           let rssiManager = vehicle.rssiManager {
+            rssiManager.sendHeartBeat { success in
+                if success {
+                    Log.i(XiaopengBLEConnectionHeartbeat, "BLE心跳发送成功 - 从蓝牙")
+                } else {
+                    Log.i(XiaopengBLEConnectionHeartbeat, "BLE心跳发送失败 - 从蓝牙，改为主蓝牙发送")
+                    self.sendMainBleHeartbeat()
+                }
+            }
+        } else {
+            sendMainBleHeartbeat()
+        }
+    }
+    
+    func sendMainBleHeartbeat() {
+        guard let bleSendDataBuilder = bleSendDataBuilder as? BleSendDataBuilder else { return }
+        
+        bleHeartbeatCancellable = bleSendDataBuilder.buildHeartbeat()
+            .flatMap({[weak self] data in
+                guard let self else {
+                    return Fail<AnyObject?, VehicleError>(error: VehicleError(code: .EnvironmentError, desc: "未知错误", channel: .BLE)).eraseToAnyPublisher()
+                }
+                return self.sendBleData(data)
+            })
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    Log.i(XiaopengBLEConnectionHeartbeat, "BLE心跳发送完成")
+                case .failure(let error):
+                    Log.i(XiaopengBLEConnectionHeartbeat, "BLE心跳构包失败", error.description)
+                }
+            }, receiveValue: { data in
+                Log.i("BLE心跳发送成功")
+            })
+    }
+    
+}

@@ -1,0 +1,78 @@
+# XPMotors iOS — AI-Coding 工程化培训
+
+> 版本: v2.0 | 更新日期: 2026-04-20
+> 适用对象: XPMotors iOS 全体团队成员
+
+---
+
+## 培训目标
+
+让团队每位成员能够：
+1. **快速上手** — 30 分钟内完成 Claude Code 首次任务
+2. **日常高效** — 掌握 15 个 Skill、3 个 Rules 的使用场景和触发方式
+3. **规范开发** — 使用 Spec 驱动流程（proposal→design→tasks）完成需求
+4. **知识沉淀** — 每次任务后执行知识沉淀，形成团队复利
+
+---
+
+## 章节导航
+
+| # | 章节 | 文件 | 用途 | 阅读时间 |
+|---|------|------|------|---------|
+| 1 | [快速入门](01-quick-start.md) | `01-quick-start.md` | 30 分钟上手，立即能用 | 30 min |
+| 2 | [架构体系](02-architecture-overview.md) | `02-architecture-overview.md` | L1-L5 全景，分享会用 | 45 min |
+| 3 | [日常指南](03-daily-usage-guide.md) | `03-daily-usage-guide.md` | 最常翻阅的操作手册 | 20 min |
+| 4 | [Spec 实战](04-spec-driven-development.md) | `04-spec-driven-development.md` | Spec 驱动开发教程 + BLE 案例 | 40 min |
+| 5 | [知识进化](05-knowledge-evolution.md) | `05-knowledge-evolution.md` | 知识沉淀与自进化体系 | 25 min |
+| 6 | [FAQ](06-faq.md) | `06-faq.md` | 按场景分类的常见问题 | 按需查阅 |
+| S | [幻灯片摘要](slides-summary.md) | `slides-summary.md` | 投影演示用，每章 5-8 页 | 按需 |
+
+---
+
+## 学习路径推荐
+
+### 🟢 新成员（首次使用 Claude Code）
+```
+01-quick-start → 03-daily-usage-guide → 06-faq（入门类）→ 开始实践
+```
+> 预计 1 小时可开始独立使用
+
+### 🟡 资深开发（已有 AI 编码经验）
+```
+01-quick-start（快速过） → 04-spec-driven-development → 05-knowledge-evolution → 03-daily-usage-guide
+```
+> 重点理解 Spec 驱动流程和知识沉淀机制
+
+### 🔵 技术管理者
+```
+02-architecture-overview → slides-summary → 04-spec-driven-development（案例部分）
+```
+> 重点理解体系价值和效率数据
+
+---
+
+## 项目工程化资产概览
+
+| 类别 | 数量 | 路径 | 说明 |
+|------|------|------|------|
+| CLAUDE.md | 1+16 | `CLAUDE.md` + submodule/LocalPod 层级 | 五层分层架构（L1-L5） |
+| Rules | 3+ | `.claude/rules/` + 各层级 | 架构规则、编码规则、车控 SDK 规则 |
+| Skills | 15 | `.claude/skills/` | 模块文档/代码审查/Spec 三阶段/知识沉淀/审计/评分/脚手架/依赖管理 |
+| 模块文档 | 15 | 分布在各 submodule/.ai-knowledge/ | 核心模块的 API/依赖/限制文档（已从根级下沉） |
+| 知识点 | 13+N | `.ai-knowledge/knowledge-points/` + submodule 级 | 根级通用 13 条 + 模块专属已下沉 |
+| 踩坑记录 | 2+N 文件 | `.ai-knowledge/pitfalls/` + submodule 级 | 根级通用 + 模块专属已下沉 |
+| Spec 模板 | 3 | `.ai-knowledge/specs/` | proposal + design + tasks |
+| 项目宪法 | 1 | `.ai-knowledge/specs/constitution.md` | 6 大约束域（最高优先级） |
+| 进化日志 | 1 | `.ai-knowledge/evolution-log.md` | 所有自进化动作可追溯 |
+
+---
+
+## 关键数据
+
+| 指标 | 数值 | 说明 |
+|------|------|------|
+| 知识库健康度 | **A (96/100)** | 从首次审计 B+ (82) 经修复提升 |
+| 首个 Spec 效率提升 | **87.5%** | 2h vs 预估 2 天（BLE V3 RT Protocol） |
+| F1-doc 基线 | **97/100 (A)** | Spec 文档质量评分 |
+| F1-code 基线 | **A (95)** | 代码保留率评分 |
+| 知识飞轮闭环 | **已验证** | 实施→评分→改进→Skill 优化 |

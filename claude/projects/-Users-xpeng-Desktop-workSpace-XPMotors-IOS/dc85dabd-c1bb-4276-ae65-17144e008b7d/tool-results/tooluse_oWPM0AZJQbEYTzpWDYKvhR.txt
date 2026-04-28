@@ -1,0 +1,179 @@
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-4-import Combine
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-5-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-6-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-7-@objc(XPVehicleSwitchedObject)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-8-public class VehicleSwitchedObject : NSObject {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:9:    @objc public let vin: String
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:10:    @objc public let presenter: VehiclePresenter? // 可能为空
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-11-
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-12-    init(_ vin: String, _ presenter: VehiclePresenter?) {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-13-        self.vin = vin
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-14-        self.presenter = presenter
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-15-    }
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-22-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-23-@objc(XPVehicleManager)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-24-open class VehicleManager : NSObject {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-25-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-26-    // 车辆列表变化，当需要监听从有车到无车事件时，可监听该事件
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:27:    @objc public let vehicleListChangedEvent: VehicleEvent = VehicleEvent(valueType: [VehicleData].self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-28-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-29-    // 将要切车，参数为 vin
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:30:    @objc public let vehicleWillSwitchEvent: VehicleEvent = VehicleEvent(valueType: String.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-31-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-32-    // 切车事件，参数中的 VehiclePresenter, 可能为 nil，vin 不会为空
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:33:    @objc public let vehicleSwitchedEvent: VehicleCurrentEvent = VehicleCurrentEvent(valueType: VehicleSwitchedObject.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-34-    // 如果某业务直接监听 vehicleSwitchedEvent，可能导致比主模块先收到该事件，
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-35-    // 为了让业务层可以有一个优先收到切车事件的模块，SDK 发出 vehicleSwitchedEvent
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-36-    // 通知后，紧接着就会发送 vehicleInfoUpdatedEvent 通知，因此大多数业务只需要
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-37-    // 监听 vehicleInfoUpdatedEvent，处理 UI 刷新即可。
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-38-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-39-    // 当前车辆车辆信息发生了变更，例如车图、软件能力等信息变更，会再次发出 vehicleInfoUpdatedEvent
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-40-    /  value: true - 表示真实发生了信息变更
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-41-    //         false - 表示跟随 vehicleSwitchedEvent 一起发出的通知
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:42:    @objc public let vehicleInfoUpdatedEvent: VehicleEvent = VehicleEvent(valueType: Bool.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-43-    
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:44:    @objc public let extInfoChangedEvent: VehicleEvent = VehicleEvent(valueType: VehicleExtInfo.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-45-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-46-    // 以下事件均为当前车相应状态变化才会发出通知
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-47-    // 切车时，也会发送车态变化事件(含离线切车，以及App离线启动)，此时 diff 车态里的字段全部为 nil
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:48:    @objc public let vehicleStateChangedEvent: VehicleCurrentEvent = VehicleCurrentEvent(valueType: VehicleStateNotiObject.self)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:49:    @objc public let digitVehicleStateChangedEvent: VehicleCurrentEvent = VehicleCurrentEvent(valueType: DigitVehicleStateNotiObject.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-50-
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:51:    @objc public let onlineStateChangedEvent: VehicleEvent = VehicleEvent(valueType: Bool.self)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:52:    @objc public let digitalKeyChangedEvent: VehicleEvent = VehicleEvent(valueType: DigitalKeyChangeType.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-53-
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:54:    @objc public let bleConnectStateChangedEvent: VehicleEvent = VehicleEvent(valueType: BLEConnectionState.self)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:55:    @objc public let mqttConnectStateChangedEvent: VehicleEvent = VehicleEvent(valueType: MQTTConnectionState.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-56-
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:57:    @objc public let otaStateChangedEvent: VehicleEvent = VehicleEvent(valueType: OTAStateModel.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-58-
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:59:    @objc public let bleSysStateChangedEvent: VehicleEvent = VehicleEvent(valueType: BLESysState.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-60-    
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:61:    @objc public let carkeyEntryStateChangedEvent: VehicleCurrentEvent = VehicleCurrentEvent(valueType: CarKeyPollingSwitchState.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-62-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-63-    /// 车型配置化发生了变化（OCM平台上车型配置化能力发生了变化）
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:64:    @objc public let vehicleAbilityConfigChangedEvent: VehicleCurrentEvent = VehicleCurrentEvent(valueType: Bool.self)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-65-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-66-    // 是否 SDK 2.0开放车型
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-67-    @objc open func isOpenedVehicleTypeCode(_ code: String) -> Bool {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-68-        // SDK 2.0 开放的车型列表
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-69-#if !APP_ENV_INTL
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-179-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-180-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-181-    // 创建一个不受 VehicleManager 管控的车控实例，可以在不切车进行多车车控
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-182-    // 创建实例后，需要业务方调用 startService() 才会连接车辆
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-183-    // 使用完毕后需要调用 stopService()
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:184:    @objc public func createVehicle(vin: String) -> VehiclePresenter? {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-185-        
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-186-        guard let vehicle = findVehicle(vin) else {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-187-            Log.w("VehicleManager createVehicle 失败，车辆列表中未找到vin:", vin)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-188-            return nil;
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-189-        }
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-274-
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-275-        return ["vinDiagramVersionsList": list]
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-276-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-277-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-278-    // 刷新人车关系(车辆列表信息)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:279:    @objc public func requestVehicleInfo(_ success: VehicleSuccessCallback? = nil, failed: VehicleFailedCallback<VehicleError>? = nil) -> Void {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-280-        if (self.uid == 0) {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-281-            Log.e("VehicleManager 登陆账号 uid 尚未传入，查询车辆信息失败")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-282-            let resp = VehicleError(code: VehicleErrorCode.EnvironmentError, desc: "登陆账号 uid 尚未传入，查询车辆信息失败")
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-283-            failed?(resp)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-284-            return;
+--
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-408-        self._switchVehicle(vehicle!, vehiclePreference: vehicleData!, switchByManual: false, callback: { success in
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-409-        })
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-410-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-411-    
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-412-    / MARK: 切车
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:413:    @objc public func currentVehicle() -> VehiclePresenter? {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-414-        return vehicleInstance
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-415-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-416-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-417-    func currentVehicleVin() -> String? {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-418-        return currentVehicle()?.vehiclePreference.vin
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-571-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-572-    func cancelCurrentVehicleEventObserver() {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-573-        self.eventCancellableSet.cancelAll()
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-574-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-575-    
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:576:    @objc public func vehicleDataForVin(_ vin: String) -> VehicleData? {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-577-        if (vin.count ?? 0 == 0) {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-578-            return nil
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-579-        }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-580-        
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-581-        var targetVehicle: VehicleData? = nil
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-597-        }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-598-        
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-599-        return targetVehicle
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-600-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-601-
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:602:    public func findVehicle(_ vin: String?) -> VehicleInfo.Vehicle? {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-603-        if (vin?.count ?? 0 == 0) {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-604-            return nil
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-605-        }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-606-        
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-607-        var targetVehicle: VehicleInfo.Vehicle? = nil
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-615-        
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-616-        return targetVehicle
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-617-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-618-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-619-    // 原则上只能在手动切车时调用
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:620:    @objc public func switchVehicle(_ vin: String?, callback: ((Bool)->())?) {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-621-        if (self.uid == 0) {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-622-            Log.e("切车VehicleManager 登陆账号 uid 尚未传入，拒绝车辆切换操作")
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-623-            callback?(false)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-624-            return;
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-625-        }
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-658-    
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-659-    / MARK: 账号
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-660-    // 入参：uid - 账号，fetchVehicleList - 是否请求刷新
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-661-    // 返回 callback，第一个参数为车辆数据列表，第二个参数为是否缓存数据
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-662-    @discardableResult
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:663:    @objc public func enterAccount(uid: UInt64, nickname: String?, fetchVehicleList: Bool, callback: (([VehicleData], Bool)->())?) -> Bool {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-664-        Log.i("VehicleManager enterAccount uid:", uid)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-665-        MqttServiceManager.shared.startService(uid: uid)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-666-        UserInfo.shared.nickname = nickname
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-667-        if (uid <= 0) {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-668-            if (self.uid != 0) {
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-715-        }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-716-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-717-        return true
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-718-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-719-    
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:720:    @objc public func exitCurrentAccount() {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-721-        Log.i("VehicleManager exitCurrentAccount")
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-722-        disableSafeKey()
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-723-        MqttServiceManager.shared.stopService()
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-724-        close()
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-725-        VehicleDBManager.deleteDB();
+--
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-728-        self.vehicleSwitchedEvent.send(VehicleSwitchedObject("", nil));
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-729-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-730-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-731-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-732-    // 进入车控页
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:733:    @objc public func enterVehicleControlPage() {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-734-        AppRunState.shared.setInVehicleControlPage(true)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-735-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-736-
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-737-    // 离开车控页
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:738:    @objc public func exitVehicleControlPage() {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-739-        // 非车控页，不能弹出蓝牙权限弹框，除非由于Polling开启触发的弹框
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-740-        AppRunState.shared.setInVehicleControlPage(false)
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-741-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-742-    
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift:743:    @objc public func isNetworkReachable() -> Bool {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-744-        return NetworkMonitor.shared.isNetworkReachable()
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-745-    }
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-746-    
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-747-    func disableSafeKey() {
+/Users/xpeng/Desktop/workSpace/XPMotors_IOS/submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift-748-        Log.i("VehicleManager 禁用安全钥匙+清理报文")

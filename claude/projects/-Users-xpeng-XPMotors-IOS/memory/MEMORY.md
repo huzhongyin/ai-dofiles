@@ -1,0 +1,3 @@
+- [日志分析skill三条核心反馈](feedback_log_analyzer_quality.md) — 关键字必须用户提供、调用链必须完整、评分必须用户确认
+- [方案书生成方法论反馈](feedback_spec_generation_methodology.md) — 调用链驱动而非全量搜索、多态子类必须解析、三层条件分离
+- [Spec Coding 分层架构改造复盘](feedback_spec_coding_tiered_architecture.md) — 五层按需加载、module-registry 单一数据源、deps.yml trigger_keywords 精筛、submodule gitignore 约定

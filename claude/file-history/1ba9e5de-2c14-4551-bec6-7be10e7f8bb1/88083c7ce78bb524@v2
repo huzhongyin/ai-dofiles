@@ -1,0 +1,39 @@
+# XPKits — LocalPod 规范
+
+## 模块定位
+
+应用级工具集组件，通过 subspec 按功能域划分：Media（相册/视频拍摄压缩/图片预览/陀螺仪）、Share（微信/微博分享封装）、QRCode（二维码扫描与路由分发）、Location（高德地图位置选择器）、Public（公共头文件）。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPKits/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+OC 为主，少量 Swift（XPMediaVideoCompressionConfig.swift/QRCodeRequests.swift）。OC 类 `XP` 前缀（XPImageManager/XPVideoPlayer 等）。各 subspec 独立，按需依赖。
+
+## Podspec 依赖约束
+
+依赖 XPBase_Common、XPBase_UI。Media subspec 依赖 Photos framework；Share 依赖微信/微博 SDK；Location 依赖高德地图 SDK。私有源 `gitlab.x-peng.com`，语义化版本。5 个 subspec：Media/Share/QRCode/Location/Public。
+
+## 命名前缀与 API 稳定性
+
+OC 类 `XP` 前缀（XPImageManager/XPVideoPlayer/ShareManager 等）。各 subspec 公开 API 独立稳定。新增功能域应作为独立 subspec 而非混入已有 subspec。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止跨 subspec 直接依赖（各 subspec 应独立，通过 Public subspec 共享头文件）
+- 禁止在工具组件中引入特定业务逻辑
+- 禁止直接使用系统相册/相机 API（必须通过 XPImageManager 封装）
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

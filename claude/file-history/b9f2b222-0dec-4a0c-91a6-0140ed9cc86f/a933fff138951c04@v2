@@ -1,0 +1,369 @@
+# Try to import yaml, fallback to default config if not available
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
+
+import time
+import hashlib
+from pathlib import Path
+from typing import Dict, List, Optional, Set
+from datetime import datetime, timedelta
+from scripts.models.permission_model import (
+    User, PermissionRequest, PermissionResponse, ActionType,
+    PermissionResult, TemporaryGrant, AuditEntry
+)
+
+class PermissionChecker:
+    """权限检查器 - 支持模块级权限控制和降级策略"""
+
+    def __init__(self, config_path: Optional[str] = None):
+        self.config = self._load_config(config_path)
+        self._permission_cache: Dict[str, tuple] = {}  # (result, expire_time)
+        self._system_healthy = True
+        self._audit_log: List[AuditEntry] = []
+        self._temp_grants: List[TemporaryGrant] = []
+
+    def _load_config(self, config_path: Optional[str] = None) -> dict:
+        """加载权限配置"""
+        if config_path is None:
+            config_path = Path(__file__).parent.parent / "config" / "permission_config.yaml"
+
+        if YAML_AVAILABLE and Path(config_path).exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f)
+
+        return self._default_permission_config()
+
+    def _default_permission_config(self) -> dict:
+        """默认权限配置"""
+        return {
+            'roles': {
+                'vehicle_team_member': {
+                    'permissions': [
+                        'vehicle_sdk:read',
+                        'vehicle_sdk:write',
+                        'ai_assist:vehicle_modules'
+                    ]
+                },
+                'business_developer': {
+                    'permissions': [
+                        'business_modules:read',
+                        'business_modules:write',
+                        'ai_assist:business_modules',
+                        'base_modules:read'
+                    ]
+                },
+                'senior_architect': {
+                    'permissions': [
+                        '*:read',
+                        '*:write',
+                        'ai_assist:all_modules',
+                        'permission:manage'
+                    ]
+                }
+            },
+            'module_ownership': {
+                'XPVehicleSDK': {
+                    'owners': ['vehicle-team'],
+                    'collaborators': ['senior-architect'],
+                    'permission_level': 'restricted',
+                    'ai_restrictions': [
+                        'require_human_review_for_core_apis',
+                        'audit_all_ai_generated_changes'
+                    ]
+                },
+                'XPCarControlCore': {
+                    'owners': ['vehicle-team'],
+                    'permission_level': 'restricted'
+                },
+                'XPBusiness_AI': {
+                    'owners': ['ai-team'],
+                    'permission_level': 'team_managed'
+                },
+                'XPBase_Common': {
+                    'owners': ['platform-team'],
+                    'permission_level': 'public'
+                }
+            },
+            'cache_settings': {
+                'ttl': 300,  # 5分钟
+                'max_size': 1000
+            }
+        }
+
+    def check_permission(self, request: PermissionRequest) -> PermissionResponse:
+        """检查模块访问权限"""
+        # 1. 检查缓存
+        cache_key = self._generate_cache_key(request)
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result:
+            return cached_result
+
+        # 2. 系统健康检查
+        if not self._check_system_health():
+            result = self._handle_degraded_mode(request)
+            self._audit_permission_check(request, result)
+            return result
+
+        # 3. 检查临时授权
+        temp_grant = self._check_temporary_grants(request)
+        if temp_grant:
+            result = PermissionResponse(allowed=True, restrictions=['temporary_grant'])
+            self._cache_result(cache_key, result)
+            self._audit_permission_check(request, result)
+            return result
+
+        # 4. 执行权限检查
+        result = self._perform_permission_check(request)
+
+        # 5. 缓存结果
+        self._cache_result(cache_key, result)
+
+        # 6. 记录审计日志
+        self._audit_permission_check(request, result)
+
+        return result
+
+    def _check_system_health(self) -> bool:
+        """检查系统健康状态"""
+        # 简化版健康检查 - 实际应该检查数据库、缓存等
+        return self._system_healthy
+
+    def _handle_degraded_mode(self, request: PermissionRequest) -> PermissionResponse:
+        """处理系统降级模式"""
+        if request.action == ActionType.READ:
+            self._log_degraded_access(request)
+            return PermissionResponse(
+                allowed=True,
+                restrictions=['degraded_mode'],
+                warning='系统降级模式，仅允许只读访问',
+                cache_ttl=60  # 降级模式下缓存时间更短
+            )
+
+        return PermissionResponse(
+            allowed=False,
+            restrictions=['system_unavailable'],
+            error='权限系统暂不可用，请联系管理员',
+            cache_ttl=0  # 不缓存错误结果
+        )
+
+    def _perform_permission_check(self, request: PermissionRequest) -> PermissionResponse:
+        """执行实际的权限检查"""
+        user = request.user
+        module = request.module
+        action = request.action
+
+        # 1. 检查用户角色权限
+        user_permissions = self._get_user_permissions(user)
+
+        # 2. 检查模块所有权
+        module_config = self._get_module_config(module)
+
+        # 3. 验证基本权限
+        if not self._has_basic_permission(user_permissions, module, action):
+            return PermissionResponse(
+                allowed=False,
+                error=f"用户 {user.name} 无权限对模块 {module} 执行 {action.value} 操作"
+            )
+
+        # 4. AI辅助特殊检查
+        if action == ActionType.AI_ASSIST:
+            return self._check_ai_permissions(user, module, module_config)
+
+        # 5. 检查模块级限制
+        restrictions = self._check_module_restrictions(user, module, module_config)
+
+        return PermissionResponse(
+            allowed=True,
+            restrictions=restrictions,
+            audit_required=len(restrictions) > 0
+        )
+
+    def _get_user_permissions(self, user: User) -> Set[str]:
+        """获取用户的所有权限"""
+        permissions = set()
+
+        for role in user.roles:
+            role_config = self.config['roles'].get(role, {})
+            role_permissions = role_config.get('permissions', [])
+            permissions.update(role_permissions)
+
+        return permissions
+
+    def _get_module_config(self, module: str) -> dict:
+        """获取模块配置"""
+        module_ownership = self.config.get('module_ownership', {})
+
+        # 精确匹配
+        if module in module_ownership:
+            return module_ownership[module]
+
+        # 模式匹配 (如 XPBusiness_* 匹配所有XPBusiness_开头的模块)
+        for pattern, config in module_ownership.items():
+            if pattern.endswith('*'):
+                prefix = pattern[:-1]
+                if module.startswith(prefix):
+                    return config
+
+        # 默认配置
+        return {'permission_level': 'public', 'owners': ['all']}
+
+    def _has_basic_permission(self, user_permissions: Set[str], module: str, action: ActionType) -> bool:
+        """检查基本权限"""
+        # 检查通配符权限
+        if f"*:{action.value}" in user_permissions:
+            return True
+
+        # 检查具体模块权限
+        permission_key = f"{module.lower()}:{action.value}"
+        if permission_key in user_permissions:
+            return True
+
+        # 检查模块类别权限
+        if action == ActionType.AI_ASSIST:
+            # AI辅助权限特殊处理
+            if module.startswith("XPVehicle"):
+                return "ai_assist:vehicle_modules" in user_permissions
+            elif module.startswith("XPBusiness_"):
+                return "ai_assist:business_modules" in user_permissions
+            elif module.startswith("XPBase_"):
+                return "ai_assist:base_modules" in user_permissions
+        else:
+            # 常规读写权限
+            if module.startswith("XPVehicle"):
+                return f"vehicle_sdk:{action.value}" in user_permissions
+            elif module.startswith("XPBusiness_"):
+                return f"business_modules:{action.value}" in user_permissions
+            elif module.startswith("XPBase_"):
+                return f"base_modules:{action.value}" in user_permissions
+
+        return False
+
+    def _check_ai_permissions(self, user: User, module: str, module_config: dict) -> PermissionResponse:
+        """检查AI辅助权限"""
+        ai_restrictions = module_config.get('ai_restrictions', [])
+
+        # 受限模块需要人工审核
+        if 'require_human_review_for_core_apis' in ai_restrictions:
+            return PermissionResponse(
+                allowed=True,
+                restrictions=['ai_human_review_required'],
+                audit_required=True,
+                warning=f"模块 {module} 的AI辅助修改需要人工审核"
+            )
+
+        # 审计所有AI生成的变更
+        if 'audit_all_ai_generated_changes' in ai_restrictions:
+            return PermissionResponse(
+                allowed=True,
+                restrictions=['ai_audit_required'],
+                audit_required=True
+            )
+
+        return PermissionResponse(allowed=True)
+
+    def _check_module_restrictions(self, user: User, module: str, module_config: dict) -> List[str]:
+        """检查模块级限制"""
+        restrictions = []
+        permission_level = module_config.get('permission_level', 'public')
+
+        if permission_level == 'restricted':
+            owners = module_config.get('owners', [])
+            collaborators = module_config.get('collaborators', [])
+
+            user_teams = set(user.teams)
+            allowed_teams = set(owners + collaborators)
+
+            if not user_teams.intersection(allowed_teams):
+                # 这种情况应该在基本权限检查中就被拒绝了
+                restrictions.append('unauthorized_module_access')
+
+        return restrictions
+
+    def _check_temporary_grants(self, request: PermissionRequest) -> Optional[TemporaryGrant]:
+        """检查临时授权"""
+        current_time = datetime.now()
+
+        for grant in self._temp_grants:
+            if (grant.user_id == request.user.id and
+                grant.module == request.module and
+                grant.action == request.action and
+                grant.expires_at > current_time):
+                return grant
+
+        return None
+
+    def _generate_cache_key(self, request: PermissionRequest) -> str:
+        """生成缓存键"""
+        key_parts = [
+            request.user.id,
+            request.module,
+            request.action.value,
+            str(sorted(request.user.roles)),
+            str(sorted(request.user.teams))
+        ]
+        key_string = "|".join(key_parts)
+        return hashlib.md5(key_string.encode()).hexdigest()
+
+    def _get_from_cache(self, cache_key: str) -> Optional[PermissionResponse]:
+        """从缓存获取结果"""
+        if cache_key in self._permission_cache:
+            result, expire_time = self._permission_cache[cache_key]
+            if time.time() < expire_time:
+                return result
+            else:
+                # 清理过期缓存
+                del self._permission_cache[cache_key]
+        return None
+
+    def _cache_result(self, cache_key: str, result: PermissionResponse):
+        """缓存权限检查结果"""
+        if result.cache_ttl > 0:
+            expire_time = time.time() + result.cache_ttl
+            self._permission_cache[cache_key] = (result, expire_time)
+
+            # 简单的缓存大小控制
+            max_size = self.config.get('cache_settings', {}).get('max_size', 1000)
+            if len(self._permission_cache) > max_size:
+                # 移除最老的条目
+                oldest_key = min(self._permission_cache.keys(),
+                               key=lambda k: self._permission_cache[k][1])
+                del self._permission_cache[oldest_key]
+
+    def _audit_permission_check(self, request: PermissionRequest, response: PermissionResponse):
+        """记录权限检查审计日志"""
+        result = PermissionResult.ALLOWED if response.allowed else PermissionResult.DENIED
+
+        audit_entry = AuditEntry(
+            timestamp=datetime.now(),
+            user_id=request.user.id,
+            module=request.module,
+            action=request.action,
+            result=result,
+            source_ip=request.user.source_ip,
+            additional_context={
+                'restrictions': response.restrictions,
+                'audit_required': response.audit_required,
+                'cache_hit': hasattr(response, '_from_cache')
+            }
+        )
+
+        self._audit_log.append(audit_entry)
+
+        # 实际生产中应该写入持久化存储
+        if not response.allowed or response.audit_required:
+            print(f"AUDIT: {audit_entry}")
+
+    def _log_degraded_access(self, request: PermissionRequest):
+        """记录降级模式访问"""
+        print(f"DEGRADED ACCESS: User {request.user.id} accessing {request.module} in degraded mode")
+
+    def add_temporary_grant(self, grant: TemporaryGrant):
+        """添加临时授权"""
+        self._temp_grants.append(grant)
+
+        # 清理过期的临时授权
+        current_time = datetime.now()
+        self._temp_grants = [g for g in self._temp_grants if g.expires_at > current_time]

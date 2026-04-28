@@ -1,0 +1,139 @@
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional, Any, Union
+from enum import Enum
+from datetime import datetime
+
+class StandardType(Enum):
+    """标准类型枚举"""
+    CODE_STYLE = "code_style"
+    ARCHITECTURE = "architecture"
+    SECURITY = "security"
+    AI_USAGE = "ai_usage"
+    GIT_WORKFLOW = "git_workflow"
+
+class SeverityLevel(Enum):
+    """违规严重程度"""
+    ERROR = "error"       # 必须修复
+    WARNING = "warning"   # 建议修复
+    INFO = "info"         # 信息提示
+
+class ViolationSource(Enum):
+    """违规来源"""
+    STATIC_ANALYSIS = "static_analysis"
+    DYNAMIC_CHECK = "dynamic_check"
+    AI_ANALYSIS = "ai_analysis"
+    MANUAL_REVIEW = "manual_review"
+
+@dataclass
+class StandardRule:
+    """标准规则定义"""
+    id: str
+    name: str
+    type: StandardType
+    description: str
+    severity: SeverityLevel
+
+    # 规则检查相关
+    enabled: bool = True
+    pattern: Optional[str] = None         # 正则表达式或检查模式
+    file_patterns: List[str] = field(default_factory=list)  # 适用文件模式
+    exclude_patterns: List[str] = field(default_factory=list)  # 排除文件模式
+
+    # 元数据
+    tags: List[str] = field(default_factory=list)
+    documentation_url: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)
+
+@dataclass
+class ViolationInstance:
+    """违规实例"""
+    rule_id: str
+    file_path: str
+    line_number: int
+    message: str
+
+    # 可选字段
+    column_number: Optional[int] = None
+    code_snippet: Optional[str] = None
+    suggested_fix: Optional[str] = None
+
+    # 上下文信息
+    severity: SeverityLevel = SeverityLevel.WARNING
+    source: ViolationSource = ViolationSource.STATIC_ANALYSIS
+    confidence: float = 1.0  # 置信度 0-1
+
+    # 元数据
+    detected_at: datetime = field(default_factory=datetime.now)
+    additional_context: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class StandardsViolationReport:
+    """标准违规报告"""
+    project_path: str
+    scan_timestamp: datetime
+
+    # 违规统计
+    total_violations: int
+    violations_by_severity: Dict[SeverityLevel, int]
+    violations_by_type: Dict[StandardType, int]
+
+    # 详细违规列表
+    violations: List[ViolationInstance] = field(default_factory=list)
+
+    # 扫描统计
+    scanned_files: int = 0
+    scan_duration_ms: int = 0
+
+    # 修复建议
+    recommendations: List[str] = field(default_factory=list)
+
+@dataclass
+class StandardsConfiguration:
+    """标准配置"""
+    project_name: str
+    language: str  # swift, objective-c, mixed
+
+    # 规则配置
+    enabled_rules: List[str] = field(default_factory=list)
+    disabled_rules: List[str] = field(default_factory=list)
+    custom_rules: List[StandardRule] = field(default_factory=list)
+
+    # 文件过滤
+    include_patterns: List[str] = field(default_factory=list)
+    exclude_patterns: List[str] = field(default_factory=list)
+
+    # 严重程度配置
+    fail_on_error: bool = True
+    fail_on_warning: bool = False
+
+    # 输出配置
+    output_format: str = "json"  # json, xml, text
+    max_violations_per_file: int = 100
+
+    # 元数据
+    version: str = "1.0.0"
+    last_updated: datetime = field(default_factory=datetime.now)
+
+@dataclass
+class FeishuDocument:
+    """飞书文档引用"""
+    doc_id: str
+    title: str
+    url: str
+    section: Optional[str] = None
+    last_synced: Optional[datetime] = None
+    checksum: Optional[str] = None  # 用于检测文档变更
+
+@dataclass
+class StandardsSync:
+    """标准同步状态"""
+    feishu_documents: List[FeishuDocument] = field(default_factory=list)
+    last_sync_timestamp: Optional[datetime] = None
+    sync_status: str = "pending"  # pending, syncing, success, error
+    sync_errors: List[str] = field(default_factory=list)
+
+    # 同步统计
+    rules_added: int = 0
+    rules_updated: int = 0
+    rules_removed: int = 0

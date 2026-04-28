@@ -1,0 +1,556 @@
+//
+//  BleKeyV3DataParser.cpp
+//  iOS-BLEDataProcessor
+//
+//  Created by huzy2 on 2024/8/28.
+//
+
+#include "BleKeyV3DataParser.hpp"
+#include "../tools/log/log.h"
+#include <string.h>
+#include "../tools/tools.hpp"
+#include "../tools/DataCovertTool.h"
+#include "BLERescueKeyDataParser.hpp"
+
+const char * const commonResponseMessageHeader = "commonResponse";
+const char * const tboxRunStateMessageHeader = "tboxRunState";
+const char * const carNumericDataMessageHeader = "carNumeric";
+const char * const selfCalibrationMessageHeader = "selfCalirationData";
+const char * const rssiCollectMessageHeader = "rssiCollectData";
+const char * const parkingControlStateMessageHeader = "parkingControl";
+const char * const chargeExtensionMessageHeader = "chargeExtension";
+const char * const pollingFuncStateMessageHeader = "pollingFuncState";
+const char * const rtAuthResultMessageHeader = "rtAuthResult";
+const char * const rtNotificationMessageHeader = "rtNotification";
+
+using namespace SDKBleKeyV3;
+
+uint8_t convertWindowState(uint8_t originValue) {
+    return (200 - originValue) / 2;
+}
+
+uint8_t covertTrunkState(uint8_t originValue) {
+    if (3 == originValue) {
+        return 1;
+    } else if (originValue == 0) {
+        return 0xFF;
+    } else if (originValue == 1) {
+        return 0;
+    } else if (originValue == 2) {
+        return 3;
+    } else if (originValue == 4) {
+        return 2;
+    } else {
+        return originValue;
+    }
+}
+
+uint8_t covertExtDoorState(uint8_t originValue) {
+    if (originValue == 1) {
+        return CarScissorsDoorStateClose;
+    } else if (originValue == 2) {
+        return CarScissorsDoorStateOpening;
+    } else if (originValue == 3) {
+        return CarScissorsDoorStateClosing;
+    } else if (originValue == 4) {
+        return CarScissorsDoorStateStop;
+    } else if (originValue == 5) {
+        return CarScissorsDoorStateOpen;
+    } else {
+        return CarScissorsDoorStateNotAvailable;
+    }
+}
+
+
+
+void BleKeyV3DataParser::buildCommonResponseMessage(CommonResponseMessage *commonResponse) {
+    kCarEventStart(common, commonResponseMessageHeader)
+    kAddUInt32ItemToJson(common, "commonStatus", commonResponse->status);
+    kAddUInt32ItemToJson(common, "commonErrorCode", commonResponse->errorCode);
+    if (commonResponse->errorReason.len != 0) {
+        char * reason = (char *)calloc(1, commonResponse->errorReason.len + 1);
+        memcpy(reason, commonResponse->errorReason.value, commonResponse->errorReason.len);
+        cJSON_AddStringToObject(common, "commonErrorReason", reason);
+        safe_free(reason);
+        safe_free(commonResponse->errorReason.value);
+    }
+    kCarEventEnd(common, this->resultArray);
+}
+
+void BleKeyV3DataParser::buildCarNumDataMessage(CarNumDataMessage *carNumData) {
+    kVehicleStateStart(carNum)
+    kAddUInt32ItemToJson(carNum, "totalDistances", carNumData->totalDistances);
+    kAddUInt8ItemToJson(carNum, "vcuMileage", carNumData->vcuMileage);
+    kAddUInt16ItemToJson(carNum, "totalBatteryLife", carNumData->totalBatteryLife);
+    kAddUInt16ItemToJson(carNum, "carSpeed", carNumData->carSpeed);
+    kAddUInt8ItemToJson(carNum, "carSpeedState", carNumData->carSpeedState);
+    kVehicleStateEnd(carNumericDataMessageHeader, carNum, this->resultArray)
+}
+
+void BleKeyV3DataParser::buildSelfCalibrationMessage(SelfCalibrationMessage *selfCalibrationData) {
+    kCarEventStart(selfCalibration, selfCalibrationMessageHeader)
+    kAddUInt8ItemToJson(selfCalibration, "result", selfCalibrationData->result);
+    kAddUInt8ItemToJson(selfCalibration, "resultLen", selfCalibrationData->resultLen);
+    if (selfCalibrationData->resultLen != 0) {
+
+        uint8_t length = sizeof(selfCalibrationData->direction) + sizeof(selfCalibrationData->resultLen) + selfCalibrationData->resultLen;
+        uint8_t *uploadData = (uint8_t *)malloc(length);
+                
+        memcpy(uploadData, &selfCalibrationData->direction, sizeof(selfCalibrationData->direction));
+        memcpy(uploadData + sizeof(selfCalibrationData->direction), &selfCalibrationData->resultLen, sizeof(selfCalibrationData->resultLen));
+        memcpy(uploadData + sizeof(selfCalibrationData->direction) + sizeof(selfCalibrationData->resultLen), selfCalibrationData->resultData, selfCalibrationData->resultLen);
+        
+        char *hexStr = (char *)calloc(1, length * 2 + 1);
+        bytesToHexString(uploadData, length, hexStr);
+        cJSON_AddStringToObject(selfCalibration, "resultData", hexStr);
+        safe_free(hexStr);
+        safe_free(uploadData);
+        safe_free(selfCalibrationData->resultData);
+    }
+    kAddUInt8ItemToJson(selfCalibration, "direction", selfCalibrationData->direction);
+    kAddUInt8ItemToJson(selfCalibration, "distance", selfCalibrationData->distance);
+    kAddUInt32ItemToJson(selfCalibration, "uid", selfCalibrationData->uid);
+    if (selfCalibrationData->deviceModel.len != 0) {
+        char * deviceModel = (char *)calloc(1, selfCalibrationData->deviceModel.len + 1);
+        memcpy(deviceModel, selfCalibrationData->deviceModel.value, selfCalibrationData->deviceModel.len);
+        cJSON_AddStringToObject(selfCalibration, "deviceModel", deviceModel);
+        safe_free(deviceModel);
+        safe_free(selfCalibrationData->deviceModel.value);
+    }
+    kCarEventEnd(selfCalibration, this->resultArray);
+}
+
+void BleKeyV3DataParser::buildRssiCollectMessage(RssiCollectMessage *rssiCollectData) {
+    kCarEventStart(rssiCollect, rssiCollectMessageHeader)
+    kAddUInt8ItemToJson(rssiCollect, "result", rssiCollectData->result);
+    kAddUInt8ItemToJson(rssiCollect, "direction", rssiCollectData->direction);
+    kAddUInt8ItemToJson(rssiCollect, "distance", rssiCollectData->distance);
+    kAddUInt32ItemToJson(rssiCollect, "uid", rssiCollectData->uid);
+    if (rssiCollectData->deviceModel.len != 0) {
+        char * deviceModel = (char *)calloc(1, rssiCollectData->deviceModel.len + 1);
+        memcpy(deviceModel, rssiCollectData->deviceModel.value, rssiCollectData->deviceModel.len);
+        cJSON_AddStringToObject(rssiCollect, "deviceModel", deviceModel);
+        safe_free(deviceModel);
+        safe_free(rssiCollectData->deviceModel.value);
+    }
+    kCarEventEnd(rssiCollect, this->resultArray);
+}
+
+void BleKeyV3DataParser::buildChargeExtensionMessage(ChargeExtensionMessage *chargeExtensionData) {
+    kVehicleStateStart(chargeExtension)
+    kAddUInt8ItemToJson(chargeExtension, "chargePortState", chargeExtensionData->chargePortState);
+    kAddUInt8ItemToJson(chargeExtension, "chargePortAction", chargeExtensionData->chargePortAction);
+    kAddUInt8ItemToJson(chargeExtension, "powerBatteryState", chargeExtensionData->powerBatteryState);
+    kAddUInt8ItemToJson(chargeExtension, "chargePortInsertState", chargeExtensionData->chargePortInsertState);
+    kAddUInt8ItemToJson(chargeExtension, "reserveChargeState", chargeExtensionData->reserveChargeState);
+    kVehicleStateEnd(chargeExtensionMessageHeader, chargeExtension, this->resultArray)
+}
+
+void BleKeyV3DataParser::buildParkingControlStateMessage(ParkingControlStateMessage *parkingControlStateMessage) {
+    kCarEventStart(parkingControl, parkingControlStateMessageHeader)
+    kAddUInt8ItemToJson(parkingControl, "parkingControlState", parkingControlStateMessage->result);;
+    kCarEventEnd(parkingControl, this->resultArray)
+}
+
+void BleKeyV3DataParser::buildPollingFuncStateMessage(PollingFuncStateMessage *pollingFuncStateMessage) {
+    kCarEventStart(pollingFunc, pollingFuncStateMessageHeader)
+    kAddUInt8ItemToJson(pollingFunc, "pollingUnlockState", pollingFuncStateMessage->pollingUnlockState);;
+    kCarEventEnd(pollingFunc, this->resultArray)
+}
+
+void BleKeyV3DataParser::buildRtAuthResultMessage(RtAuthResultMessage *rtAuthResultMessage) {
+    kCarEventStart(rtAuth, rtAuthResultMessageHeader)
+    kAddUInt8ItemToJson(rtAuth, "rtAuthResult", rtAuthResultMessage->authResult);
+    kAddUInt8ItemToJson(rtAuth, "rtAuthErrorCode", rtAuthResultMessage->errorCode);
+    kCarEventEnd(rtAuth, this->resultArray)
+}
+
+void BleKeyV3DataParser::buildRtNotificationMessage(RtNotificationMessage *rtNotificationMessage) {
+    kCarEventStart(rtNotify, rtNotificationMessageHeader)
+    kAddUInt8ItemToJson(rtNotify, "rtPollingResult", rtNotificationMessage->pollingResult);
+    kCarEventEnd(rtNotify, this->resultArray)
+}
+
+void BleKeyV3DataParser::parseAuth0Response(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3Auth0Response *auth0Response = (BleKeyV3Auth0Response *)messageData.value;
+    
+    Auth0ResponseMessage auth0ResponseMessage;
+    if (auth0Response->rand01.len > sizeof(auth0ResponseMessage.rand01) || auth0Response->rand1.len > sizeof(auth0ResponseMessage.rand1)) {
+        XP_LOG_INFO("BleKeyV3", "protocol len error,need bigger Auth0ResponseMessage");
+    } else {
+        auth0ResponseMessage.rand01 = auth0Response->rand01.value;
+        auth0ResponseMessage.rand1 = auth0Response->rand1.value;
+    }
+    buildAuth0ResponseMessage(&auth0ResponseMessage);
+}
+
+void BleKeyV3DataParser::parseCommonCarState(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3CarStateD0 *commonCarStates = (BleKeyV3CarStateD0 *)messageData.value;
+    
+    DoorMessage doorMessage;
+    doorMessage.driver_door_lock_st = commonCarStates->lockState;
+    doorMessage.driver_door_ajar_st = commonCarStates->leftFrontDoorState;
+    doorMessage.passenger_door_ajar_st = commonCarStates->rightFrontDoorState;
+    doorMessage.rear_left_door_ajar_st = commonCarStates->leftBackDoorState;
+    doorMessage.rear_right_door_ajar_st = commonCarStates->rightBackDoorState;
+    doorMessage.trunk_ajar_st = covertTrunkState(commonCarStates->trunckState);
+    doorMessage.bonnet_ajar_st = commonCarStates->bonnetAjarState;
+    doorMessage.temp_lock_st = commonCarStates->tempeoryLockState;
+    doorMessage.trunk_ajar_st_new = commonCarStates->trunckActionState;
+    doorMessage.left_slide_door_status = commonCarStates->leftSlideState;
+    doorMessage.left_slide_door_position = commonCarStates->leftSlideOpenDegree;
+    doorMessage.right_slide_door_status = commonCarStates->rightSlideState;
+    doorMessage.right_slide_door_position = commonCarStates->rightSlideOpenDegree;
+    doorMessage.front_left_power_door = commonCarStates->leftFrontElecDoorState;
+    doorMessage.rear_left_power_door = commonCarStates->leftBackElecDoorState;
+    doorMessage.front_right_power_door = commonCarStates->rightFrontElecDoorState;
+    doorMessage.rear_right_power_door = commonCarStates->rightBackElecDoorState;
+    doorMessage.super_lock_status = commonCarStates->superLockState;
+    buildDoorMessage(&doorMessage);
+    
+    WindowMessage windowMessage;
+    windowMessage.front_left_window_position = convertWindowState(commonCarStates->leftFrontWindowDegree);
+    windowMessage.front_right_window_position = convertWindowState(commonCarStates->rightFrontWindowDegree);
+    windowMessage.rear_left_window_position = convertWindowState(commonCarStates->leftBackWindowDegree);
+    windowMessage.rear_right_window_position = convertWindowState(commonCarStates->rightBackWindowDegree);
+    buildWindowMessage(&windowMessage);
+    
+    ExtDoorMessage extDoorMessage;
+    extDoorMessage.mainDoorState = covertExtDoorState(commonCarStates->mainExtDoorState);
+    extDoorMessage.subDoorState = covertExtDoorState(commonCarStates->subExtDoorState);
+    buildExtDoorMessage(&extDoorMessage);
+    
+    TrailerHookStateMessage trailerHookMessage;
+    trailerHookMessage.hook_status = commonCarStates->trailerHookState;
+    trailerHookMessage.hook_machine_status = commonCarStates->trailerHookMachineState;
+    trailerHookMessage.hook_system_monitor = commonCarStates->trailerHookSystemState;
+    buildTrailerHookStateMessage(&trailerHookMessage);
+    
+    WireControlStateMessage wireControlMessage;
+    wireControlMessage.wire_control_mode = commonCarStates->wireControlModeState;
+    buildWireControlStateMessage(&wireControlMessage);
+
+}
+
+void BleKeyV3DataParser::parseBleXpuParkingState(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3CarStateD2 *parkingV3Message = (BleKeyV3CarStateD2 *)messageData.value;
+    
+    ParkingMessage parkingEventMessage;
+    parkingEventMessage.parkingState = parkingV3Message->parkingState;
+    parkingEventMessage.speed = parkingV3Message->parkingSpeed;
+    parkingEventMessage.parkingExpType = parkingV3Message->parkingExceptionReason;
+    parkingEventMessage.gear = parkingV3Message->parkingGearVaule;
+    parkingEventMessage.parkingAnimate = parkingV3Message->parkingAnimation;
+    parkingEventMessage.parkingProcess = parkingV3Message->parkingDegree;
+    
+    parkingEventMessage.leaveParkState = parkingV3Message->parkingLeaveParkingState;
+    parkingEventMessage.welcomeParkOutState = parkingV3Message->parkingWelcomeState;
+    parkingEventMessage.parkOutAvailableDirection = parkingV3Message->parkingOutDirection;
+    parkingEventMessage.parkOutCurrentDirection = parkingV3Message->parkingOutCurrentDirection;
+    parkingEventMessage.parkOutDirectionIfOk = parkingV3Message->parkingChooseDirectionIsAvailable;
+    parkingEventMessage.parkOutRecommendDirection = parkingV3Message->parkingOutRecommedDiretion;
+    parkingEventMessage.parkOutState = parkingV3Message->parkingOutState;
+    parkingEventMessage.parkInState = parkingV3Message->parkingInState;
+    parkingEventMessage.parkingCollisionStatus = parkingV3Message->parkingCollisionStatus;
+    parkingEventMessage.smartPKOutTips = parkingV3Message->smartPKOutTips;
+
+    parkingEventMessage.parkingRSLAreaLevel = parkingV3Message->parkingRSLAreaLevel; // 右侧面前区域水平
+    parkingEventMessage.parkingRSRAreaLevel = parkingV3Message->parkingRSRAreaLevel; // 右侧侧面区域水平
+    parkingEventMessage.parkingROLAreaLevel = parkingV3Message->parkingROLAreaLevel; // 右侧后面区域水平
+    parkingEventMessage.parkingRCLAreaLevel = parkingV3Message->parkingRCLAreaLevel; // 右侧车道区域水平
+    parkingEventMessage.parkingRCRAreaLevel = parkingV3Message->parkingRCRAreaLevel; // 右侧车道区域水平
+    parkingEventMessage.parkingRORAreaLevel = parkingV3Message->parkingRORAreaLevel; // 右侧后面区域水平
+    parkingEventMessage.parkingFSLAreaLevel = parkingV3Message->parkingFSLAreaLevel; // 左侧面前区域水平
+    parkingEventMessage.parkingFSRAreaLevel = parkingV3Message->parkingFSRAreaLevel; // 左侧侧面区域水平
+    parkingEventMessage.parkingFOLAreaLevel = parkingV3Message->parkingFOLAreaLevel; // 左侧后面区域水平
+    parkingEventMessage.parkingFCLAreaLevel = parkingV3Message->parkingFCLAreaLevel; // 左侧车道区域水平
+    parkingEventMessage.parkingFCRAreaLevel = parkingV3Message->parkingFCRAreaLevel; // 右侧车道区域水平
+    parkingEventMessage.parkingFORAreaLevel = parkingV3Message->parkingFORAreaLevel; // 右侧车道区域水平
+
+    buildParkingEventMessage(&parkingEventMessage);
+    
+    ParkingMessage parkingStateMessage;
+    parkingStateMessage.gear = parkingV3Message->parkingGearVaule;
+    parkingStateMessage.parkingAnimate = parkingV3Message->parkingAnimation;
+    buildParkingStateMessage(&parkingStateMessage);
+}
+
+void BleKeyV3DataParser::parseChargeState(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3CarStateD1 *chargeMessage = (BleKeyV3CarStateD1 *)messageData.value;
+    
+    ChargePortMessage chargePortMessage;
+    chargePortMessage.slow_charge_port_status = chargeMessage->chargePortState;
+    chargePortMessage.charge_gun_lock_status = chargeMessage->chargeGunLockState;
+    buildChargePortMessage(&chargePortMessage);
+    
+    ChargeExtensionMessage chargeExtensionMessage;
+    chargeExtensionMessage.chargePortState = chargeMessage->chargePortState;
+    chargeExtensionMessage.chargePortAction = chargeMessage->chargePortAction;
+    chargeExtensionMessage.powerBatteryState = chargeMessage->powerBatteryState;
+    chargeExtensionMessage.chargePortInsertState = chargeMessage->chargePortInsertState;
+    chargeExtensionMessage.reserveChargeState = chargeMessage->reserveChargeState;
+    buildChargeExtensionMessage(&chargeExtensionMessage);
+}
+
+void BleKeyV3DataParser::parseSelfCalibrationMessage(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3CarStateD4 *d4Message = (BleKeyV3CarStateD4 *)messageData.value;
+    
+    SelfCalibrationMessage selfCalibrationMessage;
+    selfCalibrationMessage.result = d4Message->result;
+    selfCalibrationMessage.direction = d4Message->direction;
+    selfCalibrationMessage.distance = d4Message->distance;
+    selfCalibrationMessage.uid = d4Message->uid;
+    selfCalibrationMessage.resultLen = d4Message->resultData.len;
+    if (selfCalibrationMessage.resultLen > 0) {
+        selfCalibrationMessage.resultData = (uint8_t *)malloc(selfCalibrationMessage.resultLen);
+        memcpy(selfCalibrationMessage.resultData, d4Message->resultData.value, selfCalibrationMessage.resultLen);
+        free(d4Message->resultData.value);
+        d4Message->resultData.value = NULL;
+    }
+    selfCalibrationMessage.deviceModel.len = d4Message->deviceModel.len;
+    if (selfCalibrationMessage.deviceModel.len > 0) {
+        selfCalibrationMessage.deviceModel.value = (uint8_t *)malloc(selfCalibrationMessage.deviceModel.len);
+        memcpy(selfCalibrationMessage.deviceModel.value, d4Message->deviceModel.value, selfCalibrationMessage.deviceModel.len);
+        free(d4Message->deviceModel.value);
+        d4Message->deviceModel.value = NULL;
+    }
+    buildSelfCalibrationMessage(&selfCalibrationMessage);
+}
+
+void BleKeyV3DataParser::parseRssiCollectMessage(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3CarStateD6 *d6Message = (BleKeyV3CarStateD6 *)messageData.value;
+    
+    RssiCollectMessage rssiCollectMessage;
+    rssiCollectMessage.result = d6Message->result;
+    rssiCollectMessage.direction = d6Message->direction;
+    rssiCollectMessage.distance = d6Message->distance;
+    rssiCollectMessage.uid = d6Message->uid;
+    rssiCollectMessage.deviceModel.len = d6Message->deviceModel.len;
+    if (rssiCollectMessage.deviceModel.len > 0) {
+        rssiCollectMessage.deviceModel.value = (uint8_t *)malloc(rssiCollectMessage.deviceModel.len);
+        memcpy(rssiCollectMessage.deviceModel.value, d6Message->deviceModel.value, rssiCollectMessage.deviceModel.len);
+        free(d6Message->deviceModel.value);
+        d6Message->deviceModel.value = NULL;
+    }
+    buildRssiCollectMessage(&rssiCollectMessage);
+}
+
+void BleKeyV3DataParser::parseParkingControlStateMessage(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3CarStateD8 *d8Message = (BleKeyV3CarStateD8 *)messageData.value;
+    
+    ParkingControlStateMessage parkingControlMessage;
+    parkingControlMessage.result = d8Message->result;
+    buildParkingControlStateMessage(&parkingControlMessage);
+}
+
+void BleKeyV3DataParser::parsePollingFuncStateMessage(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3CarStateD9 *d9Message = (BleKeyV3CarStateD9 *)messageData.value;
+    
+    PollingFuncStateMessage pollingFuncMessage;
+    pollingFuncMessage.pollingUnlockState = d9Message->pollingUnlockState;
+    buildPollingFuncStateMessage(&pollingFuncMessage);
+}
+
+void BleKeyV3DataParser::parseNumericMessage(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3CarStateD3 *d3Message = (BleKeyV3CarStateD3 *)messageData.value;
+    
+    CarNumDataMessage carNumDataMessage;
+    carNumDataMessage.totalDistances = d3Message->totalDistances;
+    carNumDataMessage.vcuMileage = d3Message->vcuMileage;
+    carNumDataMessage.totalBatteryLife = d3Message->totalBatteryLife;
+    carNumDataMessage.carSpeed = d3Message->carSpeed;
+    carNumDataMessage.carSpeedState = d3Message->carSpeedState;
+    buildCarNumDataMessage(&carNumDataMessage);
+}
+
+void BleKeyV3DataParser::parseRkeResponseMessage(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3RkeResponse *rkeResponse = (BleKeyV3RkeResponse *)messageData.value;
+
+    RkeControlMessage rkeControlMessage;
+    rkeControlMessage.controlId = rkeResponse->rkeId.value;
+    rkeControlMessage.controlState = rkeResponse->status.value == 0 ? 200 : rkeResponse->errorCode.value;
+    buildRkeControlMessage(&rkeControlMessage);
+}
+
+void BleKeyV3DataParser::parseRtAuthResponseMessage(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3RtAuthResponse *rtAuthResponse = (BleKeyV3RtAuthResponse *)messageData.value;
+
+    RtAuthResultMessage rtAuthResultMessage;
+    rtAuthResultMessage.authResult = (uint8_t)rtAuthResponse->authResult.value;
+    rtAuthResultMessage.errorCode = (uint8_t)rtAuthResponse->errorCode.value;
+    buildRtAuthResultMessage(&rtAuthResultMessage);
+}
+
+void BleKeyV3DataParser::parseRtNotificationMessage(BleKeyV3OutputMessage *outputMessage) {
+    BleKeyV3ByteBaseMessage messageData = outputMessage->messageData;
+    BleKeyV3RtNotificationPolling *rtPolling = (BleKeyV3RtNotificationPolling *)messageData.value;
+
+    RtNotificationMessage rtNotificationMessage;
+    rtNotificationMessage.pollingResult = rtPolling->pollingResult;
+    buildRtNotificationMessage(&rtNotificationMessage);
+}
+
+
+cJSON * BleKeyV3DataParser::parse(const uint8_t* data, size_t dataSize,uint8_t *sessionKey,size_t sessionKeySize,uint8_t *authKey,size_t authKeySize,int isEncrypted) {
+    // 应急钥匙报文判断
+    if (isRescueBleKeyV3Message(data, dataSize)) {
+        return parseRescueBleKeyV3Message(data, dataSize, sessionKey, sessionKeySize, authKey, authKeySize, isEncrypted);
+    }
+    
+    BleKeyV3CanMessageParams canMessageParams;
+    canMessageParams.isEncrypted = (uint8_t)isEncrypted;
+    canMessageParams.canMessage.len = dataSize;
+    canMessageParams.canMessage.value = (uint8_t *)malloc(dataSize);
+    memcpy(canMessageParams.canMessage.value, data, dataSize);
+    if (isEncrypted) {
+        canMessageParams.authKeyMessage.len = authKeySize;
+        canMessageParams.authKeyMessage.value = (uint8_t *)malloc(authKeySize);
+        memcpy(canMessageParams.authKeyMessage.value, authKey, authKeySize);
+        canMessageParams.sessionKeyMessage.len = sessionKeySize;
+        canMessageParams.sessionKeyMessage.value = (uint8_t *)malloc(sessionKeySize);
+        memcpy(canMessageParams.sessionKeyMessage.value, sessionKey, sessionKeySize);
+    }
+    BleKeyV3OutputMessageParams outputMessageParams;
+    decodeBleKeyV3CanMessage(&canMessageParams,&outputMessageParams);
+    if (outputMessageParams.result != BleKeyV3DecodeV3CanMessageSuccess || outputMessageParams.outputSize <= 0) {
+        return NULL;
+    }
+    for (int i = 0; i<outputMessageParams.outputSize; i++) {
+        BleKeyV3OutputMessage &outputMessage = outputMessageParams.outputMessages[i];
+        if (outputMessage.messageType == BleKeyV3OutputMessageTypeCommonStatus ||
+            outputMessage.messageType == BleKeyV3OutputMessageTypeCommonErrorCode ||
+            outputMessage.messageType == BleKeyV3OutputMessageTypeCommonErrorReason) {
+            this->specialMessages.push_back(outputMessage);
+        } else {
+            this->parseSingleMessage(&outputMessage);
+        }
+    }
+    this->parseSpecialMessage();
+    
+    if (canMessageParams.canMessage.value != NULL) {
+        free(canMessageParams.canMessage.value);
+        canMessageParams.canMessage.value = NULL;
+    }
+    if (isEncrypted) {
+        if (canMessageParams.sessionKeyMessage.value != NULL) {
+            free(canMessageParams.sessionKeyMessage.value);
+            canMessageParams.sessionKeyMessage.value = NULL;
+        }
+        if (canMessageParams.authKeyMessage.value != NULL) {
+            free(canMessageParams.authKeyMessage.value);
+            canMessageParams.authKeyMessage.value = NULL;
+        }
+    }
+    freeBleV3OutputMessages(&outputMessageParams);
+    
+    cJSON *result = parserEnd();
+    return result;
+}
+
+void BleKeyV3DataParser::parseSpecialMessage() {
+    if (this->specialMessages.size() == 0) {
+        return;
+    }
+    CommonResponseMessage commonResponseMessage;
+    for (const auto &outputMessage : this->specialMessages) {
+        switch (outputMessage.messageType) {
+            case BleKeyV3OutputMessageTypeCommonStatus:
+                memcpy(&commonResponseMessage.status, outputMessage.messageData.value, sizeof(commonResponseMessage.status));
+                break;
+            case BleKeyV3OutputMessageTypeCommonErrorCode:
+                memcpy(&commonResponseMessage.errorCode, outputMessage.messageData.value, sizeof(commonResponseMessage.errorCode));
+                break;
+            case BleKeyV3OutputMessageTypeCommonErrorReason:
+                commonResponseMessage.errorReason.len = outputMessage.messageData.len;
+                if (outputMessage.messageData.len > 0) {
+                    commonResponseMessage.errorReason.value = (uint8_t *)calloc(1, commonResponseMessage.errorReason.len + 1);
+                    memcpy(commonResponseMessage.errorReason.value, outputMessage.messageData.value, commonResponseMessage.errorReason.len);
+                }
+                break;
+                
+            default:
+                break;
+        }
+    }
+    buildCommonResponseMessage(&commonResponseMessage);
+}
+
+void BleKeyV3DataParser::parseSingleMessage(BleKeyV3OutputMessage *outputMessage) {
+    switch (outputMessage->messageType) {
+        case BleKeyV3OutputMessageTypeAuth0Response:
+        {
+            parseAuth0Response(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeCommonCarState:
+        {
+            parseCommonCarState(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeChargeState:
+        {
+            parseChargeState(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeParkingState:
+        {
+            parseBleXpuParkingState(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeNumeric:
+        {
+            parseNumericMessage(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeSelfCalibration:
+        {
+            parseSelfCalibrationMessage(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeRssiCollect:
+        {
+            parseRssiCollectMessage(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeParkingControlState:
+        {
+            parseParkingControlStateMessage(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypePollingFuncState:
+        {
+            parsePollingFuncStateMessage(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeRkeResponse:
+        {
+            parseRkeResponseMessage(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeRtAuthResponse:
+        {
+            parseRtAuthResponseMessage(outputMessage);
+        }
+            break;
+        case BleKeyV3OutputMessageTypeRtNotificationPolling:
+        {
+            parseRtNotificationMessage(outputMessage);
+        }
+            break;
+
+        default:
+            break;
+    }
+}
+    

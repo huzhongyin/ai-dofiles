@@ -1,0 +1,26 @@
+2026-04-20T13:24:26.981Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:26.997Z [DEBUG] MDM settings load completed in 2662ms
+2026-04-20T13:24:28.630Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:28.633Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:28.882Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:28.882Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:24:28.882Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:28.882Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:31.035Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-20T13:24:31.049Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-20T13:24:31.049Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-20T13:24:31.079Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-20T13:24:32.101Z [DEBUG] Error log sink initialized
+2026-04-20T13:24:32.933Z [DEBUG] Lock acquisition took longer than expected - another Claude instance may be running
+2026-04-20T13:24:33.033Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.034Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.042Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.042Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:24:33.042Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.042Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.054Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'userSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:24:33.058Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'userSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:24:33.058Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'projectSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:24:33.058Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'projectSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:24:33.063Z [DEBUG] Git remote URL: null
+2026-04-20T13:24:33.063Z [DEBUG] No git remote URL found

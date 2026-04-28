@@ -1,0 +1,1 @@
+/Users/xpeng/.xp_ios_ai_coding/prompts/folder-structure-blueprint-generator.prompt.md

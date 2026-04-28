@@ -1,0 +1,43 @@
+# XPPollingSDK — Submodule 规范
+
+> ⚠️ 本仓库为独立 git 仓，本文件与同目录 `.ai-knowledge/` 需在子仓单独提交
+
+## 模块定位
+
+车态轮询与 BLE RSSI 定位 SDK（Pod: XPPollingSDK）。周期性拉取车辆状态数据并通过预测算法优化轮询频率，同时提供 BLE RSSI 近场定位能力。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `submodule/XPPollingSDK/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+OC + .mm（C++ 桥接）混编，无 Swift。Polling 核心的 Predict 模块使用 .mm 文件调用 C++ 预测算法。编译需 `-fmodules -fcxx-modules`。
+
+## 对外 API 边界
+
+- 入口：`PLXPPolllingSDK`（轮询管理）、`PLXPRssiLocationPlugin`（RSSI 定位插件）
+- 事件：`PLXPEvent`（轮询事件定义）
+- 禁止 App 层直接操作内部 Polling/Predict 模块
+
+## 仓内部架构
+
+Polling（轮询核心，含 Predict 预测处理器）+ BLELocation（BLE RSSI 定位）+ PollingEffect（轮询效果评估）+ Proxy（代理层）+ Util（工具）。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。依赖 XPVehicleSDK、ReactiveObjC、MMKV。
+
+## 禁止行为
+
+- 禁止绕过 PLXPPolllingSDK 直接操作内部轮询 Handler
+- 禁止在 C++ Predict 模块中使用 iOS 平台 API
+- 禁止修改轮询频率策略时不更新 Predict 模块
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → 主仓 `.claude/rules/ios-coding.md`
+- 主工程 App 如何调用本 submodule → L2 `CLAUDE.app.md` 的"与 submodule 的边界"
+- 本 submodule 的演进历史与设计决策 → 子仓 ADR 文档

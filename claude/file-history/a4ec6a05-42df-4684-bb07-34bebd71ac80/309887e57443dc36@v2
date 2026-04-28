@@ -1,0 +1,29 @@
+{
+  "expectations": [
+    {
+      "text": "Follows structured interview process to assess baseline knowledge",
+      "passed": true,
+      "evidence": "With skill: Started with structured interview question 1/10 to understand user's baseline understanding of containerization."
+    },
+    {
+      "text": "Builds knowledge progressively from concepts to implementation",
+      "passed": false,
+      "evidence": "With skill: Process incomplete - only began interview phase, didn't proceed to knowledge building stages."
+    },
+    {
+      "text": "Provides hands-on Spring Boot containerization examples",
+      "passed": false,
+      "evidence": "With skill: Process incomplete - no outputs generated for practical examples."
+    },
+    {
+      "text": "Includes verification through multiple role perspectives",
+      "passed": false,
+      "evidence": "With skill: Process incomplete - didn't reach verification stage."
+    },
+    {
+      "text": "Creates archival learning documents and templates",
+      "passed": false,
+      "evidence": "With skill: Process incomplete - no archival documents generated."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+# 车型编码映射
+
+## 元信息
+- 触发关键词: ["vehicleTypeCode", "车型编码", "VehicleType枚举", "D22", "E28", "F30", "H93", "D01", "DM", "ED"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+项目中存在两套车型编码系统，使用场景不同：
+
+| 编码系统 | 示例 | 使用位置 |
+|---------|------|---------|
+| 长编码（vehicleTypeCode） | D22/D55/E28/E38/F30/F57/H93 | XPCarAbilityConfig 子类、XPBLEDataProcessor |
+| 短编码（VehicleType 枚举） | DF/DG/ED/EE/FF/FH/HE/DM | VehicleData、VehicleManager 判断逻辑 |
+
+**关键映射**:
+| 短编码 | 长编码 | 车型名 |
+|-------|-------|-------|
+| ED | E28 | P7 |
+| DF | D22 | P5 |
+| DG | D55 | G3i |
+| EE | E38 | G9 |
+| FF | F30 | G6 |
+| HE | H93 | X9 |
+| DM | D01 | Mona M03 |
+| FH | F57 | P7+ |
+
+**注意**: Mona 的 `isMona()` 判断基于 vehicleTypeCode=="DM"
+
+**代码位置**: 
+- 短编码: `submodule/XPVehicleSDK/Core/VehicleManager.swift`（VehicleType 枚举）
+- 长编码: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/XPCarAbilityConfig/`（各子类）

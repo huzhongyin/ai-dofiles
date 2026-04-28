@@ -1,0 +1,22 @@
+# Combine 与 @Published 使用场景
+
+## 元信息
+- 触发关键词: ["@Published", "Combine", "响应式", "状态监听", "VehicleConnection Published"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+项目中 Combine 框架使用场景有限且需注意线程：
+
+1. **VehicleConnection**: `address` 和 `connectState` 使用 `@Published`
+2. **AiCalendarSyncManager**: 大量使用 Combine（`sink`/`store`/`receive(on:)`）
+
+**注意事项**:
+- `@Published` 属性的值变更默认在设置线程触发，**监听时需注意线程**
+- `VehicleConnection` 的 `@Published` 状态变更可能从后台线程触发，UI 操作需切主线程
+- 车控 SDK 的事件系统（`VehicleEvent`）**不是** Combine，不要混淆
+
+**代码位置**: 
+- Connection: `submodule/XPVehicleSDK/Core/Connection/`
+- Calendar: `submodule/XPVehicleExt/XPVehicleExt/AiCalendar/`

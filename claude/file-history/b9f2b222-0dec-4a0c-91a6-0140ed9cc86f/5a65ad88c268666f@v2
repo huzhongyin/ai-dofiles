@@ -1,0 +1,110 @@
+# 小鹏iOS AI-Coding权限配置
+
+# 角色定义
+roles:
+  vehicle_team_member:
+    permissions:
+      - "vehicle_sdk:read"
+      - "vehicle_sdk:write"
+      - "ai_assist:vehicle_modules"
+      - "base_modules:read"
+
+  business_developer:
+    permissions:
+      - "business_modules:read"
+      - "business_modules:write"
+      - "ai_assist:business_modules"
+      - "base_modules:read"
+
+  senior_architect:
+    permissions:
+      - "*:read"
+      - "*:write"
+      - "ai_assist:all_modules"
+      - "permission:manage"
+
+  platform_developer:
+    permissions:
+      - "base_modules:read"
+      - "base_modules:write"
+      - "business_modules:read"
+      - "ai_assist:base_modules"
+
+# 模块所有权配置
+module_ownership:
+  # 车控SDK - 高度受限
+  XPVehicleSDK:
+    owners: ["vehicle-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "restricted"
+    ai_restrictions:
+      - "require_human_review_for_core_apis"
+      - "no_direct_modification_of_protocol_files"
+      - "audit_all_ai_generated_changes"
+
+  XPCarControlCore:
+    owners: ["vehicle-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "restricted"
+    ai_restrictions:
+      - "require_human_review_for_core_apis"
+      - "audit_all_ai_generated_changes"
+
+  # 业务模块 - 团队管理
+  "XPBusiness_AI":
+    owners: ["ai-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "team_managed"
+    ai_restrictions:
+      - "audit_ai_generated_changes"
+
+  "XPBusiness_Media":
+    owners: ["media-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "team_managed"
+
+  "XPBusiness_Map":
+    owners: ["map-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "team_managed"
+
+  # 基础模块 - 相对开放
+  "XPBase_*":
+    owners: ["platform-team"]
+    collaborators: ["all"]
+    permission_level: "public"
+    ai_restrictions:
+      - "code_style_enforcement"
+
+# 权限生命周期管理
+permission_lifecycle:
+  temporary_grants:
+    max_duration: "72h"
+    auto_revoke: true
+    approval_required: ["team_lead", "senior_architect"]
+
+  emergency_access:
+    approvers: ["senior_architect", "security_officer"]
+    audit_trail: mandatory
+    max_duration: "24h"
+    auto_notification: ["security_team", "module_owner"]
+
+  permission_inheritance:
+    senior_roles_inherit_junior: true
+    cross_team_requires_approval: true
+
+# 系统配置
+system_config:
+  cache_settings:
+    ttl: 300  # 5分钟
+    max_size: 1000
+
+  degraded_mode:
+    allow_reads: true
+    block_writes: true
+    max_duration: "1h"
+
+  audit_settings:
+    log_all_denials: true
+    log_sensitive_modules: true
+    retention_days: 365

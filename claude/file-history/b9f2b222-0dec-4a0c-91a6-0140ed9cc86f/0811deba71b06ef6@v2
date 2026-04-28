@@ -1,0 +1,128 @@
+---
+name: xp-ai-coding
+description: 小鹏汽车iOS团队AI编码治理系统。当用户提到以下任何情况时必须使用：(1)请求编码建议、帮我写代码、AI辅助；(2)权限检查、能否修改某模块、访问控制；(3)检查代码质量、验证规范、代码Review；(4)项目架构、模块依赖分析；(5)涉及小鹏特定术语：XPVehicle、XPBusiness、XPBase、LocalPods、车控模块、泊车、充电。提供RBAC权限控制、8类编码标准验证、模块特定AI建议和Claude Code工作流集成。
+---
+
+# 小鹏汽车AI编码治理系统
+
+## 核心工作流
+
+```
+用户请求
+  ↓
+1. 识别目标模块（从路径或用户描述提取）
+  ↓
+2. 权限检查（调用 check_module_access）
+  ↓
+3. 提供模块专属建议（车控/业务/基础分层）
+  ↓
+4. 代码修改后自动验证标准（8类检查）
+  ↓
+5. 输出健康度报告
+```
+
+## 快速调用接口
+
+```python
+from scripts.claude_code_adapter import ClaudeCodeAdapter
+
+adapter = ClaudeCodeAdapter()
+
+# 初始化项目（会话开始时调用一次）
+adapter.initialize_project()
+
+# 权限检查
+result = adapter.check_module_access(
+    user_id="developer_id",
+    module_name="XPVehicleSDK",   # 或 XPBusiness_AI、XPBase_Common
+    action="write",               # read | write | ai_assist
+    user_context={"roles": ["vehicle_team_member"]}
+)
+# result["allowed"] → True/False
+
+# AI编码建议
+suggestions = adapter.get_ai_coding_suggestions({
+    "module": "XPBusiness_AI",
+    "action": "ai_assist",
+    "user_id": "developer_id"
+})
+
+# 代码标准验证
+validation = adapter.validate_code_standards(["LocalPods/XPVehicleSDK/Classes/XPVehicle.h"])
+```
+
+## 模块类型与权限速查
+
+| 模块前缀 | 类型 | 默认权限 | AI辅助 |
+|---------|------|---------|--------|
+| `XPVehicleSDK` | 车控核心 | restricted（仅车控团队） | 需人工审核 |
+| `XPBusiness_*` | 业务层 | team_managed | 业务开发者 |
+| `XPBase_*` | 基础公共 | public | 全员 |
+| 第三方Pod | 外部依赖 | read-only | 不可用 |
+
+## 角色权限
+
+- **senior_architect**：所有模块读写 + 全模块AI辅助 + 系统配置
+- **vehicle_team_member**：车控模块读写 + 基础模块只读
+- **business_developer**：业务/基础模块读写
+- **intern**：基础模块只读
+- **external_contractor**：业务模块只读
+
+完整权限矩阵 → [references/permissions.md](references/permissions.md)
+
+## 模块专属编码建议
+
+**车控模块（XPVehicleSDK）**：
+- 所有Objective-C类必须以 `XP` 前缀开头
+- 耗时操作禁止在主线程执行
+- 重要API调用必须添加错误处理回调
+- 详细规范 → [references/coding-standards.md](references/coding-standards.md)
+
+**业务模块（XPBusiness_*）**：
+- 遵循MVVM架构，禁止ViewController直接操作数据
+- 网络请求必须配置超时和重试机制
+- UI更新必须dispatch到主线程
+
+**基础模块（XPBase_*）**：
+- 保持高通用性，禁止依赖具体业务逻辑
+- 提供清晰文档和使用示例
+- 遵循单一职责原则
+
+## Claude Code 集成（Pre/Post Hooks）
+
+编辑文件**前**自动触发权限检查：
+```python
+# hooks/pre_tool_use.py 调用链
+adapter.pre_tool_use_hook(tool_name="Edit", parameters={"file_path": "..."}, context={})
+```
+
+编辑文件**后**自动触发标准验证：
+```python
+# hooks/post_tool_use.py 调用链
+adapter.post_tool_use_hook(tool_name="Write", parameters={"file_path": "..."}, result={"success": True}, context={})
+```
+
+## 8类代码标准检查
+
+1. **命名规范**：Swift UpperCamelCase/lowerCamelCase，OC类必须XP前缀
+2. **文件头声明**：版权声明格式检查
+3. **Import组织**：系统框架 → 第三方库 → 项目内部
+4. **硬编码字符串**：禁止直接写字符串，使用本地化
+5. **内存管理**：禁止手动retain/release，使用ARC
+6. **线程安全**：UI操作必须主线程，后台线程禁止UIKit调用
+7. **API使用模式**：敏感API必须错误处理
+8. **小鹏特定规范**：XP前缀、模块边界遵守
+
+完整规则配置 → [references/coding-standards.md](references/coding-standards.md)
+
+## 系统验证
+
+```bash
+python tools/validate_xp_ai_coding.py --project . --verbose
+```
+
+期望结果：6/7 项通过（85.7%），权限检查平均 < 50ms。
+
+## 扩展配置
+
+自定义规则、权限矩阵、AI辅助配置 → [references/configuration.md](references/configuration.md)

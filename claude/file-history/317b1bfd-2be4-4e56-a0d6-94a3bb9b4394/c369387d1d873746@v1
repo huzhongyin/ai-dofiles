@@ -1,0 +1,424 @@
+import Foundation
+import Combine
+
+public class XiaopengBLEConnection : BLEConnection, RescueKeyProtocol {
+    
+    let vehicle: VehicleInfo.Vehicle
+    var bleSendDataBuilder: BleSendDataBuilderProtocol?
+    var bleHandler: BLEHandler?
+    @Published var bleCategory: DigitalKeyCategory = .NONE
+    
+    var vehicleExtInfo: VehicleExtInfo?
+    var abilityConfig: XPCarAbilityConfig?
+    var reconnectCount = 0
+    var bleDisconnectInterval: TimeInterval = Date().timeIntervalSince1970
+    let bleSwitcheCheck: BLESwitchCheck
+    let iBeaconManager = IBeaconManager()
+    var disconnectBleTimer: Timer?
+    var connectedTime: TimeInterval?
+
+    var cancellables = Set<AnyCancellable>()
+    var bleStateCancellable: AnyCancellable?
+    var bleHeartbeatCancellable: AnyCancellable?
+    var reconnectCancellable: AnyCancellable?
+    var detectCancellables: Set<AnyCancellable>?
+    
+    let sendBleDataResultSubject: PassthroughSubject<AnyObject?, VehicleError> = .init()
+    
+    let _recieveBleDataSubject: PassthroughSubject<(Int, TBoxCanControlState?), VehicleError> = .init()
+    let _recieveE28BleExceptionSubject: PassthroughSubject<Int, Error> = .init()
+    let _recieveBleVehicleStateSubject: PassthroughSubject<VehicleState, Never> = .init()
+    let recieveSelfCalibrationSubject: PassthroughSubject<[String: Any], VehicleError> = .init() //自标定结果数据获取V3.0
+    let recieveRssiCollectSubject: PassthroughSubject<[String: Any], VehicleError> = .init()
+    
+    let sendBleDataResultPublisher: AnyPublisher<AnyObject?, VehicleError>
+    let recieveBleVehicleStatePublisher: AnyPublisher<VehicleState, Never>
+    let recieveBleDataPublisher: AnyPublisher<(Int, TBoxCanControlState?), VehicleError>
+    let recieveE28BleExceptionPublisher: AnyPublisher<Int, Error>
+    
+    var heartBeatTimer: Timer?
+    
+    var rssiLogTag: Bool = true
+    
+    var keySettingData: XiaopengKeyDataSetting = XiaopengKeyDataSetting()
+    var tboxRunException: Bool = false
+    
+    var detectDevice: BleDevice?
+    var discoveryArray: [DiscoveryPeripheral]?
+    var isDetecting: Bool = false
+    var detectBeginTime: TimeInterval = 0
+    var pollingFuncStateModel: PollingFuncStateModel = PollingFuncStateModel()
+    
+    init(vehicle: VehicleInfo.Vehicle, delegate: VehicleConnectionDelegate?, presenter: VehicleCommunication, abilityConfig: XPCarAbilityConfig?) {
+        self.vehicle = vehicle
+        self.abilityConfig = abilityConfig
+        recieveBleVehicleStatePublisher = _recieveBleVehicleStateSubject.eraseToAnyPublisher()
+        recieveBleDataPublisher = _recieveBleDataSubject.eraseToAnyPublisher()
+        recieveE28BleExceptionPublisher = _recieveE28BleExceptionSubject.eraseToAnyPublisher()
+        sendBleDataResultPublisher = sendBleDataResultSubject.eraseToAnyPublisher()
+        self.bleSwitcheCheck = BLESwitchCheck(presenter: presenter)
+        super.init(delegate: delegate, presenter: presenter)
+        self.keySettingData = self.getVaildKeySettingData()
+        
+        bleSendDataBuilder = BleSendDataBuilderFactory.create(bleKeyVersion: presenter.vehiclePreference.abilityConfig.bleKeyVersion, delegate: self)
+        
+        Log.i("XiaopengBLEConnection.init")
+
+        addBleAddressObserver()
+        
+        // 启动蓝牙
+        BleCentral.shared.start()
+        addConnMonitor()
+        startHeartbeat()
+        addAppRunStateMonitor()
+        addCarKeyEventMonitor()
+        addPollingUnlockFuncState()
+        self.controlBleHandlerLife(address: address, cccVid: cccVid)
+    }
+    
+    deinit {
+        Log.i("XiaopengBLEConnection.deinit mac:", address ?? "nil")
+        self.connectState = .NotConnected
+        stopHeartbeat()
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func enterCarKeyFlow() {
+        Log.i("bleLife", "enter car key flow")
+        self.bleSwitcheCheck.isWaitingToConnect = true
+    }
+    
+    @objc func endCarKeyFlow(noti: Notification) {
+        Log.i("bleLife", "end car key flow")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.bleSwitcheCheck.isWaitingToConnect = false
+        }
+        self.controlBleHandlerLife(address: address, cccVid: cccVid, isResuce: self.tboxRunException)
+    }
+
+    func addBleAddressObserver() {
+        $address.sink {[weak self] newValue in
+            Log.i("监听到蓝牙Mac地址发生变化: ", self?.bleHandler?.macAddress ?? "nil", " ==> ", newValue ?? "nil")
+            guard let self else { return }
+            guard let presenter = self.presenter else {
+                Log.i(tag: "bleLife", "presenter is nil,return")
+                return
+            }
+            self.controlBleHandlerLife(address: newValue, cccVid: cccVid, isResuce: self.tboxRunException)
+        }.store(in: &cancellables)
+        
+        
+        bleSwitcheCheck.$isNeedsiBeacon.sink {[weak self] isNeedsiBeacon in
+            guard let self = self else { return }
+           
+            if isNeedsiBeacon {
+                openiBeacon()
+            }
+            
+        }.store(in: &cancellables)
+    }
+    
+    func addCarKeyEventMonitor() {
+        NotificationCenter.default.addObserver(self, selector: #selector(enterCarKeyFlow), name: VehicleNotification.kCarKeyFlowDidStart, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(endCarKeyFlow), name: VehicleNotification.kCarKeyFlowDidEnd, object: nil)
+        
+        $cccVid.sink {[weak self] newValue in
+            Log.i("监听到车辆cccVid发生变化: ", self?.cccVid ?? "nil", " ==> ", newValue ?? "nil")
+            guard let self else { return }
+            guard let presenter = self.presenter else {
+                Log.i(tag: "bleLife", "presenter is nil,return")
+                return
+            }
+            self.controlBleHandlerLife(address: address, cccVid: newValue, isResuce: self.tboxRunException)
+        }.store(in: &cancellables)
+    }
+    
+    // MARK: - Polling解锁功能状态监听
+    
+    func addPollingUnlockFuncState() {
+        self.pollingFuncStateModel.stateChangePublisher
+            .sink { [weak self] changeType in
+                guard let self else { return }
+                self.handlePollingStateChange(changeType)
+            }
+            .store(in: &cancellables)
+    }
+    
+    /// 处理状态变化事件分发
+    private func handlePollingStateChange(_ changeType: PollingFuncStateChangeType) {
+        switch changeType {
+        case .pollingUnlockEventType(let change):
+            handlePollingUnlockEventTypeChanged(change)
+            
+        case .bleConnectionState(let change):
+            handleBleConnectionStateChanged(change)
+            
+//        case .pollingMode(let change):
+//            handlePollingModeChanged(change)
+        }
+    }
+    
+    // MARK: - 状态变化处理方法
+    
+    /// 处理PollingUnlockEventType变化 -> 通知外部
+    private func handlePollingUnlockEventTypeChanged(_ change: PollingFuncStateChange<PollingUnlockEventType>) {
+        Log.i(tag: "PollingUnlock", "PollingUnlockEventType变化: \(change.oldValue.description) -> \(change.newValue.description)")
+        switch change.newValue {
+        case .None, .UnlockAvailable:
+            Statistics.trackingPollingUnlockErrorGuideEvent(isShow: false, scene_id: String(change.oldValue.sceneId))
+        default:
+            Statistics.trackingPollingUnlockErrorGuideEvent(isShow: true, scene_id: String(change.newValue.sceneId))
+        }
+        let eventModel = PollingFunctionEventModel()
+        eventModel.pollingUnlockEvent = change.newValue
+        eventModel.senceId = change.newValue.sceneId
+        self.delegate?.pollingFuncEventChanged(funcEvent: eventModel)
+    }
+    
+    /// 处理蓝牙连接状态变化
+    /// - 场景：蓝牙断开时清除状态，蓝牙连接时检查是否触发场景
+    private func handleBleConnectionStateChanged(_ change: PollingFuncStateChange<BLEConnectionState>) {
+        Log.i(tag: "PollingUnlock", "蓝牙状态变化: \(change.oldValue) -> \(change.newValue)")
+        
+        // 消失条件：蓝牙断开
+        if change.newValue == .NotConnected && change.oldValue == .Available {
+            pollingFuncStateModel.pollingUnlockEventType = .None
+        }
+    }
+    
+//    /// 处理Polling模式变化
+//    /// - 场景：关闭自动解锁时清除状态，开启时检查是否触发场景
+//    private func handlePollingModeChanged(_ change: PollingFuncStateChange<VehiclePollingMode>) {
+//        Log.i(tag: "PollingUnlock", "PollingMode变化: \(change.oldValue) -> \(change.newValue)")
+//
+//        let wasUnlockEnabled = (change.oldValue == .UNLOCK || change.oldValue == .BOTH)
+//        let isUnlockEnabled = (change.newValue == .UNLOCK || change.newValue == .BOTH)
+//
+//        // 消失条件：关闭自动解锁
+//        if wasUnlockEnabled && !isUnlockEnabled {
+//            pollingFuncStateModel.pollingUnlockEventType = .None
+//            return
+//        }
+//    }
+
+    
+    func controlBleHandlerLife(address: String?, cccVid: String?, isResuce: Bool = false) {
+        guard let presenter = self.presenter else {
+            Log.i(tag: "bleLife", "presenter为nil,return")
+            return
+        }
+        let cccVid = cccVid ?? presenter.vehiclePreference.extInfo?.cccVid
+        let category = BLEHandlerFactory.bleCreateCategory(presenter: presenter)
+        
+        guard category != .NONE else {
+            Log.i(tag: "bleLife", "category is none, remove old")
+            self.removeOriginBleHandler()
+            self.bleCategory = .NONE
+            self.tboxRunException = false
+            return
+        }
+        Log.i(tag: "bleLife", "category is \(category)")
+        if self.bleCategory != category {
+            self.removeOriginBleHandler()
+            self.cleanBleInfoCache()
+            self.getVaildKeySettingData()
+        }
+        if self.tboxRunException != isResuce {
+            self.removeOriginBleHandler()
+            self.tboxRunException = isResuce
+        }
+        
+        guard let oldHandler = self.bleHandler else {
+            Log.i(tag: "bleLife", "old ble handler is nil")
+            guard let bleHandler = BLEHandlerFactory.createBleKeyHandler(macAddress: address, cccVid: cccVid, bleCategory: category, delegate: self, presenter: presenter, isResuce: isResuce) else {
+                Log.i(tag: "bleLife", "create ble handler failed, return")
+                return
+            }
+            return self.createNewBleHandler(bleHandler: bleHandler, bleCategory: category, presenter: presenter)
+        }
+        Log.i(tag: "bleLife", "old ble handler is not nil")
+        if category != .PHONE_UWB_KEY {
+            guard let macAddress = address else {
+                Log.i(tag: "bleLife", "address is nil,remove origin")
+                self.removeOriginBleHandler()
+                return
+            }
+            if oldHandler.macAddress == macAddress {
+                Log.i(tag: "bleLife", "old ble handler address is same to macAddress")
+                return
+            }
+            Log.i(tag: "bleLife", "address is not same,remove origin")
+            guard let bleHandler = BLEHandlerFactory.createBleKeyHandler(macAddress: address, cccVid: cccVid, bleCategory: category, delegate: self, presenter: presenter, isResuce: isResuce) else {
+                Log.i(tag: "bleLife", "create ble handler failed, return")
+                return
+            }
+            return self.createNewBleHandler(bleHandler: bleHandler, bleCategory: category, presenter: presenter)
+        } else {
+            if BLEHandlerFactory.carKeyCCCVidIsChanged(bleHandler: oldHandler, cccVid: cccVid) == false {
+                Log.i(tag: "bleLife", "old ble handler cccVid is same to cccVid")
+                return
+            } else {
+                Log.i(tag: "bleLife", "old ble handler cccVid is not same to cccVid")
+                self.removeOriginBleHandler()
+                guard let bleHandler = BLEHandlerFactory.createBleKeyHandler(macAddress: address, cccVid: cccVid, bleCategory: category, delegate: self, presenter: presenter, isResuce: isResuce) else {
+                    Log.i(tag: "bleLife", "create ble handler failed, return")
+                    return
+                }
+                return self.createNewBleHandler(bleHandler: bleHandler, bleCategory: category, presenter: presenter)
+            }
+            return
+        }
+    }
+    
+    func removeOriginBleHandler() {
+        Log.i(tag: "bleLife", "移除原先的钥匙")
+        self.forceDisconnect()
+        self.bleHandler = nil
+        self.bleSwitcheCheck.isWaitingToConnect = false
+        self.bleSwitcheCheck.isSwitchBleChannel = true
+        self.removeReconnectTimer()
+    }
+    
+    func createNewBleHandler(bleHandler: BLEHandler, bleCategory: DigitalKeyCategory, presenter: VehicleCommunication) {
+        self.bleHandler = bleHandler
+        self.bleHandler?.statisticsModel = StatisticsBleInfoModel.createWith(presenter: presenter)
+        Log.i(tag: "蓝牙连接鉴权", "将要连接: ", self.bleHandler?.macAddress ?? "nil")
+        self.bleStateCancellable = bleHandler.stateSubject.sink {[weak self] state in
+            guard let self else { return }
+            self.rssiLogTag = true
+            if self.connectState != state {
+                self.connectState = state
+                if self.tboxRunException {
+                    NotificationCenter.default.post(name: VehicleNotification.rescueBleConnectStateChanged, object: self, userInfo: ["state": BLEConnectionNotiObject(vin: self.presenter?.vin ?? "", connectState: state)])
+                } else {
+                    self.delegate?.bleConnectionStateChanged(connectionState: self.connectState)
+                }
+                Log.i("蓝牙连接状态变化 \(state)", "前后台：",(AppRunState.shared.isInBackground ? "后台" : "前台"))
+               
+                self.delegate?.bleConnectionStateChanged(connectionState: self.connectState)
+            }
+            //            DegbugNotifi.show(body: "蓝牙连接状态变化 \(state) 前后台：\(AppRunState.shared.isInBackground ? "后台" : "前台")")
+        }
+        if self.bleCategory == .NONE {
+            self.bleSwitcheCheck.isSwitchBleChannel = false
+        } else {
+            if self.bleCategory != bleCategory {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.bleSwitcheCheck.isSwitchBleChannel = false
+                }
+            } else {
+                self.bleSwitcheCheck.isSwitchBleChannel = false
+            }
+        }
+        
+        self.bleCategory = bleCategory
+        self.connectIfneed()
+        self.setupReconnectTimer(bleHandler: bleHandler)
+    }
+    
+    // MARK: RESURE
+    
+    public func startRescueKeySence() {
+        Log.i(tag: "bleLife", "enter rescue sence")
+        self.controlBleHandlerLife(address: address, cccVid: nil, isResuce: true)
+    }
+    
+    public func endRescueKeySence() {
+        Log.i(tag: "bleLife", "end rescue sence")
+        self.controlBleHandlerLife(address: address, cccVid: nil)
+    }
+        
+    // MARK: 连接
+    override func connect() -> Void {
+        self.bleSwitcheCheck.isWaitingToConnect = false
+    }
+
+    override func disconnect() -> Void {
+        self.bleSwitcheCheck.isWaitingToConnect = true
+        self.stopDetecting(reason: .manual)
+    }
+    
+    override func didLoadKey() {
+        self.controlBleHandlerLife(address: address, cccVid: cccVid, isResuce: self.tboxRunException)
+    }
+    
+    func openiBeacon() {
+        guard let macAddress = address else {
+            return
+        }
+        guard let digitalKeyManager = presenter?.digitalKeyManager as? DigitalKeyManager else {
+            return
+        }
+        let pollingFirst = presenter?.vehiclePreference.function.IS_POLLINGFIRST == true
+        iBeaconManager.start(macAddress: macAddress, slaveMacs: pollingFirst ? digitalKeyManager.bleInfo?.slaveMacUUidsStr() : nil)
+    }
+    
+    func closeiBeacon() {
+        iBeaconManager.stopAll()
+    }
+    
+    public override func send(data: Any!, success: @escaping VehicleSuccessResponseCallback, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        
+        guard let data = data as? BleSendData else {
+            failed(VehicleError(code: .ParamError, desc: "参数错误", channel: .BLE))
+            return
+        }
+        
+        guard connectState == .Available else {
+            failed(VehicleError(code: .BLENotConnected, desc: "蓝牙未连接", channel: .BLE))
+            return
+        }
+        
+        DispatchQueue.main.async {
+            self.bleSwitcheCheck.isSendingBLECommand = true
+            self.sendBleData(data)
+                .sink {[weak self] complete in
+                    self?.bleSwitcheCheck.isSendingBLECommand = false
+                    switch complete {
+                    case .failure(let error):
+                        failed(error)
+                    case .finished: break
+                    }
+                } receiveValue: { data in
+                    success(nil)
+                }
+                .store(in: &self.cancellables)
+        }
+        
+    }
+    
+    override func cleanBleInfoCache() {
+        bleHandler?.cleanBleInfoCache()
+    }
+    
+    override func exitBleRetrieveCache() -> Bool {
+        bleHandler?.exitBleRetrieveCache() ?? false
+    }
+    
+    override func readRssi() {
+        bleHandler?.readRssi()
+    }
+    
+    func bleErrorToVehicleError(error: BleDeviceError) -> VehicleError {
+        switch error {
+        case .unconnectable:
+            return VehicleError(code: .UnknownError, desc: error.description, channel: .BLE)
+        case .writeTimeOut:
+            return VehicleError(code: .Timeout, desc: error.description, channel: .BLE)
+        case .writeError:
+            return VehicleError(code: .BLEWriteError, desc:  error.description, channel: .BLE)
+        case .bleNotConnect:
+            return VehicleError(code: .BLENotConnected, desc: error.description, channel: .BLE)
+        case .deviceDealloc:
+            return VehicleError(code: .UnknownError, desc: error.description, channel: .BLE)
+        case .characteristicNotFound:
+            return VehicleError(code: .EnvironmentError, desc:error.description, channel: .BLE)
+        case .unowned:
+            return VehicleError(code: .UnknownError, desc: error.description, channel: .BLE)
+            
+        default:
+            return VehicleError(code: .UnknownError, desc: error.description ?? "未知错误", channel: .BLE)
+        }
+    }
+    
+}

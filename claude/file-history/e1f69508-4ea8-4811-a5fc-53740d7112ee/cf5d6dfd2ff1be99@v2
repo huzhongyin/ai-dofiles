@@ -1,0 +1,25 @@
+# MQTT 通信踩坑记录
+
+> 涉及模块: MQTTPublisher, MQTTHandler, MqttServiceManager
+
+---
+
+## 坑1: 切车不断开 MQTT 导致消息串车
+- **现象**: 切换到新车后，收到旧车的状态推送
+- **根因**: `MQTTPublisher` 是全局单例，切车时如果没先 `disconnect()` 再 `startService(uid:)`，旧的 topic 订阅仍然有效
+- **修复**: 切车流程严格按 disconnect → startService 顺序执行
+
+## 坑2: MQTT 状态为 connecting 时发送消息失败
+- **现象**: MQTT 显示"已连接"但消息发送无响应
+- **根因**: `state == .connected` 需要 TCP 连接成功 **+** Topic 订阅成功。仅 TCP 连通但订阅未完成时状态为 `.connecting`
+- **修复**: 发送前检查 `state == .connected`，而非仅检查 TCP 连接状态
+
+## 坑3: 新增 topic 的消息 ID 字段名不一致
+- **现象**: 消息发送成功，但回调永远超时（15s 后返回错误）
+- **根因**: 不同 topic 的响应消息使用不同的 ID 字段名（msg_ref / msgRef / msgId），MQTTHandler 匹配不到
+- **修复**: 新增 topic 前确认服务端响应消息的 ID 字段名
+
+## 坑4: 订阅失败无限重试
+- **现象**: MQTT 连接占用大量 CPU 和网络资源
+- **根因**: Topic 订阅失败后会 1 秒自动重试，但没有最大重试次数限制
+- **修复**: 目前是已知问题，业务层需在适当时机手动 disconnect 终止重试

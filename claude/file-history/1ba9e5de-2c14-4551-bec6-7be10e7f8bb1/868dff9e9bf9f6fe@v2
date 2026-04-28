@@ -1,0 +1,38 @@
+# XPPushServiceExtension — Target 规范
+
+## 模块定位
+
+推送通知 Service Extension。拦截远程推送在展示前修改内容（富文本、图片、本地化）。
+
+## 本层加载时机
+
+knowledge-recall 路径命中对应 target 目录时加载。
+
+## 语言与架构规范
+
+Swift + OC 混编。UNNotificationServiceExtension 子类模式。通过 Bridging-Header 桥接。
+
+## 运行环境约束
+
+Extension 内存受限（≤ 24MB 建议）。系统 30 秒超时限制，必须在时限内调用 contentHandler。
+
+## Extension 生命周期
+
+远程推送到达时系统唤醒。NotificationService.didReceive 处理内容修改。超时则展示原始通知。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止使用 UIApplication.shared
+- 禁止超时未调用 contentHandler
+- 禁止在 Extension 中执行复杂业务逻辑
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言语法细节 → `.claude/rules/ios-coding.md`
+- 主工程 App 架构规则 → L2 `CLAUDE.app.md`

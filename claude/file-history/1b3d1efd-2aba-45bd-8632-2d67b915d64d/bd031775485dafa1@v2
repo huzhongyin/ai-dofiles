@@ -1,0 +1,25 @@
+# Polling 三代预测算法共存
+
+## 元信息
+- 触发关键词: ["Predict算法", "FirstPolling", "SecondPolling", "KNN算法", "预测引擎", "PLXPPollingHandler"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+Polling 和 BLELocation 各有三代预测算法**同时共存**，通过配置切换：
+
+**Polling 预测器**:
+| 代次 | 类名 | 说明 |
+|------|------|------|
+| 一代 | `PLXPPollingFirstPollingHandler` | 基础阈值判断 |
+| 二代 | `PLXPPollingSecondPollingHandler` / `PLXPPollingSecondOptHandler` | 优化版 |
+| KNN | `PLXPPollingKnnHandler` | KNN 机器学习算法 |
+
+**BLELocation 预测器**: 同样有 First/Opt/KNN 三套
+
+**预测结果**（`PLPredictResult`，11 种）: 无/车内/解锁/闭锁/授权/解除授权/后备箱/充电口/锁回退 等
+
+**核心规则**: 不要删除旧算法代码，不同车型可能使用不同版本的算法。
+
+**代码位置**: `submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/`

@@ -1,0 +1,120 @@
+---
+name: knowledge-recall
+description: 按「路径 + 关键词 + 依赖图」三路触发，从五层规范体系中按需加载与当前任务最相关的规范与知识，输出分层加载清单
+---
+
+## 触发条件
+
+在开始任何代码修改 / 方案设计 / 问题排查任务前自动激活。
+
+## Phase 1: 输入收集
+
+收集两类输入：
+
+1. **任务描述**：用户提供的自然语言需求（必填）
+2. **预期涉及的文件路径列表**：
+   - 若用户已显式给出 → 直接使用
+   - 若未给出 → 从任务描述关键词推断（仅用于路径命中，推断结果仅作参考）
+
+## Phase 2: 常驻加载 (L1)
+
+**始终**加载以下 project 根层文件（不受命中影响）：
+
+- `CLAUDE.md`（L1 瘦身版根）
+- `.claude/rules/project-common.md`
+- `.ai-knowledge/specs/constitution.md`（若存在，不存在则跳过并登记为 `missing`）
+
+## Phase 3: 路径命中 (Path)
+
+1. 读取 `.ai-knowledge/module-registry.md`，解析所有 ```yaml module 块
+2. 对 Phase 1 得到的每一条任务路径 `p`：
+   - 遍历 registry 中每个 module，若 `p` 以该 module 的 `path` 为前缀 → 命中该 module
+3. 命中去重，产出「路径命中集合」
+
+## Phase 4: 关键词命中 (Keyword)
+
+1. 对 registry 中每个 module 的 `keywords` 列表做包含匹配（不区分大小写，中文按字符匹配）
+2. 任一关键词出现在任务描述中 → 命中该 module
+3. 产出「关键词命中集合」
+
+**合并**：路径命中 ∪ 关键词命中 = 直接命中集合 `D`（去重）。
+
+## Phase 5: 依赖扩展 (Deps)
+
+对 `D` 中每个 module，按以下步骤递归扩展：
+
+1. 读取 `<module.knowledge>/deps.yml`（不存在则跳过）
+2. 解析 `depends_on[]`：每一项形如 `{ id, trigger_keywords?: [...], critical_constraints?: [path#anchor, ...] }`
+3. **trigger_keywords 精细化过滤（v0.3）**：
+   - 若该依赖项声明了 `trigger_keywords` 且非空：遍历其中每个关键词，只要任一关键词出现在任务描述或涉及路径中 → 命中，继续步骤 4；否则跳过 `critical_constraints` 加载（**仍在清单登记依赖关系**，标记为 `[L4 dep-skipped]` / `[L5 dep-skipped]`）
+   - 若 `trigger_keywords` 缺省或为空数组 → 保持旧行为，始终进入步骤 4
+4. 若 `critical_constraints` 非空 → 加载列出的每一个 `path#anchor`（强制加载）
+5. 若 `critical_constraints` 为空 → 仅在清单中登记被依赖的 module id，不强制加载内容
+6. 递归展开被依赖的 module 的 `deps.yml`
+   - **depth 上限 = 2**（直接命中为 depth 0，一级依赖 depth 1，二级依赖 depth 2，三级及以上不再展开）
+   - 使用 visited set 避免环
+   - 递归展开时对每一级依赖均重复执行 trigger_keywords 过滤
+
+**锚点解析**：`path/to/file.md#heading` 以 markdown 二级标题（`##`）为准匹配 heading slug；未找到则登记为 `anchor missing` 警告并跳过。
+
+## Phase 6: 加载清单输出
+
+按层级分组打印，示例格式：
+
+```
+加载规范层级：
+  [L1 project] CLAUDE.md + project-common.md
+  [L2 app]     XiaoPengQiChe/.ai-knowledge/specs/constitution.md
+  [L4 dep]     XPVehicleSDK → 车控指令流程、蓝牙安全
+  [L5 dep]     XPBase_Router/.ai-knowledge/specs/constitution.md
+```
+
+分组规则：
+- `L1 project` / `L2 app` / `L3 target` / `L4 submodule` / `L5 localpod`
+- 标记来源：`[hit:path]` / `[hit:keyword]` / `[dep:depth=N]`（可合并）
+- 被 `trigger_keywords` 过滤掉的依赖以 `[L4 dep-skipped]` / `[L5 dep-skipped]` 标注，仅登记不加载内容
+
+## Phase 7: 覆盖度声明
+
+输出结构化统计：
+
+- **registry 总模块数**：N
+- **命中模块数**：路径命中 X / 关键词命中 Y / 直接命中并集 Z
+- **依赖扩展数**：一级 A / 二级 B
+- **未解析项**：`anchor missing` / `deps.yml missing` / `subrepo inaccessible` 清单
+- **未命中时提示**：仅保留 L1 常驻，并提示「建议通过 post-task-review 沉淀该场景的 module 或 keywords」
+
+## 约束
+
+- **每层**最多加载 1 个 `constitution.md` + 2 条具体 anchor（来自 `critical_constraints`）
+- **依赖深度上限 = 2**，超过不加载
+- **路径命中与关键词命中求并集，去重，不重复加载**
+- **锚点格式**：`path/to/file.md#heading`，heading 以 markdown 二级标题为准
+- **subrepo 降级**：若某 module `owner_repo: subrepo` 且其 `knowledge` 路径不可访问（submodule 未 clone 或文件缺失），降级为仅在清单中打印 registry 条目 + 警告 `subrepo inaccessible`，不再尝试读取
+- **pending 模块**：若某 module 含 `status: pending`，仅在关键词命中时返回 registry 条目信息（id/path/keywords），不尝试加载 knowledge 路径（目录可能不存在）
+- **未命中时**：仅保留 L1 常驻，输出空命中声明 + 沉淀建议
+- **不得全量**加载所有模块知识库（避免上下文膨胀）
+- **必须声明覆盖度**（见 Phase 7）
+
+## 示例输出
+
+任务描述：「排查 VehicleBridge 下发指令时蓝牙鉴权失败」
+涉及路径：`XiaoPengQiChe/VehicleBridge/XPVehicleHttpBridge.m`
+
+```
+加载规范层级：
+  [L1 project] CLAUDE.md + .claude/rules/project-common.md + .ai-knowledge/specs/constitution.md
+  [L2 app]     XiaoPengQiChe  [hit:path]
+               → XiaoPengQiChe/.ai-knowledge/specs/constitution.md
+  [L4 submodule] XPVehicleSDK [hit:keyword: 车控, 蓝牙鉴权]
+               → submodule/XPVehicleSDK/.ai-knowledge/specs/constitution.md
+               → submodule/XPVehicleSDK/.ai-knowledge/specs/ble-auth.md#鉴权流程 [dep:depth=1]
+  [L5 localpod] XPBase_Router [dep:depth=1, from=XiaoPengQiChe]
+               → 仅登记（critical_constraints 为空）
+
+覆盖度：
+  registry 模块数 = 3
+  直接命中 = 2（path=1 / keyword=1）
+  依赖扩展 = 1 级 1 项 / 2 级 0 项
+  未解析 = 无
+```

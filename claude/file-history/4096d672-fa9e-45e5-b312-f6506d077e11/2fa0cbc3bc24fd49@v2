@@ -1,0 +1,1533 @@
+//
+//  XPLaunchTaskMgr.m
+//  XiaoPengQiChe
+//
+//  Created by lijianyun on 2018/7/16.
+//  Copyright © 2018年 xiaopeng.com. All rights reserved.
+//
+
+#import "XPLaunchTaskMgr.h"
+#import "XPRuntimeSecurityChecker.h"
+
+#import <AMapFoundationKit/AMapFoundationKit.h>
+#import <UserNotifications/UserNotifications.h>
+#import <WXApi.h>
+#import <WebKit/WebKit.h>
+
+#import <bBox/BBEnvironment.h>
+
+#import <Bulk/Bulk.h>
+#import <Bulk/BulkConfig.h>
+#import <Bulk/BulkNetwork.h>
+
+#import "_BulkMyIPProvider.h"
+
+#import "XPLogFileHandle.h"
+#import <XPLog/XPLog.h>
+#import <XPLog/XPLogUploader.h>
+#import "XPRouterUtil.h"
+#import "XPFileUtil.h"
+#import "XPStatisticsKit.h"
+#import "UIDevice+Info.h"
+#import "KeyValueStore.h"
+#import "MessageNotifcationHandler.h"
+#import "SystemConfig.h"
+#import "ReactNativeManager.h"
+#import "XPMacroLocalizedDef.h"
+#import "XPOssService.h"
+#import "MQTTPublisher+HeartJump.h"
+#import "MQTTPublisher+CarControl.h"
+#import "MQTTNotificationKey.h"
+#import "CameraInfo.h"
+#import "ChargeStationViewModel.h"
+#import "XPAPIRequestManager+Account.h"
+#import "XPAPIRequestManager+System.h"
+#import "XPAPIConfig.h"
+#import "XPKeyboardStatusMgr.h"
+#import "MyCarInfo.h"
+#import "LocationHelper.h"
+#import <XPLocation/XPLocationUtils.h>
+#import "CTMediator+TabBarCenter.h"
+#import "MessageCenterModel.h"
+#import "XPUtility.h"
+#import "CTMediator+Splash.h"
+#import "LoginInfo.h"
+#import <XPBase_Router/UserInfo.h>
+#import "UserInfoViewModel.h"
+#import "UIViewController+Display.h"
+#import "NetworkMonitorManager+RAC.h"
+#import "Notification.h"
+#import "XPAlertController.h"
+#import "UIViewController+Display.h"
+#import "XPUtility.h"
+#import "XPTheme.h"
+#import "ChargeInfoViewModel.h"
+#import "XPOrderUnFinishedChargeListMgr.h"
+#import "XPActivityManager.h"
+#import "XPTeeSecurityManager.h"
+#import "XPToast.h"
+#import "XPBlockDispatcherKit.h"
+#import "LoginInfoViewModel.h"
+#import "XPCarStateViewModel.h"
+#import "MessageListViewModel.h"
+#import "XPServiceAnnouncementViewModel.h"
+#import "XPAccountIntentionCollectionViewModel.h"
+
+#import "XPPageEventManager.h"
+#import <CTMediator+CarState.h>
+#import <CTMediator+Login.h>
+#import <RACSignal.h>
+#import "XPMatrixHandler.h"
+#import "ReactNativeManager.h"
+#import "XPAccountQuickPassLoginManager.h"
+#import "CTMediator+UserProtocol.h"
+#import "AutoUploadLogManager.h"
+#import <CTMediator+Message.h>
+#import "XPDispatchQueue.h"
+
+#import "XPIMKitManager.h"
+#import "XPCarShowManager.h"
+#import "XPBleLocationManager.h"
+#import "XPFileTransferTools.h"
+
+#if ENABLE_DOKIT
+#import "XPLaboratoryMgr.h"
+#import <DoraemonKit/DoraemonKit.h>
+#import "DKDebugStartProtectorViewController.h"
+#endif
+
+#ifdef DEBUG
+#import "TestManager.h"
+#endif
+
+// App Launch
+#import "XPCoreSessionAppLaunch.h"
+#import "XPCoreSecurityAppLaunch.h"
+#import "XPAppGroupAppLaunch.h"
+#import "XPAPPVersion.h"
+#import "XPConfigsManager.h"
+#import "XPTabbarResourcesManager.h"
+#import "XPTabBarCenter.h"
+#import <XRNAdapter/XRNManager.h>
+#import "XPWidgetManager.h"
+#import "XPVehicleVerifyCodeManager.h"
+
+#import "XPAPPVersion.h"
+#import "XPUpgradeAppManager.h"
+#import "XPSharetraceManager.h"
+#import "NSTimer+BlocksKit.h"
+#import <AppTrackingTransparency/AppTrackingTransparency.h>
+#import <AdSupport/AdSupport.h>
+#import "XPIDFAManager.h"
+#import "XPWatchManager.h"
+#import "XPAsaAttributionManager.h"
+
+#import "XPToDoCenterManager.h"
+
+#import <XPCarControlCore/XPCarSDK.h>
+
+#import <CloudConfig/CloudConfig.h>
+#import <XPNetwork/XPAPIRequest.h>
+#import "XPBleLocationAndPollingOtaManager.h"
+#import "XPUnityCarControlManager.h"
+#import "XPToDoCenterBridge.h"
+
+#import "XPNoCarHomeViewModel.h"
+#import "XPUserProtocolManager.h"
+
+#import "XPStatisticsMgr+GrowingIO.h"
+
+
+#import "XPRevokeMessageViewModel.h"
+#import "XPOTAConfig.h"
+#import "XPApplicationState.h"
+#import "BabyAppState.h"
+#import "XPPushManager.h"
+#import <XPConfigCenter/XPConfigCenter.h>
+
+#import "NSData+GZIP.h"
+
+#import <XPNetwork/XPNetworkTimingCollector.h>
+#import <XPNetwork/XPDialTest.h>
+
+#import "XPAdServiceMgr.h"
+
+#define backgroundDisconnectMQTTRemainingTime 5 //后台任务剩余的时间，小于5s，就断开mqtt
+#define backgroundDisconnectMQTTDelayTime 10 //App退到后台后断开mqtt的延时时间
+
+//TEE加密是否生效
+#define XP_TEE_EFFECTIVE_KEY @"XP_TEE_EFFECTIVE_KEY"
+#define XP_START_PROTECT_COUNT_KEY "XP_START_PROTECT_COUNT_KEY"
+
+#import <XPPerfMonitor/XPPerfMonitor.h>
+
+@import XPBase_Router;
+#import "XiaoPengQiChe-Swift.h"
+@import AFNetworking;
+
+#import <RiskPerception/NTESRiskUniPerception.h>
+#import "XPOTAConfigBridge.h"
+#import "XPAppSettingsBridge.h"
+#import "XPVehicleLogBridge.h"
+#import "XPDatabaseBridge.h"
+#import "XPStatisticsBridge.h"
+#import "XPVehicleHttpBridge.h"
+#import <XPPollingSDK/XPPollingSDK.h>
+#import "XPKeySettingDataBridge.h"
+#import "XPVehicleTextBridge.h"
+
+#import "XPDouYinAdTransferReportManager.h"
+#import "XPBilibiliAdTransferReportManager.h"
+
+#import "XPMultiBleManager.h"
+#import "XPExtensionHelper+APP.h"
+#import "XPUnityLifeCircleManager.h"
+#import <XPAppBiz/XPLocationManager.h>
+#import "XPAppSettings.h"
+#import "XPPollingProxyBridge.h"
+#import "XPDBMessgaeBridge.h"
+
+#import "XPBadgeManager.h"
+
+#import "XPUnityLifeLoopHandler.h"
+#import "XPFileTransferUIManager.h"
+#import "XiaoPengQiChe-Swift.h"
+
+@import StartProtector;
+
+@import XPVehicleSDK;
+@import XPVehicleExt;
+@import XPCenter_Message;
+@import XPKits;
+
+
+@interface XPLaunchTaskMgr()  <UNUserNotificationCenterDelegate>
+//向iOS申请，在后台完成一个Long-Running Task任务
+@property (nonatomic, assign) UIBackgroundTaskIdentifier backgroundTaskIdentifier;
+@property (nonatomic, strong) NSTimer *backgroundTaskTimer;
+@property (nonatomic, assign) NSTimeInterval backgroundTimeRemaining;
+
+@property (nonatomic, assign) BOOL isOnSplashAd;
+@property (nonatomic, assign) BOOL isHomeAppeared;
+@property (nonatomic, assign) BOOL isHomeAppearedDelay;
+
+@property (nonatomic, strong) NSDate *startAppDate;//app启动的时间，每次置前台时重置
+@property (nonatomic, strong) NSDate *lastSceneDate;//上次场景的时间
+
+@property (nonatomic, assign) NSInteger initTimeOfMSeconds;
+@property (nonatomic, assign) NSInteger onlineAdTimeOfMSeconds;
+@property (nonatomic, assign) NSInteger videoAdTimeOfMSeconds;
+@property (nonatomic, assign) BOOL isLaunchEventFinished;
+
+@property (nonatomic, copy) NSString *apnsToken;// apns推送token
+
+@end
+
+@implementation XPLaunchTaskMgr
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (instancetype)init {
+    if (self = [super init]) {
+        _isOnSplashAd = NO;
+        _isHomeAppeared = NO;
+        _isHomeAppearedDelay = NO;
+        _isLaunchHomeReady = NO;
+        _isLaunchEventFinished = NO;
+        [self startupBBox];
+    }
+    return self;
+}
+
+
++ (XPLaunchTaskMgr *)instance {
+    static XPLaunchTaskMgr *gXPLaunchTaskMgr = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        gXPLaunchTaskMgr = [[XPLaunchTaskMgr alloc] init];
+    });
+    return gXPLaunchTaskMgr;
+}
+
+- (void)setLaunchOptions:(NSDictionary *)launchOptions {
+    _launchOptions = launchOptions;
+    
+    [XPApplicationState sharedApplication].applicationState = [UIApplication sharedApplication].applicationState;
+    [BabyAppState sharedApplication].applicationState = [UIApplication sharedApplication].applicationState;
+}
+ 
+- (BOOL)startProtect {
+    id obj = [CloudConfig configForKeyPath:@"safemodel.appstart.count"];
+    if (NO == [obj isKindOfClass:NSNumber.class]) { return YES; }
+    NSNumber *num = (NSNumber *)obj;
+    if (num.integerValue <= 0) { return YES; }
+    if (XPStartProtector.isCrashTooFast) { return YES; }
+    
+    NSInteger count = [NSUserDefaults.standardUserDefaults integerForKey:@XP_START_PROTECT_COUNT_KEY];
+    count += 1;
+    [NSUserDefaults.standardUserDefaults setInteger:count forKey:@XP_START_PROTECT_COUNT_KEY];
+    if (count > num.integerValue) { return YES; }
+    
+    [XPStartProtector setEventReportHandler:^(NSDictionary * _Nonnull data) {
+        if (data.count > 0) {
+            [Bulk writeWithType:BULK_APM event:@"B056" module:@"P00004" data:data];
+        }
+    }];
+    return [XPStartProtector start];
+}
+
+#pragma mark -
+#pragma mark - Before UI
+
+- (void)startupOnAppDidFinishLauchingBeforeUI {
+
+    CFTimeInterval startTime = CACurrentMediaTime();
+
+    //记录app开始使用的时间
+    [self resetAppLaunch];
+    
+#if ENABLE_DOKIT
+    [DoraemonManager.shareInstance addPluginWithTitle:@"RN调试" icon:@"dokit_react_native" desc:@"" pluginName:@"XPDKReactNativePlugin" atModule:@"业务工具" buriedPoint:@"dokit_app_rn_debug"];
+    [DoraemonManager.shareInstance addPluginWithTitle:@"埋点信息" icon:@"dokit_uried_point" desc:@"" pluginName:@"XPDKStatisticsPlugin" atModule:@"业务工具" buriedPoint:@"dokit_app_bi"];
+    [DoraemonManager.shareInstance addPluginWithTitle:@"二维码扫描" icon:@"doraemon_scan" desc:@"" pluginName:@"XPDKQRCodePlugin" atModule:@"业务工具" buriedPoint:@"dokit_app_scan_qrcode"];
+    [DoraemonManager.shareInstance addPluginWithTitle:@"车控蓝牙" icon:@"doraemon_weaknet" desc:@"" pluginName:@"XPBLECppPlugin" atModule:@"业务工具" buriedPoint:@"blue_car_control"];
+    [DoraemonManager.shareInstance addPluginWithTitle:@"调试工具" icon:@"doraemon_setting" desc:@"" pluginName:@"DebugPlugin" atModule:@"业务工具" buriedPoint:@"dokit_debug_tool"];
+    [DoraemonManager.shareInstance addPluginWithTitle:@"路由跳转" icon:@"doraemon_location" desc:@"" pluginName:@"DKRouterPlugin" atModule:@"业务工具" buriedPoint:@"dokit_router_tool"];
+    [DoraemonManager.shareInstance addPluginWithTitle:@"设备/用户信息" icon:@"doraemon_app_info" desc:@"" pluginName:@"DKInfoPlugin" atModule:@"业务工具" buriedPoint:@"dokit_info_tool"];
+
+    [DoraemonManager.shareInstance install];
+    
+    BOOL isShow = YES;
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSNumber *showNum = [userDefaults objectForKey:@"kShowMonitorViewKey"];
+    if (showNum) {
+        isShow = [showNum boolValue];
+    }
+    if (isShow) {
+        [DoraemonManager.shareInstance showDoraemon];
+    } else {
+        [DoraemonManager.shareInstance hiddenDoraemon];
+    }
+#endif
+    
+    [XPRuntimeSecurityChecker work];
+    
+    // 初始化路由，必须在初始化用户信息前，不然会找不到模块接口
+    [RouterHelperExtension initFullRouter];
+
+    /// 初始化 GIO
+    [XPStatisticsMgr startupGrowingIOWithLaunchOptions:_launchOptions];
+
+    /// 初始化用户信息
+    [XPLaunchTaskMgr initModules];
+
+    /// 启动埋点
+    [XPStatisticsMgr sendEvent:XP_BASE_EVENT_APP_LAUNCH module:XP_BASE_MODULE];
+
+    // 加密模块
+    [XPCoreSecurityAppLaunch.sharedInstance run];
+    // 网络模块
+    [XPCoreSessionAppLaunch.sharedInstance run];
+    // AppGroup
+    [XPAppGroupAppLaunch.sharedInstance run];
+    
+    //初始化XLog
+    [self startupXPLog];
+    
+    //CrashReportSDK: Sentry
+    [XPLogFileHandle initCrashReportSDK];
+
+    [[XPMatrixHandler shareInstance] installMatrix];
+    
+    NSString *buildType = @"Release";
+#if DEBUG
+    buildType = @"Debug";
+#endif
+    DLogTagInfo(@"AppLaunch", @"=====================App Start =====================\n appNameVersion:%@, appPhase:%@, buildType:%@, appBundleId:%@, appChannel:%@, deviceModelName:%@, deviceID:%@ SysAppState:%@ XPAppState:%@ BabyAppState:%@\n", [XPUtility appNameVersion], [XPUtility appPhase], buildType, [XPUtility appBundleId], [XPUtility appChannel], [XPUtility deviceModelName], [XPUtility deviceID], @([UIApplication sharedApplication].applicationState), @([XPApplicationState sharedApplication].applicationState), @([BabyAppState sharedApplication].applicationState));
+
+    [XPSDWebImageTask execute];
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        DLogTagInfo(@"AppLaunch", @"startupOnAppDidFinishLauchingBeforeUI on thread");
+        //初始化统计模块，统计模块初始话要尽早
+        [[XPStatisticsMgr instance] setupStatistics];
+        
+        //注册页面路由跳转
+        [XPRouterUtil registerAllResidentRouters];
+        //创建一些必要的目录
+        [XPFileUtil checkToCreateAppDirectory];
+
+        //强制记录当前版本
+        [XPAPPVersion force];
+        [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+    });
+    
+    [ScreenshotDetector.shared startDetect];
+}
+
+
+#pragma mark -
+#pragma mark - After UI
+
+- (void)startupOnAppDidFinishLauchingAfterUI {
+    DLogTagInfo(@"AppLaunch", @"=====================App Start LauchingAfterUI=====================");
+    CFTimeInterval startTime = CACurrentMediaTime();
+
+    //高德地图
+    NSString* mapAppKey = AMapAppKey;
+    [AMapServices sharedServices].apiKey = mapAppKey;
+    
+    //Sharetrace 获取安装携带的参数
+    [[XPSharetraceManager shareInstance] getInstallTrace];
+    
+    //逆地图埋点上报
+    [LocationHelper sharedInstance].regeocodeStatisticsBlock = ^{
+        [XPLocationManager statisticsAMapUsageWithSceneName:@"regeocode_location_helper"];
+    };
+
+    // 监听配置获取成功的通知
+    @weakify(self);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        @strongify(self);
+        DLogTagInfo(@"AppLaunch", @"startupOnAppDidFinishLauchingAfterUI on thread");
+        // 初始化 CloudConfig
+        [self startupCloudConfig];
+
+        // 点击通知拉起app，设置本地通知delegate，否则非注册在前台无法调用对应willpresent推通知方法
+        if (![CTMediator isLogin]) {
+            UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+            center.delegate = self;
+        }
+        
+    #ifdef DEBUG
+        [[TestManager sharedManager] intercepter];
+    #endif
+        [[XPPageEventManager instance] intercepter];
+        
+        [[[NSNotificationCenter defaultCenter] rac_addObserverForName:LocationUpdatedNotification object:nil] subscribeNext:^(NSNotification * _Nullable x) {
+            CLLocation *location = [x.object objectForKey:@"location"];
+            BOOL shouldReport = [KeyValueStore BOOLForObjectId:kAccountIntentionShouldReportKey userId:@(CTMediator.uid).stringValue];
+            if (location) {
+                DLogTagInfo(kUseLocationTag, @"request %@",location ?: @"");
+                [XPStatisticsMgr updateGrowingIOLocation:location];
+                if (shouldReport) {
+                    [XPAccountIntentionCollectionViewModel requestRegisterReportWithLocation:location];
+                }
+            }
+            
+        }];
+        
+        // 抖音和bilibili同级，随便一个生效即可
+        if ([[XPDouYinAdTransferReportManager sharedManager] shouldReport] || [[XPBilibiliAdTransferReportManager sharedManager] shouldReport]) {
+            [XPLocationManager statisticsAMapUsageWithSceneName:@"ad_report"];
+            [XPLocationUtils requestLocationWithCompletion:^(XPLocationCacheType cacheType, CLLocation * _Nullable location, AMapLocationReGeocode * _Nullable regeocode, NSError * _Nullable error) {
+                //抖音
+                [[XPDouYinAdTransferReportManager sharedManager] reportAppRegisterWithLng:location.coordinate.longitude lat:location.coordinate.latitude];
+                [[XPDouYinAdTransferReportManager sharedManager] saveShouldReport:NO];
+                //bilibili
+                [[XPBilibiliAdTransferReportManager sharedManager] reportAppRegisterWithLng:location.coordinate.longitude lat:location.coordinate.latitude];
+                [[XPBilibiliAdTransferReportManager sharedManager] saveShouldReport:NO];
+            }];
+        }
+
+        //初始化用户协议管理模块
+        [CTMediator initProtocolManager];
+        [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+    });
+}
+
+
+
+#pragma mark -
+#pragma mark - Delay Triger
+
+- (void)startupOnAppDidFinishLauchingDelayTriger {
+    DLogTagInfo(@"AppLaunch", @"=====================App Start Lauching DelayTriger=====================");
+    CFTimeInterval startTime = CACurrentMediaTime();
+
+    @weakify(self);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        @strongify(self);
+        //监听网络状态，适时启动udp监听，用于接收大屏发送过来的文件
+        
+        [[XPFileTransferUIManager sharedManager] subscribeFileTransfer];
+        
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            if ([CTMediator isLogin]) {
+                // 4.18.0 充电一致性 https://xiaopeng.feishu.cn/docx/CHDodRia7ojQHoxKGn4cHSaTnpf
+                // 调用一次接口，将对应车型记入数据库，用于判断充电地图气泡方案
+                [[XPNoCarHomeViewModel sharedInstance]
+                    getCarOrderInfo:^(BOOL isSuccess, XPCarOrderModel *carOrderInfo,
+                                      XPUserOrderRightsModel *rightsInfo){
+                    }];
+            }
+
+            //下载tabbar的资源，下一次启动时，加载最新资源
+            [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+        });
+        
+        
+        //更新服务群公告
+        [[XPServiceAnnouncementViewModel sharedModel] requestServiceAnnouncementConfig];
+        
+        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+            //更新通知分类
+            [MessageNotifcationHandler updateCategories];
+            
+            //获取推送配置
+            [[XPPushManager shareInstance] requestPushSettingData];
+
+            [XPPerfMonitor setupMonitor];
+        });
+    });
+}
+
+
+#pragma mark -
+#pragma mark - Life Cycle
+
+- (void)startupOnAppWillEnterForeground {
+    DLogTagInfo(@"AppLaunch", @"=====================App Will EnterForeground=====================");
+    CFTimeInterval startTime = CACurrentMediaTime();
+    
+    //重置app开始使用的时间
+    [self resetAppLaunch];
+    
+    //初始化Tee加密
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self startupOnInitSecurity:nil];
+    });
+
+    @weakify(self);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        @strongify(self);
+        DLogTagInfo(@"AppLaunch", @"startupOnAppWillEnterForeground on thread");
+        //每次从后台回来都刷新userInfo，防止登录被挤下线后mqtt收不到消息导致跳不到登录页
+        [self refreshUserInfo];
+        [MessageNotifcationHandler updateCategories];
+    });
+
+    //如果后台剩余时间小于10s，则表明mqtt已断开，需要重连
+    DLogTagInfo( kBackgroundTaskTag, @"剩余时间：%f", self.backgroundTimeRemaining);
+
+    if((self.backgroundTimeRemaining < backgroundDisconnectMQTTRemainingTime || ![MQTTPublisher sharedManager].isConnected)
+       && ([CTMediator isLogin]) ) {
+        //通知首页下拉刷新
+        [[NSNotificationCenter defaultCenter] postNotificationName:RefreshCarOwnerHomeDataNotificaiton object:nil];
+    }
+    //防止endBackgroundTask被重复调用
+    [self endBackgroundTaskIfNeed];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        // 检查更新
+        [XPUpgradeAppManager checkUpgrade];
+    });
+
+    //车图模块记录唤醒
+    [[XPUnityLifeCircleManager sharedInstance] willEnterForgroundAction];
+
+    //从后台返回前台时，检查网络状态，适时启动udp监听，用于接收大屏发送过来的文件
+    XPVehicleFileTransferManager *manager = [XPVehicleExt createVehicleTransferFileManager];
+    manager.enabled = YES;
+    [manager checkConnection];
+        
+    BOOL isLoginScenePolicyAgreed = [XPUserProtocolManager isLoginScenePolicyAgreed];
+    if (isLoginScenePolicyAgreed) {
+        // 临时注释代码，解决某些机器返回前台反复弹广告问题。预计4.21.0修改数据库彻底修复此问题，再取消此注释。
+//        [[XPActivityManager sharedManager] queryAndShowOperationActivity];
+        [[MessageCenterModel shareInstance] refreshUnreadMessageCount];
+    }
+    
+    [SystemConfig updateSystemConfigWithForce:YES];
+    [XPExtensionHelper setupIfNeed];
+
+    [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+}
+
+- (void)startupOnAppWillResignActive {
+    DLogTagInfo(@"AppLaunch", @"=====================App Will ResignActive=====================");
+    CFTimeInterval startTime = CACurrentMediaTime();
+
+    [[NSNotificationCenter defaultCenter] postNotificationName:SaveRecordVideoWhenEnterBackgroundNotification object:nil];
+    [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+}
+
+- (void)startupOnAppDidEnterBackground {
+    DLogTagInfo(@"AppLaunch", @"=====================App Did EnterBackground=====================");
+
+    // 标记一个长时间运行的后台任务将开始
+    // 通过调试，发现，iOS给了我们额外的3分钟（180s）来执行这个任务。
+    if (self.backgroundTaskIdentifier == UIBackgroundTaskInvalid) {
+        @weakify(self);
+        self.backgroundTaskIdentifier = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^(void) {
+            @strongify(self);
+            // 当应用程序留给后台的时间快要到结束时（应用程序留给后台执行的时间是有限的），这个Block块将被执行
+            [self endBackgroundTask];
+        }];
+    }
+
+    // 模拟一个Long-Running Task
+    [self.backgroundTaskTimer invalidate];
+    _backgroundTaskTimer = [NSTimer scheduledTimerWithTimeInterval:1.0f
+                                                            target:self
+                                                          selector:@selector(timerMethod:)
+                                                          userInfo:nil
+                                                           repeats:YES];
+    self.backgroundTimeRemaining = [[UIApplication sharedApplication] backgroundTimeRemaining];
+}
+
+- (void)startupOnAppWillTerminate {
+    DLogTagInfo(@"AppLaunch", @"=====================App Will Terminate=====================");
+
+    //断开mqtt
+    if (MQTTPublisher.sharedManager.isConnected) {
+        [[MQTTPublisher sharedManager] disconnectServer];
+    }
+    if([XPVehicleSDK existValidKey]) {
+        DLogTagInfo(@"AppLaunch", @"存在有效钥匙，app被即将kill时断开蓝牙");
+        [XPVehicleSDK.shared.vehicleManager.currentVehicle disconnectWithChannel:VehicleChannelBLE];
+    }
+    [XPLog stop];
+    
+    // 强杀app时间记录
+    uint64_t currentTime = [XPUtility dateTimestamp];
+    [[NSUserDefaults standardUserDefaults] setDouble:(double)currentTime forKey:@"appTerminateTime"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+
+#pragma mark -
+#pragma mark - Before Splash
+
+- (void)startupOnTasksBeforeSplash:(void(^)(NSError * error))complete {
+    DLogTagInfo(@"AppLaunch", @"===================== startupOnTasksBeforeSplash =====================");
+    CFTimeInterval startTime = CACurrentMediaTime();
+    
+    //云信IM 平台推送处理
+    [[XPIMKitManager sharedManager] didReceiveLaunchOptions:self.launchOptions];
+    
+    if (EncryptionOpen) {
+        [self startupOnInitSecurity:^(NSError *error) {
+            if (error != nil) { return; }
+            [self startupOnAfterInitSecurity:complete];
+        }];
+    } else {
+        [self startupOnAfterInitSecurity:complete];
+    }
+    [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+}
+
+- (void)startupOnInitRN:(void(^)(NSError *))complete {
+    DLogTagInfo(@"AppLaunch", @"===================== startupOnInitRN =====================");
+    CFTimeInterval startTime = CACurrentMediaTime();
+    //ReactNative 预加载
+    [[ReactNativeManager sharedManager] setupReactNativeWithLaunchOptions:self.launchOptions complete:^(NSError *error) {
+        DLogTagInfo(@"AppLaunch", @"startupOnInitRN error: %@", [error localizedDescription]);
+        [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (complete) complete(error);
+        });
+    }];
+}
+
+- (void)startupOnInitSecurity:(void(^)(NSError *))complete {
+    DLogTagInfo(@"AppLaunch", @"===================== startupOnInitSecurity =====================");
+    CFTimeInterval startTime = CACurrentMediaTime();
+    
+    // TEE 已生效，直接使用 TEE
+    if ([KeyValueStore BOOLForObjectId:XP_TEE_EFFECTIVE_KEY userId:nil]) {
+        if (![[XPTeeSecurityManager instance] isIndivSaveSuccess]) {
+            [XPToast showLoadingMessage:@"正在初始化应用" showAnimation:NO];
+        }
+        [self startupOnInitSecurityWithTee:^(NSError *error) {
+            [XPToast dismissLoadingMessage];
+            if (error == nil
+                && XPCoreSessionAppLaunch.sharedInstance.encryptionType != HttpRequestEncryptionTypeTee) {
+                [[XPCoreSessionAppLaunch sharedInstance] encryptionReady:HttpRequestEncryptionTypeTee];
+            }
+            [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+            if(complete) complete(error);
+        }];
+        return;
+    }
+
+    [self startupOnInitSecurityWithTee:^(NSError *error) {
+        if (error == nil) {
+            // 使用 TEE
+            [[XPCoreSessionAppLaunch sharedInstance] encryptionReady:HttpRequestEncryptionTypeTee];
+            [KeyValueStore saveBOOL:YES withObjectId:XP_TEE_EFFECTIVE_KEY userId:nil];
+        }
+        
+        [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+        if(complete) complete(error);
+        return;
+    }];
+}
+
+- (void)startupOnInitSecurityWithTee:(void(^)(NSError *))complete {
+    
+    CFTimeInterval startTime = CACurrentMediaTime();
+    [[XPTeeSecurityManager instance] loadIndiv:^(NSError * _Nonnull error, BOOL didInit, CGFloat duration) {
+        
+        if (didInit) {//真正有初始化tee
+            //埋点-初始化tee的结果
+            BOOL isSuccess = (error == nil);
+            
+            [Bulk writeWithType:BULK_APM
+                          event:@"B047"
+                         module:@"P00001"
+                           data:@{
+                               @"error-code" : @(isSuccess ? 0 : 1),
+                               @"error-message" : error == nil ? @"" : error.localizedDescription
+                           }];
+        }
+        
+        [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+        complete(error);
+    } didInit:^{
+        
+        [Bulk writeWithType:BULK_APM event:@"B046" module:@"P00001" data:@{ }];
+        [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+    }];
+}
+
+- (void)startupOnAfterInitSecurity:(void (^)(NSError *))complete {
+    DLogTagInfo(@"AppLaunch", @"===================== startupOnAfterInitSecurity =====================");
+    CFTimeInterval startTime = CACurrentMediaTime();
+
+    @weakify(self);
+    [self startupOnInitRN:^(NSError *error) {
+        @strongify(self);
+        [self configCameraOperationInfoObserver];
+        [self configNetworkObserver];
+        
+        [[[NSNotificationCenter defaultCenter] rac_addObserverForName:LogInOutNotification object:nil] subscribeNext:^(NSNotification * _Nullable x) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [XPAPIRequestManager.otaConfigVersionsMap removeAllObjects];
+                [SystemConfig updateSystemConfigWithForce:YES];
+            });
+            //获取推送配置
+            [[XPPushManager shareInstance] requestPushSettingData];
+            
+            [self vehicleSDKLogin];
+            [self.class setupXPLogInfo];
+            [XPExtensionHelper setup];
+        }];
+    
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+            @strongify(self);
+            DLogTagInfo(@"AppLaunch", @"startupOnAfterInitSecurity on thread");
+            //反作弊SDK，以自动化模式初始化SDK
+            [[NTESRiskUniPerception fomentBevelDeadengo] init:NTESRiskPerceptionProductID callback:^(int code, NSString * _Nonnull msg, NSString * _Nonnull content) {
+                DLogTagInfo(@"AppLaunch", @"NTESRiskUniPerception，code: %d, msg: %@, content: %@", code, msg, content);
+            }];
+            
+            [self startupConfigCenter];
+
+            //初始化用户车辆数据，必须等初始化用户数据之后
+            [self startupCarControlSDK];
+
+            [XPToDoCenterBridge sharedManager].delegate = [XPToDoCenterManager sharedManager];
+            
+            //启动时调一次待办接口
+            [[XPToDoCenterManager sharedManager] requestAllToDoList];
+            
+            //获取系统配置，因为获取系统配置接口需要在header加上uid参数，所以需要待用户数据初始化后才访问获取系统配置接口
+            // 车控业务要求OTA配置尽早获取
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [SystemConfig updateSystemConfigWithForce:YES];
+                // 检查版本更新从ota独立出来
+                [XPUpgradeAppManager requestUpgradeCheck];
+            });
+            //设置bugly标签，必须等初始化用户数据之后
+            [XPLogFileHandle initCrashReportSDKUserInfo];
+            //初始化成功后才能刷新userInfo
+            [self refreshUserInfo];
+            
+            //请求所有配置
+            [[XPConfigsManager sharedManager] requestAllConfigs];
+
+            //尝试上报IDFA
+            [XPIDFAManager reportIDFA];
+
+            //初始化主界面
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [XPKeyboardStatusMgr instance];
+                [[XPAccountQuickPassLoginManager shareManager] configureBussinessID:AppNTESLoginID];
+                [CTMediator tabBarController];
+                [CTMediator preloadCommunity];
+       
+                if(complete) complete(nil);
+            });
+
+            XPOSSServiceConfig *ossConfig = [XPOSSServiceConfig new];
+            ossConfig.getUID = ^long { return CTMediator.uid; };
+            ossConfig.getVIN = ^NSString *{ return CTMediator.vin; };
+            [XPOssService startupWithConfig:ossConfig];
+
+            [OfflineMessageDispatcher start];
+
+            /// 开启远程提取日志功能
+            ///
+            /// 因部分调用接口使用到用户 id, 需要在用户模块初始化完成后再启动
+            [AutoUploadLogManager startMonitor];
+
+            //开始IM服务
+            xp_async_execute_in_main_thread(^{
+                [[XPIMKitManager sharedManager] loadBaseData];
+            });
+
+            [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+        });
+    }];
+}
+
+
+#pragma mark -
+#pragma mark - Home Appeared
+
+- (void)startupOnHomePageDidAppeared {
+    if (_isHomeAppeared) {
+        return;
+    }
+    CFTimeInterval startTime = CACurrentMediaTime();
+    _isHomeAppeared = YES;
+
+    DLogTagInfo(@"AppLaunch", @"=====================App on HomePageDidAppeared=====================");
+    
+    // 上报app启动相关埋点
+    [self sendAppLaunchEventWithScene:XPLaunchSceneHomeAppeared];
+
+    // 阿里百川与其它阿里产品（如推送、移动数据分析）有冲突，要先于他们去初始化，否则会报appkey重复设置的问题
+//    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+//    NSString *app_Name = [infoDictionary objectForKey:@"CFBundleDisplayName"];
+//    NSString *app_Version = [infoDictionary objectForKey:@"CFBundleShortVersionString"];
+
+    BOOL isFirstInstalled = NO;
+    if (![KeyValueStore BOOLForObjectId:@"isFirstInstalled" userId:nil]) {
+        [MessageNotifcationHandler updateApplicationBadge:0];
+        [KeyValueStore saveBOOL:YES withObjectId:@"isFirstInstalled" userId:nil];
+        isFirstInstalled = YES;
+    }
+    
+    if(isFirstInstalled){
+        [[XPAdServiceMgr shareInstance] activateReport];
+    }
+    
+    //埋点：首次安装启动
+    if ([XPAPPVersion initialOperationAfterBrandnewInstallation]) {
+        [XPStatisticsMgr sendEvent:XP_BASE_EVENT_FIRST_INSTALL module:XP_BASE_MODULE data:nil];
+    }
+    //埋点：覆盖安装启动
+    if ([XPAPPVersion initialOperationAfterUpgradedInstallation]) {
+        [XPStatisticsMgr sendEvent:XP_BASE_EVENT_OVERWRITE_INSTALL module:XP_BASE_MODULE data:nil];
+    }
+    
+    // 检查更新
+    [XPUpgradeAppManager checkUpgrade];
+    
+    // 若上面检查时接口还没返回数据，则通知保证再次检查
+    [[[NSNotificationCenter defaultCenter] rac_addObserverForName:kXPUpgradeCheckFinishNotification object:nil] subscribeNext:^(NSNotification * _Nullable notification) {
+        [XPUpgradeAppManager checkUpgrade];
+    }];
+
+//#if DEBUG
+//    //在register之前打开log, 后续可以根据log排查问题
+//    [WXApi startLogByLevel:WXLogLevelDetail logBlock:^(NSString *log) {
+//        DLogTagDebug(@"WeChatSDK", @"%@", log);
+//    }];
+//#endif
+    
+    // 向微信注册
+    [WXApi registerApp:WeChatAppKey universalLink:WeChatUniversalLink];
+    
+//#if DEBUG
+//    //调用自检函数
+//    [WXApi checkUniversalLinkReady:^(WXULCheckStep step, WXCheckULStepResult* result) {
+//        DLogTagDebug(@"WeChatSDK", @"%@, %u, %@, %@", @(step), result.success, result.errorInfo, result.suggestion);
+//    }];
+//#endif
+    
+    // 越狱安全提醒
+    BOOL isJailbreak = [UIDevice isJailbreak];
+    DLogTagInfo(@"AppLaunch", @"isJailbreak : %d", isJailbreak ? 1 : 0);
+    if (isJailbreak) {
+        XPAlertController *alertVC = [XPAlertController alertControllerWithTitle:@"检测到在越狱环境下运行，请注意账号安全"
+                                                                         message:nil
+                                                                  imageURLString:nil
+                                                                      localImage:nil
+                                                                   configuration:^(XPAlertControllerConfig * _Nonnull config) {
+                                                                       config.titleLabel.font = kPingFangSCMediumFont(18);
+                                                                       config.messageTextView.textAlignment = NSTextAlignmentLeft;
+                                                                   }];
+
+        XPAlertAction *confirmAction = [XPAlertAction actionWithTitle:@"知道了"
+                                                                style:UIAlertActionStyleDefault
+                                                        actionHandler:^(XPAlertAction * _Nonnull action) {
+        } configuration:nil];
+        [alertVC addAction:confirmAction];
+        [[UIViewController currentFrontViewController] presentViewController:alertVC animated:YES completion:nil];
+    }
+    
+    @weakify(self);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        @strongify(self);
+        DLogTagInfo(@"AppLaunch", @"startupOnHomePageDidAppeared on thread");
+        
+        
+//        [[CTMediator.protocolAlertDismissSignal takeUntil:MessageCenterModel.shareInstance.pushNotifyDialogDismissSignal] subscribeCompleted:^{
+//            [self registerAPNS:isFirstInstalled];
+//        }];
+        //根据苹果建议，每次启动都去注册APNS（用户备份数据、重置系统、从旧手机备份等情况都会导致token失效）
+        [self registerAPNS:isFirstInstalled];
+
+        if (CTMediator.isLogin) {
+            [[MessageCenterModel shareInstance] initUnreadMessageCount];
+        }
+
+        //初始化OSS
+        [XPOssService instance];
+        
+        //查询用户协议是否有更新，对于已登录的情况
+        [CTMediator requestLoginScenePolicyWhenLoginWithAgreeBlock:nil];
+        
+        //获取Polling配置
+        //[XPPollingManager.sharedManager updatePollingConfig];
+        //[XPBleLocationAndPollingOtaManager updateBleLocationAndPollingOTAConfig];
+        //开始收集广告归因数据
+        [XPAsaAttributionManager startAttributionOfASA];
+        
+        //初始化Widget
+        [XPWidgetManager sharedInstance];
+
+        [XPExtensionHelper setupIfNeed];
+
+        // 初始化LiveActivity
+        if (@available(iOS 16.1, *)) {
+            [XPLiveActivityManager shared];
+        }
+        
+        //处理车辆认证信息
+        [XPVehicleVerifyCodeManager sharedInstance];
+        
+        //初始化Watch
+        [XPWatchManager sharedInstance];
+        
+        [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+    });
+    
+    XPQRCodeHandlerManager.shared.handlerBlock = ^NSArray<id<XPQRCodeHandlerProtocol>> * _Nonnull{
+        return @[
+            [[QRLoginHandler alloc] init],
+            [[QRCodeInnerJumpHandler alloc] init],
+            [[QRChargeHandler alloc] init],
+            [[QRCodeDefaultHandler alloc] init],
+            [[QRFileTransferHandler alloc] init]
+        ];
+    };
+}
+
+- (void)startupOnHomePageDidAppearedDelayTigger {
+    if (_isHomeAppearedDelay) {
+        return;
+    }
+    CFTimeInterval startTime = CACurrentMediaTime();
+    _isHomeAppearedDelay = YES;
+
+    DLogTagInfo(@"AppLaunch", @"=====================App on HomePageDidAppeared DelayTigger=====================");
+    
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+            
+        // 初始化Bulk打点
+        // Bulk 的上传请求及myip 的请求需要依赖网络初始化完成, 这里延迟到最后初始化
+        [self startupBulk];
+
+        [XPDialTest start];
+    });
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        //检查是否有日志需要上传
+        [XPLogUploader checkToUploadWithTypeID:XPLogUploaderTypeAll completion:^(BOOL isSuccess, NSError * _Nonnull error, NSString * _Nonnull remotePath, NSString * _Nonnull MD5, NSString * _Nullable fullRemoteUrl) { }];
+        
+        //获取彩蛋消息
+        [self reportTaskEvent:__PRETTY_FUNCTION__ startTime:startTime];
+    });
+          
+    //下载tabbar的资源，下一次启动时，加载最新资源
+    [XPTabbarResourcesManager.shareInstance loadTabbarResources];
+}
+
+#pragma mark -
+#pragma mark - Home Ready
+
+- (void)addLaunchHomeReadyBlock:(XPLaunchHomeReadyBlock)launchHomeReadyBlock {
+    [XPBlockDispatcher addBlock:launchHomeReadyBlock forKey:XPDispatcher_LaunchHomeReadyBlock];
+}
+
+- (void)onLaunchHomeReady {
+    self.isLaunchHomeReady = YES;
+    [XPRouterHelper.shared forceRegisterAllRouters];
+    NSArray<XPLaunchHomeReadyBlock> *blocks = [XPBlockDispatcher removeBlockArrayForKey:XPDispatcher_LaunchHomeReadyBlock];
+    for (XPLaunchHomeReadyBlock launchBlock in blocks) {
+        if (launchBlock) {
+            launchBlock();
+        }
+    }
+
+    //发出 进入到TabBarController 首页的通知
+    [[NSNotificationCenter defaultCenter] postNotificationName:XPEnterHomeTabBarControllerNotificaiton object:nil];
+
+    //启动时，查询运营活动
+    [[XPActivityManager sharedManager] queryAndShowOperationActivity];
+}
+
+#pragma mark -
+#pragma mark - Observers
+
+- (void)configCameraOperationInfoObserver {
+    [[[NSNotificationCenter defaultCenter] rac_addObserverForName:MQTTNotificationCameraOperationInfo object:nil]  subscribeNext:^(NSNotification * _Nullable notification) {
+        DLogInfo(@"handleCameraOperationInfo:%@",notification.object);
+    }];
+}
+
+NSString * networkStatusName(AFNetworkReachabilityStatus status)
+{
+    if (AFNetworkReachabilityStatusNotReachable == status) {
+        return @"不可用";
+    }
+    if (AFNetworkReachabilityStatusReachableViaWWAN == status) {
+        return @"手机网络";
+    }
+    if (AFNetworkReachabilityStatusReachableViaWiFi == status) {
+        return @"WIFI";
+    }
+    
+    return @"未知";
+}
+
+- (void)configNetworkObserver {
+     [[[[NetworkMonitorManager sharedManager] statusNotReachableSignal] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(id  _Nullable x) {
+         DLogTagInfo( kMQTTTag, @"收到网络不可用的消息");
+         [XPToast showMessage:BadNetworkTips];
+     }];
+     [[[[NetworkMonitorManager sharedManager] statusSignal] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(RACTuple * _Nullable value) {
+         AFNetworkReachabilityStatus newStatus = ((NSNumber *)value.second).integerValue;
+         AFNetworkReachabilityStatus oldStatus = ((NSNumber *)value.first).integerValue;
+         DLogTagInfo( kMQTTTag, @"收到网络变化的消息: %@ ==> %@", networkStatusName(oldStatus), networkStatusName(newStatus));
+         if (newStatus == AFNetworkReachabilityStatusReachableViaWWAN ||
+             newStatus == AFNetworkReachabilityStatusReachableViaWiFi) {
+             DLogTagInfo( kMQTTTag, @"收到wan变到wifi的消息，重新再连上");
+             // 当前ip地址日志
+             [XPFileTransferTools fetchIPAddressWithComplete:nil];
+         }
+     }];
+     [[[[NetworkMonitorManager sharedManager] statusReachableSignal] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(id  _Nullable x) {
+         DLogTagInfo( kMQTTTag, @"收到网络可用的消息，重新再连上，5s后获取配置信息，以及如果爱迪徳没有初始化成功，则重新初始化");
+
+         // 当有网时，拉一次配置，防止刚进来时无网，后面有网了
+         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+             [SystemConfig updateSystemConfigWithForce:NO];
+             // 二维码需要无网进入，需要白名单判断
+             if ([XPQRCodeWhitelistConfig shared].qrcodeWhitelist.count == 0) {
+                 [[XPConfigsManager sharedManager] requestAllConfigs];
+             }
+         });
+         //初始化Tee加密
+         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+             [self startupOnInitSecurity:nil];
+         });
+         //有网络后查询用户协议是否有更新，防止一进来没有网络
+         [CTMediator requestLoginScenePolicyWhenLoginWithAgreeBlock:nil];
+     }];
+}
+
+
+#pragma mark -
+#pragma mark - background task
+- (void)endBackgroundTask {
+    DLogTagInfo( kBackgroundTaskTag, @"后台任务时间结束，所有线程即将被挂起");
+    [XPCarSDK notifyAppWillSuspend];
+    [[XPMatrixHandler shareInstance] notifyAppWillSuspend];
+    if ([NSThread isMainThread]) {
+        [self.backgroundTaskTimer invalidate];// 停止定时器
+        /*  每个对 beginBackgroundTaskWithExpirationHandler:方法的调用,必须要相应的调用 endBackgroundTask:方法。这样，来告诉应用程序你已经执行完成了。
+         也就是说,我们向 iOS 要更多时间来完成一个任务,那么我们必须告诉 iOS 你什么时候能完成那个任务。
+         标记指定的后台任务完成
+         */
+        if (self.backgroundTaskIdentifier != UIBackgroundTaskInvalid) {
+            [[UIApplication sharedApplication] endBackgroundTask:self.backgroundTaskIdentifier];
+            // 销毁后台任务标识符
+            self.backgroundTaskIdentifier = UIBackgroundTaskInvalid;
+        }
+
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), ^(void) {
+            [self.backgroundTaskTimer invalidate];// 停止定时器
+            /*  每个对 beginBackgroundTaskWithExpirationHandler:方法的调用,必须要相应的调用 endBackgroundTask:方法。这样，来告诉应用程序你已经执行完成了。
+             也就是说,我们向 iOS 要更多时间来完成一个任务,那么我们必须告诉 iOS 你什么时候能完成那个任务。
+             标记指定的后台任务完成
+             */
+            if (self.backgroundTaskIdentifier != UIBackgroundTaskInvalid) {
+                [[UIApplication sharedApplication] endBackgroundTask:self.backgroundTaskIdentifier];
+                // 销毁后台任务标识符
+                self.backgroundTaskIdentifier = UIBackgroundTaskInvalid;
+            }
+        });
+    }
+}
+
+- (void)endBackgroundTaskIfNeed {
+    if(self.backgroundTaskIdentifier != UIBackgroundTaskInvalid) {
+        [self.backgroundTaskTimer invalidate];//停止定时器
+        [[UIApplication sharedApplication] endBackgroundTask:self.backgroundTaskIdentifier];
+        self.backgroundTaskIdentifier = UIBackgroundTaskInvalid;
+    }
+}
+
+// 模拟的一个 Long-Running Task 方法
+- (void)timerMethod:(NSTimer *)paramSender {
+    // backgroundTimeRemaining 属性包含了程序留给的我们的时间
+    self.backgroundTimeRemaining = [[UIApplication sharedApplication] backgroundTimeRemaining];
+    if (self.backgroundTimeRemaining == DBL_MAX) {
+        DLogTagInfo( kBackgroundTaskTag, @"Background Time Remaining = Undetermined");
+    } else {
+        DLogTagInfo( kBackgroundTaskTag, @"Background Time Remaining = %.02f Seconds", self.backgroundTimeRemaining);
+    }
+}
+
+- (BOOL)appIsBackgroundRunning {
+    if([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+        if(self.backgroundTimeRemaining < backgroundDisconnectMQTTRemainingTime) {
+            DLogTagInfo(kCameraTag, @"后台剩余时间：%f, 小于%d秒，mqtt已断开，app不在后台运行", self.backgroundTimeRemaining, backgroundDisconnectMQTTRemainingTime);
+            return NO;
+        } else {
+            DLogTagInfo(kCameraTag, @"后台剩余时间：%f, 大于%d秒，mqtt未断开，app在后台运行", self.backgroundTimeRemaining, backgroundDisconnectMQTTRemainingTime);
+            return YES;
+        }
+    }
+    
+    return NO;
+}
+
+#pragma mark - user info
+
++ (void)initModules {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        LoginInfoViewModel* loginModule = [CTMediator loginInfoViewModel];
+        UserInfoViewModel* userInfoModule = [CTMediator userInfoViewModel];
+        [loginModule initLoginInfoFromLocal];
+        [userInfoModule initUserInfoFromLocal];
+        [XPStatisticsMgr updateGrowingIOLoginUserId:loginModule.loginInfo.uid];
+        [self setupXPLogInfo];
+    });
+}
+
+
+#pragma mark - UNUserNotificationCenterDelegate
+// App处于前台时收到通知(iOS 10+)
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
+    if(notification.request.trigger && [notification.request.trigger isKindOfClass:[UNPushNotificationTrigger class]]) {//应用处于前台时的远程推送接受
+        
+        [MessageNotifcationHandler handlerRemoteNotification:notification];
+        if ([CTMediator isLogin]) {
+            if ([UIViewController.currentFrontViewController isKindOfClass:NSClassFromString(@"NIMSessionViewController")]) {
+                // 通知不弹出
+                if (@available(iOS 14.0, *)) {
+                    completionHandler(UNNotificationPresentationOptionBanner);
+                } else {
+                    completionHandler(UNNotificationPresentationOptionAlert);
+                }
+            } else {
+                completionHandler(UNNotificationPresentationOptionNone);
+            }
+        } else {
+            // 通知弹出，且带有声音、内容
+            completionHandler(UNNotificationPresentationOptionSound | UNNotificationPresentationOptionAlert);
+        }
+    } else {//应用处于前台时的本地推送接受
+        if (@available(iOS 14.0, *)) {
+            completionHandler(UNNotificationPresentationOptionSound | UNNotificationPresentationOptionAlert |UNNotificationPresentationOptionList|UNNotificationPresentationOptionBanner);
+        } else {
+            completionHandler(UNNotificationPresentationOptionSound | UNNotificationPresentationOptionAlert);
+        }//
+    }
+}
+
+//触发通知动作时回调，比如点击、删除通知和点击自定义action(iOS 10+)
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse * _Nonnull)response withCompletionHandler:(void(^ _Nonnull)(void))completionHandler {
+     NSString *userAction = response.actionIdentifier;
+     // 点击通知打开
+     if ([userAction isEqualToString:UNNotificationDefaultActionIdentifier]) {
+         [MessageNotifcationHandler handlerRemoteNotification:response.notification userTouchAction:YES];
+         //云信IM 平台推送处理
+         [[XPIMKitManager sharedManager] didReceiveRemoteNotification:response.notification.request.content.userInfo];
+     }
+     completionHandler();
+}
+
+#pragma mark - network
+- (void)refreshUserInfo {
+    if([CTMediator isLogin]) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [[CTMediator getUserInfoFromServer] subscribeNext:^(RACTuple* _Nullable tuple) {
+                ///< None Implementation
+            }];
+        });
+    }
+}
+
+#pragma mark - Security
+
+
+
+
+#pragma mark - CloudPush&Message
+
+- (BOOL)isFirstInstall {
+    BOOL ret = [KeyValueStore BOOLForObjectId:@"isFirstInstalled" userId:nil];
+    return !ret;
+}
+
+- (void)saveAPNSToken:(NSString *)deviceToken {
+    self.apnsToken = deviceToken;
+    [KeyValueStore saveString:deviceToken withObjectId:@"apnsToken" userId:nil];
+}
+
+//注册APNS推送,必须在application:didFinishLaunchingWithOptions返回前调用
+- (void)registerAPNS:(BOOL)isFirstInstall {
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] < 10.0) {
+        [[UIApplication sharedApplication] registerUserNotificationSettings:
+         [UIUserNotificationSettings settingsForTypes:
+          (UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge)
+                                           categories:nil]];
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+    } else {
+        
+        UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+        center.delegate = self;
+        [center requestAuthorizationWithOptions:UNAuthorizationOptionAlert | UNAuthorizationOptionBadge | UNAuthorizationOptionSound completionHandler:^(BOOL granted, NSError * _Nullable error) {
+            static NSString* kLastShowSystemNotificationAlertDate = @"kLastShowSystemNotificationAlertDate";
+            if (isFirstInstall) {
+                NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
+                [KeyValueStore saveNumber:@(timestamp) withObjectId:kLastShowSystemNotificationAlertDate userId:nil];
+            }
+            // 无论是否授权都需要注册
+            [[UIApplication sharedApplication] registerForRemoteNotifications];
+            if (granted) {
+                // granted
+                DLogTagInfo( kSystemPushTag, @"User authored notification.");
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [MessageCenterModel.shareInstance.pushNotifyDialogDismissSignal sendCompleted];
+                });
+            } else {
+                // not granted
+                DLogTagInfo( kSystemPushTag, @"User denied notification.");
+                [MessageCenterModel.shareInstance.pushNotifyDialogDismissSignal sendCompleted];
+                if (!isFirstInstall) {
+                    NSDate* now = [NSDate date];
+                    NSNumber* number =  [KeyValueStore numberForObjectId:kLastShowSystemNotificationAlertDate userId:nil];
+                    NSDate* lastDate = [NSDate dateWithTimeIntervalSince1970:number.doubleValue];
+                    const uint64_t second = (uint64_t)[now timeIntervalSinceDate:lastDate];
+                    __CHECK(second > 3600 * 24);
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self checkRemoteNotificationsOpen:isFirstInstall];
+                    });
+                }
+            }
+        }];
+    }
+}
+
+- (BOOL)checkRemoteNotificationsOpen:(BOOL)isFirstInstall {
+    __CHECK_RET([NSThread isMainThread], NO)
+    __CHECK_RET(!isFirstInstall,NO);
+    const BOOL isRegisteredForRemoteNotifications = [[UIApplication sharedApplication] isRegisteredForRemoteNotifications];
+    __CHECK_RET(!isRegisteredForRemoteNotifications, NO);
+    static NSString* kIsShowRemoteNotificationsCloseAlert = @"IsShowRemoteNotificationsCloseAlert";
+    BOOL isShow = [KeyValueStore BOOLForObjectId:kIsShowRemoteNotificationsCloseAlert userId:nil];
+    __CHECK_RET(!isShow, NO);
+    __CHECK_RET(!CTMediator.isCurrentUserCarOwner, NO);
+    [KeyValueStore saveBOOL:YES withObjectId:kIsShowRemoteNotificationsCloseAlert userId:nil];
+    XPAlertController *alertVC = [XPAlertController alertControllerWithTitle:@"开启推送通知"
+                                                                     message:@"打开通知，可以及时获知来自车辆的消息"
+                                                              imageURLString:nil
+                                                                  localImage:nil
+                                                               configuration:^(XPAlertControllerConfig * _Nonnull config) {
+                                                                   config.titleLabel.font = kPingFangSCMediumFont(18);
+                                                                   config.messageTextView.textAlignment = NSTextAlignmentLeft;
+                                                               }];
+    XPAlertAction *cancelAction = [XPAlertAction actionWithTitle:@"取消"
+                                                           style:UIAlertActionStyleCancel
+                                                   actionHandler:nil configuration:nil];
+    [alertVC addAction:cancelAction];
+
+    XPAlertAction *confirmAction = [XPAlertAction actionWithTitle:@"去开启"
+                                                            style:UIAlertActionStyleDefault
+                                                    actionHandler:^(XPAlertAction * _Nonnull action) {
+        NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+    } configuration:nil];
+    [alertVC addAction:confirmAction];
+    [[UIViewController currentFrontViewController] presentViewController:alertVC animated:YES completion:nil];
+    return YES;
+}
+
+#pragma mark - 统计 statics
+- (void)resetAppLaunch {
+    self.startAppDate = [NSDate date];
+    self.lastSceneDate = nil;
+    self.initTimeOfMSeconds = 0;
+    self.onlineAdTimeOfMSeconds = 0;
+    self.videoAdTimeOfMSeconds = 0;
+}
+
+- (void)sendAppLaunchEventWithScene:(XPLaunchScene)scene {
+    if (scene == XPLaunchSceneInitFinished) {
+        self.initTimeOfMSeconds = round([[NSDate date] timeIntervalSinceDate:self.startAppDate] * 1000);
+    } else if (scene == XPLaunchSceneVideoAdFinished) {
+        if (self.lastSceneDate) {
+            self.videoAdTimeOfMSeconds = round([[NSDate date] timeIntervalSinceDate:self.lastSceneDate] * 1000);
+        }
+    } else if (scene == XPLaunchSceneOnlineAdFinished) {
+        if (self.lastSceneDate) {
+            self.onlineAdTimeOfMSeconds = round([[NSDate date] timeIntervalSinceDate:self.lastSceneDate] * 1000);
+        }
+    } else if (scene == XPLaunchSceneLoginPageAppeared || scene == XPLaunchSceneHomeAppeared) {
+        if (self.isLaunchEventFinished) {
+            return;
+        }
+        self.isLaunchEventFinished = YES;
+        
+        NSInteger isLogin = 0;
+        if (scene == XPLaunchSceneLoginPageAppeared) {
+            isLogin = 1;
+        }
+        
+        NSTimeInterval launchTime = [[NSDate date] timeIntervalSinceDate:self.startAppDate];
+        NSInteger launchTimeOfMSeconds = round(launchTime * 1000);
+        
+        if (self.initTimeOfMSeconds == 0) {
+            self.initTimeOfMSeconds = launchTimeOfMSeconds;
+        }
+        
+        DLogTagInfo(@"AppLaunch", @"Launch Total Time: %@, Init:%@, OnlineAd: %@, VideoAd %@, isLogin %@, Current Tabbar index: %@, userType: %@", @(launchTimeOfMSeconds), @(self.initTimeOfMSeconds), @(self.onlineAdTimeOfMSeconds), @(self.videoAdTimeOfMSeconds), @(isLogin), @(CTMediator.tabBarController.selectedIndex), @(CTMediator.currentUserInfo.flag));
+        
+        [Bulk writeWithType:BULK_APM event:@"B063" module:@"P00001" data:@{
+            @"init": @(self.initTimeOfMSeconds),
+            @"ad": @(self.onlineAdTimeOfMSeconds),
+            @"video": @(self.videoAdTimeOfMSeconds),
+            @"duration": @(launchTimeOfMSeconds),
+            @"is_login": @(isLogin),
+            @"tab_name": isLogin ? @"" : ([XPTabBarCenter.instance selectedTabbarItemTitle] ?: @""),
+        }];
+    }
+    
+    self.lastSceneDate = [NSDate date];
+}
+
+- (void)reportTaskEvent:(const char *)task startTime:(CFTimeInterval)startTime {
+    
+    [Bulk writeWithType:BULK_APM event:@"B037" module:@"P00004" data:@{
+        @"task_name": [NSString stringWithUTF8String:task] ?: @"",
+        @"duration": @((int)(((CACurrentMediaTime() - startTime)) * 1000)),
+        @"process_name": @"0",
+        @"thread_name": NSThread.currentThread.name ?: @"",
+    }];
+}
+
+// MARK: - startup
+
+- (void)startupBBox {
+    /// Notice: 请注意这里不能使用 bBox 读取环境配置，
+    /// 因为 bBox 需要此处设置的 appGroupIdentifier 来确认数据存储位置
+#ifdef XPEnvironmentProduction
+    BBEnvironment.appGroupIdentifier = @"group.xiaopeng.cookie";
+#else
+    BBEnvironment.appGroupIdentifier = @"group.xp.cookie";
+#endif
+}
+
+- (void)startupXPLog {
+    XPLogConfig *logConfig = XPLog.config;
+    logConfig.appGroupContainerIdentifier = kXPAppGroupCookiesIdentifier;
+    logConfig.logUploadCallbackURL = [BBEnvironment configForKeyPath:@"App.resources.LogUploadCallbackURL"];
+    [XPLog startupWithConfig:logConfig];
+}
+
++ (void)setupXPLogInfo {
+    NSString *VIN = CTMediator.vin;
+    NSInteger uid = CTMediator.uid;
+    if (VIN.length == 0 && uid != 0) {
+        VIN = [KeyValueStore stringForObjectId:@"com.xiaopeng.defaultCarVinLocal" userId:[NSString stringWithFormat:@"%ld", uid]];
+    }
+
+    XPLogConfig *logConfig = XPLog.config;
+    UserInfo *curUserInfo = [CTMediator currentUserInfo];
+    logConfig.uid = uid;
+    logConfig.mobile = curUserInfo.mobile ?: @"";
+    logConfig.nickName = curUserInfo.nickName ?: @"";
+    logConfig.VINCode = VIN;
+}
+
+- (void)startupBulk {
+    BulkConfig *config = Bulk.config;
+    
+    config.logHandler = ^(int level, NSString *module, NSString *file, int line, NSString *func, NSString *message) {
+        XLogInternal(level, module.UTF8String, file.UTF8String, line, func.UTF8String, "", @"%@", message);
+    };
+    
+    config.getUserMyIP = ^NSString * _Nonnull{
+        _BulkMyIPInfo *ipinfo = [_BulkMyIPProvider ipinfo];
+        return ipinfo.ip;
+    };
+    config.getExtraData = ^NSDictionary *(BulkExtraDataType type){
+        NSDictionary *extras = nil;
+        switch (type) {
+        case BulkExtraDataTypePackage: {
+            extras = @{
+                @"position": XPLocationUtils.locationGP,
+            };
+            break;
+        }
+        case BulkExtraDataTypeEvent: {
+            extras = @{
+                @"campaign_id" : @(ReactNativeManager.rvc),
+                @"recent_net_cost" : @(XPNetworkTimingCollector.timing),
+                @"vin": CTMediator.vin ?: @""
+            };
+            break;
+        }
+        case BulkExtraDataTypePara: {
+            break;
+        }
+        default:
+            break;
+        }
+        return extras.copy;
+    };
+
+    config.uploadDataHandler = ^(BULK_TYPE type, NSDictionary *data, BulkUploadDataCompletion completion) {
+        NSString *domain = nil;
+        NSString *path = nil;
+        switch (type) {
+            case BULK_FULL_POINT:
+                domain = @"https://appdata.xiaopeng.com";
+                path = APIUrlReportAutodTrackData;
+                break;
+            case BULK_APM:
+                domain = @"https://appdata.xiaopeng.com";
+                path = APIUrlReportRealtimeData;
+                break;
+            default:
+                domain = HTTPApiRequestStatisticsDomain;
+                path = APIUrlReportStatisticsData;
+                break;
+        }
+        
+        NSError *error = nil;
+        NSData *bodyData = [NSJSONSerialization dataWithJSONObject:data options:0 error:&error];
+        if (bodyData.length == 0 || error) {
+            completion(NO, nil, error);
+            return;
+        }
+
+        bodyData = [bodyData gzippedData];
+        bodyData = [bodyData base64EncodedDataWithOptions:0];
+        NSURL *URL = [NSURL URLWithString:[domain stringByAppendingString:path]];
+        [BulkNetwork sendData:bodyData URL:URL completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            BOOL isSuccess = NO;
+            NSError *err = error;
+            if (data.length > 0 && error == nil) {
+                NSError *serializeError = nil;
+                id obj = [NSJSONSerialization JSONObjectWithData:data options:0 error:&serializeError];
+                if (serializeError == nil && [obj isKindOfClass:NSDictionary.class]) {
+                    NSDictionary *data = (NSDictionary *)obj;
+                    id codeObj = data[@"code"];
+                    if ([codeObj isKindOfClass:NSNumber.class]) {
+                        NSNumber *code = (NSNumber *)codeObj;
+                        if (code.integerValue == 200) {
+                            isSuccess = YES;
+                        }
+                    }
+                } else {
+                    err = serializeError;
+                }
+            }
+            completion(isSuccess, nil, err);
+        }];
+    };
+    
+    [Bulk startupWithConfig:config];
+}
+
+- (void)startupCloudConfig {
+    BOOL needForce = XPAPPVersion.initialOperation;
+    [CloudConfig setupWithForceUpdate:needForce
+                       requestHandler:^(NSString *domain, NSString *path, NSDictionary *payload,
+                                        CloudConfigRequestCompletion completion) {
+        XPAPI.request.domain(domain)
+            .path(path)
+            .payload(payload)
+            .method(XPAPIRequestMethodPOST)
+            .subscribe(^(Response *resp) {
+                if (completion == nil) {
+                    return;
+                }
+                completion(resp.originalData, resp.error);
+            });
+    }];
+}
+
+- (void)startupConfigCenter {
+    XPConfigCenterConfig *config = [XPConfigCenterConfig new];
+    config.getUserTypeBlock = ^NSInteger{
+        return [CTMediator currentUserInfo].flag;
+    };
+    [XPConfigCenter startup:config];
+}
+
+- (void)startupCarControlSDK{
+    if ([NSThread isMainThread]) {
+        [self startupCarControlSDKInner];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self startupCarControlSDKInner];
+        });
+    }
+}
+
+- (void)startupCarControlSDKInner{
+    [XPVehicleSDK setOTAConfigProxy:[XPOTAConfigBridge shared]];
+    [XPVehicleSDK setOCMAppSettingsProxy:[XPAppSettingsBridge shared]];
+    [XPVehicleSDK setLogProxy:[XPVehicleLogBridge shared]];
+    [XPVehicleSDK setDbProxy:[XPDatabaseBridge shared]];
+    [XPVehicleSDK setStatisticsProxy:[XPStatisticsBridge shared]];
+    [XPVehicleSDK setKeySettingDataProxy:XPKeySettingDataBridge.shared];
+    [XPVehicleSDK setHttpProxy:[XPVehicleHttpBridge shared]];
+    [XPVehicleSDK setTextProxy:[XPVehicleTextBridge shared]];
+    [XPVehicleSDK setupWithLaunchOptions:self.launchOptions];
+    
+    [XPVehicleExt setupWithLaunchOptions:self.launchOptions];
+    [XPVehicleExt setupWithDBMessageProxy:[XPDBMessgaeBridge new]];
+    [XPPollingSDK setKeySettingDataProxy:[XPKeySettingDataBridge shared]];
+    [XPPollingSDK setPollingProxy:[XPPollingProxyBridge shared]];
+    [XPPollingSDK setupWithLaunchOptions:self.launchOptions];
+    [XPCarSDK startup:self.launchOptions delegate:XPUnityLifeLoopHandler.shareInstance];
+    [self vehicleSDKLogin];
+}
+
+- (void)vehicleSDKLogin {
+    [XPAppSettings enterAccount:CTMediator.uid];
+    [XPVehicleSDK.shared.vehicleManager enterAccountWithUid:CTMediator.uid nickname:CTMediator.currentUserInfo.nickName  fetchVehicleList:YES callback:nil];
+    
+    if (CTMediator.uid == 0) {
+        [XPAppSettings deleteAllSettings];
+    }
+}
+
+
+@end
+

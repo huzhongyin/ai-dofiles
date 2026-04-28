@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "local",
+  "description": "Local plugins installed directly on this machine",
+  "owner": {
+    "name": "xpeng"
+  },
+  "plugins": [
+    {
+      "name": "project-reader",
+      "description": "多语言项目结构解读、源码分析与自动化辅助工具，支持 iOS/Swift/OC、Python、C++、KMM",
+      "version": "1.0.0",
+      "author": {
+        "name": "xpeng"
+      },
+      "source": "./project-reader"
+    }
+  ]
+}

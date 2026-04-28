@@ -1,0 +1,5 @@
+# MQTT 安全
+
+- MQTT 连接使用 TLS/SSL 双向认证，证书配置通过 `MQTTPublisherInfoProtocol` 提供
+- 消息发送使用 QoS2（精确一次），不要降低 QoS 等级
+- `MQTTConnectionState.connected` 需要 TCP 连接 + Topic 订阅都成功才算

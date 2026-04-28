@@ -1,0 +1,39 @@
+# XPMirrorExtension 宪法
+
+> 本文件是 XPMirrorExtension 的**稳定规范**，描述模块边界、核心约束与对外契约。
+
+## 1. 模块定位
+
+屏幕镜像/投屏 Broadcast Upload Extension。核心职责：
+- 接收系统屏幕录制数据流（RPBroadcastSampleHandler）
+- 转发视频/音频 sample 到投屏通道
+
+**明确不属于**：投屏 UI 控制、WebRTC 连接管理（归 XPMirror LocalPod）。
+
+## 2. 架构约束
+
+Broadcast Upload Extension 模式。SampleHandler 为唯一入口，处理 broadcastStarted / processSampleBuffer / broadcastFinished 生命周期。
+
+## 3. 语言策略
+
+OC（SampleHandler.h/.m）。极简实现，仅做数据转发。
+
+## 4. 依赖边界
+
+**允许**：ReplayKit、App Group 共享数据。
+**禁止**：UIApplication、主工程 App 代码。
+
+## 5. 禁止事项
+
+- 禁止在 Extension 中执行复杂业务逻辑
+- 禁止使用 UIApplication.shared
+- 禁止内存超过 50MB（Broadcast Extension 限制）
+
+## 6. 与其他模块的接口契约
+
+- 入口：SampleHandler（RPBroadcastSampleHandler 子类）
+- Entitlements: XPMirrorExtension.entitlements
+
+---
+
+> 变更本文件请同步更新 `.ai-knowledge/deps.yml` 与 module-registry。

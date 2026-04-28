@@ -1,0 +1,4 @@
+---
+enabled: true
+# lang: ios   # 可选：覆盖自动检测的主语言（ios/python/cpp/kmm）
+---

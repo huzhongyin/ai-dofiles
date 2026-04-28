@@ -1,0 +1,25 @@
+# 蓝牙协议版本选择
+
+## 元信息
+- 触发关键词: ["蓝牙协议", "BLE协议版本", "V1V2V3", "bleKeyVersion", "BleKeyProtocolVesion", "蓝牙钥匙版本"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+项目蓝牙协议分三个版本，由 `XPCarAbilityConfig.bleKeyVersion` 决定：
+
+1. **V1/V2 协议**: 使用 `XPBLEDataProcessor` 处理，无加密
+   - `parseMessageWithVehicleCode:bleData:` 解析
+   - `generateBleData:controlId:vehicleTypeCode:msgType:controlType:` 组装
+2. **V3 协议**: 使用 `XPBleKeyV3DataProcessor`，需要 sessionKey + hmacKey 双密钥
+   - 鉴权分 Auth0 → Auth1 两步，**顺序不能乱**
+   - 解析: `parseBleKeyV3MessageWithVehicleCode:bleData:sessionKey:authKey:isEncrypted:`
+3. **Mona 协议**: 独立的 `MonaBleDataProcessor`，完全不走 XPBLEDataProcessor
+   - 有自己的鉴权流程 `generateAuth1MessageWithUid:vin:r0:cipher1:cipher2:`
+
+**关键判断入口**: `VehicleConnection` 的 `BLEDataParser/` 子目录根据 `bleKeyVersion` 选择解析器。
+
+**代码位置**: 
+- 协议版本配置: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/XPCarAbilityConfig/`
+- 数据处理器: `submodule/XPBLEDataProcessor/`

@@ -1,0 +1,71 @@
+---
+name: spec-design
+description: 基于已审批的 proposal.md 生成技术方案（design.md），包含调用链分析、数据模型和 Constitution 检查
+---
+
+## 触发条件
+当任务涉及以下关键词时激活: "技术方案", "design", "方案设计", "调用链", "spec-design"
+
+## 前置条件
+- proposal.md 已生成且疑问点已确认
+- 如果 proposal.md 不存在，提示用户先执行 spec-proposal
+
+## 输入
+- $ARGUMENTS: proposal.md 路径或需求名称
+
+## 执行步骤
+
+### Phase 1: 加载上下文
+1. 读取 `.ai-knowledge/specs/constitution.md`（宪法约束）
+2. 读取对应的 `proposal.md`（已审批的提案）
+3. 从 proposal.md 的"关联知识"部分加载已匹配的知识点和模块文档
+
+### Phase 2: 调用链分析
+4. 根据 proposal.md 的影响范围，使用 grep/glob 追踪调用链路:
+   - 正向: 从 UI 入口追踪到底层（VC → VM → Service → SDK → Connection → Protocol）
+   - 反向: 从底层状态回调追踪到 UI（Protocol → Connection → Event → VM → UI）
+5. 标注调用链中经过的 submodule 边界
+6. 标注调用链中的车型分支点（XiaopengVehicle vs MonaVehicle）
+
+### Phase 2.5: 冲突风险标注
+> 来源: spec-quality-score 改进建议 S3 (ble-v3-rt-protocol 评分卡 2026-04-08)
+
+6a. 对调用链中**存在 tag/type/枚举值/路由冲突风险**的节点:
+   - 标注冲突来源（如"tag=0x7F6F 被 RKE 和 RtAuth 共用"）
+   - 明确标注**推荐方案 A**和**备选方案 B**，而非只描述一种
+   - 说明推荐理由（如"方案 A 更安全，通过独立 handler 隔离避免误解析"）
+   - 这样实施者在 tasks 阶段可直接选择推荐方案，减少实施偏差
+
+### Phase 3: 方案设计
+7. 读取模板 `.ai-knowledge/specs/template-design.md`
+8. 填充以下关键部分:
+   - 调用链路（正向 + 反向）
+   - 数据模型变更
+   - API 接口变更
+   - 状态管理方案
+   - 车型适配方案
+   - 多通道适配方案
+
+### Phase 4: Constitution 检查
+9. 对照 constitution.md 逐项检查:
+   - [ ] 不跨层调用
+   - [ ] submodule 边界正确
+   - [ ] 语言策略正确
+   - [ ] 指令下发/状态回调链路完整
+   - [ ] 不影响其他车型
+   - [ ] 共版设计
+10. 如有违反，在方案中标注并给出修正建议
+
+### Phase 5: 用户确认
+11. 展示方案核心要点，使用 AskUserQuestion 确认关键技术决策
+12. 保存 design.md 到 `.ai-knowledge/specs/[需求名]/design.md`
+
+## 约束
+- 调用链必须追踪到具体文件和方法名（不是抽象层级）
+- Constitution 检查必须逐项完成，不可跳过
+- 如果 proposal.md 中有多通道场景，design.md 必须明确 BLE 和 TCP 各自的处理逻辑
+- 车型差异化部分必须明确每个受影响车型的行为
+
+## 输出
+- 文件: `.ai-knowledge/specs/[需求名]/design.md`
+- 交互: AskUserQuestion 确认技术方案

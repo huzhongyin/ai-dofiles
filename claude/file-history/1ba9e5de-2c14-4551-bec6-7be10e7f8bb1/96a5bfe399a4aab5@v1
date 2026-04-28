@@ -1,0 +1,48 @@
+# XPMotors iOS — AI 编程上下文（Project 根）
+
+## 1. 五层规范体系
+
+- **L1 Project 根** — 本文件 + `.claude/rules/project-common.md` + `.ai-knowledge/specs/constitution.md`（常驻上下文）
+- **L2 主工程 app** — `XiaoPengQiChe/.claude/` + `XiaoPengQiChe/.ai-knowledge/`（路径命中时加载）
+- **L3 Target** — `.claude/targets/<target>/`（路径命中时加载）
+- **L4 Submodule** — `submodule/<name>/.claude/` + `submodule/<name>/.ai-knowledge/`（独立仓，按路径/关键词命中加载）
+- **L5 LocalPod** — `LocalPods/<pod>/.claude/` + `LocalPods/<pod>/.ai-knowledge/`（按路径/关键词命中加载）
+
+加载策略由 `knowledge-recall` skill 按「路径 + 关键词 + 依赖图」三路触发。
+
+## 2. 目录地图
+
+```
+XiaoPengQiChe/
+├── AppDelegate/          # App 生命周期
+├── Modules/              # 业务功能模块（50 个）
+├── Services/             # 服务层（31 个）
+├── VehicleBridge/        # 车端桥接层（OC, 与车端 SDK 通信）
+├── Utility/ Definitions/ Resources/ SupportingFiles/
+```
+
+```
+LocalPods/    # XPBase_* / XPBusiness_* / XPCenter_* / XPKits / XPCategory / XPNonModular
+submodule/    # XPVehicleSDK / XPCarControlCore / XPBLEDataProcessor / XPMQTTLibrary / XPPollingSDK / XPVehicleExt / XPCarBusiCH
+```
+
+具体成员见 `.ai-knowledge/module-registry.md`。
+
+## 3. 规范加载索引
+
+参见 `.ai-knowledge/module-registry.md`（模块注册表，单一数据源）。
+
+## 4. 本层通用规则
+
+详见 `.claude/rules/project-common.md`。
+
+## 5. 重要约束（YOU MUST）
+
+YOU MUST: 修改车控相关代码（VehicleBridge、submodule/XPCarControlCore、BLEKey 等）时，务必确认调用链路完整性，不要破坏现有的指令下发和状态回调机制。
+
+YOU MUST: 新建 Swift 模块时，考虑共版设计，通过配置区分国内/国际差异，不要硬编码。
+
+## 6. 临时说明
+
+- spec-design / spec-proposal / spec-tasks 三件套 skill 本轮仍以主工程根为 scope 写入，submodule 内部需求暂不触发这三件套
+- `.claude/rules/ios-architecture.md` / `ios-coding.md` / `ios-vehicle-sdk.md` 为存量规则，将由后续 Task 下沉到对应层级，届时从 L1 清除

@@ -1,0 +1,23 @@
+# MQTT 单例与切车
+
+## 元信息
+- 触发关键词: ["MQTTPublisher单例", "切车MQTT", "MQTT disconnect", "MqttServiceManager", "MQTT重连"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`MQTTPublisher` 是全局单例，所有车型共用同一个 MQTT 连接实例。
+
+**切车流程**:
+1. 先 `disconnect()` 断开当前连接
+2. 重新 `startService(uid:)` 建立新连接
+
+不执行 disconnect 就切车会导致新车的消息发到旧连接的 topic 上。
+
+**生命周期**: `MqttServiceManager.shared` 管理
+- 登录后: `startService(uid:)`
+- 退出登录: `stopService()`
+- uid=0 时自动断开
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/MqttService/MqttServiceManager.swift`

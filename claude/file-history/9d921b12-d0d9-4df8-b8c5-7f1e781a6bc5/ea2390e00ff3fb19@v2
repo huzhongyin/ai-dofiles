@@ -1,0 +1,103 @@
+# Auto-Lock模块方案书
+
+## 基础信息
+功能模块：auto-lock
+所属平台：iOS
+最后更新：2026-03-27 18:54
+版本号：V1.0
+
+## 前置条件
+1. PollingSDK启动状态：是
+  - PLXPPollingManager实例：已初始化
+  - 蓝牙连接：正常连接
+  - 车辆状态同步：完成
+2. PollingSDK业务状态：活跃
+  - 当前业务类型：非冲突状态
+  - 前序任务：已完成或无
+  - 系统资源：可用
+3. 车辆环境条件：满足
+  - 档位状态：P档
+  - 引擎状态：熄火
+  - 车门状态：可操作
+
+## 激活条件
+1. 定位触发条件：
+- 当次定位结果在上锁圈外(level>2)
+- 上一次定位结果在上锁圈内或等于车内
+2. 业务逻辑触发：
+- 用户主动触发自动上锁
+- 系统检测到离车条件满足
+- 定时上锁任务到期
+
+## 基础事件流
+1. PLXPPollingManager判断前置条件满足，设置业务类型为XPPollingBussinessPollingLock
+2. 通过蓝牙通道下发polling上锁指令
+3. 车辆接收到polling上锁指令，执行车辆锁定操作
+4. 车辆将上锁结果通过蓝牙通道返回给手机APP
+5. PLXPPollingManager处理上锁结果，播放系统提示音（如果开启）
+6. 更新车辆状态缓存，结束当次上锁事务
+
+## 异常事件流
+1. 前置条件不满足：APP不会发起polling上锁指令
+2. 蓝牙通道异常：指令发送失败，进入重试机制，最多重试3次
+3. 车端执行失败：收到失败响应，记录错误码，通知用户
+4. 超时异常：指令发送后未收到车端响应，触发超时处理逻辑
+5. 业务冲突：当前有其他polling业务在执行，延迟或取消本次上锁
+
+## 日志关键字映射
+
+### 入口标识
+- Polling上锁启动：PLXPPollingManager.*XPPollingBussinessPollingLock.*启动|开始|Start|Begin
+- 上锁指令准备：PLXPPollingManager.*发送Polling上锁指令|Send.*Lock.*Command
+- 业务类型设置：PLXPPollingManager.*XPPollingBussinessPollingLock.*设置|Set
+
+### 状态转换标识
+- 业务状态变更：PLXPPollingManager.*(State|状态).*(changed|变更|转换).*Lock
+- 连接状态切换：PLXPPollingManager.*(连接|Connection).*(状态|Status|State)
+- 车辆状态同步：PLXPPollingManager.*(车辆状态|Vehicle.*State).*(同步|Sync|Update)
+
+### 异常标识
+- 上锁失败：PLXPPollingManager.*(Failed|失败|Error|错误).*Lock|上锁
+- 超时异常：PLXPPollingManager.*(Timeout|超时).*Lock|上锁
+- 连接异常：PLXPPollingManager.*(连接|Connection).*(失败|Failed|Error|异常)
+- 业务冲突：PLXPPollingManager.*(冲突|Conflict|Busy).*Lock|上锁
+- 前置条件失败：PLXPPollingManager.*(前置条件|Precondition).*(不满足|Failed|Error)
+
+### 退出标识
+- 上锁成功：PLXPPollingManager.*(Success|成功|Completed|完成).*Lock|上锁
+- 事务结束：PLXPPollingManager.*(事务|Transaction).*(结束|End|Finished).*Lock
+- 状态更新完成：PLXPPollingManager.*(状态更新|State.*Update).*(完成|Complete|Finished)
+
+### 平台特定关键字
+#### iOS平台
+- Objective-C: \[PLXPPollingManager\]
+- Swift混编: PLXPPollingManager
+- 系统日志: XPPollingSDK.*PLXPPollingManager
+- 业务枚举: XPPollingBussinessPollingLock
+
+### 高频关键字（优先匹配）
+- PLXPPollingManager
+- XPPollingBussinessPollingLock
+- 发送Polling上锁指令
+- Polling上锁
+- <PA>发送Polling上锁指令
+- 自动上锁
+- 上锁指令
+- Lock Command
+- Vehicle Lock
+
+### 时间序列关键字
+#### 指令发送阶段
+- 准备上锁指令
+- 发送上锁指令
+- 等待车端响应
+
+#### 执行结果阶段
+- 收到车端响应
+- 上锁操作完成
+- 状态同步完成
+
+#### 异常处理阶段
+- 指令发送失败
+- 车端执行异常
+- 连接中断处理

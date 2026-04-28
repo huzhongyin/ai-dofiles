@@ -1,0 +1,448 @@
+# PrivacyPermission 缓存化重构实现计划
+
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 为 `PrivacyPermission` 的权限状态查询增加线程安全缓存，消除主线程同步 IPC 导致的 App Hanging（2000ms+卡顿）。
+
+**Architecture:** 在 `PrivacyPermission` 单例内增加一个并发队列保护的缓存字典；首次查询通过异步方法 `authorizationStatusWithType:completion:` 预热缓存；后续同步方法 `authorizationStatus:` 直接读缓存；`UIApplicationDidBecomeActive` 和 `CLLocationManagerDelegate` 权限变更回调负责刷新缓存。
+
+**Tech Stack:** Objective-C, CoreLocation, GCD (dispatch_barrier_async/sync), ReactiveCocoa (仅用于已有订阅)
+
+---
+
+## Chunk 1: 缓存基础设施 + 线程安全读写
+
+### Task 1: 在 PrivacyPermission 中增加缓存属性与读写方法
+
+**Files:**
+- Modify: `submodule/XPCarControlCore/XPCarControlCore/Sources/Services/PrivacyPermission/PrivacyPermission.h`
+- Modify: `submodule/XPCarControlCore/XPCarControlCore/Sources/Services/PrivacyPermission/PrivacyPermission.m`
+
+- [ ] **Step 1: 在 .h 中新增公开异步刷新接口**
+
+在 `PrivacyPermission.h` 的 `@interface` 中，在现有方法声明后追加：
+
+```objc
+/**
+ 强制刷新指定类型的权限缓存（异步执行，完成后主线程回调）
+ 适合在 App 回到前台、权限变更时主动调用
+ */
+- (void)refreshAuthorizationStatus:(PrivacyPermissionType)type
+                        completion:(void(^)(PrivacyPermissionAuthorizationStatus status))completion;
+```
+
+- [ ] **Step 2: 在 .m 的 @interface extension 中增加缓存属性**
+
+在 `PrivacyPermission.m` 的 `@interface PrivacyPermission()` 中，在现有属性后追加：
+
+```objc
+// 权限状态缓存，key: @(PrivacyPermissionType), value: @(PrivacyPermissionAuthorizationStatus)
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSNumber *> *statusCache;
+// 缓存读写专用并发队列（读并发、写互斥）
+@property (nonatomic, strong) dispatch_queue_t cacheQueue;
+```
+
+- [ ] **Step 3: 在 init 中初始化缓存属性**
+
+在 `PrivacyPermission.m` 的 `- (instancetype)init` 方法中，`if (self = [super init])` 花括号内追加：
+
+```objc
+_statusCache = [NSMutableDictionary dictionary];
+_cacheQueue = dispatch_queue_create("com.xpeng.privacypermission.cache", DISPATCH_QUEUE_CONCURRENT);
+```
+
+- [ ] **Step 4: 新增私有缓存读写方法**
+
+在 `PrivacyPermission.m` 的 `@implementation` 中，在 `- (instancetype)init` 之后追加两个私有方法：
+
+```objc
+#pragma mark - Cache Read/Write
+
+- (PrivacyPermissionAuthorizationStatus)cachedStatusForType:(PrivacyPermissionType)type found:(BOOL *)found {
+    __block PrivacyPermissionAuthorizationStatus status = PrivacyPermissionAuthorizationStatusRestricted;
+    __block BOOL hasCache = NO;
+    dispatch_sync(self.cacheQueue, ^{
+        NSNumber *cached = self.statusCache[@(type)];
+        if (cached) {
+            status = (PrivacyPermissionAuthorizationStatus)cached.unsignedIntegerValue;
+            hasCache = YES;
+        }
+    });
+    if (found) *found = hasCache;
+    return status;
+}
+
+- (void)setCachedStatus:(PrivacyPermissionAuthorizationStatus)status forType:(PrivacyPermissionType)type {
+    dispatch_barrier_async(self.cacheQueue, ^{
+        self.statusCache[@(type)] = @(status);
+    });
+}
+```
+
+- [ ] **Step 5: 编译验证**
+
+在 Xcode 中 Build（⌘B），确认无编译错误。
+
+---
+
+## Chunk 2: 修改 authorizationStatus: 使用缓存 + 修复 CLLocationManager alloc init 问题
+
+### Task 2: 同步方法改为读缓存，修复 iOS 14 CLLocationManager 每次 alloc init 的根因
+
+**Files:**
+- Modify: `submodule/XPCarControlCore/XPCarControlCore/Sources/Services/PrivacyPermission/PrivacyPermission.m`
+
+- [ ] **Step 1: 修改 `authorizationStatus:` 方法头部，优先读缓存**
+
+将现有 `- (PrivacyPermissionAuthorizationStatus)authorizationStatus:(PrivacyPermissionType)type` 方法开头修改，在 `switch (type)` 之前插入缓存读取逻辑：
+
+```objc
+- (PrivacyPermissionAuthorizationStatus)authorizationStatus:(PrivacyPermissionType)type {
+    // 优先返回缓存值，避免主线程同步 IPC
+    BOOL found = NO;
+    PrivacyPermissionAuthorizationStatus cached = [self cachedStatusForType:type found:&found];
+    if (found) {
+        return cached;
+    }
+    // 无缓存时执行实际查询（仅应在子线程调用，或首次同步场景）
+    PrivacyPermissionAuthorizationStatus status = [self queryAuthorizationStatus:type];
+    [self setCachedStatus:status forType:type];
+    return status;
+}
+```
+
+- [ ] **Step 2: 将原有 switch-case 查询逻辑提取为 `queryAuthorizationStatus:` 私有方法**
+
+在 `authorizationStatus:` 方法之后新增 `queryAuthorizationStatus:` 方法，将原有 switch-case 逻辑**完整复制**进去，同时修复 iOS 14 的 `CLLocationManager alloc init` 问题：
+
+```objc
+/// 实际查询系统权限状态（可能触发 IPC，不应在主线程调用）
+- (PrivacyPermissionAuthorizationStatus)queryAuthorizationStatus:(PrivacyPermissionType)type {
+    switch (type) {
+        case PrivacyPermissionTypePhoto: {
+            PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
+            switch (status) {
+                case PHAuthorizationStatusDenied:      return PrivacyPermissionAuthorizationStatusDenied;
+                case PHAuthorizationStatusNotDetermined: return PrivacyPermissionAuthorizationStatusNotDetermined;
+                case PHAuthorizationStatusRestricted:  return PrivacyPermissionAuthorizationStatusRestricted;
+                case PHAuthorizationStatusAuthorized:  return PrivacyPermissionAuthorizationStatusAuthorized;
+                default: break;
+            }
+        } break;
+
+        case PrivacyPermissionTypeCamera: {
+#if TARGET_IPHONE_SIMULATOR
+            NSLog(@"模拟器不支持摄像头");
+            return PrivacyPermissionAuthorizationStatusNotDetermined;
+#endif
+            AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+            switch (status) {
+                case AVAuthorizationStatusNotDetermined: return PrivacyPermissionAuthorizationStatusNotDetermined;
+                case AVAuthorizationStatusRestricted:    return PrivacyPermissionAuthorizationStatusRestricted;
+                case AVAuthorizationStatusDenied:        return PrivacyPermissionAuthorizationStatusDenied;
+                case AVAuthorizationStatusAuthorized:    return PrivacyPermissionAuthorizationStatusAuthorized;
+                default: break;
+            }
+        } break;
+
+        case PrivacyPermissionTypeMicrophone: {
+            AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
+            switch (status) {
+                case AVAuthorizationStatusNotDetermined: return PrivacyPermissionAuthorizationStatusNotDetermined;
+                case AVAuthorizationStatusRestricted:    return PrivacyPermissionAuthorizationStatusRestricted;
+                case AVAuthorizationStatusDenied:        return PrivacyPermissionAuthorizationStatusDenied;
+                case AVAuthorizationStatusAuthorized:    return PrivacyPermissionAuthorizationStatusAuthorized;
+                default: break;
+            }
+        } break;
+
+        case PrivacyPermissionTypeLocation: {
+            // ✅ 修复：复用单例 locationManager，不再每次 alloc init（避免主线程 IPC）
+            CLAuthorizationStatus status;
+            if (@available(iOS 14.0, *)) {
+                if (!self.locationManager) {
+                    self.locationManager = [[CLLocationManager alloc] init];
+                    self.locationManager.delegate = self;
+                }
+                status = self.locationManager.authorizationStatus;
+            } else {
+                status = [CLLocationManager authorizationStatus];
+            }
+            switch (status) {
+                case kCLAuthorizationStatusAuthorizedAlways:    return PrivacyPermissionAuthorizationStatusLocationAlways;
+                case kCLAuthorizationStatusAuthorizedWhenInUse: return PrivacyPermissionAuthorizationStatusLocationWhenInUse;
+                case kCLAuthorizationStatusDenied:              return PrivacyPermissionAuthorizationStatusDenied;
+                case kCLAuthorizationStatusNotDetermined:       return PrivacyPermissionAuthorizationStatusNotDetermined;
+                case kCLAuthorizationStatusRestricted:          return PrivacyPermissionAuthorizationStatusRestricted;
+                default: break;
+            }
+        } break;
+
+        case PrivacyPermissionTypeAccuracy: {
+            // ✅ 修复：复用单例 locationManager，不再每次 alloc init（避免主线程 IPC）
+            if (@available(iOS 14.0, *)) {
+                if (!self.locationManager) {
+                    self.locationManager = [[CLLocationManager alloc] init];
+                    self.locationManager.delegate = self;
+                }
+                CLAccuracyAuthorization accuracy = self.locationManager.accuracyAuthorization;
+                return (accuracy == CLAccuracyAuthorizationFullAccuracy)
+                    ? PrivacyPermissionAuthorizationStatusAuthorized
+                    : PrivacyPermissionAuthorizationStatusDenied;
+            } else {
+                return PrivacyPermissionAuthorizationStatusAuthorized;
+            }
+        } break;
+
+        case PrivacyPermissionTypeBluetooth: {
+            CBManagerState state = [self.centralManager state];
+            if (state == CBManagerStateUnsupported || state == CBManagerStateUnauthorized || state == CBManagerStateUnknown) {
+                return PrivacyPermissionAuthorizationStatusDenied;
+            } else {
+                return PrivacyPermissionAuthorizationStatusAuthorized;
+            }
+        } break;
+
+        case PrivacyPermissionTypeEvent: {
+            EKAuthorizationStatus status = [EKEventStore authorizationStatusForEntityType:EKEntityTypeEvent];
+            switch (status) {
+                case EKAuthorizationStatusNotDetermined: return PrivacyPermissionAuthorizationStatusNotDetermined;
+                case EKAuthorizationStatusRestricted:    return PrivacyPermissionAuthorizationStatusRestricted;
+                case EKAuthorizationStatusDenied:        return PrivacyPermissionAuthorizationStatusDenied;
+                case EKAuthorizationStatusAuthorized:    return PrivacyPermissionAuthorizationStatusAuthorized;
+                default: break;
+            }
+        } break;
+
+        case PrivacyPermissionTypeContact: {
+            CNAuthorizationStatus status = [CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts];
+            switch (status) {
+                case CNAuthorizationStatusNotDetermined: return PrivacyPermissionAuthorizationStatusNotDetermined;
+                case CNAuthorizationStatusRestricted:    return PrivacyPermissionAuthorizationStatusRestricted;
+                case CNAuthorizationStatusDenied:        return PrivacyPermissionAuthorizationStatusDenied;
+                case CNAuthorizationStatusAuthorized:    return PrivacyPermissionAuthorizationStatusAuthorized;
+                default: break;
+            }
+        } break;
+
+        case PrivacyPermissionTypeBackgroundRefresh: {
+            UIBackgroundRefreshStatus status = [[UIApplication sharedApplication] backgroundRefreshStatus];
+            switch (status) {
+                case UIBackgroundRefreshStatusDenied:      return PrivacyPermissionAuthorizationStatusDenied;
+                case UIBackgroundRefreshStatusRestricted:  return PrivacyPermissionAuthorizationStatusRestricted;
+                case UIBackgroundRefreshStatusAvailable:   return PrivacyPermissionAuthorizationStatusAuthorized;
+                default: break;
+            }
+        } break;
+
+        default: break;
+    }
+    return PrivacyPermissionAuthorizationStatusRestricted;
+}
+```
+
+- [ ] **Step 3: 修改 `authorizationStatusWithType:completion:` 使其写入缓存**
+
+将现有异步方法修改，查询完成后写入缓存：
+
+```objc
+- (void)authorizationStatusWithType:(PrivacyPermissionType)type
+                         completion:(void(^)(PrivacyPermissionAuthorizationStatus status))completion {
+    @weakify(self)
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        @strongify(self)
+        PrivacyPermissionAuthorizationStatus status = [self queryAuthorizationStatus:type];
+        [self setCachedStatus:status forType:type];  // ← 写入缓存
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) {
+                completion(status);
+            }
+        });
+    });
+}
+```
+
+- [ ] **Step 4: 编译验证**
+
+⌘B 确认无编译错误，重点确认 `queryAuthorizationStatus:` 中旧的 `authorizationStatus:` 方法调用已全部替换。
+
+---
+
+## Chunk 3: 实现 refreshAuthorizationStatus: + 自动更新触发点
+
+### Task 3: 实现强制刷新方法 + App 回前台 + 权限变更回调更新缓存
+
+**Files:**
+- Modify: `submodule/XPCarControlCore/XPCarControlCore/Sources/Services/PrivacyPermission/PrivacyPermission.m`
+
+- [ ] **Step 1: 实现 `refreshAuthorizationStatus:completion:`**
+
+在 `authorizationStatusWithType:completion:` 之后追加：
+
+```objc
+- (void)refreshAuthorizationStatus:(PrivacyPermissionType)type
+                        completion:(void(^)(PrivacyPermissionAuthorizationStatus status))completion {
+    // 先清除旧缓存，强制重新查询
+    dispatch_barrier_async(self.cacheQueue, ^{
+        [self.statusCache removeObjectForKey:@(type)];
+    });
+    [self authorizationStatusWithType:type completion:completion];
+}
+```
+
+- [ ] **Step 2: 新增批量刷新已缓存类型的私有方法**
+
+追加私有方法，用于 App 回前台时刷新：
+
+```objc
+- (void)refreshCachedAuthorizationStatuses {
+    // 只刷新已被查询过（已在缓存中）的类型，避免无用 IPC
+    __block NSArray<NSNumber *> *cachedTypes = nil;
+    dispatch_sync(self.cacheQueue, ^{
+        cachedTypes = [self.statusCache.allKeys copy];
+    });
+    for (NSNumber *typeNum in cachedTypes) {
+        PrivacyPermissionType type = (PrivacyPermissionType)typeNum.unsignedIntegerValue;
+        [self authorizationStatusWithType:type completion:nil];
+    }
+}
+```
+
+- [ ] **Step 3: 在 init 中注册 UIApplicationDidBecomeActive 监听**
+
+在 `init` 方法内，`_cacheQueue = ...` 之后追加：
+
+```objc
+// App 回到前台时刷新权限缓存（用户可能在系统设置中修改了权限）
+[[NSNotificationCenter defaultCenter] addObserver:self
+                                         selector:@selector(refreshCachedAuthorizationStatuses)
+                                             name:UIApplicationDidBecomeActiveNotification
+                                           object:nil];
+```
+
+- [ ] **Step 4: 在 CLLocationManagerDelegate 权限变更回调中刷新缓存**
+
+在 `#pragma mark - CLLocationManagerDelegate` 区域，追加权限变更回调（iOS 14+）：
+
+```objc
+- (void)locationManagerDidChangeAuthorization:(CLLocationManager *)manager API_AVAILABLE(ios(14.0)) {
+    // 权限实际发生变化，立即刷新 Location 和 Accuracy 缓存
+    [self authorizationStatusWithType:PrivacyPermissionTypeLocation completion:nil];
+    [self authorizationStatusWithType:PrivacyPermissionTypeAccuracy completion:nil];
+}
+
+// iOS 14 以下的权限变更回调
+- (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
+    [self authorizationStatusWithType:PrivacyPermissionTypeLocation completion:nil];
+}
+```
+
+- [ ] **Step 5: 确保 dealloc 移除通知（防内存泄漏）**
+
+在 `@implementation PrivacyPermission` 中追加（单例不会 dealloc，但保持规范）：
+
+```objc
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+```
+
+- [ ] **Step 6: 编译验证**
+
+⌘B 确认无编译错误。
+
+---
+
+## Chunk 4: 预热入口 + 调用方适配
+
+### Task 4: 在 App 启动早期预热 Location/Accuracy 权限缓存，确保后续同步调用有缓存可读
+
+**Files:**
+- Modify: `submodule/XPCarControlCore/XPCarControlCore/Sources/Services/PrivacyPermission/PrivacyPermission.h`
+- Modify: `XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m`（或合适的 App 启动入口）
+
+**背景：** `XPCarOwnerHomeViewController.m:828` 在 `UIApplicationDidBecomeActiveNotification` 的主线程 block 中同步调用 `checkIfPermissionGranted`，需要确保此时缓存已预热。
+
+- [ ] **Step 1: 在 .h 中新增预热方法声明**
+
+```objc
+/**
+ 预热常用权限缓存（异步执行，不阻塞主线程）
+ 建议在 App 启动后（如 XPMultiBleManager start 时）调用
+ */
+- (void)warmUpPermissionCache;
+```
+
+- [ ] **Step 2: 在 .m 中实现预热方法**
+
+```objc
+- (void)warmUpPermissionCache {
+    // 预热 BLE 数字钥匙所需的三个权限
+    NSArray *types = @[
+        @(PrivacyPermissionTypeLocation),
+        @(PrivacyPermissionTypeAccuracy),
+        @(PrivacyPermissionTypeBackgroundRefresh),
+    ];
+    for (NSNumber *typeNum in types) {
+        [self authorizationStatusWithType:(PrivacyPermissionType)typeNum.unsignedIntegerValue
+                               completion:nil];
+    }
+}
+```
+
+- [ ] **Step 3: 在 XPMultiBleManager 的 start 方法中调用预热**
+
+在 `XPMultiBleManager.m` 的 `- (void)start` 方法内 `dispatch_once` 块的最后追加：
+
+```objc
+// 预热权限缓存，避免首次同步查询触发主线程 IPC
+[[PrivacyPermission sharedInstance] warmUpPermissionCache];
+```
+
+- [ ] **Step 4: 编译 + 运行，用 Instruments Time Profiler 或 Sentry 验证主线程不再卡顿**
+
+验证要点：
+1. `checkIfPermissionGranted` 调用耗时 < 1ms（读缓存）
+2. App 回到前台后，`UIApplicationDidBecomeActive` 触发异步刷新，缓存正确更新
+3. 修改设备权限后，再次进入 App，`checkIfPermissionGranted` 返回最新状态
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add submodule/XPCarControlCore/XPCarControlCore/Sources/Services/PrivacyPermission/PrivacyPermission.h
+git add submodule/XPCarControlCore/XPCarControlCore/Sources/Services/PrivacyPermission/PrivacyPermission.m
+git add submodule/XPCarControlCore/XPCarControlCore/Sources/Services/DigitalKey/PollingEffect/XPMultiBleManager.m
+git commit -m "fix: 修复 PrivacyPermission 主线程同步 IPC 导致 App Hanging
+
+- 新增线程安全缓存（dispatch_barrier_async/sync + 并发队列）
+- authorizationStatus: 优先读缓存，无缓存时同步查询并写入
+- 提取 queryAuthorizationStatus: 私有方法，修复 iOS 14 CLLocationManager 每次 alloc init 问题
+- authorizationStatusWithType:completion: 查询后写入缓存
+- 新增 refreshAuthorizationStatus:completion: 强制刷新单个类型
+- UIApplicationDidBecomeActive 自动刷新已缓存的权限类型
+- locationManagerDidChangeAuthorization: 实时刷新 Location/Accuracy 缓存
+- XPMultiBleManager.start 时预热 Location/Accuracy/BackgroundRefresh 缓存
+
+Fixes: App Hanging -[PrivacyPermission authorizationStatus:] > 2000ms"
+```
+
+---
+
+## 变更文件汇总
+
+| 文件 | 变更类型 | 说明 |
+|------|---------|------|
+| `PrivacyPermission.h` | Modify | 新增 `refreshAuthorizationStatus:completion:` 和 `warmUpPermissionCache` 声明 |
+| `PrivacyPermission.m` | Modify | 缓存属性、读写方法、queryAuthorizationStatus:、自动刷新监听 |
+| `XPMultiBleManager.m` | Modify | start 时调用 warmUpPermissionCache 预热 |
+
+---
+
+## 关键设计决策说明
+
+| 决策 | 理由 |
+|------|------|
+| `dispatch_barrier_async` 写、`dispatch_sync` 读 | 读多写少场景，并发读不阻塞，写互斥保证一致性 |
+| 只刷新已缓存类型 | 避免 App 回前台时对不需要的权限类型触发无用 IPC |
+| `locationManager` 复用单例实例 | 根治 iOS 14 每次 `alloc init CLLocationManager` 触发 IPC 的根因 |
+| 预热在 `start` 而非 `viewDidLoad` | 更早执行，保证 VC 展示时缓存已就绪 |

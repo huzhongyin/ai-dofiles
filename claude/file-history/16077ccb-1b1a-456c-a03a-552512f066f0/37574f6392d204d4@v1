@@ -1,0 +1,18 @@
+# 双通道故障放大效应
+
+## 元信息
+- 触发关键词: [DataParser, BLE, MQTT, 双通道, 故障放大, shift_state, gearValueIsSupportPolling]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-22
+
+## 内容
+
+### 现象
+单通道数据缺失时，另一通道断连会导致功能完全失效。
+
+### 根因
+Polling 状态（如 `gearValueIsSupportPolling`）同时依赖 BLE 和 MQTT 两个通道推送的 `drive.shift_state`。当 BLE 通道因 DataParser Bug 无法推送档位，而 MQTT 断连后也停止推送，Polling 状态将无法恢复。
+
+### 教训
+排查此类问题时必须同时分析 BLE 和 MQTT 两个数据通道，不能仅分析其中一个。

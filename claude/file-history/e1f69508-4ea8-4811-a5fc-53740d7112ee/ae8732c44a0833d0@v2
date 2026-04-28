@@ -1,0 +1,29 @@
+# 知识库进化日志
+
+> 说明: 记录所有自进化动作（知识沉淀/审计/评测），供回溯分析和飞轮效果评估
+> 创建日期: 2026-04-08
+> 维护方式: 由 post-task-review / knowledge-audit / spec-quality-score Skill 自动追加
+
+---
+
+## 事件类型说明
+
+| 类型 | 触发方式 | 记录内容 |
+|------|---------|---------|
+| `knowledge-recall` | knowledge-recall Skill 执行时 | 输入关键词 → 命中知识点列表 |
+| `post-task-review` | 任务完成后触发 | 沉淀决策（新增/修正/补充/无需） |
+| `knowledge-audit` | 手动触发审计 | 新鲜度/覆盖度/召回效果摘要 |
+| `spec-quality-score` | Spec 完成后评测 | F1-doc/F1-code/效率评分 |
+
+---
+
+## 2026-04-08
+
+### 00:00 — 系统初始化
+- 触发: L5 自进化机制搭建
+- 产出: 创建进化日志基础设施
+- 说明: 
+  - 创建 3 个自进化 Skill（post-task-review / knowledge-audit / spec-quality-score）
+  - 创建目录 `.ai-knowledge/audit-reports/` 和 `.ai-knowledge/quality-scores/`
+  - 知识库当前规模: 39 知识点 + 25 踩坑记录 + 8 模块文档
+  - 待首次 knowledge-recall 记录开始积累召回数据

@@ -1,0 +1,6 @@
+# 蓝牙安全
+
+- 蓝牙鉴权流程分 Auth0 → Auth1 两步，不可乱序
+- V3 协议涉及 sessionKey + hmacKey 两套密钥
+- BLE 数据解析/组装必须通过 XPBLEDataProcessor，禁止手动拼接字节流
+- 蓝牙连接依赖系统权限（`BLESysState`），操作前需检查权限状态

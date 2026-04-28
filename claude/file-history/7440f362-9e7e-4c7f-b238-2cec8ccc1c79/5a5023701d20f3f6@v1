@@ -1,0 +1,537 @@
+//
+//  PLXPMultiBleEventTool.m
+//  XPCarControlCore
+//
+//  Created by huzy2 on 2023/4/19.
+//
+
+#import "PLXPMultiBleEventTool.h"
+#import "PLXPPollingManager.h"
+#import "PLXPBleLocationManager.h"
+#import "MMKV+CustomKey.h"
+#import "PLXPUtility.h"
+#import "PLVehicleStateInstance.h"
+
+#ifdef XPPollingSDK_Test_Mode
+#import "PLPolllingTestMockSetting.h"
+#else
+@import XPVehicleSDK;
+#endif  //XPPollingSDK_Test_Mode
+
+#ifdef XPPollingSDK_Test_Mode
+@interface PLXPMultiBleEventTool ()<PLVehicleStateInstanceProtocol, PLPollingRssiSenderDelegate>
+#else
+@interface PLXPMultiBleEventTool () <PLVehicleStateInstanceProtocol, XPRssiManagerDelegate>
+#endif  //XPPollingSDK_Test_Mode
+
+
+@property (nonatomic, assign) BOOL inBluetoothSession;
+
+@property (nonatomic, assign) BOOL inDisconnecteByIBCM;
+
+@property (nonatomic, strong) NSDate *disconnectTime;
+
+@property (nonatomic, assign) XPVehicleDoorLockState lastDoorLockState;
+@property (nonatomic, assign) XPVehicleDoorLockState currentDoorLockState;
+
+@property (nonatomic, assign) BOOL isDoorOpen;
+
+@property (nonatomic, strong) NSMutableArray<id<PLXPBleConnectEventProtocol>> *bleConnectEventManagers;
+@property (nonatomic, strong) NSMutableArray<id<PLXPBleCarEventProtocol>> *bleCarEventManagers;
+@property (nonatomic, strong) NSMutableArray<id<PLXPBleRssiReceiveProtocol>> *bleRssiReceiveManagers;
+
+@property (nonatomic, strong) NSThread *rssiHandleThread;
+
+@property (nonatomic, strong) NSMutableArray<PLXPRssiModel *> *lastRssiArray;
+
+@end
+
+@implementation PLXPMultiBleEventTool
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [[PLVehicleStateInstance shareInstance] removeListener:self];
+}
+
+- (void)addBleConnectEventManager:(id<PLXPBleConnectEventProtocol>)eventManager {
+    DLogTagInfo(kMultiBleOptTag, @"addBleConnectEventManager");
+    [self.bleConnectEventManagers addObject:eventManager];
+}
+
+- (void)removeBleConnectEventManager:(id<PLXPBleConnectEventProtocol>)eventManager {
+    DLogTagInfo(kMultiBleOptTag, @"removeBleConnectEventManager");
+    [self.bleConnectEventManagers removeObject:eventManager];
+}
+
+- (void)addBleCarEventManager:(id<PLXPBleCarEventProtocol>)eventManager {
+    DLogTagInfo(kMultiBleOptTag, @"addBleCarEventManager");
+    [self.bleCarEventManagers addObject:eventManager];
+}
+
+- (void)removeCarBleEventManager:(id<PLXPBleCarEventProtocol>)eventManager {
+    DLogTagInfo(kMultiBleOptTag, @"removeCarBleEventManager");
+    [self.bleCarEventManagers removeObject:eventManager];
+}
+
+- (void)addBleRssiReceiveManager:(id<PLXPBleRssiReceiveProtocol>)rssiManager {
+    DLogTagInfo(kMultiBleOptTag, @"addBleRssiReceiveManager");
+    [self.bleRssiReceiveManagers addObject:rssiManager];
+    if (!self.lastRssiArray) {
+        self.lastRssiArray = [NSMutableArray array];
+    }
+    if (!self.rssiHandleThread) {
+        self.rssiHandleThread = [[NSThread alloc] initWithTarget:self
+                                                        selector:@selector(rssiManagerThreadEntryPoint:)
+                                                          object:@"com.xiaopeng.rssiManager"];
+        [self.rssiHandleThread start];
+    }
+}
+
+- (void)removeBleRssiReceiveManager:(id<PLXPBleRssiReceiveProtocol>)rssiManager {
+    DLogTagInfo(kMultiBleOptTag, @"removeBleRssiReceiveManager");
+    [self.bleRssiReceiveManagers removeObject:rssiManager];
+    if (self.bleRssiReceiveManagers.count == 0 && self.rssiHandleThread) {
+        self.lastRssiArray = nil;
+        [self performSelector:@selector(doDummyTask) onThread:self.rssiHandleThread withObject:nil waitUntilDone:NO];
+    }
+}
+
+- (void)rssiManagerThreadEntryPoint:(NSString*)threadName {
+    @autoreleasepool {
+        [[NSThread currentThread] setName:threadName];
+        NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
+        [runLoop addPort:[NSMachPort port] forMode:NSDefaultRunLoopMode];
+        while (![NSThread currentThread].isCancelled) {
+            @autoreleasepool {
+                [runLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
+            }
+        }
+        DLogTagInfo(kMultiBleOptTag, @"rssi thread exit success");
+    }
+}
+
+- (void)performRssiBlock:(void (^)(void))block {
+    [self performSelector:@selector(doRssiBlock:)
+                 onThread:self.rssiHandleThread
+               withObject:[block copy]
+            waitUntilDone:NO
+                    modes:@[NSRunLoopCommonModes]];
+}
+
+- (void)doRssiBlock:(void (^)(void))block {
+    if (block) {
+        block();
+    }
+}
+
+- (void)doDummyTask {
+    DLogTagInfo(kMultiBleOptTag, @"exit run loop thread");
+    [[NSThread currentThread] cancel];
+    @weakify(self)
+    dispatch_async(dispatch_get_main_queue(), ^{
+        @strongify(self)
+        self.rssiHandleThread = nil;
+    });
+}
+
+- (void)resetBleEventObserver {
+    DLogTagInfo(kMultiBleOptTag, @"resetBleEventObserver");
+    self.inBluetoothSession = NO;
+    self.inDisconnecteByIBCM = NO;
+    self.lastDoorLockState = XPVehicleDoorLockStateDefault;
+    self.currentDoorLockState = XPVehicleDoorLockStateDefault;
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [[PLVehicleStateInstance shareInstance] removeListener:self];
+#ifdef XPPollingSDK_Test_Mode
+    [PLPollingRssiSender sharedInstance].listener = nil;
+#else
+    [(id<XPVehiclePresenterEx>)XPVehicleSDK.shared.vehicleManager.currentVehicle removeRssiObserverWithDelegate:self];
+#endif  //XPPollingSDK_Test_Mode
+}
+
+
+- (void)startBleEventObserver {
+    DLogTagInfo(kMultiBleOptTag, @"startBleEventObserver");
+#ifdef XPPollingSDK_Test_Mode
+    XPBLEConnectionState bleConnectState = [PLPolllingTestMockSetting bleConnectState];
+#else
+    XPBLEConnectionState bleConnectState = XPVehicleSDK.shared.vehicleManager.currentVehicle.bleConnectState;
+#endif  //XPPollingSDK_Test_Mode
+    
+    if (bleConnectState == XPBLEConnectionStateAvailable) {
+        self.inBluetoothSession = YES;
+        for (id<PLXPBleConnectEventProtocol> manager in self.bleConnectEventManagers) {
+            DLogTagInfo(kMultiBleOptTag, @"<PA>主蓝牙重新连接，重置model");
+            if ([manager respondsToSelector:@selector(bleDefinedConnected)]) {
+                [manager bleDefinedConnected];
+            }
+        }
+    }
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(theBLEConnectStateChanged:) name:XPVehicleNotification.BLEConnectStateChanged object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(theBLESysStateChanged:) name:XPVehicleNotification.BLESysStateChanged object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(watchLockForbidPolling:) name:kNotificationWatchLockForbidPolling object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(carHomeViewControllerAppear:) name:@"kCarHomeViewControllerAppear" object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(willEnterForground:) name:UIApplicationWillEnterForegroundNotification object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveIBCMRequestDisconnectBle) name:XPVehicleNotification.kReceiveIBCMRequestDisconnectBle object:nil];
+    [[PLVehicleStateInstance shareInstance] addListener:self];
+    
+#ifdef XPPollingSDK_Test_Mode
+    [PLPollingRssiSender sharedInstance].lisener = self;
+#else
+    [(id<XPVehiclePresenterEx>)XPVehicleSDK.shared.vehicleManager.currentVehicle addRssiObserverWithDelegate:self];
+#endif  //XPPollingSDK_Test_Mode
+    
+}
+
+
+- (void)theBLEConnectStateChanged:(NSNotification *)notification{
+    XPBLEConnectionNotiObject * object = notification.userInfo[@"state"];
+    if (object.connectState == XPBLEConnectionStateAvailable) {
+        NSDate *currentTime = [NSDate date];
+        if (self.disconnectTime && [[self.disconnectTime dateByAddingTimeInterval:7] compare:currentTime] == NSOrderedAscending) {
+            DLogTagInfo(kMultiBleOptTag, @"<PA>主蓝牙重新连接，重置model");
+            for (id<PLXPBleConnectEventProtocol> manager in self.bleConnectEventManagers) {
+                if ([manager respondsToSelector:@selector(bleDefinedConnected)]) {
+                    [manager bleDefinedConnected];
+                }
+            }
+        } else {
+            if (!self.inBluetoothSession) {
+                DLogTagInfo(kMultiBleOptTag, @"<PA>主蓝牙重新连接，重置model");
+                for (id<PLXPBleConnectEventProtocol> manager in self.bleConnectEventManagers) {
+                    if ([manager respondsToSelector:@selector(bleDefinedConnected)]) {
+                        [manager bleDefinedConnected];
+                    }
+                }
+            } else {
+                DLogTagInfo(kMultiBleOptTag, @"<PA>主蓝牙重连成功");
+                for (id<PLXPBleConnectEventProtocol> manager in self.bleConnectEventManagers) {
+                    if ([manager respondsToSelector:@selector(bleRetryConnected)]) {
+                        [manager bleRetryConnected];
+                    }
+                }
+            }
+        }
+        self.inBluetoothSession = YES;
+        self.inDisconnecteByIBCM = NO;
+    } else if(object.connectState == XPBLEConnectionStateNotConnected) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>主蓝牙断开连接");
+        self.lastDoorLockState = XPVehicleDoorLockStateDefault;
+        self.currentDoorLockState = XPVehicleDoorLockStateDefault;
+        if (self.inBluetoothSession) {
+            NSDate *currentTime = [NSDate date];
+            self.disconnectTime = currentTime;
+            self.inBluetoothSession = NO;
+            
+            if (!self.inDisconnecteByIBCM) {
+                for (id<PLXPBleConnectEventProtocol> manager in self.bleConnectEventManagers) {
+                    DLogTagInfo(kMultiBleOptTag, @"<PA>主蓝牙重连失败");
+                    if ([manager respondsToSelector:@selector(bleDefinedDisconnect)]) {
+                        [manager bleDefinedDisconnect];
+                    }
+                }
+            }
+        }
+    }
+}
+
+- (void)theBLESysStateChanged:(NSNotification *)notification{
+    XPBLESysStateNotiObject * object = notification.userInfo[@"state"];
+    if (!object) return;
+    XPBLESysState state = object.bleSysState;
+    if (state == XPBLESysStatePoweredOn) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>蓝牙设置打开");
+        for (id<PLXPBleConnectEventProtocol> manager in self.bleConnectEventManagers) {
+            if ([manager respondsToSelector:@selector(bleSystemSwitch:)]) {
+                [manager bleSystemSwitch:YES];
+            }
+        }
+    } else {
+        if(self.inBluetoothSession){
+            self.inBluetoothSession = NO;
+            DLogTagInfo(kMultiBleOptTag, @"<PA>蓝牙设置关闭，尝试发送4G闭锁");
+            for (id<PLXPBleConnectEventProtocol> manager in self.bleConnectEventManagers) {
+                if ([manager respondsToSelector:@selector(bleSystemSwitch:)]) {
+                    [manager bleSystemSwitch:NO];
+                }
+            }
+        }
+    }
+}
+
+- (void)willEnterForground:(NSNotification *)notification{
+    DLogTagInfo(kBLEConnectTag, @"回到前台，重置手表闭锁");
+    for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+        if ([manager respondsToSelector:@selector(enterMyCarPage)]) {
+            [manager enterMyCarPage];
+        }
+        [[MMKV bl_mmkvWithVin:PLXPCTMediatorTool.vin userId:[@([PLXPCTMediatorTool uid]) stringValue] deviceModel:[PLXPUtility deviceModelName]] setBool:NO forKey:kWatchLock];
+    }
+}
+
+- (void)carHomeViewControllerAppear:(NSNotification *)notification{
+    DLogTagInfo(kBLEConnectTag, @"回到车控页面，重置手表闭锁");
+    bool isInMyCarPage = [notification.object boolValue];
+    if (isInMyCarPage) {
+        for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+            if ([manager respondsToSelector:@selector(enterMyCarPage)]) {
+                [manager enterMyCarPage];
+            }
+            [[MMKV bl_mmkvWithVin:PLXPCTMediatorTool.vin userId:[@([PLXPCTMediatorTool uid]) stringValue] deviceModel:[PLXPUtility deviceModelName]] setBool:NO forKey:kWatchLock];
+        }
+    }
+}
+
+- (void)watchLockForbidPolling:(NSNotification *)notification{
+    NSDictionary *noti = notification.object;
+    BOOL isWatchLock = [[noti valueForKey:kWatchLock] boolValue];
+    for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+        if (isWatchLock) {
+            DLogTagInfo(kMultiBleOptTag, @"被手表上锁");
+            if ([manager respondsToSelector:@selector(carIsLockedByWatch)]) {
+                [manager carIsLockedByWatch];
+            }
+            [[MMKV bl_mmkvWithVin:PLXPCTMediatorTool.vin userId:[@([PLXPCTMediatorTool uid]) stringValue] deviceModel:[PLXPUtility deviceModelName]] setBool:YES forKey:kWatchLock];
+        } else {
+            DLogTagInfo(kMultiBleOptTag, @"被手表解锁");
+            if ([manager respondsToSelector:@selector(carIsUnlockedByWatch)]) {
+                [manager carIsUnlockedByWatch];
+            }
+            [[MMKV bl_mmkvWithVin:PLXPCTMediatorTool.vin userId:[@([PLXPCTMediatorTool uid]) stringValue] deviceModel:[PLXPUtility deviceModelName]] setBool:NO forKey:kWatchLock];
+        }
+    }
+}
+
+- (void)vehicleStateChanged:(XPVehicleStateNotiObject *)object{
+    [PLVehicleStateInstance shareInstance].fullVehicleStateDict = object.fullVehicleDict;
+    
+    if ((XPVehicleDoorLockState)StateSafeEnum(object.diffVehicleDict[@"door"][@"driver_door_lock_st"]) != XPVehicleDoorLockStateDefault) {
+        if ((XPVehicleDoorLockState)StateSafeEnum([PLVehicleStateInstance shareInstance].fullVehicleStateDict[@"door"][@"driver_door_lock_st"]) == XPVehicleDoorLockStateDefault) {
+            self.lastDoorLockState = XPVehicleDoorLockStateDefault;
+            self.currentDoorLockState = XPVehicleDoorLockStateDefault;
+        } else {
+            self.lastDoorLockState = self.currentDoorLockState;
+            self.currentDoorLockState = (XPVehicleDoorLockState)StateSafeEnum([PLVehicleStateInstance shareInstance].fullVehicleStateDict[@"door"][@"driver_door_lock_st"]);
+        }
+    }
+    
+    if ((XPVehicleDoorAjarState)StateSafeEnum(object.diffVehicleDict[@"door"][@"driver_door_ajar_st"]) != XPVehicleDoorAjarStateDefault ||
+        (XPVehicleDoorAjarState)StateSafeEnum(object.diffVehicleDict[@"door"][@"passenger_door_ajar_st"]) != XPVehicleDoorAjarStateDefault ||
+        (XPVehicleDoorAjarState)StateSafeEnum(object.diffVehicleDict[@"door"][@"rear_left_door_ajar_st"]) != XPVehicleDoorAjarStateDefault ||
+        (XPVehicleDoorAjarState)StateSafeEnum(object.diffVehicleDict[@"door"][@"rear_right_door_ajar_st"]) != XPVehicleDoorAjarStateDefault ||
+        (XPVehicleTrunkAjarState)StateSafeEnum(object.diffVehicleDict[@"door"][@"trunk_ajar_st"]) != XPVehicleTrunkAjarStateDefault ||
+        (XPVehicleBonnetAjarState)StateSafeEnum(object.diffVehicleDict[@"door"][@"bonnet_ajar_st"]) != XPVehicleBonnetAjarStateDefault) {
+        if ((XPVehicleDoorAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"driver_door_ajar_st"]) == XPVehicleDoorAjarStateOpen || (XPVehicleDoorAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"passenger_door_ajar_st"]) == XPVehicleDoorAjarStateOpen || (XPVehicleDoorAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"rear_left_door_ajar_st"]) == XPVehicleDoorAjarStateOpen || (XPVehicleDoorAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"rear_right_door_ajar_st"]) == XPVehicleDoorAjarStateOpen || (XPVehicleTrunkAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"trunk_ajar_st"]) == XPVehicleTrunkAjarStateOpen || (XPVehicleBonnetAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"bonnet_ajar_st"]) == XPVehicleBonnetAjarStateOpen) {
+            for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+                if ([manager respondsToSelector:@selector(carDoorIsOpen)]) {
+                    [manager carDoorIsOpen];
+                }
+            }
+            DLogTagInfo(kMultiBleOptTag, @"<PA>四门两盖打开");
+        } else {
+            DLogTagInfo(kMultiBleOptTag, @"四门两盖关闭");
+            for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+                if ([manager respondsToSelector:@selector(carDoorIsClose)]) {
+                    [manager carDoorIsClose];
+                }
+            }
+        }
+        if (object.fullVehicleDict[@"door"] != nil && ((XPVehicleDoorAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"driver_door_ajar_st"]) == XPVehicleDoorAjarStateOpen || (XPVehicleDoorAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"passenger_door_ajar_st"]) == XPVehicleDoorAjarStateOpen || (XPVehicleDoorAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"rear_left_door_ajar_st"]) == XPVehicleDoorAjarStateOpen || (XPVehicleDoorAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"rear_right_door_ajar_st"]) == XPVehicleDoorAjarStateOpen || (XPVehicleBonnetAjarState)StateSafeEnum(object.fullVehicleDict[@"door"][@"bonnet_ajar_st"]) == XPVehicleBonnetAjarStateOpen)) {
+            self.isDoorOpen = YES;
+        } else {
+            if (self.isDoorOpen) {
+                for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+                    DLogTagInfo(kMultiBleOptTag, @"<PA开过车门");
+                    if ([manager respondsToSelector:@selector(carDoorHadOpened)]) {
+                        [manager carDoorHadOpened];
+                    }
+                }
+            }
+            self.isDoorOpen = NO;
+            DLogTagInfo(kMultiBleOptTag, @"四门两盖关闭");
+            for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+                if ([manager respondsToSelector:@selector(carDoorIsClose)]) {
+                    [manager carDoorIsClose];
+                }
+            }
+        }
+    }
+    
+}
+
+- (void)syncCachedEvent {
+    BOOL isWatchLocked = [[MMKV bl_mmkvWithVin:PLXPCTMediatorTool.vin userId:[@([PLXPCTMediatorTool uid]) stringValue] deviceModel:[PLXPUtility deviceModelName]] getBoolForKey:kWatchLock];
+    DLogTagInfo(kBLEKeyPollingTag, @"<PA>开始Polling初始化, %@", PLXPCTMediatorTool.vehicleTypeName);
+    for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+        if (isWatchLocked) {
+            DLogTagInfo(kMultiBleOptTag, @"被手表上锁");
+            if ([manager respondsToSelector:@selector(carIsLockedByWatch)]) {
+                [manager carIsLockedByWatch];
+            }
+        } else {
+            DLogTagInfo(kMultiBleOptTag, @"被手表解锁");
+            if ([manager respondsToSelector:@selector(carIsUnlockedByWatch)]) {
+                [manager carIsUnlockedByWatch];
+            }
+        }
+    }
+}
+
+- (void)receiveIBCMRequestDisconnectBle {
+    DLogTagInfo(kMultiBleOptTag, @"<PA>IBCM车端触发断开连接");
+    self.inDisconnecteByIBCM = YES;
+}
+
+#pragma mark - XPRssiManagerDelegate
+- (void)rssiManagerDidReceiveRssi:(NSString *)macAddress :(NSInteger)rssi :(NSString *)name {
+    PLXPRssiModel *model = [[PLXPRssiModel alloc]initWithRssi:rssi name:name date:[NSDate date] rssiCounter:0];
+    if (!self.lastRssiArray || self.lastRssiArray.count == 0) {
+        DLogTagInfo(kMultiBleOptTag, model.description);
+        [self.lastRssiArray addObject:model];
+    } else {
+        PLXPRssiModel *cacheModel = nil;
+        for (PLXPRssiModel *lastModel in self.lastRssiArray) {
+            if ([lastModel.name isEqualToString:model.name]) {
+                cacheModel = lastModel;
+                break;
+            }
+        }
+        if (!cacheModel) {
+            DLogTagInfo(kMultiBleOptTag, model.description);
+            [self.lastRssiArray addObject:model];
+        } else {
+            if ([[cacheModel.receiveDate dateByAddingTimeInterval:2] compare:model.receiveDate] == NSOrderedAscending) {
+                DLogTagInfo(kMultiBleOptTag, @"interval more 2s,last:%@, current:%@", cacheModel.description, model.description);
+            }
+            if ([[cacheModel.receiveDate dateByAddingTimeInterval:0.3] compare:model.receiveDate] == NSOrderedDescending) {
+                DLogTagInfo(kMultiBleOptTag, @"interval less 300ms,last:%@, current:%@", cacheModel.description, model.description);
+            }
+            [self.lastRssiArray removeObject:cacheModel];
+            [self.lastRssiArray addObject:model];
+        }
+    }
+    @weakify(self)
+    [self performRssiBlock:^{
+        @strongify(self)
+        for (id<PLXPBleRssiReceiveProtocol> manager in self.bleRssiReceiveManagers) {
+            if ([manager respondsToSelector:@selector(rssiManagerDidReceiveRssi:)]) {
+                [manager rssiManagerDidReceiveRssi:model];
+            }
+        }
+    }];
+}
+
+- (void)rssiManagerDidReceiveRssiDict:(NSDictionary<NSString *,id> *)rssiDict{
+    NSDictionary *rssiResultDict = [(NSDictionary *)rssiDict valueForKey:@"bleMessageRssiValue"];
+    NSDictionary *rssiDictInner = [rssiResultDict valueForKey:@"rssi"];
+    if (!rssiDictInner) {
+        DLogTagError(kMultiBleOptTag, @"rssiDictInner is nil");
+        return;
+    }
+    short rssiCounter = [[rssiResultDict valueForKey:@"rssiCounter"] shortValue];
+    NSMutableArray *tempArray = [NSMutableArray array];
+    PLXPRssiModel *currentModel = nil;
+    for (NSString *bleName in rssiDictInner.allKeys) {
+        PLXPRssiModel *model = [[PLXPRssiModel alloc]initWithRssi:[[rssiDictInner valueForKey:bleName] shortValue] name:plGetBleOtaEcuNameMap(bleName) date:[NSDate date] rssiCounter: rssiCounter];
+        [tempArray addObject:model];
+        if (model.isCommunicate == true) {
+            currentModel = model;
+        }
+    }
+    if (tempArray.count == 0) {
+        DLogTagError(kMultiBleOptTag, @"tempArray is empty");
+        return;
+    }
+    if (!self.lastRssiArray || self.lastRssiArray.count == 0) {
+        NSString *logStr = @"";
+        for (PLXPRssiModel *model in tempArray) {
+            logStr = [logStr stringByAppendingFormat:@"%@; ", model.description];
+        }
+        DLogTagInfo(kMultiBleOptTag, logStr);
+        self.lastRssiArray = [tempArray copy];
+    } else {
+        PLXPRssiModel *cacheModel = nil;
+        for (PLXPRssiModel *lastModel in self.lastRssiArray) {
+            if (lastModel.isCommunicate == true) {
+                cacheModel = lastModel;
+                break;
+            }
+        }
+        
+        if ([[cacheModel.receiveDate dateByAddingTimeInterval:0.3] compare:currentModel.receiveDate] == NSOrderedAscending) {
+            DLogTagInfo(kMultiBleOptTag, @"interval more 300ms,last:%@, current:%@", cacheModel.description, currentModel.description);
+        }
+        if ([[cacheModel.receiveDate dateByAddingTimeInterval:0.01] compare:currentModel.receiveDate] == NSOrderedDescending) {
+            DLogTagInfo(kMultiBleOptTag, @"interval less 10ms,last:%@, current:%@", cacheModel.description, currentModel.description);
+        }
+        self.lastRssiArray = [tempArray copy];
+    }
+    @weakify(self)
+    [self performRssiBlock:^{
+        @strongify(self)
+        for (id<PLXPBleRssiReceiveProtocol> manager in self.bleRssiReceiveManagers) {
+            if ([manager respondsToSelector:@selector(rssiManagerDidReceiveRssiArray:)]) {
+                [manager rssiManagerDidReceiveRssiArray:[tempArray copy]];
+            }
+        }
+    }];
+}
+
+#pragma mark — setter
+- (void)setLastDoorLockState:(XPVehicleDoorLockState)lastDoorLockState {
+    _lastDoorLockState = lastDoorLockState;
+    DLogTagInfo(kMultiBleOptTag, @"设置lastDoorLockState为%d",lastDoorLockState);
+}
+
+- (void)setCurrentDoorLockState:(XPVehicleDoorLockState)currentDoorLockState {
+    _currentDoorLockState = currentDoorLockState;
+    DLogTagInfo(kMultiBleOptTag, @"设置currentDoorLockState为%d",currentDoorLockState);
+    if (currentDoorLockState == XPVehicleDoorLockStateLocked && self.lastDoorLockState == XPVehicleDoorLockStateUnlocked) {
+        DLogTagInfo(kMultiBleOptTag, @"检测到车被上锁");
+        for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+            if ([manager respondsToSelector:@selector(carLockIsLocked)]) {
+                [manager carLockIsLocked];
+            }
+        }
+    } else if(currentDoorLockState == XPVehicleDoorLockStateUnlocked && self.lastDoorLockState == XPVehicleDoorLockStateLocked) {
+        DLogTagInfo(kMultiBleOptTag, @"检测到车被解锁");
+        for (id<PLXPBleCarEventProtocol> manager in self.bleCarEventManagers) {
+            if ([manager respondsToSelector:@selector(carLockIsUnlocked)]) {
+                [manager carLockIsUnlocked];
+            }
+        }
+    } else{
+        
+    }
+}
+
+#pragma mark — lazyload
+- (NSMutableArray<id<PLXPBleCarEventProtocol>> *)bleCarEventManagers {
+    if (!_bleCarEventManagers) {
+        _bleCarEventManagers = [NSMutableArray array];
+    }
+    return _bleCarEventManagers;
+}
+
+- (NSMutableArray<id<PLXPBleConnectEventProtocol>> *)bleConnectEventManagers {
+    if (!_bleConnectEventManagers) {
+        _bleConnectEventManagers = [NSMutableArray array];
+    }
+    return _bleConnectEventManagers;
+}
+
+- (NSMutableArray<id<PLXPBleRssiReceiveProtocol>> *)bleRssiReceiveManagers {
+    if (!_bleRssiReceiveManagers) {
+        _bleRssiReceiveManagers = [NSMutableArray array];
+    }
+    return _bleRssiReceiveManagers;
+}
+
+@end

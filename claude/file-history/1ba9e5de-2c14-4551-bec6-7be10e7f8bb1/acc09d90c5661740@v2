@@ -1,0 +1,66 @@
+# 子项目 ⑤：Submodule / Target 实质内容精修
+
+## Context
+
+子项目 ③①④⑥ 已完成并提交。现在执行 ⑤：为 6 个 skeleton submodule 和 4 个 target 填充 constitution.md 和 CLAUDE.md 的 TODO 占位内容。
+
+**现状：** 每个模块有 18 个 TODO（constitution.md 6 节 × 3 TODO），CLAUDE.md 也全是 TODO。XPVehicleSDK 是已精炼的参照。
+
+## 策略
+
+**按优先级分 3 批，每批内并行处理：**
+
+1. **Batch 1（高优）：** XPBLEDataProcessor / XPCarControlCore / XPMQTTLibrary — 车控核心链路
+2. **Batch 2（中优）：** XPPollingSDK / XPVehicleExt / XPCarBusiCH
+3. **Batch 3：** 4 个 target（XPWatch / XPWidget / XPWatchWidget / XPIntentsExtension）+ 3 个缺失 target 骨架
+
+**精修方法（每个模块）：**
+1. 读 podspec → 提取依赖、对外 API、语言组合
+2. ls 源码目录 → 了解内部分层
+3. grep 关键类/协议 → 确定架构模式和对外接口
+4. 填充 constitution.md 6 个章节
+5. 填充 CLAUDE.md 的 TODO 占位
+
+## Tasks
+
+### Task 1: Batch 1 — XPBLEDataProcessor
+- 读 `submodule/XPBLEDataProcessor/XPDataProcessor.podspec`
+- 读 iOS/ 和 cross-platform/ 目录结构
+- 填充 constitution.md（跨平台 C++ 数据解析库定位、C++/OC/Swift 混编策略、依赖边界等）
+- 填充 CLAUDE.md
+
+### Task 2: Batch 1 — XPCarControlCore
+- 读 `submodule/XPCarControlCore/XPCarControlCore.podspec`
+- 读 Sources/ 目录结构
+- 填充 constitution.md（车控业务封装定位、OC/Swift/.mm 混编策略等）
+- 填充 CLAUDE.md
+
+### Task 3: Batch 1 — XPMQTTLibrary
+- 读 `submodule/XPMQTTLibrary/XPMQTTLibrary.podspec`
+- 读 Sources/ 目录结构
+- 填充 constitution.md（MQTT 通信封装定位等）
+- 填充 CLAUDE.md
+
+### Task 4: Batch 2 — XPPollingSDK / XPVehicleExt / XPCarBusiCH
+- 同样方法探测并填充 3 个模块
+
+### Task 5: Batch 3 — 4 个 Target
+- 读 target 源码目录，填充 constitution.md + CLAUDE.md
+- XPWatch / XPWidget / XPWatchWidget / XPIntentsExtension
+
+### Task 6: 补齐 3 个缺失 Target 骨架
+- XP3rdShareLocation / XPMirrorExtension / XPPushServiceExtension
+- 检查目录结构，在 `.claude/targets/` 下创建脚手架
+- 注册到 module-registry.md
+
+### Task 7: Git commit
+
+## 关键参照文件
+- `submodule/XPVehicleSDK/.ai-knowledge/specs/constitution.md` — 已精炼范例
+- `submodule/XPVehicleSDK/.claude/CLAUDE.md` — 已精炼范例
+- `submodule/XPBLEDataProcessor/.ai-knowledge/specs/constitution.md` — 模板格式
+
+## 验证
+- 所有 constitution.md 的 TODO 数降为 0（或仅剩无法从源码推断的 1-2 个）
+- module-registry.md 新增 3 个 target 条目
+- `git diff --stat` 确认变更文件数合理

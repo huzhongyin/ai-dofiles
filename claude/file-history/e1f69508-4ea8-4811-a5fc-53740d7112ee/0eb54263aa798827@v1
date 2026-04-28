@@ -1,0 +1,58 @@
+//
+//  BLEKeyV3Message.cpp
+//  CarControlCore
+//
+//  Created by huzy2 on 2024/1/24.
+//
+
+#include "BLEKeyV3Message.hpp"
+#include "BLEKeyV3MsgAlgorithm.hpp"
+#include "../tools/DataCovertTool.h"
+#include <cstdlib>
+#include <cstring>
+
+namespace SDKBleKeyV3 {
+
+size_t payloadSizeForBleKeyV3Message(BLEKeyV3Message* message) {
+    return message->msgLength;
+}
+
+size_t sizeOfBLEKeyV3Message(BLEKeyV3Message* message) {
+    return sizeof(BLEKeyV3Message) - sizeof(message->messageData) + payloadSizeForBleKeyV3Message(message);
+}
+
+int isEffectiveBLEKeyV3MessageData(BLEKeyV3Message* msg, size_t len) {
+    __CHECK_RET(NULL!=msg, false);
+    __CHECK_RET(0!=len, false);
+    __CHECK_RET((BLEKeyV3MessageTypeAuth0 == msg->msgId || BLEKeyV3MessageTypeAuth1 == msg->msgId || BLEKeyV3MessageTypeRKE == msg->msgId || BLEKeyV3MessageTypeNotification == msg->msgId || BLEKeyV3MessageTypeTest == msg->msgId), false);
+    const size_t s = sizeOfBLEKeyV3Message(msg);
+    return s == len ? 1 : 0;
+}
+
+void copyBleV3MessageRawData(BLEKeyV3Message *v3Mesage,uint8_t *rawData) {
+    __CHECK(NULL!=rawData);
+    size_t offset = 0;
+    memcpy(rawData, &v3Mesage->msgId, sizeof(v3Mesage->msgId));
+    offset += sizeof(v3Mesage->msgId);
+    memcpy(rawData+offset, &v3Mesage->msgLength, sizeof(v3Mesage->msgLength));
+    offset += sizeof(v3Mesage->msgLength);
+    memcpy(rawData+offset, v3Mesage->messageData, v3Mesage->msgLength);
+    offset += v3Mesage->msgLength;
+    memcpy(rawData+offset, &v3Mesage->checkSum, sizeof(v3Mesage->checkSum));
+}
+
+size_t payloadSizeForBleKeyV3Content(BLEKeyV3Conent* content) {
+    return content->contentDataLength;
+}
+
+size_t sizeOfBLEKeyV3Content(BLEKeyV3Conent* content) {
+    return sizeof(BLEKeyV3Conent) - sizeof(content->contentData) + payloadSizeForBleKeyV3Content(content);
+}
+
+int isEffectiveBLEKeyV3ContentData(BLEKeyV3Conent* content) {
+    __CHECK_RET(NULL!=content, false);
+    const size_t s = sizeOfBLEKeyV3Content(content);
+    return s != 0 ? 1 : 0;
+}
+
+}

@@ -1,0 +1,221 @@
+//
+//  BLEDataParser+cpp.swift
+//  XPVehicleSDK
+//
+//  Created by xp on 2024/6/12.
+//
+
+import Foundation
+
+extension BLEDataParser {
+    
+    func handleParserData(_ msg: String?) {
+        Log.i(tag: "cppParser", "ble parse result str:", msg);
+        guard let data = msg?.data(using: .utf8) else { return }
+        do {
+            let decoder = JSONDecoder()
+            let response = try decoder.decode([BleCanMessage].self, from: data)
+            handleCanMessageArr(msgArr: response)
+        } catch {
+            Log.i(tag: "cppParser", "msg decode error:", error);
+        }
+    }
+    
+    func handleCanMessageArr(msgArr: [BleCanMessage]?) {
+        guard let msgArr = msgArr else { return }
+        
+        var vehicleState: VehicleState? = nil
+        for msg in msgArr {
+            if (msg.type == .vehicleState) {
+                if (vehicleState == nil) {
+                    vehicleState = msg.vehicleState
+                } else {
+                    if let state = msg.vehicleState {
+                        vehicleState = vehicleState?.mergeVehicleState(from: state)
+                    }
+                }
+            }
+        }
+        if (vehicleState != nil) {
+            let canMsg = BleCanMessage()
+            canMsg.type = .vehicleState
+            canMsg.vehicleState = vehicleState
+            handleVehicleState(msg: canMsg)
+        }
+
+        
+        for msg in msgArr {
+            if (msg.type == .canEvent) {
+                handleCanEvent(msg: msg)
+            }
+        }
+    }
+    
+    func handleCanMessage(msg: BleCanMessage) {
+        guard let type = msg.type else { return }
+        switch type {
+        case .vehicleState:
+            handleVehicleState(msg: msg)
+        case .canEvent:
+            handleCanEvent(msg: msg)
+        default:
+            print("type: \(type)")
+        }
+    }
+    
+    func handleVehicleState(msg: BleCanMessage) {
+        if let state = msg.vehicleState {
+            delegate?.didReceiveVehicleState(state: state)
+        }
+    }
+    
+    func handleCanEvent(msg: BleCanMessage) {
+        Log.i(tag: "cppParser", "ble parse result event:", msg.canEvent?.eventType);
+        guard let event = msg.canEvent else { return }
+        guard let eventType = event.eventType else { return }
+        switch event.eventType {
+        case .parking:
+            handleParking(event: event)
+        case .authRandom:
+            handleAuthRandom(event: event)
+        case .authResult:
+            handleAuthResult(event: event)
+        case .parkingCollision:
+            handleParkingCollision(event: event)
+       
+        default:
+            break
+        }
+    }
+    
+    func handleParking(event: CanEvent) {
+        delegate?.didReceiveCanEventParking(parkingMsg: event)
+    }
+    
+    func handleAuthResult(event: CanEvent) {
+        delegate?.didReceiveAuthResult(authResult: Int(event.authState ?? -1), failedReason: Int(event.failedReason ?? -1))
+    }
+    
+    func handleAuthRandom(event: CanEvent) {
+        delegate?.didReceiveAuth0Response(rand01: UInt32(event.rand01 ?? UINT32_MAX), rand1: UInt32(event.rand1 ?? UINT32_MAX))
+    }
+    
+    func handleParkingCollision(event: CanEvent) {
+        delegate?.didReceiveCanEventParkingCollision(parkingCollisionMsg: event)
+    }
+}
+
+extension BLEKeyV1Parser {
+    
+    override func handleCanEvent(msg: BleCanMessage) {
+        super.handleCanEvent(msg: msg)
+        guard let event = msg.canEvent else { return }
+        guard let eventType = event.eventType else { return }
+        switch event.eventType {
+        case .exceptionHandle:
+            handleExceptionHandle(event: event)
+        case .CDUAccountLoginState:
+            handleCDUAccountLoginState(event: event)
+        default: break
+        }
+    }
+    
+    func handleCDUAccountLoginState(event: CanEvent) {
+        Log.i(tag: "cppParser", "handle cdcu login state: \(event.signalValue)")
+        cduLoginDelegate?.didReceiveCanEventCDUAccountLoginState(signalValue: Int(event.signalValue ?? -1))
+    }
+    
+    func handleExceptionHandle(event: CanEvent) {
+        v1Delegate?.didReceiveEventExceptionHandle(errorCode: Int(event.errorCode ?? -1))
+    }
+}
+
+extension BLEKeyV2Parser {
+    override func handleCanEvent(msg: BleCanMessage) {
+        super.handleCanEvent(msg: msg)
+        guard let event = msg.canEvent else { return }
+        guard let eventType = event.eventType else { return }
+        switch event.eventType {
+        case .requestDisconnect:
+            handleRequestDisconnect(event: event)
+        case .startRequestBleLocation:
+            handleStartRequestBleLocation(event: event)
+        case .doublesidedAuth:
+            handleDoublesidedAuth(event: event)
+        case .carControlResult:
+            handleCarControlResult(event: event)
+        case .CDUAccountLoginState:
+            handleCDUAccountLoginState(event: event)
+        default: break
+        }
+    }
+    
+    func handleRequestDisconnect(event: CanEvent) {
+        v2Delegate?.didReceiveCanEventRequestDisconnect()
+    }
+
+    func handleStartRequestBleLocation(event: CanEvent) {
+        v2Delegate?.didReceiveCanEventStartRequestBleLocation(signalValue: Int(event.signalValue ?? -1))
+    }
+    
+    func handleCarControlResult(event: CanEvent) {
+        carControlDelegate?.didReceiveCanEventCarControlResult(controlId: Int(event.controlId ?? -1), result: Int(event.controlState ?? -1))
+    }
+    
+    func handleCDUAccountLoginState(event: CanEvent) {
+        Log.i(tag: "cppParser", "handle cdcu login state: \(event.signalValue)")
+        cduLoginDelegate?.didReceiveCanEventCDUAccountLoginState(signalValue: Int(event.signalValue ?? -1))
+    }
+    
+    func handleDoublesidedAuth(event: CanEvent) {
+        v2Delegate?.didReceiveCanEventDoubleAuthResult(frameIndex: Int(event.frameIndex ?? -1), frameCount: Int(event.frameCount ?? -1), data:UInt64(event.data ?? 0))
+    }
+    
+}
+
+extension BLEKeyV3Parser {
+    override func handleCanEvent(msg: BleCanMessage) {
+        super.handleCanEvent(msg: msg)
+        guard let event = msg.canEvent else { return }
+        guard let eventType = event.eventType else { return }
+        switch eventType {
+        case .commonResponse:
+            handleCommonResponse(event: event)
+        case .carControlResult:
+            handleCarControlResult(event: event)
+        case .selfCalibration:
+            handleSelfCalibration(event: event)
+        case .rssiCollect:
+            handleRssiCollect(event: event)
+        case .parkingControl:
+            handleParkingControlState(event: event)
+        case .tboxRunState:
+            handleTboxRunStateEvent(event: event)
+        default: break
+        }
+    }
+    
+    func handleSelfCalibration(event: CanEvent) {
+        v3Delegate?.didReceiveSelfCalirationResult(reseult: Int(event.result ?? -1), resultLen: Int(event.resultLen ?? -1), resultData: event.resultData ?? "", direction: Int(event.direction ?? -1), distance: Int(event.distance ?? -1), deviceModel: event.deviceModel ?? "")
+    }
+    
+    func handleRssiCollect(event: CanEvent) {
+        v3Delegate?.didReceiveRssiCollectResult(reseult: Int(event.result ?? -1), direction: Int(event.direction ?? -1), distance: Int(event.distance ?? -1), deviceModel: event.deviceModel ?? "")
+    }
+    
+    func handleParkingControlState(event: CanEvent) {
+        v3Delegate?.didReceiveParkingControlState(result: event.parkingControlState ?? 0)
+    }
+    
+    func handleCommonResponse(event: CanEvent) {
+        delegate?.didReceiveAuthResult(authResult: Int(event.commonStatus ?? -1), failedReason: Int(event.commonErrorCode ?? -1))
+    }
+    
+    func handleCarControlResult(event: CanEvent) {
+        carControlDelegate?.didReceiveCanEventCarControlResult(controlId: Int(event.controlId ?? -1), result: Int(event.controlState ?? -1))
+    }
+    
+    func handleTboxRunStateEvent(event: CanEvent) {
+        v3Delegate?.didReceiveTboxRunStateEvent(result: event.status ?? 0)
+    }
+}

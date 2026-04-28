@@ -1,0 +1,18 @@
+# BLE 各车型解析器相互隔离
+
+## 元信息
+- 触发关键词: ["DataParser", "车型解析器", "D22DataParser", "E28DataParser", "F30DataParser", "MonaDataParser", "蓝牙解析"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+BLE 数据解析采用工厂模式（`DataParserFactory`），每个车型有独立解析器：
+- D22/D55/E28/E38/F30 各有独立的 `*DataParser` 类
+- Mona 有独立的 `MonaDataParser`
+
+**核心规则**: 各车型解析器差异较大，修改一个车型的解析逻辑时**必须确认不影响其他车型**。不要试图"统一"不同车型的解析代码。
+
+**工厂入口**: `DataParserManager` → `DataParserFactory` → 各车型 Parser
+
+**代码位置**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/`

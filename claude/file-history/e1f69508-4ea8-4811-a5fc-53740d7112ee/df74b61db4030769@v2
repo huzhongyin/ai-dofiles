@@ -1,0 +1,74 @@
+# Spec 质量评分卡: ble-v3-rt-protocol
+
+> 评测日期: 2026-04-08
+> Spec 路径: `.ai-knowledge/specs/ble-v3-rt-protocol/`
+> 需求: BLE V3 协议新增 RtAuth (msgID=0x0B) 和 RtNotification (msgID=0x0C) 消息类型
+
+## 总分
+| 大项 | 得分 | 满分 | 等级 |
+|------|------|------|------|
+| F1-doc (文档质量) | 97 | 100 | A |
+| F1-code (代码保留率) | — | — | A (95) |
+| 效率评测 | — | — | 提升显著 |
+| **综合** | — | — | **A** |
+
+## F1-doc 详情
+| 维度 | 得分 | 满分 | 说明 |
+|------|------|------|------|
+| 完整性 | 25 | 25 | 三件套完整，proposal 含 4 个 Q&A 疑问点，design 含正向+反向调用链，Constitution 7 项全检 |
+| 调用链准确性 | 24 | 25 | 9/9 节点有效；design 描述 RtAuth response 走 `handleXPBleKeyV3Content` 但实际实现为专用 `handleRtAuthContent`（-1 分） |
+| 知识关联 | 23 | 25 | 5 条知识点全部存在；遗漏 `submodule-management.kp.md` 高优知识点（与 submodule 提交流程相关）（-2 分） |
+| Constitution 合规 | 25 | 25 | 7 项全部标记已检查，实际验证均合规 |
+
+## F1-code 详情
+| 维度 | 结果 | 说明 |
+|------|------|------|
+| 任务完成度 | 100% | 15/15 完成（Phase 7 可选跳过） |
+| 采纳程度 | 高 | tasks.md 中的文件修改建议 90%+ 被实际采纳 |
+| 额外修改 | 无 | tasks.md 完全覆盖了实际需要的所有修改 |
+| 偏差程度 | 小 | 核心方案一致，仅 RtAuth 解码路径从"复用 handleXPBleKeyV3Content"调整为"专用 handleRtAuthContent" — 这是更安全的实现选择 |
+
+### 偏差分析
+tasks.md 中 Task 3.3 的约束说明："tag=0x7F6F 已被 RKE response 使用...可复用 tag 解析逻辑，通过 msgId 区分输出类型"。实际实现选择了更安全的方案：在 `handleBleKeyV3Message` 中通过 msgId 前置路由到专用 `handleRtAuthContent()`/`handleRtNotificationContent()`，避免进入通用 TLV 解析函数。这一偏差是**正向的** — design 阶段已识别 tag/type 冲突风险，实现阶段选择了更保守的隔离方案。
+
+### tasks.md 未预见但实际补充的修改
+| 文件 | 说明 | 是否必要 |
+|------|------|---------|
+| `VehicleNotification.swift` | 新增 `rtAuthResultNotification` / `rtNotification` 通知名 | ✅ 必要 — delegate 回调转 NotificationCenter 是 SDK 层标准模式 |
+| `XiaopengBLEConnection+CanEvent.swift` | 实现 `didReceiveRtAuthResult` / `didReceiveRtNotification` delegate 方法 | ✅ 必要 — delegate 协议的实际实现类 |
+| `BleKeyV3Header.h` | 新增 `RtAuthResultMessage` / `RtNotificationMessage` 消息头结构体 | ✅ 必要 — JSON 输出层依赖 |
+| `BleKeyV3DataParser.hpp` | 新增 `buildRtAuthResultMessage` / `buildRtNotificationMessage` / `parseRtAuthResponseMessage` / `parseRtNotificationMessage` 声明 | ✅ 必要 — 头文件声明 |
+
+> 注: 上述 4 个文件在 tasks.md 中虽未作为独立 Task 列出，但分别被 Task 4.1/4.2（JSON 层）和 Task 6.3（delegate 实现）的范围隐含覆盖。用户评价为"无额外修改"表明这些是预期范围内的补充。
+
+## 效率数据
+| 指标 | 值 |
+|------|------|
+| Spec 流程耗时 | ~2h（含 proposal→design→tasks→编码→沉淀） |
+| 传统预估耗时 | 2 天（proposal 中评估: 开发 1 天 + 自测 0.5 天 + 联调 0.5 天） |
+| 效率提升比 | ~87.5%（2h vs 16h） |
+| 疑问点确认轮数 | 1 轮（4 个 Q 一次性确认） |
+| 方案调整次数 | 0（design.md 一次审批通过） |
+
+> 注: 效率提升比基于"纯编码实施"对比，联调时间暂不计入
+
+## 改进建议
+
+### S1: tasks.md 应覆盖 delegate 实现类文件
+- **问题**: tasks.md 中 Task 6.3 只列出了 `BLEKeyV3Parser.swift`（协议定义），未明确列出实现该协议的 `XiaopengBLEConnection+CanEvent.swift`
+- **改进**: spec-tasks Skill 在拆解 delegate/protocol 新增方法时，自动 grep 实现类并列为依赖 Task
+- **影响**: 避免实施者遗漏 delegate 实现
+
+### S2: tasks.md 应覆盖 Notification 注册
+- **问题**: `VehicleNotification.swift` 中新增通知名未在 tasks.md 中体现
+- **改进**: spec-tasks Skill 在识别到 "delegate 回调" 模式时，检查是否有对应的 NotificationCenter.post 模式需要同步新增通知名
+
+### S3: design.md 调用链应标注"方案 vs 备选"
+- **问题**: design.md 对 RtAuth response 解码路径描述为"复用 handleXPBleKeyV3Content"，但实际实现选择了独立 handler
+- **改进**: 对有冲突风险的节点，design.md 应标注"推荐方案 A: 独立 handler / 备选方案 B: 复用通用函数"，让实施者明确知道优选路径
+
+## 待沉淀知识
+- ✅ 已沉淀: `ble-v3-rt-auth.kp.md`（post-task-review 已执行）
+- ✅ 已沉淀: `ble-communication.md` 坑6（tag/type 冲突）
+- ✅ 已更新: `XPBLEDataProcessor.md`、`ble-auth-v3-flow.kp.md`
+- 待补充: 本评分卡的改进建议 S1/S2 可优化 spec-tasks Skill 的自动覆盖逻辑

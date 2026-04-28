@@ -1,0 +1,126 @@
+# auto-unlock 功能分析方案书
+
+## 元信息
+- **生成时间**：2026-03-25 示例模板
+- **分析平台**：iOS/Android/HarmonyOS
+- **代码路径**：[待填写]/auto-unlock
+- **最后更新**：2026-03-25
+
+## 激活条件
+- **业务触发场景**：用户靠近车辆时自动检测并执行解锁操作
+- **输入参数要求**：车辆ID、用户认证token、距离阈值
+- **前置状态依赖**：蓝牙连接正常、用户已登录、车辆处于锁定状态
+
+## 前提条件
+- **权限验证**：蓝牙权限、位置权限、车辆控制权限
+- **环境检查**：蓝牙开启、网络连接可用、GPS定位正常
+- **依赖模块状态**：用户认证模块可用、车控服务在线
+
+## 基本事件流
+
+### 阶段1-检测入口
+**操作描述**：检测用户接近车辆并触发自动解锁逻辑
+- **日志标识**：`[AutoUnlock]: Starting proximity detection for vehicle`
+- **正常路径**：检测到用户在设定距离内，开始解锁流程
+- **异常路径**：距离检测失败 → 记录Error日志并重试
+
+### 阶段2-身份验证
+**操作描述**：验证用户身份和车辆访问权限
+- **日志标识**：`[AutoUnlock]: Authenticating user for vehicle`
+- **决策分支**：用户token有效 → 继续；token无效 → 要求重新登录
+- **状态变更**：认证状态从pending变更为authenticated
+
+### 阶段3-执行解锁
+**操作描述**：向车辆发送解锁命令并等待响应
+- **日志标识**：`[AutoUnlock]: Sending unlock command to vehicle`
+- **成功标志**：收到车辆确认解锁响应
+- **失败标志**：超时或收到错误响应
+
+### 阶段4-结果确认
+**操作描述**：确认解锁操作完成并更新车辆状态
+- **日志标识**：`[AutoUnlock]: Unlock operation completed successfully`
+- **成功路径**：车辆状态更新为unlocked，用户收到通知
+- **失败路径**：解锁失败，记录错误原因并提示用户
+
+## 最终执行结果
+
+### 成功路径输出
+- **正常完成标志**：`[AutoUnlock]: Vehicle unlocked successfully, vehicleID: xxx`
+- **状态变更记录**：车辆状态从locked变更为unlocked
+- **用户反馈**：推送解锁成功通知
+
+### 失败路径分类
+- **类型A：权限不足** → 错误码：AU_001 → 日志：`Permission denied for vehicle access`
+- **类型B：网络超时** → 错误码：AU_002 → 日志：`Network timeout while communicating with vehicle`
+- **类型C：车辆响应错误** → 错误码：AU_003 → 日志：`Vehicle returned error response`
+- **类型D：蓝牙连接失败** → 错误码：AU_004 → 日志：`Bluetooth connection lost`
+
+## 日志关键字索引
+
+### 功能入口标识
+- `[AutoUnlock]: Starting proximity detection`
+- `[AutoUnlock]: Initiating auto unlock sequence`
+- `[AutoUnlock]: User proximity detected`
+
+### 状态转换标识
+- `[AutoUnlock]: Status changed from [old] to [new]`
+- `[AutoUnlock]: Authentication state updated`
+- `[AutoUnlock]: Vehicle state transition`
+
+### 异常捕获标识
+- `[AutoUnlock]: Error occurred`
+- `[AutoUnlock]: Exception caught`
+- `[AutoUnlock]: Operation failed`
+- `[AutoUnlock]: Timeout detected`
+
+### 功能退出标识
+- `[AutoUnlock]: Operation completed successfully`
+- `[AutoUnlock]: Auto unlock finished`
+- `[AutoUnlock]: Process terminated`
+
+## 跨模块接口说明
+
+### 调用外部模块
+- **用户认证模块**：验证用户token和权限
+- **蓝牙通信模块**：建立和维护与车辆的连接
+- **位置服务模块**：获取用户和车辆的位置信息
+- **推送通知模块**：发送解锁结果通知
+
+### 被外部调用
+- **手动解锁模块**：作为备选解锁方式被调用
+- **车辆管理模块**：获取车辆状态和解锁历史
+
+### 消息订阅
+- **蓝牙连接状态变化**：监听连接断开事件
+- **用户位置变化**：监听用户移动事件
+- **车辆状态推送**：监听车辆主动状态变化
+
+## 故障排查指引
+
+### 常见故障模式
+1. **解锁不响应**
+   - 日志特征：发送命令后无响应日志
+   - 排查方向：检查蓝牙连接、网络状态
+
+2. **权限验证失败**
+   - 日志特征：`Permission denied` 或 `Authentication failed`
+   - 排查方向：检查用户登录状态、车辆绑定关系
+
+3. **距离检测异常**
+   - 日志特征：`Proximity detection failed` 或距离值异常
+   - 排查方向：检查GPS权限、位置服务准确性
+
+### 关键决策点
+- **距离阈值判断**：用户与车辆距离是否在设定范围内
+- **认证token有效性**：token是否过期或无效
+- **车辆在线状态**：车辆是否能正常接收和响应命令
+
+### 调试建议
+1. **启用详细日志**：在调试模式下开启所有关键节点的日志输出
+2. **检查时序**：重点关注各阶段之间的时间间隔是否正常
+3. **验证依赖**：确保所有依赖模块都处于可用状态
+4. **模拟测试**：使用测试车辆进行功能验证
+
+---
+
+*此方案书用作模板示例，实际使用时会根据具体的代码分析和日志模式进行动态生成和更新。*

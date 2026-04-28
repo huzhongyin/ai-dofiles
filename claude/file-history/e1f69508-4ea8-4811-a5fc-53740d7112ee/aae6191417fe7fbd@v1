@@ -1,0 +1,47 @@
+# AI-Engineering 变更日志
+
+> 记录工程化 AI-Coding 建设过程的所有关键里程碑和产物
+
+---
+
+## 2026-04-08
+
+### 阶段: 路径规划
+- **创建** `roadmap.md` — 五层进阶路径完整规划文档 (v1.0)
+- **方法论**: 费曼学习法四阶段 × 七方法论源综合
+- **关键决策**:
+  - Agent 部署模式: 本地 CLI 协作模式
+  - 知识库形态: 渐进式（本地 → RAG）
+  - Spec 框架: OpenSpec 为主 + SpecKit 借鉴
+  - 主力工具: Claude Code，Copilot 降级为补全工具
+- **参考源**: Anthropic 官方文档、搜狗 Kuikly、淘系 Spec 平台、OpenSpec、BMAD Method
+- **下一步**: 进入费曼学习法第三阶段（三重角色验证），逐层验证理解后开始 L1 落地
+
+### 费曼学习法完成
+- **创建** `feynman-learning-report.md` — 费曼学习法完整报告（四阶段）
+- **阶段一 (意图深挖)**: 4 轮访谈，确认团队画像和关键决策
+- **阶段二 (知识传授)**: 五层路径详细方案 + 七参考源综合
+- **阶段三 (三重验证)**: 
+  - 初学者验证: 2/2 通过 (CLAUDE.md 本质、跨 Agent 根因)
+  - 专家挑战: 2/2 通过 (文档腐烂、跨工具复用)
+  - 实战搭档: 1/1 通过 (存量迭代需求处理流程)
+- **阶段四 (知识归档)**: 生成学习报告 + 复习检查清单
+- **下一步**: 开始 L1 层产物落地
+
+### L1 工具链基建 — 产物落地
+- **项目探索**: Swift 1006 / OC .m 2577 / .h 3439，OC 为主体（~85%）
+- **语言策略确认**: 功能模块层渐进迁移 Swift（共版设计），底层迁 C++，UI 层 OC 暂不迁
+- **创建** `CLAUDE.md` — 项目级配置（语言策略、架构分层、组件化架构、编码规范、命名规范、工作流、安全约束）
+- **创建 7 个标准化 Skills**:
+  - `module-context` — 模块 Context 文档生成
+  - `knowledge-recall` — 知识点自动匹配加载
+  - `oc-to-swift` — OC 代码迁移到 Swift
+  - `new-swift-module` — 创建新 Swift 模块
+  - `code-review-ios` — iOS 代码审查
+  - `bug-analysis` — Bug 分析定位
+  - `spec-proposal` — 变更提案生成
+- **创建** `.claude/settings.json` — Hooks 配置（Swift @objc 提醒）
+- **创建** `team-guide.md` — 团队 Claude Code 使用规范
+- **创建** `L1-tool-chain/checklist.md` — L1 完成度检查清单
+- **创建** `.ai-knowledge/` — 知识库初始目录结构 + index.md 索引
+- **L1 状态**: 核心产物完成，待团队试用反馈后迭代优化

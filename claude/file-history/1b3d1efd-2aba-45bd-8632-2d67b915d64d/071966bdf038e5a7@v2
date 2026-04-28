@@ -1,0 +1,40 @@
+# iOS 车控 SDK 规则
+
+## 车控指令流程
+- 所有车控操作必须通过 `VehiclePresenter.sendControlCommand(command:extParams:success:failed:)` 发送
+- 车控指令会自动选择通道（BLE 优先于 MQTT）：
+  ```
+  App 业务层 → VehiclePresenter → VehicleControlRequestManager → VehicleConnection (BLE/TCP) → 车端
+  ```
+- 禁止直接调用 `BLEConnection.send()` 或 `MQTTHandler.publish()` 发送车控指令
+
+## 切车安全
+- 切车操作在后台线程 `switchVehicleQueue` 执行，创建车控实例有耗时
+- 业务层必须等 `vehicleSwitchedEvent` 或 `vehicleInfoUpdatedEvent` 回调后才能使用新 presenter
+- 切车期间 `vehicleInstance` 可能为 nil，所有访问需做空值检查
+
+## 车型差异化
+- 新功能必须检查 `XPCarAbilityConfig` 对应的能力开关，不要硬编码车型判断
+- Mona 车型通过 `#if MONA_APP` 或 `vehicle.isMona()` 判断
+- 新增 HTTP 接口需处理 `#if !MONA_APP` 兼容（不支持时返回错误码）
+
+## 蓝牙安全
+- 蓝牙鉴权流程分 Auth0 → Auth1 两步，不可乱序
+- V3 协议涉及 sessionKey + hmacKey 两套密钥
+- BLE 数据解析/组装必须通过 XPBLEDataProcessor，禁止手动拼接字节流
+- 蓝牙连接依赖系统权限（`BLESysState`），操作前需检查权限状态
+
+## MQTT 安全
+- MQTT 连接使用 TLS/SSL 双向认证，证书配置通过 `MQTTPublisherInfoProtocol` 提供
+- 消息发送使用 QoS2（精确一次），不要降低 QoS 等级
+- `MQTTConnectionState.connected` 需要 TCP 连接 + Topic 订阅都成功才算
+
+## 事件监听规范
+- 优先使用 VehicleEvent 的 `subscribe/unsubscribe`，不要使用 NotificationCenter 监听 SDK 内部事件
+- 订阅事件后必须在 deinit 中 unsubscribe，防止野指针
+- 切车时 SDK 会重新发送一次全量车态事件（diff 字段全部为 nil），业务层需兼容处理
+
+## 日志 Tag 规范
+- XPVehicleSDK 模块日志 Tag：`"XP车控"`（小鹏）/ `"Mona车控"`（Mona）
+- MQTT 相关日志 Tag：由 MQTTPublisher 内部管理
+- BLE 相关日志 Tag：由 BLEConnection 内部管理

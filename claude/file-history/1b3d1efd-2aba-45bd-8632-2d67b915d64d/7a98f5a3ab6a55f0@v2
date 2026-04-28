@@ -1,0 +1,335 @@
+# 任务清单: BLE V3 协议新增 RtAuth/RtNotification 消息类型
+
+> 阶段: Tasks (Execute)
+> 基于: design.md (已审批)
+> 创建日期: 2026-04-08
+> 状态: Not Started
+
+---
+
+## 前置条件
+
+### 知识加载
+- [x] knowledge-recall 已执行，加载: ble-protocol-versions / ble-message-types / ble-packed-struct / ble-data-dual-channel / ble-auth-v3-flow
+- [x] 相关模块文档已确认: XPBLEDataProcessor.md
+- [x] 相关踩坑记录已阅读: pitfalls/ble-communication.md
+
+### 环境准备
+- [ ] 分支已创建: `feature/ble-v3-rt-protocol`
+- [ ] submodule 状态已更新: `git submodule update --init`
+- [ ] Pod 依赖已安装: `pod install`
+
+---
+
+## 实施步骤
+
+### Phase 1: C++ 核心层 — 枚举与类型定义（XPBLEDataProcessor）
+> ⚠️ submodule 独立仓库，修改需单独提交
+
+#### Task 1.1: BLEKeyV3MessageType 枚举新增
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3Message.hpp`
+- **变更**: 修改
+- **具体操作**:
+  - 在 `BLEKeyV3MessageType` 枚举中新增:
+    ```cpp
+    BLEKeyV3MessageTypeRtAuth = 0x0B,
+    BLEKeyV3MessageTypeRtNotification = 0x0C,
+    ```
+  - 新增 `BLEKeyV3RtAuthRequestType` 枚举 (tag=0x7F54)
+  - 新增 `BLEKeyV3RtAuthRequestFactorType` 枚举 (certificate=0x01, deviceModel=0x02)
+  - 新增 `BLEKeyV3RtAuthResponseType` 枚举 (result=0x10, errorCode=0x11)
+  - 新增 `BLEKeyV3RtNotificationType` 枚举 (pollingResult=0xD0)
+- **约束**: 枚举值追加到已有值后面，不修改已有枚举项的值；使用 `__attribute__((packed))` 风格保持一致
+- **验证**: 编译通过，无 enum 值冲突
+- **状态**: [ ] 未开始
+
+#### Task 1.2: isEffectiveBLEKeyV3MessageData 白名单更新
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3Message.cpp`
+- **变更**: 修改
+- **具体操作**:
+  - 在 `isEffectiveBLEKeyV3MessageData` 函数的条件检查中新增:
+    ```cpp
+    || BLEKeyV3MessageTypeRtAuth == msg->msgId
+    || BLEKeyV3MessageTypeRtNotification == msg->msgId
+    ```
+- **约束**: 仅追加条件，不修改已有逻辑
+- **验证**: 构造 msgId=0x0B/0x0C 的测试数据，验证返回 true
+- **状态**: [ ] 未开始
+
+### Phase 2: C++ 核心层 — 编码实现（RtAuth Request）
+
+#### Task 2.1: RtAuth 编码参数结构体与函数声明
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3EncodeMessage.hpp`
+- **变更**: 修改
+- **具体操作**:
+  - 新增 `BleKeyV3RtAuthParams` 结构体 (certificate + deviceModel)
+  - 新增 `BleKeyV3RtAuthRequestCreateResult` 枚举
+  - 新增函数声明: `createBleKeyV3RtAuthRequestWithInput(...)`
+- **约束**: 结构体必须使用 `__attribute__((packed))`；参照 `BleKeyV3Auth0Params` 的命名风格
+- **验证**: 编译通过
+- **状态**: [ ] 未开始
+
+#### Task 2.2: RtAuth Request 编码函数实现
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3EncodeMessage.cpp`
+- **变更**: 修改
+- **具体操作**:
+  - 实现 `createBleKeyV3RtAuthRequestWithInput()`:
+    1. 参数校验 (certificate/deviceModel 非空)
+    2. 构造 TLV 内容: tag=0x7F54 → type=0x01(certificate) + type=0x02(deviceModel)
+    3. 构造 BLEKeyV3Message: msgId=0x0B, **明文**(不加密)
+    4. CRC16 checkSum 计算
+    5. copyBleV3MessageRawData 输出
+- **约束**: **明文传输** — 不使用 sessionKey 加密，参照 `createBleKeyV3Auth0RequestWithInput` 的非加密分支模式
+- **验证**: 构造测试 certificate/deviceModel，验证输出的字节流首字节为 0x0B (msgId)
+- **状态**: [ ] 未开始
+
+### Phase 3: C++ 核心层 — 解码实现（RtAuth Response + RtNotification）
+
+#### Task 3.1: 解码输出类型与结构体
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3DecodeMessage.hpp`
+- **变更**: 修改
+- **具体操作**:
+  - `BleKeyV3OutputMessageType` 枚举新增:
+    - `BleKeyV3OutputMessageTypeRtAuthResponse`
+    - `BleKeyV3OutputMessageTypeRtNotificationPolling`
+  - 新增 `BleKeyV3RtAuthResponseData` 结构体 (authResult + errorCode)
+  - 新增 `BleKeyV3RtNotificationPollingData` 结构体 (pollingResult)
+- **约束**: 新增枚举值放在 `BleKeyV3OutputMessageTypeUnknown` 之前；结构体使用 `__attribute__((packed))`
+- **验证**: 编译通过
+- **状态**: [ ] 未开始
+
+#### Task 3.2: 解码 switch 分支 — 明文处理
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3DecodeMessage.cpp`
+- **变更**: 修改
+- **具体操作**:
+  - 在 `decodeBleKeyV3CanMessage()` 的加密 switch 中新增:
+    ```cpp
+    case BLEKeyV3MessageTypeRtAuth:
+    case BLEKeyV3MessageTypeRtNotification:
+        // 明文 — 直接 memcpy
+        memcpy(decodeData, message->messageData, decodeDataSize);
+        break;
+    ```
+  - 确保 RtAuth/RtNotification 不走 AES 或 XOR 解密路径
+- **约束**: **关键** — 必须是明文处理，不依赖 sessionKey/authKey
+- **验证**: 构造明文 msgId=0x0B 数据包，验证解码后 content 与原始 payload 一致
+- **状态**: [ ] 未开始
+
+#### Task 3.3: Content TLV 解析 — RtAuth Response
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3DecodeMessage.cpp`
+- **变更**: 修改
+- **具体操作**:
+  - 在 `handleXPBleKeyV3Content()` 或新建的 `handleRtAuthContent()` 中:
+    - tag=0x7F6F → 解析 type=0x10(authResult, 1字节) + type=0x11(errorCode, 1字节)
+    - 输出 `BleKeyV3OutputMessage(type=RtAuthResponse)`
+- **约束**: tag=0x7F6F 已被 RKE response 使用，但 RtAuth response 在 msgId=0x0B 路径下，与 RKE(msgId=0x03) 不冲突。可复用 tag 解析逻辑，通过 msgId 区分输出类型
+- **验证**: 构造完整 RtAuth response 数据包，验证解析出 authResult 和 errorCode 值
+- **状态**: [ ] 未开始
+
+#### Task 3.4: Content TLV 解析 — RtNotification
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3DecodeMessage.cpp`
+- **变更**: 修改
+- **具体操作**:
+  - 在 msgId=0x0C 路径下解析:
+    - type=0xD0 → pollingResult (1字节, 0x00成功/0x01失败)
+    - 输出 `BleKeyV3OutputMessage(type=RtNotificationPolling)`
+- **约束**: **关键** — type=0xD0 在 msgId=0x04(Notification) 路径下是 CommonCarState，在 msgId=0x0C 路径下是 Polling 解锁结果。**必须通过 msgId 级别区分**，不能在同一个解析函数中混淆
+- **验证**: 构造 msgId=0x0C + type=0xD0 + result=0x00 的数据包，验证解析为 rtNotificationPolling 而非 commonCarState
+- **状态**: [ ] 未开始
+
+### Phase 4: C++ → JSON 转换层
+
+#### Task 4.1: JSON 输出 — RtAuth Response
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BleKeyV3DataParser.cpp`
+- **变更**: 修改
+- **具体操作**:
+  - 新增 `parseRtAuthResponse(BleKeyV3OutputMessage *outputMessage)`:
+    - 输出 JSON: `{"type":"canEvent","canEvent":{"eventType":"rtAuthResult","rtAuthResult":<value>,"rtAuthErrorCode":<value>}}`
+  - 在 switch(outputMessage->messageType) 中新增 case
+- **约束**: JSON key 名称必须与 Swift 的 `BLECppParserCanEventType` rawValue 和 `CanEvent` 属性名保持一致
+- **验证**: 验证输出 JSON 字符串可被 Swift JSONDecoder 正确解析
+- **状态**: [ ] 未开始
+
+#### Task 4.2: JSON 输出 — RtNotification
+- **文件**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BleKeyV3DataParser.cpp`
+- **变更**: 修改
+- **具体操作**:
+  - 新增 `parseRtNotification(BleKeyV3OutputMessage *outputMessage)`:
+    - 输出 JSON: `{"type":"canEvent","canEvent":{"eventType":"rtNotification","rtPollingResult":<value>}}`
+- **约束**: 同 Task 4.1
+- **验证**: 同 Task 4.1
+- **状态**: [ ] 未开始
+
+### Phase 5: iOS OC 桥接层（XPBLEDataProcessor）
+
+#### Task 5.1: RtAuth Request 桥接方法
+- **文件**: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/XPBleKeyV3DataProcessor.h`
+- **变更**: 修改
+- **具体操作**:
+  - 新增方法声明:
+    ```objc
+    + (NSData *_Nullable)generateRtAuthRequestData:(NSData * _Nonnull)certificate
+                                       deviceModel:(NSString * _Nonnull)deviceModel;
+    ```
+- **约束**: 方法命名遵循 `generate*Data` 模式保持一致
+- **验证**: 编译通过
+- **状态**: [ ] 未开始
+
+#### Task 5.2: RtAuth Request 桥接实现
+- **文件**: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/XPBleKeyV3DataProcessor.mm`
+- **变更**: 修改
+- **具体操作**:
+  - 实现 `generateRtAuthRequestData:deviceModel:`:
+    1. NSData → uint8_t* 转换 (certificate)
+    2. NSString → uint8_t* + size 转换 (deviceModel)
+    3. 构造 BleKeyV3RtAuthParams
+    4. 调用 createBleKeyV3RtAuthRequestWithInput()
+    5. 结果转 NSData 返回
+    6. 添加 DLogTagInfo 日志
+- **约束**: 参照 `generateAuth0DataIndictor` 的 OC/C++ 数据转换模式；添加空值保护
+- **验证**: 传入测试 certificate 和 deviceModel，验证返回非 nil NSData
+- **状态**: [ ] 未开始
+
+### Phase 6: Swift SDK 层（XPVehicleSDK）
+> ⚠️ submodule 独立仓库，修改需单独提交
+
+#### Task 6.1: 事件类型与数据模型
+- **文件**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleConnection/BLEConnection/BLEDataParser/BleCanMessage.swift`
+- **变更**: 修改
+- **具体操作**:
+  - `BLECppParserCanEventType` 枚举新增:
+    ```swift
+    case rtAuthResult = "rtAuthResult"
+    case rtNotification = "rtNotification"
+    ```
+  - `init(rawValue:)` switch 新增两个 case
+  - `CanEvent` 类新增属性:
+    ```swift
+    var rtAuthResult: Int?
+    var rtAuthErrorCode: Int?
+    var rtPollingResult: Int?
+    ```
+- **约束**: rawValue 必须与 C++ JSON 输出的 eventType 字符串完全一致；属性名必须与 JSON key 一致（Codable 自动映射）
+- **验证**: 构造测试 JSON 字符串，验证 JSONDecoder 可正确解析为 BleCanMessage
+- **状态**: [ ] 未开始
+
+#### Task 6.2: 事件路由分发
+- **文件**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleConnection/BLEConnection/BLEDataParser/BLEDataParser+cpp.swift`
+- **变更**: 修改
+- **具体操作**:
+  - 在 `BLEKeyV3Parser` extension 的 `handleCanEvent(msg:)` override 中新增:
+    ```swift
+    case .rtAuthResult:
+        handleRtAuthResult(event: event)
+    case .rtNotification:
+        handleRtNotification(event: event)
+    ```
+- **约束**: 放在现有 switch case 之后、default 之前
+- **验证**: 设断点验证事件可路由到新 handler
+- **状态**: [ ] 未开始
+
+#### Task 6.3: Delegate 回调与 Handler 实现
+- **文件**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleConnection/BLEConnection/BLEDataParser/BLEKeyV3Parser.swift`
+- **变更**: 修改
+- **具体操作**:
+  - `BLEKeyV3DataParserResultDelegate` 协议新增:
+    ```swift
+    func didReceiveRtAuthResult(result: Int, errorCode: Int)
+    func didReceiveRtNotification(pollingResult: Int)
+    ```
+  - `BLEKeyV3Parser` extension 新增 handler:
+    ```swift
+    func handleRtAuthResult(event: CanEvent) {
+        v3Delegate?.didReceiveRtAuthResult(
+            result: event.rtAuthResult ?? -1,
+            errorCode: event.rtAuthErrorCode ?? -1
+        )
+    }
+    func handleRtNotification(event: CanEvent) {
+        v3Delegate?.didReceiveRtNotification(
+            pollingResult: event.rtPollingResult ?? -1
+        )
+    }
+    ```
+- **约束**: handler 方法命名遵循 `handle<EventType>` 模式；delegate 调用必须用 optional chaining（`v3Delegate?.`）
+- **验证**: 实现 delegate 的 mock 对象，验证回调参数正确
+- **状态**: [ ] 未开始
+
+### Phase 7: 小程序版本同步（可选/按需）
+
+#### Task 7.1: 小程序 BLEKeyV3MessageType 同步
+- **文件**: `submodule/XPBLEDataProcessor/xiaochengxu/ble-data-processor/bleMethod.cpp`
+- **变更**: 修改
+- **具体操作**:
+  - 在小程序版本的 `BLEKeyV3MessageType` 枚举中同步新增 RtAuth=0x0B, RtNotification=0x0C
+  - 在 `isEffectiveBLEKeyV3MessageData` 等效函数中同步更新白名单
+- **约束**: 小程序版本的代码结构可能与 cross-platform 不完全一致，需对照确认
+- **验证**: 小程序版本编译通过
+- **状态**: [ ] 未开始（按需执行）
+
+---
+
+## 验证步骤
+
+### 编译验证
+- [ ] XPBLEDataProcessor submodule 编译通过（所有平台：iOS/Harmony/小程序）
+- [ ] XPVehicleSDK submodule 编译通过
+- [ ] 主工程编译通过
+- [ ] 无新增 Warning
+
+### 功能验证
+- [ ] RtAuth Request: 构造 certificate + deviceModel → 验证编码输出的 msgId=0x0B 字节流格式正确
+- [ ] RtAuth Response: 构造 msgId=0x0B + tag=0x7F6F + type=0x10(result) 数据包 → 验证解析出 authResult/errorCode
+- [ ] RtNotification: 构造 msgId=0x0C + type=0xD0 + result=0x00 数据包 → 验证解析出 rtPollingResult=0
+- [ ] 明文验证: 确认 RtAuth/RtNotification 不经过 AES/XOR 解密（sessionKey=空 时仍可正确解析）
+
+### 回归验证
+- [ ] 现有 Auth0/Auth1 鉴权流程不受影响
+- [ ] 现有 RKE 车控指令流程不受影响
+- [ ] 现有 Notification(0x04) 的 CarState 解析不受影响（特别验证 type=0xD0 在 msgId=0x04 路径下仍解析为 CommonCarState）
+- [ ] V1/V2 协议车型蓝牙数据解析不受影响
+- [ ] Mona 车型蓝牙数据解析不受影响
+
+### 代码质量
+- [ ] 命名规范符合项目风格（C++ 枚举用 BLEKeyV3* 前缀，Swift 用 camelCase）
+- [ ] 新增 C++ 结构体使用 `__attribute__((packed))`
+- [ ] 新增 Swift delegate 方法遵循 `didReceive*` 命名
+- [ ] submodule 修改已在独立仓库提交
+
+---
+
+## 提交计划
+
+### 提交顺序
+1. [ ] 提交 submodule **XPBLEDataProcessor**: Phase 1-5 (C++ 核心 + OC 桥接)
+   ```
+   feat(BLEDataProcessor): 新增 BLE V3 RtAuth/RtNotification 消息类型
+   
+   - 新增 msgId: RtAuth(0x0B) + RtNotification(0x0C)
+   - RtAuth: encode(request) + decode(response)，明文传输
+   - RtNotification: decode Polling解锁结果，明文传输
+   - OC 桥接层新增 generateRtAuthRequestData API
+   
+   涉及车型: 小鹏系 V3 协议车型
+   ```
+2. [ ] 提交 submodule **XPVehicleSDK**: Phase 6 (Swift 事件类型 + 回调)
+   ```
+   feat(VehicleSDK): 支持 RT 蓝牙鉴权和通知事件
+   
+   - BleCanMessage 新增 rtAuthResult/rtNotification 事件类型
+   - BLEKeyV3Parser 新增 delegate 回调方法
+   
+   涉及车型: 小鹏系 V3 协议车型
+   ```
+3. [ ] 更新主仓库 submodule 指针
+4. [ ] 提交主仓库（如有业务层集成代码）
+
+---
+
+## 知识沉淀
+> 完成后按 SOP 执行
+
+- [ ] 新增知识点: `ble-rt-protocol.kp.md` — RtAuth/RtNotification 协议细节（msgId、tag、明文传输规则）
+- [ ] 更新模块文档: `modules/XPBLEDataProcessor.md` — 新增 RtAuth/RtNotification 相关 API
+- [ ] 更新踩坑记录（如遇到新坑）
+- [ ] 触发 post-task-review 执行知识沉淀

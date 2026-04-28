@@ -1,0 +1,432 @@
+# XPMotors iOS — 全项目模块注册表
+
+> 单一数据源（Single Source of Truth）
+> 格式：每条目为一个 YAML block，skill 会扫描所有 ```yaml module 块
+> 维护：由 spec-coding-scaffold skill 自动 append；人工修改时必须保持字段齐全
+
+## 字段说明
+
+- `id`：模块唯一标识（建议与目录名一致）
+- `level`：`project` | `app` | `target` | `submodule` | `localpod`
+- `path`：相对主工程根的路径（无尾斜杠）
+- `knowledge`：该模块 .ai-knowledge/ 的相对路径
+- `claude_md`：该模块 .claude/CLAUDE.md 的相对路径
+- `keywords`：触发加载的关键词列表
+- `owner_repo`：独立仓为 `subrepo`；主仓为 `main`
+
+## 已注册模块
+
+<!-- scaffold:begin -->
+<!-- 以下内容由 spec-coding-scaffold skill 自动维护，手动修改需保持格式 -->
+
+```yaml
+- id: XiaoPengQiChe
+  level: app
+  path: XiaoPengQiChe
+  knowledge: XiaoPengQiChe/.ai-knowledge/
+  claude_md: XiaoPengQiChe/.claude/CLAUDE.md
+  keywords: [主工程, App 层, Modules, Services, VehicleBridge, XiaoPengQiChe]
+  owner_repo: main
+```
+
+```yaml
+- id: XPVehicleSDK
+  level: submodule
+  path: submodule/XPVehicleSDK
+  knowledge: submodule/XPVehicleSDK/.ai-knowledge/
+  claude_md: submodule/XPVehicleSDK/.claude/CLAUDE.md
+  keywords: [车控, 蓝牙鉴权, MQTT, VehiclePresenter, XPVehicleSDK, 切车]
+  owner_repo: subrepo
+```
+
+```yaml
+- id: XPBase_Router
+  level: localpod
+  path: LocalPods/XPBase_Router/
+  knowledge: LocalPods/XPBase_Router/.ai-knowledge/
+  owner_repo: main
+  keywords: [路由, Router, TheRouter, XPRouter, Deeplink]
+```
+
+```yaml
+- id: XPBLEDataProcessor
+  level: submodule
+  path: submodule/XPBLEDataProcessor
+  knowledge: submodule/XPBLEDataProcessor/.ai-knowledge/
+  claude_md: submodule/XPBLEDataProcessor/.claude/CLAUDE.md
+  owner_repo: subrepo
+  keywords: [BLE, 蓝牙解析, DataProcessor]
+```
+
+```yaml
+- id: XPCarBusiCH
+  level: submodule
+  path: submodule/XPCarBusiCH
+  knowledge: submodule/XPCarBusiCH/.ai-knowledge/
+  claude_md: submodule/XPCarBusiCH/.claude/CLAUDE.md
+  owner_repo: subrepo
+  keywords: [车业务, 中国区车控, CarBusi]
+```
+
+```yaml
+- id: XPCarControlCore
+  level: submodule
+  path: submodule/XPCarControlCore
+  knowledge: submodule/XPCarControlCore/.ai-knowledge/
+  claude_md: submodule/XPCarControlCore/.claude/CLAUDE.md
+  owner_repo: subrepo
+  keywords: [车控核心, CarControl, 指令下发]
+```
+
+```yaml
+- id: XPMQTTLibrary
+  level: submodule
+  path: submodule/XPMQTTLibrary
+  knowledge: submodule/XPMQTTLibrary/.ai-knowledge/
+  claude_md: submodule/XPMQTTLibrary/.claude/CLAUDE.md
+  owner_repo: subrepo
+  keywords: [MQTT, 消息通道, 长连接]
+```
+
+```yaml
+- id: XPPollingSDK
+  level: submodule
+  path: submodule/XPPollingSDK
+  knowledge: submodule/XPPollingSDK/.ai-knowledge/
+  claude_md: submodule/XPPollingSDK/.claude/CLAUDE.md
+  owner_repo: subrepo
+  keywords: [Polling, 轮询, 车态上报]
+```
+
+```yaml
+- id: XPVehicleExt
+  level: submodule
+  path: submodule/XPVehicleExt
+  knowledge: submodule/XPVehicleExt/.ai-knowledge/
+  claude_md: submodule/XPVehicleExt/.claude/CLAUDE.md
+  owner_repo: subrepo
+  keywords: [车控扩展, VehicleExt, 国际版]
+```
+
+```yaml
+- id: XPWatch
+  level: target
+  path: .claude/targets/XPWatch
+  knowledge: .claude/targets/XPWatch/.ai-knowledge/
+  claude_md: .claude/targets/XPWatch/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [Watch, watchOS, 手表App]
+```
+
+```yaml
+- id: XPWidget
+  level: target
+  path: .claude/targets/XPWidget
+  knowledge: .claude/targets/XPWidget/.ai-knowledge/
+  claude_md: .claude/targets/XPWidget/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [Widget, 小组件, WidgetKit]
+```
+
+```yaml
+- id: XPWatchWidget
+  level: target
+  path: .claude/targets/XPWatchWidget
+  knowledge: .claude/targets/XPWatchWidget/.ai-knowledge/
+  claude_md: .claude/targets/XPWatchWidget/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [WatchWidget, 手表小组件, Complication]
+```
+
+```yaml
+- id: XPIntentsExtension
+  level: target
+  path: .claude/targets/XPIntentsExtension
+  knowledge: .claude/targets/XPIntentsExtension/.ai-knowledge/
+  claude_md: .claude/targets/XPIntentsExtension/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [Intents, Siri, IntentsExtension, 快捷指令]
+```
+
+```yaml
+- id: XPBase_Common
+  level: localpod
+  path: LocalPods/XPBase_Common
+  knowledge: LocalPods/XPBase_Common/.ai-knowledge/
+  claude_md: LocalPods/XPBase_Common/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [基础通用, Common, 工具类]
+```
+
+```yaml
+- id: XPBase_UI
+  level: localpod
+  path: LocalPods/XPBase_UI
+  knowledge: LocalPods/XPBase_UI/.ai-knowledge/
+  claude_md: LocalPods/XPBase_UI/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [基础UI, UI组件, BaseUI]
+```
+
+```yaml
+- id: XPBase_Theme
+  level: localpod
+  path: LocalPods/XPBase_Theme
+  knowledge: LocalPods/XPBase_Theme/.ai-knowledge/
+  claude_md: LocalPods/XPBase_Theme/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [主题, Theme, 暗色模式, 换肤]
+```
+
+```yaml
+- id: XPBase_WebView
+  level: localpod
+  path: LocalPods/XPBase_WebView
+  knowledge: LocalPods/XPBase_WebView/.ai-knowledge/
+  claude_md: LocalPods/XPBase_WebView/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [WebView, H5容器, JSBridge]
+```
+
+```yaml
+- id: XPBase_RN
+  level: localpod
+  path: LocalPods/XPBase_RN
+  knowledge: LocalPods/XPBase_RN/.ai-knowledge/
+  claude_md: LocalPods/XPBase_RN/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [ReactNative, RN容器, 混合开发]
+```
+
+```yaml
+- id: XPBusiness_Car
+  level: localpod
+  path: LocalPods/XPBusiness_Car
+  knowledge: LocalPods/XPBusiness_Car/.ai-knowledge/
+  claude_md: LocalPods/XPBusiness_Car/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [车业务, 车控UI, BusinessCar]
+```
+
+```yaml
+- id: XPCenter_User
+  level: localpod
+  path: LocalPods/XPCenter_User
+  knowledge: LocalPods/XPCenter_User/.ai-knowledge/
+  claude_md: LocalPods/XPCenter_User/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [用户中心, 登录, 账号]
+```
+
+```yaml
+- id: XPKits
+  level: localpod
+  path: LocalPods/XPKits
+  knowledge: LocalPods/XPKits/.ai-knowledge/
+  claude_md: LocalPods/XPKits/.claude/CLAUDE.md
+  owner_repo: main
+  keywords: [工具集, Kits, 常用封装]
+```
+
+<!-- 以下为低优先级 LocalPod，仅登记不生成骨架文件 -->
+<!-- skeleton: pending -->
+
+```yaml
+- id: AZCategory
+  level: localpod
+  path: LocalPods/AZCategory
+  knowledge: LocalPods/AZCategory/.ai-knowledge/
+  owner_repo: main
+  keywords: [AZCategory, 三方分类]
+```
+
+```yaml
+- id: ReactiveObjC
+  level: localpod
+  path: LocalPods/ReactiveObjC
+  knowledge: LocalPods/ReactiveObjC/.ai-knowledge/
+  owner_repo: main
+  keywords: [ReactiveObjC, RAC, 响应式]
+```
+
+```yaml
+- id: RuntimeSafe
+  level: localpod
+  path: LocalPods/RuntimeSafe
+  knowledge: LocalPods/RuntimeSafe/.ai-knowledge/
+  owner_repo: main
+  keywords: [RuntimeSafe, 运行时防崩]
+```
+
+```yaml
+- id: UnityFramework
+  level: localpod
+  path: LocalPods/UnityFramework
+  knowledge: LocalPods/UnityFramework/.ai-knowledge/
+  owner_repo: main
+  keywords: [Unity, 3D渲染, UnityFramework]
+```
+
+```yaml
+- id: XPAlibabaResouces
+  level: localpod
+  path: LocalPods/XPAlibabaResouces
+  knowledge: LocalPods/XPAlibabaResouces/.ai-knowledge/
+  owner_repo: main
+  keywords: [阿里资源, AlibabaResources]
+```
+
+```yaml
+- id: XPAppBiz
+  level: localpod
+  path: LocalPods/XPAppBiz
+  knowledge: LocalPods/XPAppBiz/.ai-knowledge/
+  owner_repo: main
+  keywords: [App业务, AppBiz]
+```
+
+```yaml
+- id: XPBusiness_AI
+  level: localpod
+  path: LocalPods/XPBusiness_AI
+  knowledge: LocalPods/XPBusiness_AI/.ai-knowledge/
+  owner_repo: main
+  keywords: [AI, 智能助手, BusinessAI]
+```
+
+```yaml
+- id: XPBusiness_Charge
+  level: localpod
+  path: LocalPods/XPBusiness_Charge
+  knowledge: LocalPods/XPBusiness_Charge/.ai-knowledge/
+  owner_repo: main
+  keywords: [充电, 充电桩, BusinessCharge]
+```
+
+```yaml
+- id: XPBusiness_Community
+  level: localpod
+  path: LocalPods/XPBusiness_Community
+  knowledge: LocalPods/XPBusiness_Community/.ai-knowledge/
+  owner_repo: main
+  keywords: [社区, Community]
+```
+
+```yaml
+- id: XPBusiness_IM
+  level: localpod
+  path: LocalPods/XPBusiness_IM
+  knowledge: LocalPods/XPBusiness_IM/.ai-knowledge/
+  owner_repo: main
+  keywords: [IM, 即时通讯, 聊天]
+```
+
+```yaml
+- id: XPBusiness_Mine
+  level: localpod
+  path: LocalPods/XPBusiness_Mine
+  knowledge: LocalPods/XPBusiness_Mine/.ai-knowledge/
+  owner_repo: main
+  keywords: [我的, Mine, 个人中心]
+```
+
+```yaml
+- id: XPBusiness_Service
+  level: localpod
+  path: LocalPods/XPBusiness_Service
+  knowledge: LocalPods/XPBusiness_Service/.ai-knowledge/
+  owner_repo: main
+  keywords: [服务, Service, 售后]
+```
+
+```yaml
+- id: XPBusiness_Shop
+  level: localpod
+  path: LocalPods/XPBusiness_Shop
+  knowledge: LocalPods/XPBusiness_Shop/.ai-knowledge/
+  owner_repo: main
+  keywords: [商城, Shop]
+```
+
+```yaml
+- id: XPBusiness_Xpeng
+  level: localpod
+  path: LocalPods/XPBusiness_Xpeng
+  knowledge: LocalPods/XPBusiness_Xpeng/.ai-knowledge/
+  owner_repo: main
+  keywords: [小鹏业务, Xpeng, 品牌]
+```
+
+```yaml
+- id: XPCategory
+  level: localpod
+  path: LocalPods/XPCategory
+  knowledge: LocalPods/XPCategory/.ai-knowledge/
+  owner_repo: main
+  keywords: [分类, Category, 扩展方法]
+```
+
+```yaml
+- id: XPCenter_Message
+  level: localpod
+  path: LocalPods/XPCenter_Message
+  knowledge: LocalPods/XPCenter_Message/.ai-knowledge/
+  owner_repo: main
+  keywords: [消息中心, Message]
+```
+
+```yaml
+- id: XPCoverage
+  level: localpod
+  path: LocalPods/XPCoverage
+  knowledge: LocalPods/XPCoverage/.ai-knowledge/
+  owner_repo: main
+  keywords: [覆盖率, Coverage, 测试]
+```
+
+```yaml
+- id: XPMediaPlayer
+  level: localpod
+  path: LocalPods/XPMediaPlayer
+  knowledge: LocalPods/XPMediaPlayer/.ai-knowledge/
+  owner_repo: main
+  keywords: [媒体播放, MediaPlayer, 音视频]
+```
+
+```yaml
+- id: XPMirror
+  level: localpod
+  path: LocalPods/XPMirror
+  knowledge: LocalPods/XPMirror/.ai-knowledge/
+  owner_repo: main
+  keywords: [投屏, Mirror]
+```
+
+```yaml
+- id: XPNonModular
+  level: localpod
+  path: LocalPods/XPNonModular
+  knowledge: LocalPods/XPNonModular/.ai-knowledge/
+  owner_repo: main
+  keywords: [非模块化, NonModular, 遗留]
+```
+
+```yaml
+- id: XPWebRTC
+  level: localpod
+  path: LocalPods/XPWebRTC
+  knowledge: LocalPods/XPWebRTC/.ai-knowledge/
+  owner_repo: main
+  keywords: [WebRTC, 音视频通话]
+```
+
+```yaml
+- id: XRNBundleResources
+  level: localpod
+  path: LocalPods/XRNBundleResources
+  knowledge: LocalPods/XRNBundleResources/.ai-knowledge/
+  owner_repo: main
+  keywords: [RN资源包, BundleResources]
+```
+
+<!-- scaffold:end -->

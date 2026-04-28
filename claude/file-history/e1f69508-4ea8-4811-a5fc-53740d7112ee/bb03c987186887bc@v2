@@ -1,0 +1,27 @@
+# 多蓝牙天线 RSSI 聚合
+
+## 元信息
+- 触发关键词: ["多蓝牙件", "PLXPMultiBleManager", "蓝牙天线", "RSSI聚合", "PollingEffect"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+新车型可能配备多达 6 个蓝牙天线：
+
+| 位置 | 标识 |
+|------|------|
+| 主天线 | main |
+| 左侧 | left |
+| 右侧 | right |
+| 中间 | center |
+| 后左 | backLeft |
+| 后右 | backRight |
+
+**RSSI 聚合**: `PLXPMultiBleManager` 负责将多个天线的 RSSI 数据聚合为一个距离/方向判断。
+
+**方向识别**: `PLBLEVehicleDirection` 有 12 个方向（前/后/左/右/4 个 45°角/4 个车内位置）
+
+**核心规则**: 新车型接入时需确认天线布局，聚合算法可能需要针对性调参。
+
+**代码位置**: `submodule/XPPollingSDK/XPPollingSDK/sourceFile/PollingEffect/`

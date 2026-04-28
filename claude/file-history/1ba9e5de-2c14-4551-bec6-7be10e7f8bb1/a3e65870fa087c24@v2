@@ -1,0 +1,39 @@
+# XPBase_WebView — LocalPod 规范
+
+## 模块定位
+
+H5 容器/WebView 基础库，封装 WKWebView 提供 JSBridge 集成（XPCommonWKWebView）、复用池（XPWKWebViewPool）、纯净 WebView（XPPureWebView）、白屏检测（XPWebViewBlankPageChecker）和 APM 性能上报。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPBase_WebView/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+OC/Swift 混编。存量核心类 XPCommonWKWebView/XPCustomWKWebView/APM 为 OC；新增功能 XPWKWebViewPool/XPPureWebView/XPWebViewBlankPageChecker 为 Swift。新增代码用 Swift，`swift_version = "5.0"`。
+
+## Podspec 依赖约束
+
+依赖 XPBase_Common、XPBase_UI、XPCategory。JSBridge 通过 DSBridge-iOS 集成。私有源 `gitlab.x-peng.com`，语义化版本。无 subspec 划分。
+
+## 命名前缀与 API 稳定性
+
+OC 类 `XP` 前缀（XPCommonWKWebView/XPCustomWKWebView 等）。Swift 类同样 `XP` 前缀（XPWKWebViewPool/XPPureWebView）。公开 API 需保持稳定，WebView 复用池为单例模式。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止绕过 XPCommonWKWebView 直接创建 WKWebView（必须走复用池或通用封装）
+- 禁止在 XPPureWebView 中注入 JSBridge（它专门用于无 JSBridge 场景）
+- 禁止在 WebView 容器中嵌入业务逻辑（业务由上层 Module 通过 JSBridge 交互实现）
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

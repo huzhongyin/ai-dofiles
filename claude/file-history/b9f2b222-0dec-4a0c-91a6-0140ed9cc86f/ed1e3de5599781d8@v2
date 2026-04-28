@@ -1,0 +1,530 @@
+#!/bin/bash
+# 小鹏 iOS AI 开发规范自动化配置脚本
+# 版本：v1.0
+# 作者：小鹏iOS团队
+
+set -e
+
+echo "🚀 小鹏 iOS AI 开发规范配置开始..."
+
+# ================================
+# 1. 环境检查
+# ================================
+check_environment() {
+    echo "🔍 检查开发环境..."
+
+    # 检查 Xcode
+    if ! command -v xcodebuild &> /dev/null; then
+        echo "❌ 未安装 Xcode，请先安装 Xcode"
+        exit 1
+    fi
+
+    # 检查 Homebrew
+    if ! command -v brew &> /dev/null; then
+        echo "❌ 未安装 Homebrew，请先安装：https://brew.sh/"
+        exit 1
+    fi
+
+    # 检查 Claude Code
+    if ! command -v claude &> /dev/null; then
+        echo "❌ 未安装 Claude Code，请先安装"
+        exit 1
+    fi
+
+    echo "✅ 环境检查通过"
+}
+
+# ================================
+# 2. 安装必要工具
+# ================================
+install_tools() {
+    echo "📦 安装开发工具..."
+
+    # 安装 SwiftFormat
+    if ! command -v swiftformat &> /dev/null; then
+        echo "安装 SwiftFormat..."
+        brew install swiftformat
+    fi
+
+    # 安装 SwiftLint（可选）
+    if ! command -v swiftlint &> /dev/null; then
+        echo "安装 SwiftLint..."
+        brew install swiftlint
+    fi
+
+    echo "✅ 工具安装完成"
+}
+
+# ================================
+# 3. 配置小鹏规范模板
+# ================================
+setup_xiaopeng_templates() {
+    echo "📝 配置小鹏 iOS 规范模板..."
+
+    # 创建 Claude 模板目录
+    mkdir -p ~/.claude/templates/xiaopeng
+
+    # 下载小鹏规范模板
+    cat > ~/.claude/templates/xiaopeng/swift-class.md << 'EOF'
+# 小鹏 Swift 类模板
+
+```swift
+import Foundation
+
+/// {类功能描述}
+@objc({XP类名})
+public class {类名}: NSObject {
+
+    // MARK: - Properties
+
+    /// {委托说明}
+    public weak var delegate: {类名}Delegate?
+
+    // MARK: - Public Methods
+
+    /// {方法说明}
+    /// - Parameters:
+    ///   - parameter: {参数说明}
+    ///   - success: 成功回调
+    ///   - failed: 失败回调
+    public func {方法名}(parameter: {参数类型},
+                        success: @escaping () -> Void,
+                        failed: @escaping ({错误类型}) -> Void) {
+
+        // 实现逻辑
+        DispatchQueue.global().async { [weak self] in
+            // 后台处理
+
+            DispatchQueue.main.async {
+                // 主线程回调
+                success()
+            }
+        }
+    }
+
+    // MARK: - Private Methods
+
+    private func {私有方法名}() {
+        // 私有实现
+    }
+}
+
+// MARK: - {类名}Delegate
+
+@objc public protocol {类名}Delegate: AnyObject {
+    /// {委托方法说明}
+    func {类名}DidComplete()
+}
+```
+EOF
+
+    # 配置车控指令模板
+    cat > ~/.claude/templates/xiaopeng/vehicle-command.md << 'EOF'
+# 小鹏车控指令模板
+
+```swift
+import Foundation
+
+/// 车控指令枚举
+@objc(XP{命令类型}Command)
+public enum {命令类型}Command: Int, CustomStringConvertible {
+    case none = 0
+    case {具体命令} = 1
+
+    public var name: String {
+        switch self {
+        case .none: return "None"
+        case .{具体命令}: return "{具体命令}"
+        }
+    }
+
+    public var description: String {
+        return "{命令类型}Command:(\(rawValue)) ." + name
+    }
+}
+
+/// 车控管理器
+@objc(XP{功能}Manager)
+public class {功能}Manager: NSObject {
+
+    /// 发送车控指令
+    /// - Parameters:
+    ///   - command: 车控指令
+    ///   - extParams: 扩展参数
+    ///   - success: 成功回调
+    ///   - failed: 失败回调（含超时）
+    public func sendCommand(command: {命令类型}Command,
+                           extParams: [String: Any]? = nil,
+                           success: @escaping VehicleSuccessCallback,
+                           failed: @escaping VehicleFailedCallback<VehicleError>) {
+
+        // 检查连接状态
+        guard connectionManager.isConnected else {
+            // 尝试重连（5秒超时）
+            connectionManager.connect(timeout: 5.0) { [weak self] result in
+                switch result {
+                case .success:
+                    self?.executeCommand(command, extParams: extParams, success: success, failed: failed)
+                case .failure(let error):
+                    DispatchQueue.main.async {
+                        failed(VehicleError.connectionFailed(error))
+                    }
+                }
+            }
+            return
+        }
+
+        executeCommand(command, extParams: extParams, success: success, failed: failed)
+    }
+
+    private func executeCommand(_ command: {命令类型}Command,
+                               extParams: [String: Any]?,
+                               success: @escaping VehicleSuccessCallback,
+                               failed: @escaping VehicleFailedCallback<VehicleError>) {
+
+        Log.i("执行车控指令: \(command)")
+
+        // 设置超时处理
+        let timeoutTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: false) { _ in
+            DispatchQueue.main.async {
+                failed(VehicleError.timeout)
+            }
+        }
+
+        // 发送指令
+        vehicleService.send(command: command, extParams: extParams) { [weak self] result in
+            timeoutTimer.invalidate()
+
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let data):
+                    Log.i("车控指令执行成功: \(command)")
+                    success()
+                case .failure(let error):
+                    Log.e("车控指令执行失败: \(command), error: \(error)")
+                    failed(VehicleError.executionFailed(error))
+                }
+            }
+        }
+    }
+}
+```
+EOF
+
+    echo "✅ 小鹏规范模板配置完成"
+}
+
+# ================================
+# 4. 配置项目设置
+# ================================
+setup_project_config() {
+    echo "⚙️  配置项目设置..."
+
+    # 创建项目 Claude 配置
+    mkdir -p .claude
+
+    # 配置小鹏规范检查
+    cat > .claude/settings.local.json << 'EOF'
+{
+  "xiaopengIOSStandards": {
+    "enabled": true,
+    "autoCheck": true,
+    "strictMode": false,
+    "rules": {
+      "codeStyle": true,
+      "naming": true,
+      "memoryManagement": true,
+      "architecture": true,
+      "carControlPattern": true
+    }
+  },
+  "templates": {
+    "swift": "xiaopeng/swift-class",
+    "vehicleCommand": "xiaopeng/vehicle-command"
+  },
+  "aiTools": {
+    "claudeCode": {
+      "primaryRole": "codeGeneration",
+      "codeReview": true,
+      "architectureConsult": true
+    },
+    "kimi": {
+      "primaryRole": "styleCheck",
+      "autoFormat": true
+    }
+  }
+}
+EOF
+
+    # 配置 SwiftFormat 规则
+    cat > .swiftformat << 'EOF'
+# 小鹏 iOS SwiftFormat 配置
+
+--swiftversion 5.5
+
+# 缩进
+--indent 4
+--indentcase false
+--indentstrings true
+
+# 空格
+--commas always
+--semicolons never
+--operators infix
+--ranges spaced
+
+# 大括号
+--allman false
+--wraparguments preserve
+--closingparen balanced
+
+# 其他
+--header ignore
+--disable unusedArguments
+EOF
+
+    # 配置 SwiftLint 规则（可选）
+    if [ -f .swiftlint.yml ]; then
+        echo "SwiftLint 配置已存在，跳过创建"
+    else
+        cat > .swiftlint.yml << 'EOF'
+# 小鹏 iOS SwiftLint 配置
+
+disabled_rules:
+  - trailing_whitespace
+  - vertical_whitespace
+
+opt_in_rules:
+  - closure_end_indentation
+  - closure_spacing
+  - empty_count
+  - force_unwrapping
+  - implicit_return
+  - redundant_nil_coalescing
+
+included:
+  - Sources
+  - XPVehicleSDK
+  - XPCarControlCore
+
+excluded:
+  - Pods
+  - Build
+  - DerivedData
+
+line_length:
+  warning: 120
+  error: 150
+
+identifier_name:
+  min_length: 1
+  max_length: 50
+
+type_name:
+  min_length: 3
+  max_length: 40
+
+custom_rules:
+  xiaopeng_objc_prefix:
+    name: "XP前缀规则"
+    regex: '@objc\([^X][^P]\w*\)'
+    message: "导出给OC的类必须使用XP前缀"
+    severity: error
+
+  weak_delegate:
+    name: "Delegate必须是weak"
+    regex: '(var|let)\s+\w*[Dd]elegate\s*:\s*\w+\??\s*='
+    message: "delegate属性必须声明为weak"
+    severity: warning
+EOF
+    fi
+
+    echo "✅ 项目配置完成"
+}
+
+# ================================
+# 5. 配置 Git Hooks
+# ================================
+setup_git_hooks() {
+    echo "🔗 配置 Git Hooks..."
+
+    # 创建 pre-commit hook
+    mkdir -p .git/hooks
+
+    cat > .git/hooks/pre-commit << 'EOF'
+#!/bin/bash
+# 小鹏 iOS 代码提交前检查
+
+echo "🔍 执行小鹏 iOS 规范检查..."
+
+# 1. SwiftFormat 检查
+if command -v swiftformat &> /dev/null; then
+    echo "📝 检查代码格式..."
+    swiftformat --lint Sources/ XPVehicleSDK/ XPCarControlCore/
+
+    if [ $? -ne 0 ]; then
+        echo "❌ 代码格式不符合规范，请运行 swiftformat 修复"
+        exit 1
+    fi
+fi
+
+# 2. SwiftLint 检查
+if command -v swiftlint &> /dev/null; then
+    echo "🧹 运行 SwiftLint 检查..."
+    swiftlint --strict
+
+    if [ $? -ne 0 ]; then
+        echo "❌ SwiftLint 检查失败，请修复警告后重新提交"
+        exit 1
+    fi
+fi
+
+# 3. 自定义小鹏规范检查
+echo "🚗 检查小鹏特有规范..."
+
+# 检查是否有未添加 XP 前缀的 @objc 导出
+objc_exports=$(git diff --cached --name-only | xargs grep -l "@objc(" | head -20)
+if [ -n "$objc_exports" ]; then
+    for file in $objc_exports; do
+        if grep -q "@objc([^X][^P]" "$file"; then
+            echo "❌ 文件 $file 中的 @objc 导出缺少 XP 前缀"
+            exit 1
+        fi
+    done
+fi
+
+# 检查是否有未使用 weak 的 delegate
+delegate_files=$(git diff --cached --name-only | xargs grep -l "delegate.*:" | head -20)
+if [ -n "$delegate_files" ]; then
+    for file in $delegate_files; do
+        if grep -q "var.*delegate.*:" "$file" && ! grep -q "weak.*var.*delegate" "$file"; then
+            echo "⚠️  文件 $file 中的 delegate 建议使用 weak 声明"
+        fi
+    done
+fi
+
+echo "✅ 代码规范检查通过"
+exit 0
+EOF
+
+    chmod +x .git/hooks/pre-commit
+
+    echo "✅ Git Hooks 配置完成"
+}
+
+# ================================
+# 6. 创建快捷脚本
+# ================================
+create_helper_scripts() {
+    echo "🛠  创建辅助脚本..."
+
+    mkdir -p scripts
+
+    # AI 辅助代码检查脚本
+    cat > scripts/ai_code_check.sh << 'EOF'
+#!/bin/bash
+# AI 辅助代码检查脚本
+
+echo "🤖 启动 AI 辅助代码检查..."
+
+# 1. 使用 Claude Code 检查架构
+echo "🏗  架构检查中..."
+echo "请在 Claude Code 中运行："
+echo "检查以下代码是否符合小鹏iOS架构规范："
+echo "- 依赖关系：Function -> Core -> Utilities"
+echo "- 模块职责：XiaopengVehicle 不超过20行业务代码"
+echo "- 接口设计：与 Android 保持一致"
+
+# 2. 生成 Kimi 检查提示
+echo "✏️  生成 Kimi 代码风格检查提示..."
+
+cat << 'KIMI_PROMPT'
+请检查以下 Swift/OC 代码是否符合小鹏 iOS 规范：
+
+检查项：
+✓ 命名规范：类名、变量名、XP前缀
+✓ 代码格式：冒号空格、大括号、缩进
+✓ 内存管理：weak delegate、[weak self]
+✓ 注释质量：成员变量、公开接口
+✓ 车控模式：双回调、能力判断
+
+请列出：🔴必须修复 🟡建议改进 🟢可选优化
+
+代码：
+[在此粘贴要检查的代码]
+KIMI_PROMPT
+
+echo ""
+echo "📋 请将上述提示词复制到 Kimi 中使用"
+EOF
+
+    chmod +x scripts/ai_code_check.sh
+
+    # 代码格式化脚本
+    cat > scripts/format_code.sh << 'EOF'
+#!/bin/bash
+# 代码格式化脚本
+
+echo "🎨 格式化代码..."
+
+# Swift 代码格式化
+if command -v swiftformat &> /dev/null; then
+    echo "格式化 Swift 代码..."
+    swiftformat Sources/ XPVehicleSDK/ XPCarControlCore/
+else
+    echo "⚠️  SwiftFormat 未安装，跳过 Swift 代码格式化"
+fi
+
+# 运行 SwiftLint 自动修复
+if command -v swiftlint &> /dev/null; then
+    echo "运行 SwiftLint 自动修复..."
+    swiftlint --fix
+else
+    echo "⚠️  SwiftLint 未安装，跳过自动修复"
+fi
+
+echo "✅ 代码格式化完成"
+EOF
+
+    chmod +x scripts/format_code.sh
+
+    echo "✅ 辅助脚本创建完成"
+}
+
+# ================================
+# 主执行流程
+# ================================
+main() {
+    echo "════════════════════════════════════"
+    echo "  小鹏 iOS AI 开发规范配置工具"
+    echo "         Version 1.0"
+    echo "════════════════════════════════════"
+    echo
+
+    check_environment
+    install_tools
+    setup_xiaopeng_templates
+    setup_project_config
+    setup_git_hooks
+    create_helper_scripts
+
+    echo
+    echo "🎉 配置完成！"
+    echo
+    echo "📚 下一步操作："
+    echo "1. 重启 Claude Code 以加载新配置"
+    echo "2. 运行 ./scripts/ai_code_check.sh 测试AI工具"
+    echo "3. 运行 ./scripts/format_code.sh 格式化现有代码"
+    echo "4. 查看 ~/.claude/templates/xiaopeng/ 中的模板文件"
+    echo
+    echo "🔗 快速链接："
+    echo "- 规范文档: .claude/xiaopeng-ios-standards.md"
+    echo "- 项目配置: .claude/settings.local.json"
+    echo "- 格式配置: .swiftformat"
+    echo "- Git Hooks: .git/hooks/pre-commit"
+    echo
+    echo "❓ 如有问题，请查阅快速上手指南或联系iOS团队"
+}
+
+# 执行主流程
+main "$@"

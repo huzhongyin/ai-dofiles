@@ -1,0 +1,230 @@
+# 编码标准详细规范
+
+## 目录
+- [Swift 命名规范](#swift-命名规范)
+- [Objective-C 命名规范](#objective-c-命名规范)
+- [文件组织规范](#文件组织规范)
+- [安全与内存规范](#安全与内存规范)
+- [线程安全规范](#线程安全规范)
+- [自定义规则配置](#自定义规则配置)
+
+---
+
+## Swift 命名规范
+
+| 元素 | 规范 | 示例 |
+|------|------|------|
+| 类/结构体/枚举/协议 | UpperCamelCase | `VehicleController`, `ChargingState` |
+| 方法/属性/变量 | lowerCamelCase | `fetchVehicleStatus()`, `isCharging` |
+| 常量 | UpperCamelCase 或 UPPER_CASE | `MaxRetryCount`, `MAX_RETRY_COUNT` |
+| 枚举值 | lowerCamelCase | `.connected`, `.disconnected` |
+
+**常见违规示例**：
+```swift
+// ❌ 违规
+class myViewController: UIViewController {}
+var VehicleSpeed: Int = 0
+func Get_vehicle_info() {}
+
+// ✅ 正确
+class MyViewController: UIViewController {}
+var vehicleSpeed: Int = 0
+func getVehicleInfo() {}
+```
+
+---
+
+## Objective-C 命名规范
+
+**核心规则**：所有自定义类必须以 `XP` 前缀开头。
+
+```objc
+// ❌ 违规 - 缺少XP前缀
+@interface VehicleController : NSObject
+@end
+
+// ✅ 正确
+@interface XPVehicleController : NSObject
+@end
+```
+
+**方法命名**：
+```objc
+// ❌ 违规 - 命名不描述性
+- (void)doStuff;
+
+// ✅ 正确
+- (void)fetchVehicleStatusWithCompletion:(void(^)(XPVehicleStatus *status, NSError *error))completion;
+```
+
+**属性访问**：
+```objc
+// ❌ 违规 - 直接访问实例变量
+self->_speed = 60;
+
+// ✅ 正确 - 使用点语法
+self.speed = 60;
+```
+
+---
+
+## 文件组织规范
+
+### 版权声明（每个文件必须包含）
+
+```swift
+//
+//  FileName.swift
+//  XPMotors
+//
+//  Created by [Author] on [Date].
+//  Copyright © 2024 XPeng Motors. All rights reserved.
+//
+```
+
+### Import 语句顺序
+
+```swift
+// 1. 系统框架
+import UIKit
+import Foundation
+
+// 2. 第三方库（空行分隔）
+import Alamofire
+import RxSwift
+
+// 3. 项目内部模块（空行分隔）
+import XPBase_Common
+import XPVehicleSDK
+```
+
+### 文件结构推荐顺序
+
+```swift
+// MARK: - Properties
+// MARK: - Lifecycle
+// MARK: - Public Methods
+// MARK: - Private Methods
+// MARK: - Actions
+// MARK: - Extensions
+```
+
+---
+
+## 安全与内存规范
+
+### ARC 规范
+```objc
+// ❌ 禁止
+[object retain];
+[object release];
+[object autorelease];
+
+// ✅ 使用ARC，编译器自动管理
+```
+
+### 循环引用预防
+```swift
+// ❌ 强引用循环
+class ViewModel {
+    var completion: (() -> Void)?
+
+    func load() {
+        fetchData { [self] in  // 强引用self
+            self.completion?()
+        }
+    }
+}
+
+// ✅ 使用 [weak self]
+fetchData { [weak self] in
+    guard let self = self else { return }
+    self.completion?()
+}
+```
+
+### 敏感API错误处理
+```swift
+// ❌ 忽略错误
+try! JSONDecoder().decode(Model.self, from: data)
+
+// ✅ 处理错误
+do {
+    let model = try JSONDecoder().decode(Model.self, from: data)
+    handle(model)
+} catch {
+    logger.error("Decode failed: \(error)")
+    showErrorToUser(error)
+}
+```
+
+---
+
+## 线程安全规范
+
+### UI操作必须在主线程
+```swift
+// ❌ 违规 - 后台线程更新UI
+URLSession.shared.dataTask(with: url) { data, _, _ in
+    self.label.text = "Done"  // 危险！
+}.resume()
+
+// ✅ 正确
+URLSession.shared.dataTask(with: url) { data, _, _ in
+    DispatchQueue.main.async {
+        self.label.text = "Done"
+    }
+}.resume()
+```
+
+### 车控模块线程约束
+车控SDK（XPVehicleSDK）中：
+- 所有状态更新回调在子线程，UI绑定必须切换主线程
+- 核心API调用需加超时保护（推荐30s）
+- 状态机切换需要加锁保护
+
+```swift
+// 车控模块推荐模式
+private let stateQueue = DispatchQueue(label: "com.xpeng.vehicle.state")
+private var vehicleState: XPVehicleState = .unknown
+
+func updateState(_ newState: XPVehicleState) {
+    stateQueue.async { [weak self] in
+        self?.vehicleState = newState
+        DispatchQueue.main.async {
+            self?.notifyStateChange(newState)
+        }
+    }
+}
+```
+
+---
+
+## 自定义规则配置
+
+在 `config/xp_ai_coding_config.yaml` 中添加：
+
+```yaml
+standards_config:
+  rule_sets:
+    xiaopeng_specific:
+      enabled: true
+      custom_rules:
+        - id: xp_custom_naming
+          name: "小鹏自定义命名规范"
+          pattern: "^XP[A-Z][a-zA-Z0-9]*$"
+          severity: error
+          file_patterns: ["**/*.h"]
+
+        - id: xp_no_hardcoded_url
+          name: "禁止硬编码API地址"
+          pattern: "https?://[a-zA-Z0-9./]+"
+          severity: warning
+          file_patterns: ["**/*.swift", "**/*.m"]
+
+        - id: xp_log_format
+          name: "日志格式规范"
+          description: "使用XPLogger而非NSLog/print"
+          severity: info
+          file_patterns: ["**/*.m", "**/*.swift"]
+```

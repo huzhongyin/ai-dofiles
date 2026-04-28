@@ -1,0 +1,161 @@
+# 模块名: XPVehicleExt
+
+## 模块职责
+XPVehicleExt 是 XPVehicleSDK 的扩展模块，提供车辆 SDK 核心功能之外的业务扩展能力。通过 Swift extension 模式对 `XPVehicleExt` 类进行功能扩展，涵盖蓝牙钥匙数据管理、Xcombo 场景定制、AI 日历同步、行程报告、充电记录、小组件车态、WiFi 连接、文件传输（相机）、用户配置等横切面功能。它是 XPVehicleSDK 与 App 层之间的业务桥梁层。
+
+## 语言构成
+- Swift 文件数: 65（主体）
+- OC 文件数: 20（.m/.mm + .h，主要在 FileTransfer 和 Xcombo 子模块）
+- 混编说明: Swift 为主体，FileTransfer 子模块为纯 OC（TCP Socket 文件传输），Xcombo 有 OC 单例 + Swift extension 混编
+
+## 目录结构
+```
+XPVehicleExt/
+├── AiCalendar/           # AI 日历同步（系统日历 → 车端云端）
+│   ├── AiCalendarSyncManager.swift      # 核心管理器（单例，开关同步 + 事件上传）
+│   ├── AiCalendarDataProvider.swift      # 系统日历数据提取
+│   ├── AiCalendarRequestHandler.swift    # HTTP 请求（async/await）
+│   ├── RecurrenceRuleConverter.swift     # iCal 循环规则转换
+│   ├── XPCalendar.swift                 # 日历模型
+│   └── ZipLib/                          # ZIP 压缩（内嵌 ZIPFoundation）
+├── BLEKey/               # 蓝牙钥匙数据模型
+│   ├── BleKeyCard.swift                 # 钥匙卡数据模型（GRDB 持久化）
+│   ├── CertKeyCard.swift                # 证书钥匙卡模型
+│   └── CertKeyMessage.swift             # 证书钥匙消息模型
+├── BleCheckManager/      # 蓝牙检测管理
+│   ├── BleCheckManager.swift
+│   └── XPVehicleExt+BleCheckManager.swift
+├── CarKey/               # Apple CarKey 交互协议
+│   ├── CarKeyPassInteraction.swift      # CarKey 配对/分享协议
+│   ├── CarKeyPassInteractionFlow.swift  # CarKey 流程
+│   └── CarKeyServiceProtocol.swift      # 钥匙能力上传/绑定协议
+├── DBModel/              # 数据库管理
+│   ├── XPDBManager.swift                # GRDB 数据库客户端（注册 4 张表）
+│   ├── XPDBProxyHelper.swift            # 数据库代理
+│   └── ChargeSearchHistoryModel.swift   # 充电搜索历史模型
+├── Ext/                  # XPVehicleExt 扩展功能（HTTP API 调用）
+│   ├── ChargingRecord/                  # 充电记录、权限请求、扫码登录车
+│   ├── Widget/                          # 小组件车态请求
+│   ├── TripsAndEnergyReport/            # 行程报告 + 能耗报告
+│   └── SceneSetting/                    # 用户开关配置（灵动岛/泊车/哨兵等）
+├── FileTransfer/         # 车端文件传输（OC，TCP Socket）
+│   ├── XPVehicleFileTransferManager.h/m # 文件传输管理器
+│   ├── XPCarFileTransferTcpSocket.h/m   # TCP Socket 实现
+│   └── XPCarImageManager.h/m            # 车端相机图片管理
+├── MonaSDKSpecialManager/ # Mona 车型特殊适配
+│   ├── MonaSDKSpecialManager.swift      # Mona 特殊逻辑
+│   └── PollingDistance.swift             # Mona Polling 距离配置
+├── Utilities/            # 工具类
+│   └── VEVeihcleSDKTool.swift           # SDK 数据快捷访问（uid/vin/vehicleType）
+├── VehicleCameraManager/ # 车端相机管理
+│   ├── VehicleCameraManager.swift       # 相机功能管理
+│   ├── VehicleCameraRequest.swift       # 相机 HTTP 请求
+│   └── XPVehicleExt+VehicleCameraManager.swift
+├── Warrant/              # 保修（预留）
+│   └── Warrant.swift                    # 空类占位
+├── Wifi/                 # WiFi 连接管理
+│   └── XPConnectWiFiManager.swift       # NEHotspotConfiguration WiFi 连接
+└── Xcombo/               # 场景定制（Xcombo）
+    ├── VEXcomboInstance.h/m              # OC 单例（持久化 ActionList）
+    ├── XPVehicleExt+xcombo.swift        # 场景 CRUD HTTP API
+    └── VESceneResp.swift                # 场景响应模型
+```
+
+## 核心 API
+
+| 方法/类 | 语言 | 用途 | 所属子模块 |
+|---------|------|------|-----------|
+| `BleKeyCard` | Swift | 蓝牙钥匙卡数据模型，支持 GRDB 持久化 | BLEKey |
+| `BleKeyCard.localCards()` | Swift | 查询当前用户所有有效钥匙 | BLEKey |
+| `BleKeyCard.isValid()` | Swift | 判断钥匙是否有效（含 SDK 2nd car 逻辑） | BLEKey |
+| `BleKeyCard.save() / deleteCard()` | Swift | 钥匙增删改查 | BLEKey |
+| `AiCalendarSyncManager.shared` | Swift | AI 日历同步单例管理器 | AiCalendar |
+| `AiCalendarSyncManager.startService()` | Swift | 开始监听车辆信息变化，触发日历同步 | AiCalendar |
+| `XPVehicleExt.getXComboMine()` | Swift | 获取"我的定制"场景列表 | Xcombo |
+| `XPVehicleExt.activeScene()` | Swift | 启用/停用 Xcombo 场景 | Xcombo |
+| `XPVehicleExt.requestTripList()` | Swift | 请求行程列表 | Ext/TripsReport |
+| `XPVehicleExt.requestWidgetVehicleState()` | Swift | 请求小组件车态数据（HTTP） | Ext/Widget |
+| `XPVehicleExt.requestLatestChargingRecord()` | Swift | 请求最近充电记录 | Ext/ChargingRecord |
+| `XPVehicleExt.updateUserConfig()` | Swift | 更新用户开关配置 | Ext/SceneSetting |
+| `XPVehicleExt.loginOnCar()` | Swift | 扫码登录车端 | Ext/ChargingRecord |
+| `XPConnectWiFiManager.connectWiFi()` | Swift | 连接 WiFi（NEHotspotConfiguration） | Wifi |
+| `CarKeyPassInteraction` | Swift | Apple CarKey 配对/分享协议 | CarKey |
+| `CarKeyServiceProtocol` | Swift | 钥匙能力上传/绑定 | CarKey |
+| `XPDBManager.client` | Swift | GRDB 数据库统一客户端 | DBModel |
+| `XPVehicleFileTransferManager` | OC | 车端文件传输管理器 | FileTransfer |
+
+## 参数说明
+- `vin: String` — 车辆 VIN 码（17 位字符串）
+- `sceneId: String` — Xcombo 场景 ID
+- `vehicleTypeCode: String` — 车型编码（2 位字母代码，如 ED/DM/FF）
+- `qrCode: String` — 扫码登录二维码内容
+- `BleKeyCardStatus` — 钥匙状态枚举（16 种状态：正常/待激活/挂失/锁定/注销等）
+- `BleKeyCardType` — 钥匙类型枚举（16 种：BLE/NFC/CCC/ICCOA/ICCE 多协议支持）
+
+## 依赖关系
+- **上游依赖**:
+  - `XPVehicleSDK` — 核心依赖（VehicleHttpRequest、VehicleError、XPVehicleSDK.shared、VehicleEvent 等）
+  - `GRDB` / `XPDBClient` — 数据库持久化（BleKeyCard、CertKeyCard 等）
+  - `bBox` — 日志框架（BBLog）
+  - `MMKV` — 键值存储（日历开关、Polling 配置）
+  - `EventKit` — 系统日历读取
+  - `Combine` — 响应式编程（AI 日历模块）
+  - `NetworkExtension` — WiFi 连接
+  - `XPDeviceInfo` — 设备信息
+- **下游被依赖**:
+  - `XiaoPengQiChe/Modules/BLEKey/` — 蓝牙钥匙 UI
+  - `XiaoPengQiChe/Modules/Charge/` — 充电记录
+  - `XiaoPengQiChe/Services/Widget/` — 小组件
+  - `XiaoPengQiChe/Services/LiveActivity/` — 灵动岛
+  - App 层各种依赖 Xcombo/行程/相机等功能的模块
+
+## OC/Swift 互操作
+- Swift 入口: `XPVehicleExt` 类（通过 extension 扩展功能），所有公开 API 添加 `@objc` 标注
+- OC 桥接:
+  - `VEXcomboInstance` — OC 单例，供 Swift 调用
+  - `BleKeyCard` 使用 `@objc(XPBLEKeyCard)` 暴露给 OC
+  - `BleKeyCardStatus` 使用 `@objc(XPBLEKeyCardStatus)` 暴露给 OC
+  - `CarKeyPassInteraction` 使用 `@objc(XPCarKeyPassInteraction)` 暴露给 OC
+  - FileTransfer 子模块为纯 OC，通过 Bridging-Header 暴露给 Swift
+
+## 常见用法
+
+### 查询本地蓝牙钥匙
+```swift
+let cards = BleKeyCard.localUserCards(withVin: vin)
+let validCards = cards.filter { $0.isValid() }
+```
+
+### 请求小组件车态
+```swift
+XPVehicleExt.requestWidgetVehicleState(vin: vin, vehicleTypeCode: "ED") { response in
+    guard let state = response.data as? WidgetVehicleState else { return }
+    // 更新小组件
+} failure: { error in
+    // 处理错误
+}
+```
+
+### AI 日历同步
+```swift
+AiCalendarSyncManager.shared.startService()
+// 会自动监听 vehicleInfoUpdatedEvent 和 extInfoChangedEvent
+// 前后台切换时自动同步日历到云端
+```
+
+### Xcombo 场景操作
+```swift
+XPVehicleExt.getXComboMine { scenes, isSuccess in
+    guard isSuccess, let scenes = scenes else { return }
+    // 显示场景列表
+}
+```
+
+## 已知限制/陷阱
+- **BleKeyCard.isValid()** 内部对 SDK 2nd car 做了特殊判断：如果当前车是 `isOpenedVehicleTypeCode`，则改用 `digitalKeyManager?.digitalKey(keyCardType: .SAFE)` 判断有效性
+- **AI 日历同步依赖 MD5 比对**：本地日历数据转 JSON 后计算 MD5 与云端比较，MD5 一致则跳过上传。如果 JSON 序列化顺序变化（已用 `.sortedKeys` 保障），可能导致误判
+- **FileTransfer 为纯 OC 模块**：使用 TCP Socket 与车端直连传输文件（相机照片），不走 MQTT/BLE 通道
+- **AiCalendarSyncManager 使用 `eventStore.calendars(for:)` 获取日历**：首次调用可能返回空数组，代码内已做 1 秒延迟重试
+- **VEVeihcleSDKTool 类名拼写错误**（Veihcle → Vehicle），存量代码不建议修改以免影响引用
+- **Xcombo API 的 `xcomboVehicleType()` 会将车型名称末尾字母转小写**（如 "P7i" → "P7i"），这是业务约定的转换规则
+- **CertKeyMessage 和 CertKeyCard** 是蓝牙证书钥匙的报文和卡片模型，注册在同一个 GRDB 数据库中

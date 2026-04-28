@@ -1,0 +1,30 @@
+# 车辆事件系统
+
+## 元信息
+- 触发关键词: ["VehicleEvent", "subscribe", "unsubscribe", "事件订阅", "观察者模式", "vehicleStateChangedEvent"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+车控 SDK 使用自定义的 `VehicleEvent<T>` 泛型事件系统（观察者模式）：
+
+**使用方式**:
+```swift
+// 订阅
+presenter?.vehicleStateChangedEvent.subscribe(self) { notiObj in
+    let diffState = notiObj.diff
+    let fullState = notiObj.state
+}
+
+// 取消订阅
+presenter?.vehicleStateChangedEvent.unsubscribe(self)
+```
+
+**注意**: 这是自定义实现，**不是** NotificationCenter，**也不是** Combine。使用 `subscribe/unsubscribe` 管理。
+
+**事件分布**: 
+- `BaseVehicle` 上有 10+ 事件（vehicleState/ble/mqtt/online/digitalKey/ota/polling 等）
+- `VehicleManager` 上也有对应事件（统一转发当前车的事件）+ 额外的 vehicleList/switch 事件
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Event/`（VehicleEvent 定义）+ `Function/Presenter/`（事件发布）

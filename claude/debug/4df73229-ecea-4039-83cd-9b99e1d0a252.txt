@@ -1,0 +1,92 @@
+2026-03-31T12:59:15.061Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.061Z [DEBUG] MDM settings load completed in 8ms
+2026-03-31T12:59:15.087Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.087Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-03-31T12:59:15.099Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.099Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-03-31T12:59:15.099Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.099Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-03-31T12:59:15.099Z [DEBUG] [init] configureGlobalMTLS starting
+2026-03-31T12:59:15.099Z [DEBUG] [init] configureGlobalMTLS complete
+2026-03-31T12:59:15.099Z [DEBUG] [init] configureGlobalAgents starting
+2026-03-31T12:59:15.099Z [DEBUG] [init] configureGlobalAgents complete
+2026-03-31T12:59:15.100Z [DEBUG] Error log sink initialized
+2026-03-31T12:59:15.101Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.101Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-03-31T12:59:15.101Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.101Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-03-31T12:59:15.101Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.101Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-03-31T12:59:15.101Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-03-31T12:59:15.103Z [DEBUG] Git remote URL: null
+2026-03-31T12:59:15.103Z [DEBUG] No git remote URL found
+2026-03-31T12:59:15.103Z [DEBUG] [ToolSearch:optimistic] mode=tst, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-03-31T12:59:15.103Z [DEBUG] [STARTUP] Running setup()...
+2026-03-31T12:59:15.104Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.104Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-03-31T12:59:15.104Z [DEBUG] Loading skills from: managed=/Library/Application Support/ClaudeCode/.claude/skills, user=/Users/xpeng/.claude/skills, project=[]
+2026-03-31T12:59:15.104Z [DEBUG] Error log sink initialized
+2026-03-31T12:59:15.105Z [DEBUG] [Claude in Chrome] Found chrome profiles: Default
+2026-03-31T12:59:15.106Z [DEBUG] Loaded 17 installed plugins from /Users/xpeng/.claude/plugins/installed_plugins.json
+2026-03-31T12:59:15.106Z [DEBUG] Found 0 plugins (0 enabled, 0 disabled)
+2026-03-31T12:59:15.106Z [DEBUG] getPluginSkills: Processing 0 enabled plugins
+2026-03-31T12:59:15.106Z [DEBUG] Registered 0 hooks from 0 plugins
+2026-03-31T12:59:15.106Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.106Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-03-31T12:59:15.106Z [DEBUG] Total plugin skills loaded: 0
+2026-03-31T12:59:15.106Z [DEBUG] Total plugin commands loaded: 0
+2026-03-31T12:59:15.107Z [DEBUG] Failed to acquire lock for 2.1.69: Error: EACCES: permission denied, open '/Users/xpeng/.local/state/claude/locks/2.1.69.lock.tmp.45171.1774961955107'
+2026-03-31T12:59:15.107Z [ERROR] Error: Error: NON-FATAL: Lock acquisition failed for /Users/xpeng/.local/share/claude/versions/2.1.69 (expected in multi-process scenarios)
+    at NS_ (/$bunfs/root/src/entrypoints/cli.js:2397:2066)
+    at zpR (/$bunfs/root/src/entrypoints/cli.js:2397:1210)
+    at processTicksAndRejections (native:7:39)
+2026-03-31T12:59:15.108Z [DEBUG] [STARTUP] setup() completed in 5ms
+2026-03-31T12:59:15.108Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-03-31T12:59:15.111Z [DEBUG] Total plugin agents loaded: 0
+2026-03-31T12:59:15.111Z [DEBUG] Loaded 32 unique skills (32 unconditional, 0 conditional, managed: 0, user: 24, project: 0, additional: 0, legacy commands: 8)
+2026-03-31T12:59:15.111Z [DEBUG] getSkills returning: 32 skill dir commands, 0 plugin skills, 5 bundled skills, 0 builtin plugin skills
+2026-03-31T12:59:15.111Z [DEBUG] [STARTUP] Commands and agents loaded in 3ms
+2026-03-31T12:59:15.112Z [DEBUG] [STARTUP] Running showSetupScreens()...
+2026-03-31T12:59:15.113Z [DEBUG] [keybindings] KeybindingSetup initialized with 104 bindings, 0 warnings
+2026-03-31T12:59:15.113Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.113Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-03-31T12:59:15.113Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.113Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-03-31T12:59:15.114Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.114Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-03-31T12:59:15.114Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.114Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-03-31T12:59:15.114Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.114Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-03-31T12:59:15.114Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:15.114Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-03-31T12:59:15.121Z [DEBUG] [keybindings] Watching for changes to /Users/xpeng/.claude/keybindings.json
+2026-03-31T12:59:15.131Z [DEBUG] [Claude in Chrome] Extension not found in any browser
+2026-03-31T12:59:17.801Z [DEBUG] Grove: Using fresh cached config
+2026-03-31T12:59:17.810Z [DEBUG] Not in a GitHub repository, skipping path mapping update
+2026-03-31T12:59:17.810Z [DEBUG] [Perfetto] initializePerfettoTracing called, env value: undefined
+2026-03-31T12:59:17.810Z [DEBUG] [3P telemetry] isTelemetryEnabled=false (CLAUDE_CODE_ENABLE_TELEMETRY=undefined)
+2026-03-31T12:59:20.821Z [DEBUG] Failed to fetch Grove notice config: AxiosError: timeout of 3000ms exceeded
+2026-03-31T12:59:22.809Z [DEBUG] Writing to temp file: /Users/xpeng/.claude.json.tmp.45171.1774961962809
+2026-03-31T12:59:22.809Z [DEBUG] Preserving file permissions: 100600
+2026-03-31T12:59:22.809Z [DEBUG] Temp file written successfully, size: 22450 bytes
+2026-03-31T12:59:22.809Z [DEBUG] Applied original permissions to temp file
+2026-03-31T12:59:22.809Z [DEBUG] Renaming /Users/xpeng/.claude.json.tmp.45171.1774961962809 to /Users/xpeng/.claude.json
+2026-03-31T12:59:22.810Z [DEBUG] File /Users/xpeng/.claude.json written atomically
+2026-03-31T12:59:23.377Z [DEBUG] [STARTUP] showSetupScreens() completed in 8265ms
+2026-03-31T12:59:23.377Z [DEBUG] [LSP MANAGER] initializeLspServerManager() called
+2026-03-31T12:59:23.377Z [DEBUG] [LSP MANAGER] Created manager instance, state=pending
+2026-03-31T12:59:23.377Z [DEBUG] [LSP MANAGER] Starting async initialization (generation 1)
+2026-03-31T12:59:23.378Z [DEBUG] Total LSP servers loaded: 0
+2026-03-31T12:59:23.391Z [DEBUG] [LSP SERVER MANAGER] getAllLspServers returned 0 server(s)
+2026-03-31T12:59:23.391Z [DEBUG] LSP manager initialized with 0 servers
+2026-03-31T12:59:23.391Z [DEBUG] LSP server manager initialized successfully
+2026-03-31T12:59:23.391Z [DEBUG] LSP notification handlers registered successfully for all 0 server(s)
+2026-03-31T12:59:28.954Z [DEBUG] LSP server manager shut down successfully
+2026-03-31T12:59:28.955Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:28.955Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-03-31T12:59:28.956Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-03-31T12:59:28.956Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-03-31T12:59:28.956Z [DEBUG] Getting matching hook commands for SessionEnd with query: other
+2026-03-31T12:59:28.956Z [DEBUG] Found 0 hook matchers in settings
+2026-03-31T12:59:28.956Z [DEBUG] Matched 0 unique hooks for query "other" (0 before deduplication)

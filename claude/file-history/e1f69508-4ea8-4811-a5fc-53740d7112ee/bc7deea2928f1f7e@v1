@@ -1,0 +1,974 @@
+//
+//  XPBleKeyV3DataProcessor.m
+//  iOS-BLEDataProcessor
+//
+//  Created by huzy2 on 2024/8/30.
+//
+
+#import "XPBleKeyV3DataProcessor.h"
+#include "DataParserManager.hpp"
+#include "BLEKeyV3EncodeMessage.hpp"
+#include "BLEKeyV3MsgAlgorithm.hpp"
+#include "BleSendData.hpp"
+#import "NSData+Hex.h"
+#import "XPDataLog.h"
+#import "BLERescueKeyData.hpp"
+
+using namespace SDKBleKeyV3;
+
+unsigned char* bleHexStringToBytes(const char* hexString, size_t* length) {
+    size_t hexStringLength = strlen(hexString);
+    if (hexStringLength % 2 != 0) {
+        // 如果字符串长度不是偶数，则返回NULL
+        return NULL;
+    }
+    
+    size_t byteLength = hexStringLength / 2;
+    unsigned char* bytes = (unsigned char*)malloc(byteLength);
+    if (bytes == NULL) {
+        // 内存分配失败
+        return NULL;
+    }
+    
+    for (size_t i = 0, j = 0; i < hexStringLength; i += 2, j++) {
+        // 将两个16进制字符转换为一个字节
+        // 注意：这里假设输入的字符串是大写或小写，并通过tolower统一转换为小写
+        unsigned char byte = 0;
+        char byteString[3] = {0};
+        strncpy(byteString, hexString + i, 2); // 复制两个字符
+        sscanf(byteString, "%2hhx", &byte); // 读取两个十六进制字符并转换
+        
+        bytes[j] = byte;
+    }
+    
+    if (length != NULL) {
+        *length = byteLength;
+    }
+    
+    return bytes;
+}
+
+
+@implementation XPBleKeyV3DataProcessor
+
++ (NSString *)compactJsonString:(NSString *)str {
+    NSString * compactResult = [str stringByReplacingOccurrencesOfString:@"\r" withString:@""];
+    compactResult = [compactResult stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+    compactResult = [compactResult stringByReplacingOccurrencesOfString:@"\t" withString:@""];
+    compactResult = [compactResult stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
+    return compactResult;
+}
+
++ (NSString *)cmdArrayToOCCode:(NSArray * _Nonnull)array {
+    
+    __block NSString * codeStr = @"@[";
+    [array enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSNumber * number = (NSNumber *)obj;
+        if ([number isKindOfClass:[NSNumber class]]) {
+            codeStr = [codeStr stringByAppendingFormat:@"@(%@), ", number];
+        }
+    }];
+    
+    codeStr = [codeStr stringByAppendingString:@"]"];
+    
+    return codeStr;
+}
+
++ (NSString *)dataArrayToOCCode:(NSArray * _Nonnull)array {
+    
+    __block NSString * codeStr = @"@[";
+    [array enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSData *diretionData = (NSData *)obj;
+        if ([diretionData isKindOfClass:[NSData class]]) {
+            codeStr = [codeStr stringByAppendingFormat:@"[NSData dataWithHexString:@\"%@\"], ", [diretionData hexString]];
+        }
+    }];
+    
+    codeStr = [codeStr stringByAppendingString:@"]"];
+    
+    return codeStr;
+}
+
++ (NSString *)parseBleKeyV3MessageWithVehicleCode:(NSString *)vehicleCode bleData:(NSData *)bleData sessionKey:(NSData *)sessionKey authKey:(NSData *)authKey isEncrypted:(BOOL)isEncrypted {
+    DLogTagInfo(@"receive ble data", @"bleData:[NSData dataWithHexString:@\"%@\"] sessionKey:[NSData dataWithHexString:@\"%@\"] authKey:[NSData dataWithHexString:@\"%@\"] isEncrypted:%@];\n"
+        , [bleData hexString], [sessionKey hexString], [authKey hexString], @(isEncrypted));
+    try {
+        uint8_t *dataPointer = (uint8_t *)bleData.bytes;
+        const char *vehicleTypeCode = [vehicleCode UTF8String];
+        const char *cString = parseBleKeyV3Protocol(vehicleTypeCode, (const uint8_t *)dataPointer, bleData.length, (uint8_t *)sessionKey.bytes, (int)sessionKey.length, (uint8_t *)authKey.bytes, authKey.length, (int)isEncrypted);
+        if (cString == NULL) {
+            return NULL;
+        }
+        NSString *result = [NSString stringWithUTF8String:cString];
+        releaseBluetoothBuffer(cString);
+
+    //    DLogTagInfo(@"XPBLEDataMake", @"单元测试：NSString *result = [XPBleKeyV3DataProcessor parseBleKeyV3MessageWithVehicleCode:@\"%@\" bleData:[NSData dataWithHexString:@\"%@\"] sessionKey:[NSData dataWithHexString:@\"%@\"] authKey:[NSData dataWithHexString:@\"%@\"] isEncrypted:%@];\r\nresult:%@", vehicleCode, [bleData hexString], [sessionKey hexString], [authKey hexString], @(isEncrypted), result);
+        NSString * compactResult = [self compactJsonString:result];
+        DLogTagInfo(@"XPBLEDataMake", @"parseBleKeyV3MessageWithVehicleCode result:%@", result);
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSString *result = [XPBleKeyV3DataProcessor parseBleKeyV3MessageWithVehicleCode:@\"%@\" bleData:[NSData dataWithHexString:@\"%@\"] sessionKey:[NSData dataWithHexString:@\"%@\"] authKey:[NSData dataWithHexString:@\"%@\"] isEncrypted:%@];\n"
+            "NSDictionary * testMergedDict = [self mergedDictFromParsedStr:result];\n"
+            "NSDictionary * testMergedDictRight = [self mergedDictFromParsedStr:@\"%@\"]; // 当次执行结果 \n"
+            "XCTAssertTrue([testMergedDict isEqualToDictionary:testMergedDictRight]);\n",
+            vehicleCode, [bleData hexString], [sessionKey hexString], [authKey hexString], @(isEncrypted), compactResult);
+        
+        return result;
+    } catch (const std::exception& ) {
+        DLogTagInfo(@"XPBLEDataMake", @"parseBleKeyV3MessageWithVehicleCode result:<nil> [XPBleKeyV3DataProcessor parseBleKeyV3MessageWithVehicleCode:@\"%@\" bleData:[NSData dataWithHexString:@\"%@\"] sessionKey:[NSData dataWithHexString:@\"%@\"] authKey:[NSData dataWithHexString:@\"%@\"] isEncrypted:%@];\n"
+            , vehicleCode, [bleData hexString], [sessionKey hexString], [authKey hexString], @(isEncrypted));
+    }
+    return nil;
+
+}
+
+#pragma mark auth0
++ (NSData *_Nullable)generateAuth0DataIndictor:(NSString * _Nonnull)hexIndictor
+                                           uid:(uint64_t)uid
+                                      hexKeyId:(NSString * _Nonnull)hexKeyId
+                                         rand0:(uint32_t)rand0
+                                     timeStamp:(uint64_t)timeStamp
+                                     isWelcome:(BOOL)isWelcome
+                                 pollingSwitch:(uint8_t)pollingSwitch
+                           pollingEnableSwitch:(BOOL)pollingEnableSwitch
+                                unlockDistance:(float)unlockDistance
+                                  lockDistance:(float)lockDistance
+                            selfCalibrationLen:(uint8_t)selfCalibrationLen
+                          selfCalibrationArray:(NSArray * _Nullable)selfCalibrationArray
+                                   deviceModel:(NSString * _Nonnull)deviceModel
+                                       bleName:(NSString * _Nonnull)bleName
+                                    hexAuthKey:(NSString * _Nonnull)hexAuthKey
+{
+    size_t indicatorSize = 0;
+    unsigned char * indictor = bleHexStringToBytes([hexIndictor cString], &indicatorSize);
+    size_t keyIdSize = 0;
+    unsigned char * keyId = bleHexStringToBytes([hexKeyId cString], &keyIdSize);
+    uint8_t pollingUnlockDistance = (uint8_t)(unlockDistance + 0.5);
+    uint8_t pollingLockDistance = (uint8_t)(lockDistance + 0.5);
+    uint8_t *selfCalibrationData = NULL;
+    if (selfCalibrationLen) {
+        uint8_t len = 0;
+        for (NSData *diretionData in selfCalibrationArray) {
+            len += diretionData.length;
+        }
+        selfCalibrationData = (uint8_t *)malloc(len);
+        uint8_t dataLen = 0;
+        for (NSData *diretionData in selfCalibrationArray) {
+            memcpy(selfCalibrationData+dataLen, diretionData.bytes, diretionData.length);
+            dataLen += diretionData.length;
+        }
+    }
+    NSData *deviceModelData = [deviceModel dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *bleNameData = [bleName dataUsingEncoding:NSUTF8StringEncoding];
+    size_t authKeySize = 0;
+    unsigned char * authKey = bleHexStringToBytes([hexAuthKey cString],&authKeySize);
+    BleKeyV3PollingConfigParams pollingConfigParams = {
+      isWelcome, pollingSwitch, pollingUnlockDistance, pollingLockDistance, selfCalibrationLen, selfCalibrationData
+    };
+    BleKeyV3Auth0Params auth0Params = {
+        (uint8_t *)indictor, (uint8_t)indicatorSize, uid, keyId, (uint8_t)keyIdSize, rand0, timeStamp,
+         pollingConfigParams,
+         (uint8_t *)deviceModelData.bytes, (uint8_t)deviceModelData.length,
+         (uint8_t *)bleNameData.bytes, (uint8_t)bleNameData.length,
+         authKey, (uint8_t)authKeySize
+    };
+    uint8_t *auth0EncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t auth0EncodeDataSize = most_trans_count_size;
+    BleKeyV3Auth0RequestCreateResult result = createBleKeyV3Auth0RequestWithInput(&auth0Params, pollingEnableSwitch, auth0EncodeData, &auth0EncodeDataSize);
+    if (selfCalibrationData != NULL) {
+        free(selfCalibrationData);
+    }
+    if (indictor != NULL) {
+        free(indictor);
+    }
+    if (keyId != NULL) {
+        free(keyId);
+    }
+    if (authKey != NULL) {
+        free(authKey);
+    }
+    NSData *resultData = [NSData dataWithBytes:auth0EncodeData length:auth0EncodeDataSize];
+    if (auth0EncodeData != NULL) {
+        free(auth0EncodeData);
+    }
+    if (result == BleKeyV3Auth0RequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateAuth0DataIndictor:@\"%@\" uid:%@ hexKeyId:@\"%@\" rand0:%@ timeStamp:%@ isWelcome:%@ pollingSwitch:%@ pollingEnableSwitch:%@ unlockDistance:%@ lockDistance:%@ selfCalibrationLen:%@ selfCalibrationArray:%@ deviceModel:@\"%@\" bleName:@\"%@\" hexAuthKey:@\"%@\"];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n", hexIndictor, @(uid), hexKeyId, @(rand0), @(timeStamp), @(isWelcome), @(pollingSwitch), @(pollingEnableSwitch), @(unlockDistance), @(lockDistance), @(selfCalibrationLen), [self dataArrayToOCCode:selfCalibrationArray], deviceModel, bleName, hexAuthKey, [resultData hexString]);
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateAuth0DataIndictor result:<nil> [XPBleKeyV3DataProcessor generateAuth0DataIndictor:@\"%@\" uid:%@ hexKeyId:@\"%@\" rand0:%@ timeStamp:%@ isWelcome:%@ pollingSwitch:%@ pollingEnableSwitch:%@ unlockDistance:%@ lockDistance:%@ selfCalibrationLen:%@ selfCalibrationArray:%@ deviceModel:@\"%@\" bleName:@\"%@\" hexAuthKey:@\"%@\"]", hexIndictor, @(uid), hexKeyId, @(rand0), @(timeStamp), @(isWelcome), @(pollingSwitch), @(pollingEnableSwitch), @(unlockDistance), @(lockDistance), @(selfCalibrationLen), [self dataArrayToOCCode:selfCalibrationArray], deviceModel, bleName, hexAuthKey);
+        return nil;
+    }
+}
+
++ (NSData *)generateAuthKey:(NSString *)authKey {
+    size_t authKeySize = 0;
+    unsigned char * authKeyPtr = bleHexStringToBytes([authKey UTF8String],&authKeySize);
+    NSData *authKeyData = [NSData dataWithBytes:authKeyPtr length:authKeySize];
+    free(authKeyPtr);
+    return authKeyData;
+}
+
++ (NSData *)generateSessionKey:(NSString * _Nonnull)hexAuthKey
+                      hexKeyId:(NSString * _Nonnull)hexKeyId
+                         rand0:(uint32_t)rand0
+                         rand1:(uint32_t)rand1 {
+    size_t authKeySize = 0;
+    unsigned char * authKey = bleHexStringToBytes([hexAuthKey cString],&authKeySize);
+    size_t keyIdSize = 0;
+    unsigned char * keyId = bleHexStringToBytes([hexKeyId cString],&keyIdSize);
+    uint8_t *sessionKey = (uint8_t *)malloc(hKdfSha256Size);
+    size_t sessionKeySize = hKdfSha256Size;
+    getSessionKey(sessionKey,sessionKeySize, rand0, rand1, authKey, authKeySize, keyId,keyIdSize);
+    NSData *sessionKeyData = [NSData dataWithBytes:sessionKey length:sessionKeySize];
+    free(authKey);
+    free(keyId);
+    free(sessionKey);
+    
+    DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateSessionKey:@\"%@\" hexKeyId:@\"%@\" rand0:%@ rand1:%@];\n"
+        "NSString * testResultToHexStr = [result hexString];\n"
+        "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+        "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                hexAuthKey, hexKeyId, @(rand0), @(rand1), [sessionKeyData hexString]);
+
+    return sessionKeyData;
+}
+
++ (NSData *)generateHmacKey:(NSString * _Nonnull)hexAuthKey
+                     rand01:(uint32_t)rand01
+                     rand12:(uint32_t)rand12 {
+    size_t authKeySize = 0;
+    unsigned char * authKey = bleHexStringToBytes([hexAuthKey cString],&authKeySize);
+    unsigned int hmacKeySize;
+    unsigned char iv_copy[16];
+    memcpy(iv_copy, bleKeyV3IvData, 16);
+    unsigned char *hmacKey = getHmacKey((const uint8_t *)authKey, authKeySize, rand01, rand12, iv_copy, &hmacKeySize);
+    NSData *hmacKeyData = [NSData dataWithBytes:hmacKey length:hmacKeySize];
+    free(authKey);
+    free(hmacKey);
+    
+    DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateHmacKey:@\"%@\" rand01:%@ rand12:%@];\n"
+        "NSString * testResultToHexStr = [result hexString];\n"
+        "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+        "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                hexAuthKey, @(rand01), @(rand12), [hmacKeyData hexString]);
+    return hmacKeyData;
+}
+
+#pragma mark auth1
++ (NSData *_Nullable)generateAuth1DataRand12:(uint32_t)rand12
+                                  hexCertMessage:(NSString * _Nonnull)hexCertMessage
+                                      sessionKey:(NSData * _Nonnull)sessionKey {
+    size_t certMessageSize = 0;
+    unsigned char * certMessage = bleHexStringToBytes([hexCertMessage cString],&certMessageSize);
+    BleKeyV3Auth1Params auth1Params = {
+        rand12,certMessage,(uint8_t)certMessageSize,(uint8_t *)sessionKey.bytes,(int)sessionKey.length
+    };
+    uint8_t *auth1EncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t auth1EncodeDataSize = most_trans_count_size;
+    BleKeyV3Auth1RequestCreateResult result = createBleKeyV3Auth1RequestWithInput(&auth1Params,auth1EncodeData,&auth1EncodeDataSize);
+    if (certMessage != NULL) {
+        free(certMessage);
+    }
+    NSData *resultData = [NSData dataWithBytes:auth1EncodeData length:auth1EncodeDataSize];
+    if (auth1EncodeData != NULL) {
+        free(auth1EncodeData);
+    }
+    if (result == BleKeyV3Auth1RequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateAuth1DataRand12:%@ hexCertMessage:@\"%@\" sessionKey:[NSData dataWithHexString:@\"%@\"]];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n", @(rand12),
+                    hexCertMessage, [sessionKey hexString], [resultData hexString]);
+
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateRkeControlRequestData result:<nil> [XPBleKeyV3DataProcessor generateAuth1DataRand12:%@ hexCertMessage:@\"%@\" sessionKey:[NSData dataWithHexString:@\"%@\"]]", @(rand12),
+                    hexCertMessage, [sessionKey hexString]);
+        return nil;
+    }
+}
+
+#pragma mark rke
++ (NSData *_Nullable)generateQueryStateRequestData:(BOOL)isEncrypt
+                                         controlId:(uint8_t)controlId
+                                       controlData:(NSArray * _Nonnull)controlData
+                                        sessionKey:(NSData * _Nullable)sessionKey
+                                           hmacKey:(NSData * _Nullable)hmacKey {
+    if (![controlData isKindOfClass:[NSArray class]]) {
+        NSLog(@"controlData 不是 NSArray 类型");
+        return nil;
+    }
+    NSUInteger count = [controlData count];
+    uint8_t *bytes = (uint8_t *)malloc(sizeof(uint8_t) * count);
+    if (bytes == NULL) {
+        NSLog(@"内存分配失败");
+        return nil;
+    }
+    // 遍历 controlData 数组，将其元素转换为 uint8_t 类型
+    for (NSUInteger i = 0; i < count; i++) {
+        NSNumber *number = controlData[i];
+        if ([number isKindOfClass:[NSNumber class]]) {
+            bytes[i] = (uint8_t)[number unsignedCharValue];
+        } else {
+            NSLog(@"controlData 中的元素不是 NSNumber 类型");
+            free(bytes);
+            return nil;
+        }
+    }
+    BleKeyV3QueryStateParams queryStateParams = {
+        controlId,(BLEKeyV3CarStateRKEType *)bytes,(uint8_t)count,(uint8_t *)sessionKey.bytes,(int)sessionKey.length,(uint8_t *)hmacKey.bytes,(uint8_t)hmacKey.length
+    };
+    uint8_t *queryStateEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t queryStateEncodeDataSize = most_trans_count_size;
+    BleKeyV3RkeRequestCreateResult result = createBleKeyV3QueryStateRequestWithInput(&queryStateParams, isEncrypt,  queryStateEncodeData, &queryStateEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:queryStateEncodeData length:queryStateEncodeDataSize];
+    if (queryStateEncodeData != NULL) {
+        free(queryStateEncodeData);
+    }
+    free(bytes);
+    if (result == BleKeyV3RkeRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateQueryStateRequestData:%@ controlId:%@ controlData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"] hmacKey:[NSData dataWithHexString:@\"%@\"]];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), @(controlId), [self cmdArrayToOCCode:controlData], [sessionKey hexString], [hmacKey hexString], [resultData hexString]);
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateRkeControlRequestData result:<nil> [XPBleKeyV3DataProcessor generateQueryStateRequestData:%@ controlId:%@ controlData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"] hmacKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), @(controlId), [self cmdArrayToOCCode:controlData], [sessionKey hexString], [hmacKey hexString]);
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generateNotifyStateRequestData:(BOOL)isEncrypt
+                                          controlId:(uint8_t)controlId
+                                        controlData:(NSArray * _Nonnull)controlData
+                                         sessionKey:(NSData * _Nullable)sessionKey
+                                            hmacKey:(NSData * _Nullable)hmacKey {
+    if (![controlData isKindOfClass:[NSArray class]]) {
+        NSLog(@"controlData 不是 NSArray 类型");
+        return nil;
+    }
+    NSUInteger count = [controlData count];
+    uint8_t *bytes = (uint8_t *)malloc(sizeof(uint8_t) * count);
+    if (bytes == NULL) {
+        NSLog(@"内存分配失败");
+        return nil;
+    }
+    // 遍历 controlData 数组，将其元素转换为 uint8_t 类型
+    for (NSUInteger i = 0; i < count; i++) {
+        NSNumber *number = controlData[i];
+        if ([number isKindOfClass:[NSNumber class]]) {
+            bytes[i] = (uint8_t)[number unsignedCharValue];
+        } else {
+            NSLog(@"controlData 中的元素不是 NSNumber 类型");
+            free(bytes);
+            return nil;
+        }
+    }
+    BleKeyV3NotifyStateParams queryStateParams = {
+        controlId,(BLEKeyV3CarStateRKEType *)bytes,(uint8_t)count,(uint8_t *)sessionKey.bytes,(int)sessionKey.length,(uint8_t *)hmacKey.bytes,(uint8_t)hmacKey.length
+    };
+    uint8_t *queryStateEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t queryStateEncodeDataSize = most_trans_count_size;
+    BleKeyV3RkeRequestCreateResult result = createBleKeyV3NotifyStateRequestWithInput(&queryStateParams, isEncrypt,  queryStateEncodeData, &queryStateEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:queryStateEncodeData length:queryStateEncodeDataSize];
+    if (queryStateEncodeData != NULL) {
+        free(queryStateEncodeData);
+    }
+    free(bytes);
+    if (result == BleKeyV3RkeRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateNotifyStateRequestData:%@ controlId:%@ controlData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"] hmacKey:[NSData dataWithHexString:@\"%@\"]];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), @(controlId), [self cmdArrayToOCCode:controlData], [sessionKey hexString], [hmacKey hexString], [resultData hexString]);
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateNotifyStateRequestData result:<nil> [XPBleKeyV3DataProcessor generateNotifyStateRequestData:%@ controlId:%@ controlData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"] hmacKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), @(controlId), [self cmdArrayToOCCode:controlData], [sessionKey hexString], [hmacKey hexString]);
+        return nil;
+    }
+}
+
++ (NSData * _Nullable)generateRkeControlRequestData:(BOOL)isEncrypt
+                                          controlId:(uint8_t)controlId
+                                        controlData:(NSArray * _Nonnull)controlData
+                                         sessionKey:(NSData * _Nullable)sessionKey
+                                            hmacKey:(NSData * _Nullable)hmacKey {
+    if (![controlData isKindOfClass:[NSArray class]]) {
+        NSLog(@"controlData 不是 NSArray 类型");
+        return nil;
+    }
+    NSUInteger count = [controlData count];
+    uint8_t *bytes = (uint8_t *)malloc(sizeof(uint8_t) * count);
+    if (bytes == NULL) {
+        NSLog(@"内存分配失败");
+        return nil;
+    }
+    // 遍历 controlData 数组，将其元素转换为 uint8_t 类型
+    for (NSUInteger i = 0; i < count; i++) {
+        NSNumber *number = controlData[i];
+        if ([number isKindOfClass:[NSNumber class]]) {
+            bytes[i] = (uint8_t)[number unsignedCharValue];
+        } else {
+            NSLog(@"controlData 中的元素不是 NSNumber 类型");
+            free(bytes);
+            return nil;
+        }
+    }
+    BleKeyV3RkeControlParams controlDataParams = {
+        controlId,bytes,(uint8_t)count,(uint8_t *)sessionKey.bytes,(int)sessionKey.length,(uint8_t *)hmacKey.bytes,(uint8_t)hmacKey.length
+    };
+    uint8_t *rkeControlEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t rkeControlEncodeDataSize = most_trans_count_size;
+    BleKeyV3RkeRequestCreateResult result = createBleKeyV3RkeControlRequestWithInput(&controlDataParams, isEncrypt, rkeControlEncodeData, &rkeControlEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:rkeControlEncodeData length:rkeControlEncodeDataSize];
+    if (rkeControlEncodeData != NULL) {
+        free(rkeControlEncodeData);
+    }
+    free(bytes);
+    if (result == BleKeyV3RkeRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateRkeControlRequestData:%@ controlId:%@ controlData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"] hmacKey:[NSData dataWithHexString:@\"%@\"]];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), @(controlId), [self cmdArrayToOCCode:controlData], [sessionKey hexString], [hmacKey hexString], [resultData hexString]);
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateRkeControlRequestData result:<nil> [XPBleKeyV3DataProcessor generateRkeControlRequestData:%@ controlId:%@ controlData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"] hmacKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), @(controlId), [self cmdArrayToOCCode:controlData], [sessionKey hexString], [hmacKey hexString]);
+        return nil;
+    }
+}
+
++ (NSData * _Nullable)generateNotifyPollingFuncState:(BOOL)isEncrypt
+                                          controlId:(uint8_t)controlId
+                                             controlData:(NSArray * _Nonnull)controlData
+                                              sessionKey:(NSData * _Nullable)sessionKey
+                                                 hmacKey:(NSData * _Nullable)hmacKey {
+    if (![controlData isKindOfClass:[NSArray class]]) {
+        NSLog(@"controlData 不是 NSArray 类型");
+        return nil;
+    }
+    NSUInteger count = [controlData count];
+    uint8_t *bytes = (uint8_t *)malloc(sizeof(uint8_t) * count);
+    if (bytes == NULL) {
+        NSLog(@"内存分配失败");
+        return nil;
+    }
+    // 遍历 controlData 数组，将其元素转换为 uint8_t 类型
+    for (NSUInteger i = 0; i < count; i++) {
+        NSNumber *number = controlData[i];
+        if ([number isKindOfClass:[NSNumber class]]) {
+            bytes[i] = (uint8_t)[number unsignedCharValue];
+        } else {
+            NSLog(@"controlData 中的元素不是 NSNumber 类型");
+            free(bytes);
+            return nil;
+        }
+    }
+    BleKeyV3PollingFuncStateParams funcStateParams = {
+        controlId,(BLEKeyV3PollingFuncType *)bytes,(uint8_t)count,(uint8_t *)sessionKey.bytes,(int)sessionKey.length,(uint8_t *)hmacKey.bytes,(uint8_t)hmacKey.length
+    };
+    uint8_t *pollingFuncEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t pollingFuncEncodeDataSize = most_trans_count_size;
+    BleKeyV3RkeRequestCreateResult result = createBleKeyV3NotifyPollingFuncStateWithInput(&funcStateParams, isEncrypt,  pollingFuncEncodeData, &pollingFuncEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:pollingFuncEncodeData length:pollingFuncEncodeDataSize];
+    if (pollingFuncEncodeData != NULL) {
+        free(pollingFuncEncodeData);
+    }
+    free(bytes);
+    if (result == BleKeyV3RkeRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateNotifyPollingFuncState:%@ controlId:%@ controlData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"] hmacKey:[NSData dataWithHexString:@\"%@\"]];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), @(controlId), [self cmdArrayToOCCode:controlData], [sessionKey hexString], [hmacKey hexString], [resultData hexString]);
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateNotifyPollingFuncState result:<nil> [XPBleKeyV3DataProcessor generateNotifyPollingFuncState:%@ controlId:%@ controlData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"] hmacKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), @(controlId), [self cmdArrayToOCCode:controlData], [sessionKey hexString], [hmacKey hexString]);
+        return nil;
+    }
+}
+
+#pragma mark notify
++ (NSData *_Nullable)generateParkingHeartData:(BOOL)isEncrypt
+                                          cmd:(uint8_t)cmd
+                                    parkingId:(uint8_t)parkingId
+                                    sessionKey:(NSData * _Nullable)sessionKey {
+    BleKeyV3ParkingHeartParams parkingHeartParams = {
+        cmd,parkingId,(uint8_t *)sessionKey.bytes,(int)sessionKey.length
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3ParkingHeartWithInput(&parkingHeartParams, isEncrypt,  notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateParkingHeartData:%@ cmd:%@ parkingId:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), @(cmd), @(parkingId), [sessionKey hexString], [resultData hexString]);
+
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateParkingHeartData result:<nil> [XPBleKeyV3DataProcessor generateParkingHeartData:%@ cmd:%@ parkingId:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), @(cmd), @(parkingId), [sessionKey hexString]);
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generateSelfCalibrationData:(BOOL)isEncrypt
+                                       direction:(uint8_t)direction
+                                        distance:(float)distance
+                                       collectCount:(uint32_t)collectCount
+                                         timeout:(uint32_t)timeout
+                                             uid:(uint32_t)uid
+                                       deviceModel:(NSString * _Nonnull)deviceModel
+                                       sessionKey:(NSData * _Nullable)sessionKey {
+    NSData *deviceModelData = [deviceModel dataUsingEncoding:NSUTF8StringEncoding];
+    BleKeyV3SelfCalibrationParams selfCalibrationParams = {
+        direction,distance,collectCount,timeout,uid,(uint8_t *)deviceModelData.bytes,(uint8_t)deviceModelData.length,(uint8_t *)sessionKey.bytes,(int)sessionKey.length
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3SelfCalibrationWithInput(&selfCalibrationParams, isEncrypt,  notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        return resultData;
+    } else {
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generateRssiCollectData:(BOOL)isEncrypt
+                                   direction:(uint8_t)direction
+                                    distance:(float)distance
+                                collectCount:(uint32_t)collectCount
+                                    isPocket:(BOOL)isPocket
+                                       angle:(uint16_t)angle
+                                         uid:(uint32_t)uid
+                                 deviceModel:(NSString * _Nonnull)deviceModel
+                                  sessionKey:(NSData * _Nullable)sessionKey {
+    NSData *deviceModelData = [deviceModel dataUsingEncoding:NSUTF8StringEncoding];
+    BleKeyV3RssiCollectParams rssiCollectParams = {
+        direction,distance,collectCount,isPocket,angle,uid,(uint8_t *)deviceModelData.bytes,(uint8_t)deviceModelData.length,(uint8_t *)sessionKey.bytes,(int)sessionKey.length
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3RssiCollectWithInput(&rssiCollectParams, isEncrypt,  notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        return resultData;
+    } else {
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generatePollingCustomeData:(BOOL)isEncrypt
+                                      isWelcome:(BOOL)isWelcome
+                                  pollingSwitch:(uint8_t)pollingSwitch
+                                 unlockDistance:(float)unlockDistance
+                                   lockDistance:(float)lockDistance
+                           isUseSelfCalibration:(uint8_t)isUseSelfCalibration
+                           selfCalibrationArray:(NSArray * _Nullable)selfCalibrationArray
+                                     sessionKey:(NSData * _Nullable)sessionKey {
+    uint8_t pollingUnlockDistance = (uint8_t)(unlockDistance + 0.5);
+    uint8_t pollingLockDistance = (uint8_t)(lockDistance + 0.5);
+    uint8_t *selfCalibrationData = NULL;
+    if (isUseSelfCalibration) {
+        selfCalibrationData = (uint8_t *)malloc(isUseSelfCalibration);
+        uint8_t dataLen = 0;
+        for (NSData *directionData in selfCalibrationArray) {
+            memcpy(selfCalibrationData+dataLen, directionData.bytes, directionData.length);
+            dataLen += directionData.length;
+        }
+    }
+
+    BleKeyV3PollingConfigParams pollingConfigParams = {
+      isWelcome,pollingSwitch,pollingUnlockDistance,pollingLockDistance,isUseSelfCalibration,selfCalibrationData
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3PollingCustomeDataWithInput(&pollingConfigParams, isEncrypt, (uint8_t *)sessionKey.bytes, (int)sessionKey.length, notifyEncodeData, &notifyEncodeDataSize);
+    if (selfCalibrationData != NULL) {
+        free(selfCalibrationData);
+    }
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        return resultData;
+    } else {
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generatePollingCustomeDataV2:(BOOL)isWelcome
+                                  pollingSwitch:(uint8_t)pollingSwitch
+                                 unlockDistance:(float)unlockDistance
+                                   lockDistance:(float)lockDistance
+                           isUseSelfCalibration:(uint8_t)isUseSelfCalibration
+                             selfCalibrationArray:(NSArray * _Nullable)selfCalibrationArray {
+    uint8_t pollingUnlockDistance = (uint8_t)(unlockDistance + 0.5);
+    uint8_t pollingLockDistance = (uint8_t)(lockDistance + 0.5);
+    uint8_t *selfCalibrationData = NULL;
+    if (isUseSelfCalibration) {
+        selfCalibrationData = (uint8_t *)malloc(isUseSelfCalibration);
+        uint8_t dataLen = 0;
+        for (NSData *directionData in selfCalibrationArray) {
+            memcpy(selfCalibrationData+dataLen, directionData.bytes, directionData.length);
+            dataLen += directionData.length;
+        }
+    }
+
+    BleKeyV3PollingConfigParams pollingConfigParams = {
+      isWelcome,pollingSwitch,pollingUnlockDistance,pollingLockDistance,isUseSelfCalibration,selfCalibrationData
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3PollingCustomeDataWithInputV2(&pollingConfigParams, notifyEncodeData, &notifyEncodeDataSize);
+    if (selfCalibrationData != NULL) {
+        free(selfCalibrationData);
+    }
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        return resultData;
+    } else {
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generateParkingLimitDistanceData:(BOOL)isEncrypt
+                                      isLimit:(uint8_t)isLimit
+                                     sessionKey:(NSData * _Nullable)sessionKey {
+
+    BleKeyV3ParkingLimitDistanceParams parkingLimitParams = {
+        isLimit,(uint8_t *)sessionKey.bytes,(int)sessionKey.length
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3ParkingLimitDistanceWithInput(&parkingLimitParams, isEncrypt,  notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateParkingLimitDistanceData:%@ isLimit:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), @(isLimit), [sessionKey hexString], [resultData hexString]);
+
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateParkingLimitDistanceData result:<nil> [XPBleKeyV3DataProcessor generateParkingLimitDistanceData:%@ isLimit:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), @(isLimit), [sessionKey hexString]);
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generateParkingLimitDistanceDataV2:(uint8_t)isLimit {
+    BleKeyV3ParkingLimitDistanceParams parkingLimitParams = {
+        isLimit, NULL, 0
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3ParkingLimitDistanceWithInputV2(&parkingLimitParams,  notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateParkingLimitDistanceDataV2 isLimit:%@];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                     @(isLimit), [resultData hexString]);
+
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateParkingLimitDistanceDataV2 result:<nil> [XPBleKeyV3DataProcessor generateParkingLimitDistanceDataV2 isLimit:%@]", @(isLimit));
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generatePollingEnableConfigData:(BOOL)isEncrypt
+                                 pollingEnableSwitch:(bool)pollingEnableSwitch
+                                     sessionKey:(NSData * _Nullable)sessionKey {
+
+    BleKeyV3PollingEnableConfigParams pollingEnableParams = {
+        pollingEnableSwitch,(uint8_t *)sessionKey.bytes,(int)sessionKey.length
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3PollingEnableConfigDataWithInput(&pollingEnableParams, isEncrypt,  notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generatePollingEnableConfigData:%@ pollingEnableSwitch:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), @(pollingEnableSwitch), [sessionKey hexString], [resultData hexString]);
+
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generatePollingEnableConfigData result:<nil> [XPBleKeyV3DataProcessor generatePollingEnableConfigData:%@ pollingEnableSwitch:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), @(pollingEnableSwitch), [sessionKey hexString]);
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generatePollingEnableConfigDataV2:(bool)pollingEnableSwitch {
+    BleKeyV3PollingEnableConfigParams pollingEnableParams = {
+        pollingEnableSwitch, NULL, 0
+    };
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3PollingEnableConfigDataWithInputV2(&pollingEnableParams,  notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generatePollingEnableConfigDataV2 pollingEnableSwitch:%@];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(pollingEnableSwitch), [resultData hexString]);
+
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generatePollingEnableConfigDataV2 result:<nil> [XPBleKeyV3DataProcessor generatePollingEnableConfigDataV2 pollingEnableSwitch:%@", @(pollingEnableSwitch));
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generateDeviceModelData:(BOOL)isEncrypt
+                                 deviceModel:(NSString *)deviceModel
+                                  sessionKey:(NSData * _Nullable)sessionKey {
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3DeviceModelDataWithInput((uint8_t *)[deviceModel dataUsingEncoding:NSUTF8StringEncoding].bytes, (int)deviceModel.length, (int)isEncrypt, (uint8_t *)sessionKey.bytes, sessionKey.length, notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateDeviceModelData:%@ deviceModel:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), deviceModel, [sessionKey hexString], [resultData hexString]);
+
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateDeviceModelData result:<nil> [XPBleKeyV3DataProcessor generateDeviceModelData:%@ deviceModel:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), deviceModel, [sessionKey hexString]);
+        return nil;
+    }
+}
+
++ (NSData *_Nullable)generateDeviceModelDataV2:(NSString *)deviceModel {
+    uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+    size_t notifyEncodeDataSize = most_trans_count_size;
+    BleKeyV3NotifyRequestCreateResult result = createBleKeyV3DeviceModelDataWithInputV2((uint8_t *)[deviceModel dataUsingEncoding:NSUTF8StringEncoding].bytes, (int)deviceModel.length, notifyEncodeData, &notifyEncodeDataSize);
+    NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+    if (notifyEncodeData != NULL) {
+        free(notifyEncodeData);
+    }
+    if (result == BleKeyV3NotifyRequestCreateSuccess) {
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateDeviceModelDataV2 deviceModel:%@];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    deviceModel, [resultData hexString]);
+
+        return resultData;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"generateDeviceModelDataV2 result:<nil> [XPBleKeyV3DataProcessor generateDeviceModelDataV2 deviceModel:%@]",  deviceModel);
+        return nil;
+    }
+}
+
++ (NSData *)createTboxMessageV3:(uint8_t)controlId
+                 controlCommand:(uint8_t)controlCommand
+                    certMessage:(NSString * _Nonnull)certMessage {
+    BleByteMatrix *cByteMatrix = createTboxMessageV3With((BLEBoxCommand)controlCommand, certMessage.cString, controlId, certMessage.length);
+    if (cByteMatrix != NULL) {
+        NSMutableArray *sendParams = [NSMutableArray array];
+        NSUInteger length = cByteMatrix->length;
+        size_t *sizes = cByteMatrix->sizes;
+        for (NSUInteger i = 0; i < length; i++) {
+            size_t rowSize = sizes[i];
+            void *rowPtr = cByteMatrix->data[i];
+            if (rowSize != 0 && rowPtr != NULL) {
+                NSData *data = [NSData dataWithBytes:rowPtr length:rowSize];
+                [sendParams addObject:data];
+            }
+        }
+        freeBleByteMatrix(cByteMatrix);
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor createTboxMessageV3:%@ controlCommand:%@ certMessage:@\"%@\"];\n"
+            "NSString * testResultToHexStr = [result hexString];\n"
+            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(controlId), @(controlCommand), certMessage, [sendParams.firstObject hexString]);
+
+        return sendParams.firstObject;
+    } else {
+        DLogTagInfo(@"XPBLEDataMake", @"createTboxMessageV3 result:<nil> [XPBleKeyV3DataProcessor createTboxMessageV3:%@ controlCommand:%@ certMessage:@\"%@\"]", @(controlId), @(controlCommand), certMessage);
+        return nil;
+    }
+}
+
++ (NSArray<NSData *> *_Nullable)generateCombinedNotifyData:(BOOL)isEncrypt
+                                          combinedData:(NSArray<NSData *> *)dataArray
+                                          sessionKey:(NSData * _Nullable)sessionKey {
+    NSMutableArray *tempArray = [NSMutableArray array];
+    for (NSData *data in dataArray) {
+        if ([data isKindOfClass:[NSData class]]) {
+            uint8_t *notifyEncodeData = (uint8_t *)malloc(most_trans_count_size);
+            size_t notifyEncodeDataSize = most_trans_count_size;
+            BleKeyV3NotifyRequestCreateResult result = createCombinedNotifyData((uint8_t *)data.bytes, data.length, (int)isEncrypt, (uint8_t *)sessionKey.bytes, sessionKey.length, notifyEncodeData, &notifyEncodeDataSize);
+            NSData *resultData = [NSData dataWithBytes:notifyEncodeData length:notifyEncodeDataSize];
+            if (notifyEncodeData != NULL) {
+                free(notifyEncodeData);
+            }
+            if (result == BleKeyV3NotifyRequestCreateSuccess) {
+                DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateCombinedNotifyData:%@ combinedData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]];\n"
+                            "NSString * testResultToHexStr = [result hexString];\n"
+                            "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                            "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                            @(isEncrypt), dataArray, [sessionKey hexString], [resultData hexString]);
+                [tempArray addObject:resultData];
+            } else {
+                DLogTagInfo(@"XPBLEDataMake", @"generateCombinedNotifyData result:<nil> [XPBleKeyV3DataProcessor generateCombinedNotifyData:%@ combinedData:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]]", @(isEncrypt), dataArray, [sessionKey hexString]);
+            }
+        }
+    }
+    return [tempArray copy];
+}
+
+
+#pragma mark - 应急钥匙
+#pragma mark - 应急钥匙 Auth0
++ (NSData *)generateRescueAuth0DataIndictor:(NSString *)hexIndictor uid:(uint64_t)uid hexKeyId:(NSString *)hexKeyId rand0:(uint32_t)rand0 timeStamp:(uint64_t)timeStamp hexAuthKey:(NSString *)hexAuthKey {
+    try {
+        
+        NSData *indicatorData = [NSData dataWithHexString:hexIndictor];
+        NSData *keyIdData = [NSData dataWithHexString:hexKeyId];
+        NSData *authKeyData = [NSData dataWithHexString:hexAuthKey];
+        
+        std::vector<uint8_t> indicatorVec = [self convertNSDataToVector:indicatorData];
+        std::vector<uint8_t> keyIdVec = [self convertNSDataToVector:keyIdData];
+        std::vector<uint8_t> authKeyVec = [self convertNSDataToVector:authKeyData];
+
+        // 调用C++函数
+        std::vector<uint8_t> packet = generateAuth0Packet(
+            indicatorVec, rand0, uid, keyIdVec, timeStamp, authKeyVec
+        );
+
+        // 转换回NSData
+        NSData *resultData = [NSData dataWithBytes:packet.data() length:packet.size()];
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateRescueAuth0DataIndictor:@\"%@\" uid:%@ hexKeyId:@\"%@\" rand0:%@ timeStamp:%@ hexAuthKey:@\"%@\"];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    hexIndictor, @(uid), hexKeyId, @(rand0), @(timeStamp), hexAuthKey, [resultData hexString]);
+        return resultData;
+    } catch (const std::exception& ) {
+        DLogTagInfo(@"XPBLEDataMake", @"generateRescueAuth0DataIndictor failed with params: hexIndictor = %@, uid = %@, hexKeyId = %@, rand0 = %@, timeStamp = %@, hexAuthKey = %@", hexIndictor, @(uid), hexKeyId, @(rand0), @(timeStamp), hexAuthKey);
+        return nil;
+    }
+}
+
++ (std::vector<uint8_t>)convertNSDataToVector:(NSData *)data {
+    const uint8_t *bytes = static_cast<const uint8_t *>(data.bytes);
+    return std::vector<uint8_t>(bytes, bytes + data.length);
+}
+
+#pragma mark - 应急钥匙 Auth1
+
++ (NSData *)generateRescueSessionKeyWithRand0:(uint32_t)rand0 rand1:(uint32_t)rand1 {
+    try {
+        size_t notifyEncodeDataSize = 0;
+        auto result = calculateAuth1SessionKey(rand0, rand1, &notifyEncodeDataSize);
+
+        // 转换回NSData
+        NSData *resultData = [NSData dataWithBytes:result length:notifyEncodeDataSize];
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateRescueSessionKeyWithRand0:%@ rand1:%@];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(rand0), @(rand1), [resultData hexString]);
+        return resultData;
+    } catch (const std::exception& ) {
+        DLogTagInfo(@"XPBLEDataMake", @"generateRescueSessionKeyWithRand0 failed with params: rand0 = %@, rand1 = %@", @(rand0), @(rand1));
+    }
+    
+    return [NSData new];
+    
+}
+
++ (NSData *)generateRescueAuth1DataRand12:(uint32_t)rand12 hexCertMessage:(NSString *)hexCertMessage sessionKey:(NSData *)sessionKey {
+    try {
+        NSData *certMessageData = [NSData dataWithHexString:hexCertMessage];
+        std::vector<uint8_t> hexCertMsgVec = [self convertNSDataToVector:certMessageData];
+        std::vector<uint8_t> sessionKeyVec = [self convertNSDataToVector:sessionKey];
+        
+        auto result = generateAuth1Packet(rand12, sessionKeyVec, hexCertMsgVec);
+
+        // 转换回NSData
+        NSData *resultData = [NSData dataWithBytes:result.data() length:result.size()];
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateRescueAuth1DataRand12:%@ hexCertMessage:@\"%@\" sessionKey:[NSData dataWithHexString:@\"%@\"]];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(rand12), hexCertMessage, [sessionKey hexString], [resultData hexString]);
+        return resultData;
+    } catch (const std::exception& ) {
+        DLogTagInfo(@"XPBLEDataMake", @"generateRescueAuth1DataRand12 failed with params: rand12 = %@, hexCertMessage = %@, sessionKey = %@", @(rand12), hexCertMessage, [sessionKey hexString]);
+    }
+    
+    return [NSData new];
+}
+
++ (NSData *)generateRescueRkeControlRequestData:(BOOL)isEncrypt controlId:(uint8_t)controlId cmd:(uint8_t )cmd sessionKey:(NSData *)sessionKey {
+    if (!sessionKey) {
+        DLogTagInfo(@"XPBLEDataMake", @"sessionKey is nil");
+        return nil;
+    }
+    try {
+        std::vector<uint8_t> controlDataVec;
+        controlDataVec.push_back(cmd);
+        std::vector<uint8_t> sessionKeyVec = [self convertNSDataToVector:sessionKey];
+        size_t length = 0;
+//        auto result = generateRescueRKEPacket(isEncrypt, controlId, cmd, sessionKeyVec.data(), sessionKeyVec.size(), &length);
+        auto result = generateRescueRKEPacket(isEncrypt, controlId, controlDataVec, sessionKeyVec);
+        NSData *resultData = [NSData dataWithBytes:result.data() length:result.size()];
+        
+        DLogTagInfo(@"XPBLEDataMake", @"提取单元测试：\nNSData *result = [XPBleKeyV3DataProcessor generateRescueRkeControlRequestData:%@ controlId:%@ cmd:%@ sessionKey:[NSData dataWithHexString:@\"%@\"]];\n"
+                    "NSString * testResultToHexStr = [result hexString];\n"
+                    "NSString * testResultHexRight = @\"%@\"; // 当次执行结果 \n"
+                    "XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);\n",
+                    @(isEncrypt), @(controlId), @(cmd), [sessionKey hexString], [resultData hexString]);
+        
+        return resultData;
+    } catch (const std::exception& ) {
+        DLogTagInfo(@"XPBLEDataMake", @"generateRescueRkeControlRequestData failed with params: isEncrypt = %@, controlId = %@, cmd = %@, sessionKey = %@", @(isEncrypt), @(controlId), @(cmd), [sessionKey hexString]);
+    }
+    return nil;
+}
+
+@end

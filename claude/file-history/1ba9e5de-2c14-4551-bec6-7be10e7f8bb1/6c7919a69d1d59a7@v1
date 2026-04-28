@@ -1,0 +1,8 @@
+# deps.yml — XPVehicleExt 模块依赖声明
+# 格式定义见 .claude/skills/spec-coding-scaffold/templates/deps.schema.yml
+
+module: XPVehicleExt
+
+depends_on:
+  - id: XPVehicleSDK
+    reason: # TODO: 填写依赖原因

@@ -1,0 +1,25 @@
+# OC/Swift 互操作踩坑记录
+
+> 涉及模块: 全局适用（XPCarAbilityConfig, XPVehicleExt, VehicleConnection 等）
+
+---
+
+## 坑1: Swift 新增类未加 @objc 导致 OC 调用崩溃
+- **现象**: OC 代码调用 Swift 类时编译通过但运行崩溃
+- **根因**: Swift 类/方法未添加 `@objc` 标注，OC 运行时找不到 selector
+- **修复**: 暴露给 OC 的 Swift 类必须添加 `@objc(XPClassName)` + `public`
+
+## 坑2: OC 新增文件未更新 Bridging-Header
+- **现象**: Swift 代码无法找到新增的 OC 类
+- **根因**: Bridging-Header 未包含新增的 .h 文件
+- **修复**: 新增 OC 文件后同步更新 Bridging-Header
+
+## 坑3: XPCarAbilityConfig 新增属性 Swift 侧不可见
+- **现象**: Swift 代码访问 config 新属性编译报错
+- **根因**: XPCarAbilityConfig 是纯 OC，新增属性后需确保通过 Bridging-Header 正确暴露
+- **修复**: 新增属性后在 Swift 侧验证可访问性
+
+## 坑4: @Published 状态变更线程问题
+- **现象**: 监听 VehicleConnection 的 @Published 属性更新 UI 时崩溃
+- **根因**: @Published 在设置线程触发通知，VehicleConnection 状态可能从后台线程变更
+- **修复**: 监听 @Published 属性时使用 `receive(on: DispatchQueue.main)` 切换到主线程

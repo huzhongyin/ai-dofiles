@@ -1,0 +1,24 @@
+# MQTT 自动重连重发机制
+
+## 元信息
+- 触发关键词: ["needReconnect", "重连重发", "MQTT断线", "自动重发", "MQTTHandler重连"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+MQTTHandler 的 `publish` 方法有 `needReconnect` 参数（默认 true）：
+
+- **true**: 断线后自动尝试重连，重连成功后自动重发待发消息
+- **false**: 断线直接返回错误，不重试
+
+**注意**: 订阅失败会自动 1 秒重试，**但没有最大重试次数限制**，可能导致无限重试。
+
+**典型用法**:
+```swift
+handler.publish(message: json, messageId: "msg_001", timeOutTime: 15, needReconnect: true) { response, error in
+    // needReconnect=true: 断线会自动重连后重发
+}
+```
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/MQTT/MQTTHandler.swift`

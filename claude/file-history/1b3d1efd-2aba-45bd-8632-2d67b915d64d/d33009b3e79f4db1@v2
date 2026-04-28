@@ -1,0 +1,25 @@
+# Polling Proxy 依赖注入模式
+
+## 元信息
+- 触发关键词: ["PLDataProxyProtocol", "PLPollingProxyProtocol", "Polling代理", "Proxy注入", "Polling解耦"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+XPPollingSDK 通过 Proxy 协议模式与主工程完全解耦：
+
+1. **`PLDataProxyProtocol`** — 数据代理（输入）
+   - SDK 通过此协议获取钥匙配置、车型信息等数据
+   - 主工程实现此协议并通过 `setKeySettingDataProxy:` 注入
+
+2. **`PLPollingProxyProtocol`** — 结果代理（输出）
+   - SDK 通过此协议回调解锁/闭锁结果
+   - 主工程实现此协议并通过 `setPollingProxy:` 注入
+
+**核心规则**: 
+- **所有外部调用必须通过 `XPPollingSDK` 入口类**
+- **主工程不得直接引用 PL 开头的内部文件**（头文件中有明确注释）
+- 这种 Proxy 模式是让 SDK 独立编译、独立测试的关键架构决策
+
+**代码位置**: `submodule/XPPollingSDK/XPPollingSDK/sourceFile/Proxy/`

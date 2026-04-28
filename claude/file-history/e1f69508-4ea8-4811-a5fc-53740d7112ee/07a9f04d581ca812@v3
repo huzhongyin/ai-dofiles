@@ -1,0 +1,26 @@
+# MQTT 连接状态判定
+
+## 元信息
+- 触发关键词: ["MQTT连接", "MQTTConnectionState", "connected状态", "MQTT订阅", "MQTT连接成功"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+MQTT 的 `state == .connected` 需要**同时满足**两个条件：
+1. MQTT TCP 连接成功
+2. Topic 订阅成功
+
+仅 TCP 连上但尚未订阅成功时，状态仍为 `connecting`，此时发送消息会失败。
+
+**状态枚举（两层）**: 
+- 底层: `MQTTPublisherConnectionState`（MQTTPublisher 使用）
+  - `.disconnected`(0) — 未连接
+  - `.connecting`(1) — 连接中（含已连但未订阅）
+  - `.connected`(2) — 连接+订阅均成功
+- 业务层: `MQTTConnectionState`（VehicleSDK/TCPConnection 使用）
+  - 通过 `MQTTHandler.state(with:)` 映射
+
+**代码位置**: 
+- 底层: `submodule/XPMQTTLibrary/XPMQTTLibrary/Sources/Publish/MQTTPublisher.m`
+- 业务层: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/MQTT/MQTTHandler.swift`

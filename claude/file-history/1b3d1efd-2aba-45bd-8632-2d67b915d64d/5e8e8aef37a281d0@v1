@@ -1,0 +1,331 @@
+//
+//  XPCarKeyPassAccesser.swift
+//  XiaoPengQiChe
+//
+//  Created by huzy2 on 2024/4/20.
+//  Copyright © 2024 xiaopeng.com. All rights reserved.
+//
+
+import Foundation
+import PassKit
+
+@objc(XPCarKeyPassAccessProtocol)
+public protocol CarKeyPassAccessProtocol: NSObjectProtocol {
+    func setCarkeyEventDelegate(delegate: CarKeyPassEventDelegate?)
+    func passIsAvailable() -> CarKeyPassEventError
+    func getCurrentCarKeyId() -> String?
+    func getCurrentCarKeyInfo() -> Dictionary<String, Any>?
+    func remoteCarKeyChanged(keyIdList: [String]?, uid: UInt64) -> Void
+    func startCarKeyPair(password: String, autoMakerId: String, profileTemplateId: String, brandName: String, supportedRadioTechnologies: UInt, complete: @escaping (CarKeyPassEventError, UIViewController?) -> Void)
+    func startCarKeyShare(isPromptToShareUrl: Bool, complete: @escaping (CarKeyPassEventError, UIViewController?) -> Void)
+    func handleAppRunState(isInBackground: Bool)
+}
+
+@objc(XPCarKeyPassEventDelegate)
+public protocol CarKeyPassEventDelegate: NSObjectProtocol {
+    func carKeyAddPassResult(error: CarKeyPassEventError)
+    func carKeySharePassResult(error: CarKeyPassEventError)
+    func carKeyShareDidCreateShare(universalShareURL: NSURL?, activationCode: NSString?)
+}
+
+protocol CarKeyPassManageDelegate: NSObjectProtocol {
+    func localPassDidRefresh()
+}
+
+public class CarKeyPassAccesser: NSObject {
+    
+    public static func supportCarKeyType() -> CarKeyPairType {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        
+        // 获取设备型号
+        let machineMirror = Mirror(reflecting: systemInfo.machine)
+        let deviceModel = machineMirror.children.reduce("") { identifier, element in
+            guard let value = element.value as? Int8, value != 0 else { return identifier }
+            return identifier + String(UnicodeScalar(UInt8(value)))
+        }
+        let finalDeviceModel = deviceModel.isEmpty ? UIDevice.current.model : deviceModel
+        if let commaIndex = finalDeviceModel.firstIndex(of: ",") {
+            let partBeforeComma = finalDeviceModel[..<commaIndex]
+            if partBeforeComma.compare("iPhone12", options: .numeric, range: nil, locale: nil) != .orderedAscending {
+                if finalDeviceModel == "iPhone14,6" || finalDeviceModel == "iPhone12,8" || finalDeviceModel == "iPhone17,5" {
+                    return .nfc
+                } else {
+                    return .bleAndNfc
+                }
+            } else {
+                if partBeforeComma.compare("iPhone11", options: .numeric, range: nil, locale: nil) != .orderedAscending {
+                    return .nfc
+                } else {
+                    return .none
+                }
+            }
+        } else {
+            return .bleAndNfc
+        }
+    }
+    
+    public static func openCarKeyPass() -> Void {
+        Log.i("carKeyPass", "open car key passs")
+        let url = URL(string: "wallet://")!
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+    }
+    
+    static private func getLocalKeyArchiveURL() -> URL {
+        let documentsDirectories = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let documentDirectory = documentsDirectories.first!
+        return documentDirectory.appendingPathComponent("wallet_key_data.archive")
+    }
+    
+
+    static func saveCarKeyCard(_ card: CarKeyCard) -> Bool {
+        let fileURL = getLocalKeyArchiveURL()
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(card)
+            try data.write(to: fileURL)
+            Log.i("carKeyPass", "carKeyPass save success: \(fileURL.path)")
+            return true
+        } catch {
+            Log.i("carKeyPass", "carKeyPass save failed: \(error)")
+            return false
+        }
+    }
+    
+    static func clearCarKeyCardData() {
+        let fileURL = self.getLocalKeyArchiveURL()
+        do {
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                try FileManager.default.removeItem(at: fileURL)
+                Log.i("carKeyPass", "achive local key clear success")
+            }
+        } catch {
+            Log.i("carKeyPass", "achive local key clear failed: \(error)")
+        }
+    }
+    
+    // 解档（读取）对象
+    static func loadCarKeyCard() -> CarKeyCard? {
+        let fileURL = getLocalKeyArchiveURL()
+        // 检查文件是否存在
+        guard FileManager.default.fileExists(atPath: fileURL.path),
+              let data = try? Data(contentsOf: fileURL) else {
+            Log.i("carKeyPass", "archive url is not exist)")
+            return nil
+        }
+        do {
+            let decoder = JSONDecoder()
+            let card = try decoder.decode(CarKeyCard.self, from: data)
+            Log.i("carKeyPass", "carkey card load success)")
+            return card
+        } catch {
+            Log.i("carKeyPass", "carkey card load failed: \(error)")
+            return nil
+        }
+    }
+    
+    var carKeyPassManager: CarKeyPassManageProtocol?
+    weak var eventDelegate: CarKeyPassEventDelegate?
+    weak var delegate: CarKeyPassManageDelegate?
+    
+    var localCarKeyCard: CarKeyCard?
+    var cccVid: String
+    
+    init(cccVid: String, delegate: CarKeyPassManageDelegate?) {
+        self.cccVid = cccVid
+        self.delegate = delegate
+        super.init()
+        Log.i("carKeyPass", "CarKeyPassAccesser init")
+        if #available(iOS 18.0, *) {
+            self.carKeyPassManager = CarKeyPassManager.init(cccVid: cccVid, delegate: self)
+        }
+    }
+    
+    func initConfigure() {
+        Log.i("carKeyPass", "initConfigure")
+        NotificationCenter.default.addObserver(self, selector: #selector(carKeyNeedRefesh), name: VehicleNotification.CarKeyNeedRefesh, object: nil)
+        self.localCarKeyCard = CarKeyPassAccesser.loadCarKeyCard()
+        if self.localCarKeyCard != nil {
+            self.delegate?.localPassDidRefresh()
+        }
+        self.getLocalPasses()
+    }
+    
+    func getLocalPasses(_ complete: @escaping (Bool) -> Void = { _ in }) {
+        if #available(iOS 18.0, *) {
+            guard let carKeyPassManager = self.carKeyPassManager as? CarKeyPassManager else {
+                complete(false)
+                return
+            }
+            carKeyPassManager.getLocalPasses { card, error in
+                if error == .None {
+                    Log.i("carKeyPass", "get local passes result: \(card)")
+                    guard let card = card else {
+                        guard let localCard = self.localCarKeyCard else {
+                            complete(false)
+                            return
+                        }
+                        self.localCarKeyCard = nil
+                        CarKeyPassAccesser.clearCarKeyCardData()
+                        self.delegate?.localPassDidRefresh()
+                        NotificationCenter.default.post(name: VehicleNotification.CarKeyPassClear, object: self.cccVid)
+                        complete(true)
+                        return
+                    }
+                    if self.localCarKeyCard != card {
+                        self.localCarKeyCard = card
+                        CarKeyPassAccesser.saveCarKeyCard(card)
+                        self.delegate?.localPassDidRefresh()
+                    }
+                    complete(true)
+                } else {
+                    complete(false)
+                    Log.i("carKeyPass", "get local passes failed: \(error)")
+                }
+            }
+        } else {
+            complete(false)
+        }
+    }
+    
+    @objc func carKeyNeedRefesh() {
+        Log.i("carkeypass", "car key need refresh")
+        self.getLocalPasses()
+    }
+    
+}
+
+extension CarKeyPassAccesser: CarKeyPassAccessProtocol {
+    public func setCarkeyEventDelegate(delegate: (any CarKeyPassEventDelegate)?) {
+        self.eventDelegate = delegate
+    }
+    
+    public func startCarKeyPair(password: String, autoMakerId: String, profileTemplateId: String, brandName: String, supportedRadioTechnologies: UInt, complete: @escaping (CarKeyPassEventError, UIViewController?) -> Void) {
+        Log.i("carKeyPass", "carkey pair,vehicleIdentifier: \(self.cccVid), password: \(password), autoMakerId: \(autoMakerId), profileTemplateId: \(profileTemplateId), brandName: \(brandName), supportedRadioTechnologies: \(supportedRadioTechnologies)")
+        guard let keyId = self.getCurrentCarKeyId() else {
+            self.carKeyPassManager?.startCarKeyPair(password: password, autoMakerId: autoMakerId, profileTemplateId: profileTemplateId, brandName: brandName, supportedRadioTechnologies: supportedRadioTechnologies, complete: complete)
+            return
+        }
+        complete(.HadPaired, nil);
+        
+    }
+    
+    public func startCarKeyShare(isPromptToShareUrl: Bool, complete: @escaping (CarKeyPassEventError, UIViewController?) -> Void) {
+        guard let localCarKeyCard = self.localCarKeyCard else {
+            complete(.LocalPassNotFound, nil)
+            return
+        }
+        self.carKeyPassManager?.startCarKeyShare(isPromptToShareUrl: isPromptToShareUrl, complete: complete)
+    }
+    
+    
+    public func passIsAvailable() -> CarKeyPassEventError {
+//        Log.i("carKeyPass", "pass is available: \(self.cccVid)")
+        guard let card = self.localCarKeyCard else {
+            return .LocalPassNotFound
+        }
+        if card.cccVid != self.cccVid {
+            return .LocalPassNotFound
+        }
+        if card.status == .XPBLEKeyCardStatusNormal {
+            return .None
+        } else {
+            if card.status == .XPBLEKeyCardStatusToBeActivated {
+                return .RequiresActivation
+            }
+            if card.status == .XPBLEKeyCardStatusActivated {
+                return .Activating
+            }
+            if card.status == .XPBLEKeyCardStatusReportLost {
+                return .Suspended
+            }
+            return .None
+        }
+    }
+    
+    public func getCurrentCarKeyId() -> String? {
+//        Log.i("carKeyPass", "get car key id: \(self.cccVid)")
+        guard let card = self.localCarKeyCard else {
+            return nil
+        }
+        return card.cardNo
+    }
+    
+    
+    public func getCurrentCarKeyInfo() -> Dictionary<String, Any>? {
+        Log.i("carKeyPass", "get car key info: \(self.cccVid)")
+        guard let card = self.localCarKeyCard else {
+            return nil
+        }
+        var existKey: Dictionary<String, Any> = Dictionary()
+        existKey[CarKeyInfoConstants.kCarKeyVehicleIdKey] = card.cardNo
+        existKey[CarKeyInfoConstants.kCarKeyKeyIdKey] = card.cccVid
+        existKey[CarKeyInfoConstants.kCarKeyStateKey] = card.status?.rawValue
+        existKey[CarKeyInfoConstants.kCarKeyLocalNameKey] = card.nickName
+        existKey[CarKeyInfoConstants.kCarKeyDeviceNameKey] = card.deviceName
+        return existKey
+    }
+    
+    public func remoteCarKeyChanged(keyIdList: [String]?, uid: UInt64) {
+        Log.i("carKeyPass", "remoteCarKeyChanged: \(keyIdList)")
+        guard let keyIdList = keyIdList else {
+            guard let carKeyCard = self.localCarKeyCard else {
+                return
+            }
+            guard let localUid = carKeyCard.uid else {
+                return
+            }
+            if uid == localUid {
+                self.localCarKeyCard = nil
+                CarKeyPassAccesser.clearCarKeyCardData()
+                NotificationCenter.default.post(name: VehicleNotification.CarKeyPassClear, object: self.cccVid)
+                self.delegate?.localPassDidRefresh()
+            }
+            return
+        }
+        guard let carKeyCard = self.localCarKeyCard else {
+            return
+        }
+        for keyId in keyIdList {
+            if keyId == carKeyCard.cardNo && carKeyCard.uid == nil {
+                self.localCarKeyCard?.uid = uid;
+                CarKeyPassAccesser.saveCarKeyCard(self.localCarKeyCard ?? carKeyCard)
+                break
+            }
+        }
+    }
+    
+    public func handleAppRunState(isInBackground: Bool) {
+        if !isInBackground {
+            self.getLocalPasses()
+        }
+    }
+    
+}
+
+extension CarKeyPassAccesser: CarKeyPassDelegate {
+    func reportBlockingException(data: CarKeyExceptionObj) {
+        NotificationCenter.default.post(name: VehicleNotification.CarKeyPassExceptionReport, object: data)
+    }
+    
+    public func carKeyAddPassResult(error: CarKeyPassEventError) {
+        if error == .None {
+            self.getLocalPasses()
+        }
+        self.eventDelegate?.carKeyAddPassResult(error: error)
+        NotificationCenter.default.post(name: VehicleNotification.kCarKeyFlowDidEnd, object: nil)
+    }
+    
+    public func carKeySharePassResult(error: CarKeyPassEventError) {
+        self.eventDelegate?.carKeySharePassResult(error: error)
+    }
+    
+    public func carKeyShareDidCreateShare(universalShareURL: NSURL?, activationCode: NSString?) {
+        self.eventDelegate?.carKeyShareDidCreateShare(universalShareURL: universalShareURL, activationCode: activationCode)
+    }
+    
+    
+    
+}

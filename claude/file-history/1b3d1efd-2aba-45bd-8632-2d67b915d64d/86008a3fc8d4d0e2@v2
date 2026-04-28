@@ -1,0 +1,51 @@
+# Apple CarKey 车型支持条件
+
+## 元信息
+- 触发关键词: ["CarKey", "carkey", "CCC钥匙", "钱包钥匙", "CCC_DK_THIRD", "DK3_OPEN", "CarKeyPassAccesser", "CarKeyConditionCheck", "PHONE_UWB_KEY", "Mona CarKey"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+
+### 支持条件（全部满足才可用）
+Apple CarKey（CCC 钱包钥匙）需要同时满足以下条件：
+1. **iOS 版本**: iOS 18.0+
+2. **蓝牙协议**: V3 协议（`bleKeyVersion == BleKeyProtocolVesion.V3.rawValue`）
+3. **车辆能力**: `CCC_DK_THIRD == true`（对应 `DK3_OPEN` 配置项）
+4. **VID 配置**: `cccVid != nil`（ExtInfo 中的 CCC Vehicle ID）
+5. **硬件支持**: `CarKeyPassAccesser.supportCarKeyType() >= .ble`
+
+### 判断入口
+- `CarKeyConditionCheck.isSupportCarKeySoftware(cccVid:bleKeyVersion:isSupportCCC:)` — 综合判断
+- `DigitalKeyManager.carKeyPlugin` 计算属性 — 在 `!CCC_DK_THIRD` 时返回 nil，阻断 CarKey 路径
+
+### Mona 车型不支持 CarKey
+**代码依据**（非假设，已通过代码验证）：
+- Mona（D01）使用独立的 `MonaKeyManager`，通过 `POLLING_STRATEGY_D01_BAN` 标识
+- Mona 不具备 `CCC_DK_THIRD`（`DK3_OPEN`）能力
+- `DigitalKeyManager.carKeyPlugin` 在 `!CCC_DK_THIRD` 时返回 nil
+- Mona 的蓝牙协议栈完全独立（`MonaBleDataProcessor`），不经过 CarKey 代码路径
+
+### 钥匙类型决策
+`DigitalKeyManager.vaildBleKeyCategory()` 决定使用哪种钥匙连接：
+- `carKeyPlugin != nil` + CarKey 存在 → `.PHONE_UWB_KEY`（CarKey Session）
+- `carKeyPlugin == nil` 或 CarKey 不存在 → `.PHONE_BLE_KEY` 等（私有蓝牙钥匙）
+
+### CarKey 状态枚举
+`CarKeyPassEventError` 状态：
+| 状态 | 含义 | BleKeyCardStatus |
+|------|------|-----------------|
+| `.None` | 正常可用 | `.normal` |
+| `.Suspended` | 冻结/挂失 | `.reportLost` |
+| `.RequiresActivation` | 待激活 | `.toBeActivated` |
+| `.Activating` | 激活中 | `.activated` |
+| `.LocalPassNotFound` | 本地不存在 | — |
+
+## 关联
+- 知识点: `ble-mona-independent.kp.md`（Mona 蓝牙独立性）
+- 知识点: `config-xiaopeng-vs-mona.kp.md`（XP vs Mona 差异）
+- 知识点: `vehicle-ext-pattern.kp.md`（CarKey 为 XPVehicleExt 13 个子特性之一）
+- 代码: `submodule/XPVehicleSDK/.../CarKeyConditionCheck.swift`
+- 代码: `submodule/XPVehicleSDK/.../CarKeyPassAccesser.swift`
+- 代码: `submodule/XPVehicleSDK/.../DigitalKeyManager.swift`

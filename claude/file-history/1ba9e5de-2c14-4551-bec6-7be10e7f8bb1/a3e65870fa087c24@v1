@@ -1,0 +1,37 @@
+# XPBase_WebView — LocalPod 规范
+
+## 模块定位
+
+TODO: 一句话说明本模块职责（如 XPBase_Router 负责路由 / XPBusiness_Car 负责车相关业务）。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPBase_WebView/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+TODO: 根据探测到的语言组合填充（LocalPod 通常为 Swift 或 OC，遵循组件化命名前缀）。
+
+## Podspec 依赖约束
+
+TODO: 占位 — 本 Pod 在 `.podspec` 中允许声明的依赖；私有源 `gitlab.x-peng.com` 的使用约定；版本号管理（语义化版本）；subspec 划分原则。
+
+## 命名前缀与 API 稳定性
+
+TODO: 占位 — 本 Pod 的类/方法前缀约定（如 `XPBase_*` / `XPBusiness_*` / `XPCenter_*`）；公开 API 稳定性承诺；`public` vs `internal` 暴露范围；Breaking Change 策略。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+TODO: 列出 LocalPod 层禁止事项（占位）。
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

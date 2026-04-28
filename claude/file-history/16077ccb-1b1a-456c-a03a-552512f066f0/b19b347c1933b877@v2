@@ -1,0 +1,127 @@
+# 功能: 感应闭锁
+
+## 元信息
+- feature_id: auto-lock
+- trigger_keywords: [感应闭锁, 自动锁车, 无感闭锁, auto-lock]
+- owner_module: XPPollingSDK
+- related_modules: [XPBLEDataProcessor, XPVehicleSDK]
+- depends_on_files:
+  - submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm
+  - submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/PLXPPollingManager.mm
+  - submodule/XPPollingSDK/XPPollingSDK/sourceFile/PollingEffect/PLXPMultiBleManager.m
+  - submodule/XPPollingSDK/XPPollingSDK/sourceFile/BLELocation/PLXPBleLocationDefined.h
+  - submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/PLXPPollingDefined.h
+  - submodule/XPPollingSDK/XPPollingSDK/sourceFile/Util/PLXPCommandTool.m
+- last_updated: 2026-04-22
+- code_anchors_verified: 2026-04-22
+
+## 功能概述
+用户携带手机远离车辆，当 RSSI 距离预测算法判断用户穿过迎宾圈（WelcomeCircle）后，自动发送闭锁指令给车端，实现无感锁车。
+
+## 入口
+- 触发起点: PLXPPollingFirstPollingHandler._handleLocationResult: / PLXPPollingSecondPollingHandler 对应方法
+- 代码位置: PLXPPollingFirstPollingHandler.mm:117, _handleLocationResult:
+- 锚点签名: `self.distanceLevel >= PLBLEKeyDistanceLevelWelcomeCircle`
+
+## 前提条件
+| 条件 | 检查位置(文件:方法) | 锚点签名 | 日志关键字(Tag + 格式) |
+|------|---------------------|---------|----------------------|
+| Polling 未暂停 | PLXPMultiBleManager.m:501, judgePollingIsPaused | `!self.gearValueIsSupportPolling` | [MultiBleOptTag] `polling服务要暂停:` / `polling服务要恢复` |
+| 闭锁模式已开启 | PLXPPollingManager.mm:949, pollingLockIfNeed: | `self.pollingRunMode != PLPollingRunModeLockAndUnlock && self.pollingRunMode != PLPollingRunModeLock` | [kBLEKeyPollingTag] `启用的mode1,不做闭锁` |
+| 车门已关闭 | PLXPPollingManager.mm:953, pollingLockIfNeed: | `self.isDoorOpen` | [kBLEKeyPollingTag] `车辆是开门状态，不执行polling闭锁` |
+| 车辆当前未锁定 | PLXPPollingManager.mm:962, pollingLockIfNeed: | `doorState == XPVehicleDoorLockStateLocked` | （无日志，静默返回 NO） |
+| BLE 已连接 | PLXPPollingManager.mm:875, sendPollingLockCommand: | `bleConnectState == XPBLEConnectionStateAvailable` | [kBLEKeyPollingTag] `<PA>主蓝牙连接-鉴权成功/失败` |
+| gearValueIsSupportPolling = YES | PLXPMultiBleManager.m:502 | `!self.gearValueIsSupportPolling` | [MultiBleOptTag] `gearValueIsSupportPolling:%d` |
+
+## 激活条件
+- 判断逻辑: 距离等级从解锁圈内变为迎宾圈外（`distanceLevel >= PLBLEKeyDistanceLevelWelcomeCircle`）
+- 代码位置: PLXPPollingFirstPollingHandler.mm:137
+- 锚点签名: `self.distanceLevel >= PLBLEKeyDistanceLevelWelcomeCircle`
+- 日志关键字: [kBLEKeyPollingTag] `PLogic` 相关日志
+- 说明: 距离预测算法（BLELocation）周期性计算 RSSI → 距离等级，当等级穿过迎宾圈时调用 predictLock
+
+## 调用链
+```
+[1] BLELocation 距离预测引擎输出 distanceLevel 变化
+    ├─ 代码: PLXPBleLocationManager → 定位处理器 → 回调 distanceLevel
+    ├─ 说明: RSSI 信号 → KNN/一代/二代预测算法 → 距离等级
+    └─ 输出: distanceLevel (PLBLEKeyDistanceLevel 枚举)
+
+[2] PollingHandler 检测到 distanceLevel >= WelcomeCircle
+    ├─ 代码: PLXPPollingFirstPollingHandler.mm:117, _handleLocationResult:
+    ├─ 锚点签名: `self.distanceLevel >= PLBLEKeyDistanceLevelWelcomeCircle`
+    ├─ 日志: [kBLEKeyPollingTag]
+    └─ 输出: 调用 predictLock
+
+[3] predictLock 执行闭锁判断
+    ├─ 代码: PLXPPollingFirstPollingHandler.mm:149, predictLock
+    ├─ 锚点签名: `self.operateNativeUnlockInLockRange`
+    ├─ 日志: [kBLEKeyPollingTag] `PLogic，操作了主动解锁，不闭锁`（若拦截）
+    └─ 输出: 调用 delegate.pollingLockIfNeed: → delegate.sendPollingLockCommand:
+
+[4] pollingLockIfNeed: 多条件校验
+    ├─ 代码: PLXPPollingManager.mm:948, pollingLockIfNeed:
+    ├─ 锚点签名: `self.isDoorOpen`
+    ├─ 日志: [kBLEKeyPollingTag] `启用的mode1,不做闭锁` / `车辆是开门状态` / `超过3次`
+    └─ 输出: YES/NO
+
+[5] sendPollingLockCommand: 发送闭锁指令
+    ├─ 代码: PLXPPollingManager.mm:868, sendPollingLockCommand:
+    ├─ 锚点签名: `bleConnectState == XPBLEConnectionStateAvailable`
+    ├─ 日志: [kBLEKeyPollingTag] `<PA>主蓝牙连接-鉴权成功，发送闭锁指令` / `<PA>主蓝牙连接-鉴权失败，发送4G上锁`
+    ├─ 分支: BLE 已鉴权 → sendPollingBussinessCommand:XPPollingBussinessPollingLock
+    ├─ 分支: BLE 未鉴权 → sendPollingBussinessCommand:XPPollingBussiness4GRevertLock
+    └─ 输出: → [6]
+
+[6] sendPollingBussinessCommand → sendLockCommand（跨模块边界）
+    ├─ 代码: PLXPPollingManager.mm:454, case XPPollingBussinessPollingLock → sendLockCommand
+    ├─ 锚点签名: `[self sendLockCommand]`
+    ├─ 日志: [kBLEKeyPollingTag] `<PA>发送Polling上锁指令`
+    ├─ sendLockCommand 内部:
+    │   ├─ ALL_WORK_KEY_EXIST 分支 → sendAllWorkCommand:PLXPTBoxCommandPollingLock
+    │   └─ 默认分支 → PLXPCommandTool.sendCommand:XPVehicleCommandPollingLock
+    ├─ 跨模块入口: XPVehicleSDK.shared.vehicleManager.currentVehicle sendCommand:cmd success: failed:
+    ├─ 入参: XPVehicleCommandPollingLock（枚举值）
+    ├─ 期望回调: success → pollingLockResultWithIsSuccess:YES + 播放声音/震动 + postAutoLockNotificationWithLockSuccess:YES
+    ├─ 失败回调: failed → XPVehicleError; channel==TCP 时为 HTTP 失败 → pollingLockResultWithIsSuccess:NO + postAutoLockNotificationWithLockSuccess:NO
+    └─ @ref(module:XPVehicleSDK, node:polling-command-dispatch) [待创建]
+```
+
+## 状态机
+| 状态 | 含义 | 转入条件 | 转出条件 | 代码位置 | 日志关键字 |
+|------|------|---------|---------|---------|-----------|
+| Polling 暂停 | 不执行距离计算和闭锁 | gearValueIsSupportPolling=NO / isAutoParking / isSleepMode 等任一 | 所有暂停条件解除 | PLXPMultiBleManager.m:502 | [MultiBleOptTag] `polling服务要暂停/恢复` |
+| monitorLock = YES | 正在监控闭锁 | 用户解锁后设置 | 闭锁完成 / 超出范围 | PLXPPollingFirstPollingHandler.mm:262 | — |
+| 闭锁重试计数 | 最多3次 | 每次 sendPollingLockCommand 递增 | 成功 / 达到上限 | PLXPPollingManager.mm:966 | `<PA>想闭锁，但是超过3次` |
+
+## 决策分支点
+| 分支点 | 代码位置 | 锚点签名 | 条件A→结果 | 条件B→结果 | 影响 |
+|--------|---------|---------|-----------|-----------|------|
+| Polling 暂停判断 | PLXPMultiBleManager.m:502 | `!self.gearValueIsSupportPolling` | 任一暂停条件=YES→暂停Polling | 全部=NO→恢复Polling | 暂停时无距离计算，闭锁不触发 |
+| 距离等级判断 | PLXPPollingFirstPollingHandler.mm:137 | `PLBLEKeyDistanceLevelWelcomeCircle` | >=迎宾圈→predictLock | <迎宾圈→不闭锁 | 核心触发条件 |
+| 主动解锁拦截 | PLXPPollingFirstPollingHandler.mm:151 | `self.operateNativeUnlockInLockRange` | YES→不闭锁 | NO→继续 | 防止主动解锁后立即自动闭锁 |
+| BLE/4G 通道选择 | PLXPPollingManager.mm:875 | `XPBLEConnectionStateAvailable` | BLE已鉴权→BLE闭锁 | 否→4G闭锁 | BLE 更快但需鉴权 |
+
+## 正常执行流
+1. 用户从车旁走开，RSSI 信号逐渐衰减
+2. BLELocation 预测引擎计算 distanceLevel 逐渐增大
+3. 穿过迎宾圈（WelcomeCircle）时，PollingHandler._handleLocationResult: 调用 predictLock
+4. predictLock 检查 operateNativeUnlockInLockRange 标记（未被主动解锁拦截）
+5. delegate.pollingLockIfNeed: 多条件校验通过
+6. delegate.sendPollingLockCommand: 检查 BLE 连接状态
+7. BLE 已鉴权 → sendPollingBussinessCommand:XPPollingBussinessPollingLock → sendLockCommand → PLXPCommandTool.sendCommand:XPVehicleCommandPollingLock → XPVehicleSDK.currentVehicle.sendCommand 跨模块下发闭锁指令
+8. 车端执行闭锁 → 回调 pollingLockResultWithIsSuccess:YES
+
+## 异常状态
+| 异常场景 | 表现 | 根因链路 | 恢复方式 |
+|---------|------|---------|---------|
+| gearValueIsSupportPolling 永远为 NO | Polling 永久暂停，闭锁不触发 | @ref(gear-state-update) 链路断裂：BLE DataParser Bug 导致无 drive.shift_state + MQTT 停推 | 修复 DataParser 路由；或增加超时恢复机制 |
+| 车门未关 | 闭锁被 isDoorOpen 拦截 | 用户开门离开但未关门 | 关门后下一次 Polling 周期触发 |
+| BLE 未鉴权 | 走 4G 闭锁备用通道 | BLE 鉴权超时/失败 | 4G 通道兜底 |
+| 闭锁重试超过3次 | 不再发送闭锁指令 | 车端未响应/网络问题 | 等待重新进入闭锁圈范围重置计数 |
+| 主动解锁后立即远离 | operateNativeUnlockInLockRange=YES 拦截闭锁 | 用户刚手动解锁不应自动锁回 | 走出连接圈后标记清除 |
+
+## 引用节点清单
+- @ref(gear-state-update): 档位状态更新链路（drive.shift_state → gearValueIsSupportPolling）✅
+- @ref(module:XPBLEDataProcessor, node:dataparser-drive-output): DataParser 输出 drive 节点的链路 ✅
+- @ref(module:XPVehicleSDK, node:polling-command-dispatch): Polling 指令下发到车端的链路 ✅

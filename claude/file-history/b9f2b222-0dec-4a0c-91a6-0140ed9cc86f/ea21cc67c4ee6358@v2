@@ -1,0 +1,421 @@
+#!/usr/bin/env python3
+"""
+小鹏汽车AI编码治理系统验证工具
+用于验证整个系统的功能完整性和性能指标
+"""
+
+import sys
+import time
+import json
+import argparse
+from pathlib import Path
+from typing import Dict, List, Any
+
+# 添加项目根路径到系统路径
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from scripts.claude_code_adapter import ClaudeCodeAdapter
+from scripts.architecture_scanner import ArchitectureScanner
+from scripts.permission_checker import PermissionChecker
+from scripts.standards_validator import StandardsValidator
+
+class XPAICodingValidator:
+    """AI编码治理系统验证器"""
+
+    def __init__(self, project_root: str = "."):
+        self.project_root = Path(project_root)
+        self.adapter = ClaudeCodeAdapter(str(self.project_root))
+        self.results = {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "project_path": str(self.project_root),
+            "tests": {}
+        }
+
+    def run_all_validations(self) -> Dict[str, Any]:
+        """运行所有验证测试"""
+        print("🚀 小鹏汽车AI编码治理系统验证工具")
+        print("=" * 50)
+
+        # 基础功能验证
+        self._test_project_initialization()
+        self._test_architecture_scanning()
+        self._test_permission_system()
+        self._test_standards_validation()
+        self._test_ai_coding_suggestions()
+        self._test_integration_workflow()
+
+        # 性能指标验证
+        self._test_performance_metrics()
+
+        # 生成验证报告
+        self._generate_report()
+
+        return self.results
+
+    def _test_project_initialization(self):
+        """测试项目初始化功能"""
+        print("\n📋 测试项目初始化...")
+
+        start_time = time.time()
+        try:
+            result = self.adapter.initialize_project()
+            duration = time.time() - start_time
+
+            success = (
+                result.get("status") == "initialized" and
+                result.get("total_modules", 0) > 0 and
+                "permission_matrix" in result
+            )
+
+            self.results["tests"]["project_initialization"] = {
+                "status": "PASS" if success else "FAIL",
+                "duration_ms": int(duration * 1000),
+                "modules_found": result.get("total_modules", 0),
+                "details": result
+            }
+
+            print(f"   ✅ 项目初始化: {'通过' if success else '失败'}")
+            print(f"   📊 发现模块数: {result.get('total_modules', 0)}")
+            print(f"   ⏱️  耗时: {duration:.2f}s")
+
+        except Exception as e:
+            self.results["tests"]["project_initialization"] = {
+                "status": "ERROR",
+                "error": str(e)
+            }
+            print(f"   ❌ 项目初始化失败: {e}")
+
+    def _test_architecture_scanning(self):
+        """测试架构扫描功能"""
+        print("\n🏗️  测试架构扫描...")
+
+        start_time = time.time()
+        try:
+            scanner = ArchitectureScanner(str(self.project_root))
+            architecture = scanner.scan_project()
+            duration = time.time() - start_time
+
+            success = (
+                len(architecture.modules) > 0 and
+                architecture.main_app and
+                len(architecture.dependency_layers) > 0
+            )
+
+            self.results["tests"]["architecture_scanning"] = {
+                "status": "PASS" if success else "FAIL",
+                "duration_ms": int(duration * 1000),
+                "main_app": architecture.main_app,
+                "modules_count": len(architecture.modules),
+                "dependency_layers": len(architecture.dependency_layers),
+                "circular_dependencies": len(architecture.circular_dependencies)
+            }
+
+            print(f"   ✅ 架构扫描: {'通过' if success else '失败'}")
+            print(f"   🎯 主应用: {architecture.main_app}")
+            print(f"   📦 模块总数: {len(architecture.modules)}")
+            print(f"   🔄 循环依赖: {len(architecture.circular_dependencies)}")
+
+        except Exception as e:
+            self.results["tests"]["architecture_scanning"] = {
+                "status": "ERROR",
+                "error": str(e)
+            }
+            print(f"   ❌ 架构扫描失败: {e}")
+
+    def _test_permission_system(self):
+        """测试权限系统功能"""
+        print("\n🔒 测试权限系统...")
+
+        test_cases = [
+            ("vehicle_team_member", "XPVehicleSDK", "write", True),
+            ("intern", "XPVehicleSDK", "write", False),
+            ("business_developer", "XPBusiness_AI", "read", True),
+            ("external_user", "XPVehicleSDK", "ai_assist", False),
+        ]
+
+        passed_tests = 0
+        total_duration = 0
+
+        for user_role, module, action, expected_allowed in test_cases:
+            start_time = time.time()
+            try:
+                user_context = {"roles": [user_role], "teams": [f"{user_role.split('_')[0]}-team"]}
+                result = self.adapter.check_module_access(
+                    user_id=f"test_{user_role}",
+                    module_name=module,
+                    action=action,
+                    user_context=user_context
+                )
+                duration = time.time() - start_time
+                total_duration += duration
+
+                actual_allowed = result.get("allowed", False)
+                if actual_allowed == expected_allowed:
+                    passed_tests += 1
+                    print(f"   ✅ {user_role} → {module}.{action}: {'允许' if actual_allowed else '拒绝'}")
+                else:
+                    print(f"   ❌ {user_role} → {module}.{action}: 期望{'允许' if expected_allowed else '拒绝'}，实际{'允许' if actual_allowed else '拒绝'}")
+
+            except Exception as e:
+                print(f"   ❌ {user_role} → {module}.{action}: 错误 - {e}")
+
+        avg_duration = total_duration / len(test_cases) if test_cases else 0
+        success = passed_tests == len(test_cases)
+
+        self.results["tests"]["permission_system"] = {
+            "status": "PASS" if success else "FAIL",
+            "passed_tests": passed_tests,
+            "total_tests": len(test_cases),
+            "avg_duration_ms": int(avg_duration * 1000)
+        }
+
+        print(f"   📊 权限测试通过率: {passed_tests}/{len(test_cases)}")
+        print(f"   ⏱️  平均响应时间: {avg_duration*1000:.1f}ms")
+
+    def _test_standards_validation(self):
+        """测试代码标准验证功能"""
+        print("\n📏 测试代码标准验证...")
+
+        # 创建测试文件
+        test_files = self._create_test_files()
+
+        start_time = time.time()
+        try:
+            result = self.adapter.validate_code_standards(test_files)
+            duration = time.time() - start_time
+
+            success = (
+                "total_violations" in result and
+                "scanned_files" in result and
+                result.get("scanned_files", 0) > 0
+            )
+
+            self.results["tests"]["standards_validation"] = {
+                "status": "PASS" if success else "FAIL",
+                "duration_ms": int(duration * 1000),
+                "violations_found": result.get("total_violations", 0),
+                "files_scanned": result.get("scanned_files", 0),
+                "details": result
+            }
+
+            print(f"   ✅ 标准验证: {'通过' if success else '失败'}")
+            print(f"   🔍 扫描文件数: {result.get('scanned_files', 0)}")
+            print(f"   ⚠️  违规数量: {result.get('total_violations', 0)}")
+
+        except Exception as e:
+            self.results["tests"]["standards_validation"] = {
+                "status": "ERROR",
+                "error": str(e)
+            }
+            print(f"   ❌ 标准验证失败: {e}")
+        finally:
+            # 清理测试文件
+            self._cleanup_test_files(test_files)
+
+    def _test_ai_coding_suggestions(self):
+        """测试AI编码建议功能"""
+        print("\n🤖 测试AI编码建议...")
+
+        test_modules = ["XPVehicleSDK", "XPBusiness_AI", "XPBase_Common"]
+        suggestions_count = 0
+        total_duration = 0
+
+        for module in test_modules:
+            start_time = time.time()
+            try:
+                result = self.adapter.get_ai_coding_suggestions({
+                    "module": module,
+                    "action": "ai_assist",
+                    "user_id": "developer"
+                })
+                duration = time.time() - start_time
+                total_duration += duration
+
+                if result.get("allowed") and result.get("suggestions"):
+                    suggestions_count += len(result["suggestions"])
+                    print(f"   ✅ {module}: {len(result['suggestions'])}条建议")
+                else:
+                    print(f"   ⚠️  {module}: 无建议或权限不足")
+
+            except Exception as e:
+                print(f"   ❌ {module}: 错误 - {e}")
+
+        avg_duration = total_duration / len(test_modules) if test_modules else 0
+
+        self.results["tests"]["ai_coding_suggestions"] = {
+            "status": "PASS" if suggestions_count > 0 else "FAIL",
+            "total_suggestions": suggestions_count,
+            "modules_tested": len(test_modules),
+            "avg_duration_ms": int(avg_duration * 1000)
+        }
+
+        print(f"   📊 总建议数: {suggestions_count}")
+        print(f"   ⏱️  平均响应时间: {avg_duration*1000:.1f}ms")
+
+    def _test_integration_workflow(self):
+        """测试集成工作流程"""
+        print("\n🔄 测试集成工作流...")
+
+        try:
+            # 测试pre-tool钩子
+            pre_hook_result = self.adapter.pre_tool_use_hook(
+                tool_name="Edit",
+                parameters={"file_path": "LocalPods/XPVehicleSDK/test.h"},
+                context={"user_id": "test_user"}
+            )
+
+            # 测试post-tool钩子
+            test_file_path = self.project_root / "temp_test.swift"
+            test_file_path.write_text("class myTest {}")
+
+            post_hook_result = self.adapter.post_tool_use_hook(
+                tool_name="Write",
+                parameters={"file_path": str(test_file_path)},
+                result={"success": True},
+                context={}
+            )
+
+            # 测试项目健康度
+            health_result = self.adapter.get_project_health_summary()
+
+            success = (
+                pre_hook_result.get("allowed") is not None and
+                post_hook_result.get("status") and
+                health_result.get("health_score") is not None
+            )
+
+            self.results["tests"]["integration_workflow"] = {
+                "status": "PASS" if success else "FAIL",
+                "pre_hook_allowed": pre_hook_result.get("allowed"),
+                "post_hook_status": post_hook_result.get("status"),
+                "health_score": health_result.get("health_score")
+            }
+
+            print(f"   ✅ 工作流集成: {'通过' if success else '失败'}")
+            print(f"   🔐 Pre-hook权限: {'允许' if pre_hook_result.get('allowed') else '拒绝'}")
+            print(f"   📊 项目健康度: {health_result.get('health_score', 0)}")
+
+            # 清理测试文件
+            if test_file_path.exists():
+                test_file_path.unlink()
+
+        except Exception as e:
+            self.results["tests"]["integration_workflow"] = {
+                "status": "ERROR",
+                "error": str(e)
+            }
+            print(f"   ❌ 工作流集成失败: {e}")
+
+    def _test_performance_metrics(self):
+        """测试性能指标"""
+        print("\n⚡ 测试性能指标...")
+
+        # 权限检查性能
+        permission_times = []
+        for _ in range(10):
+            start_time = time.time()
+            self.adapter.check_module_access("test_user", "XPVehicleSDK", "read")
+            permission_times.append((time.time() - start_time) * 1000)
+
+        avg_permission_time = sum(permission_times) / len(permission_times)
+        permission_sla_met = avg_permission_time < 50  # 50ms SLA
+
+        self.results["tests"]["performance_metrics"] = {
+            "status": "PASS" if permission_sla_met else "FAIL",
+            "avg_permission_time_ms": avg_permission_time,
+            "permission_sla_met": permission_sla_met,
+            "permission_times_ms": permission_times
+        }
+
+        print(f"   ✅ 权限检查平均耗时: {avg_permission_time:.1f}ms (SLA: 50ms)")
+        print(f"   🎯 性能SLA达标: {'是' if permission_sla_met else '否'}")
+
+    def _create_test_files(self) -> List[str]:
+        """创建测试文件"""
+        test_files = []
+
+        # Swift测试文件（命名违规）
+        swift_file = self.project_root / "temp_test.swift"
+        swift_file.write_text("class myViewController: UIViewController {\n    func viewDidLoad() {}\n}")
+        test_files.append(str(swift_file))
+
+        # Objective-C测试文件（缺少XP前缀）
+        objc_file = self.project_root / "temp_test.h"
+        objc_file.write_text("@interface TestController : NSObject\n@end")
+        test_files.append(str(objc_file))
+
+        return test_files
+
+    def _cleanup_test_files(self, test_files: List[str]):
+        """清理测试文件"""
+        for file_path in test_files:
+            path = Path(file_path)
+            if path.exists():
+                path.unlink()
+
+    def _generate_report(self):
+        """生成验证报告"""
+        print("\n" + "=" * 50)
+        print("📊 验证报告摘要")
+        print("=" * 50)
+
+        passed_tests = sum(1 for test in self.results["tests"].values()
+                          if test.get("status") == "PASS")
+        total_tests = len(self.results["tests"])
+
+        print(f"项目路径: {self.results['project_path']}")
+        print(f"验证时间: {self.results['timestamp']}")
+        print(f"测试通过率: {passed_tests}/{total_tests} ({passed_tests/total_tests*100:.1f}%)")
+
+        print("\n详细结果:")
+        for test_name, result in self.results["tests"].items():
+            status = result.get("status", "UNKNOWN")
+            emoji = {"PASS": "✅", "FAIL": "❌", "ERROR": "💥"}.get(status, "❓")
+            print(f"  {emoji} {test_name}: {status}")
+
+            if result.get("error"):
+                print(f"      错误: {result['error']}")
+
+        # 保存详细报告到文件
+        report_file = self.project_root / f"validation_report_{int(time.time())}.json"
+        with open(report_file, 'w', encoding='utf-8') as f:
+            json.dump(self.results, f, ensure_ascii=False, indent=2)
+
+        print(f"\n📄 详细报告已保存至: {report_file}")
+
+def main():
+    """主函数"""
+    parser = argparse.ArgumentParser(description="小鹏汽车AI编码治理系统验证工具")
+    parser.add_argument("--project", "-p", default=".",
+                       help="项目根目录路径 (默认: 当前目录)")
+    parser.add_argument("--output", "-o",
+                       help="报告输出文件路径")
+    parser.add_argument("--verbose", "-v", action="store_true",
+                       help="详细输出模式")
+
+    args = parser.parse_args()
+
+    try:
+        validator = XPAICodingValidator(args.project)
+        results = validator.run_all_validations()
+
+        if args.output:
+            with open(args.output, 'w', encoding='utf-8') as f:
+                json.dump(results, f, ensure_ascii=False, indent=2)
+            print(f"\n✅ 验证结果已导出至: {args.output}")
+
+        # 根据测试结果设置退出码
+        failed_tests = sum(1 for test in results["tests"].values()
+                          if test.get("status") != "PASS")
+        sys.exit(failed_tests)
+
+    except Exception as e:
+        print(f"❌ 验证工具执行失败: {e}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,44 @@
+# XPWidget 宪法
+
+> 本文件是 XPWidget 的**稳定规范**，描述模块边界、核心约束与对外契约。
+> 变更需要经过评审，非紧急情况下不要随意修改。
+
+## 1. 模块定位
+
+TODO: 一句话说明本模块在整个系统中的角色。
+TODO: 列出核心职责（3-5 条），以及**明确不属于**本模块的职责。
+
+## 2. 架构约束
+
+TODO: 本模块采用的架构模式（MVVM / MVC / Clean Architecture / 分层架构等）。
+TODO: 核心分层说明（Presenter / ViewModel / Service / Repository ...）。
+TODO: 跨层调用的允许方向与禁止方向。
+
+## 3. 语言策略
+
+TODO: 本模块使用的语言组合（Swift / OC / C++ / .mm 混编）。
+TODO: 新增代码的语言选型原则。
+TODO: OC/Swift 互操作约束（@objc 暴露、Bridging-Header 等）。
+
+## 4. 依赖边界
+
+TODO: 本模块**允许**依赖的外部模块（参见 `.ai-knowledge/deps.yml`）。
+TODO: 本模块**禁止**依赖的模块（反向依赖、跨层依赖等）。
+TODO: 第三方库引入策略（Podspec / SPM / 本地源）。
+
+## 5. 禁止事项
+
+TODO: 列出明确禁止的行为，每条要具体、可执行、可检测。
+- TODO: 禁止直接调用 XXX，必须通过 YYY 封装
+- TODO: 禁止在 ZZZ 中执行耗时操作
+- TODO: 禁止绕过 AAA 做 BBB
+
+## 6. 与其他模块的接口契约
+
+TODO: 本模块对外暴露的**稳定 API**（协议、入口类、Router 路由、通知等）。
+TODO: 对依赖模块的**调用契约**（入参、回调、错误码、线程约束）。
+TODO: 版本兼容策略（Breaking Change 如何处理）。
+
+---
+
+> 变更本文件请同步更新 `.ai-knowledge/deps.yml` 与 module-registry。

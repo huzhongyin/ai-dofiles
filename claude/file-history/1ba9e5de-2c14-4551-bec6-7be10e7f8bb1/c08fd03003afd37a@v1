@@ -1,0 +1,8 @@
+module: XPVehicleSDK
+depends_on:
+  - id: XPBLEDataProcessor
+    reason: BLE 数据编解码
+  - id: XPMQTTLibrary
+    reason: MQTT 远程连接
+  - id: XPCarControlCore
+    reason: 车控业务封装（反向依赖需警惕，仅类型共享）

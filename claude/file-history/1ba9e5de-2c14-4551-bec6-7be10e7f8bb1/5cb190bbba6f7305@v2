@@ -1,0 +1,127 @@
+---
+name: spec-design
+description: 基于已审批的 proposal.md 生成技术方案（design.md），包含调用链分析、数据模型和 Constitution 检查
+---
+
+> **This skill requires `project-config.yml`.** See `project-config.example.yml` for setup.
+
+## 触发条件
+当任务涉及以下关键词时激活: "技术方案", "design", "方案设计", "调用链", "spec-design"
+
+## 前置条件
+- proposal.md 已生成且疑问点已确认
+- 如果 proposal.md 不存在，提示用户先执行 spec-proposal
+
+## 输入
+- $ARGUMENTS: proposal.md 路径或需求名称
+- `--scope <module-id|path>`（可选）：指定 spec 的作用域模块。缺省时为 project 根。
+
+## 执行步骤
+
+### Phase 0.5: Scope 路由（可选，仅当 --scope 指定时执行）
+
+1. 解析 `--scope` 参数：
+   - 若为 module-id → 从 `$KNOWLEDGE_DIR/module-registry.md` 查找匹配条目
+   - 若为路径 → 匹配 registry 中 `path` 字段
+   - 若未找到 → 报错并提示用户检查 module-registry
+2. 确定 scope 上下文：
+   - `$SCOPE_CONSTITUTION` = `<module.knowledge>/specs/constitution.md`（若存在）
+   - `$SCOPE_OUTPUT_DIR` = `<module.knowledge>/specs/[需求名]/`
+   - `$SCOPE_KNOWLEDGE_BASE` = `<module.knowledge>/`
+   - `$SCOPE_PITFALLS` = `<module.knowledge>/pitfalls/`（若存在，否则回退到 L1）
+3. 若 module 的 `owner_repo: subrepo`：
+   - 打印提示："⚠️ --scope 指向独立仓 submodule，产物将生成在子仓 `<module.knowledge>/specs/` 下，需在子仓内单独提交"
+4. 若 `--scope` 未指定 → 跳过本 Phase，使用 L1 project 根路径（保持原行为）
+
+### Phase 1: 加载上下文 + 踩坑预加载
+1. 读取 `$SCOPE_CONSTITUTION`（scope 指定时）或 `$KNOWLEDGE_DIR/specs/constitution.md`（默认），作为宪法约束
+   - **始终同时加载 L1 project 根的 constitution.md**（L1 约束始终生效）
+2. 读取 `$SCOPE_PITFALLS/spec-workflow.md`（scope 指定时）或 `$KNOWLEDGE_DIR/pitfalls/spec-workflow.md`（默认），作为 Spec 流程踩坑行为约束
+3. 读取对应的 `proposal.md`（从 `$SCOPE_OUTPUT_DIR` 或默认位置加载已审批的提案）
+4. 从 proposal.md 的"关联知识"部分加载已匹配的知识点和模块文档
+
+### Phase 2: 调用链分析
+5. 根据 proposal.md 的影响范围，使用 grep/glob 追踪调用链路:
+   - 正向: 从入口追踪到底层（如 UI → ViewModel → Service → SDK → Connection → Protocol）
+   - 反向: 从底层状态回调追踪到入口（如 Protocol → Connection → Event → ViewModel → UI）
+6. 标注调用链中经过的 submodule 边界
+7. 标注调用链中的变体分支点（如不同产品线、不同平台的分支）
+8. **对调用链每个节点标注验证状态**:
+   - **✅ 代码验证**: 通过 grep 确认文件存在、方法名存在、调用关系可追踪
+   - **⚠️ 推测路径**: 无法通过代码验证（如跨模块回调、运行时动态派发），标注推测依据
+
+### Phase 2.5: 冲突风险标注 + 修改策略评估
+
+8a. 对调用链中**存在 tag/type/枚举值/路由冲突风险**的节点:
+   - 标注冲突来源（如"某 tag 值被两个模块共用"）
+   - 明确标注**推荐方案 A**和**备选方案 B**，而非只描述一种
+   - 说明推荐理由（如"方案 A 更安全，通过独立 handler 隔离避免误解析"）
+   - 这样实施者在 tasks 阶段可直接选择推荐方案，减少实施偏差
+
+8b. **修改目标类全量方法扫描**: 当修改涉及"改变某方法的语义"或"修改某方法的内部实现"时:
+   - 对修改目标类（及其协议关联类）执行 `grep` 列出全量方法列表
+   - 检查是否已有**语义更匹配的替代方法**（如已有 `isExist` 方法就不应修改 `isValid` 的语义来实现存在性检查）
+   - 如果发现已有替代 API，标注**推荐方案 A: 使用已有替代 API**和**备选方案 B: 修改现有方法语义**
+   - 这避免"修改已有方法语义"而非"使用已有替代方法"的次优选择
+
+8c. **修改策略标注**: 对调用链中的每个修改点，标注修改策略:
+   - **替换实现**: 保留方法名，修改内部逻辑
+   - **替换 API**: 将调用方改为使用其他已有方法
+   - **删除方法**: 方法不再需要，从协议/类中移除
+   - **新增方法**: 新增方法供调用方使用
+   - 标注修改策略有助于实施者评估是否有更优路径
+
+### Phase 3: 方案设计
+9. 读取模板 `$KNOWLEDGE_DIR/specs/template-design.md`
+10. 填充以下关键部分:
+    - 调用链路（正向 + 反向）
+    - 数据模型变更
+    - API 接口变更
+    - 状态管理方案
+    - 变体适配方案（如车型、平台等项目特定维度）
+    - 多通道适配方案（如适用）
+
+### Phase 4: Constitution 检查
+11. 读取 constitution.md（scope 级或 project 根级），提取所有 `##` 章节标题，为每个章节动态生成一个检查项:
+    - 对照每个章节中的约束逐条检查方案合规性
+    - 示例检查项（具体内容由 constitution.md 决定）：架构约束、依赖边界、语言策略、接口契约等
+12. 如有违反，在方案中标注并给出修正建议
+
+### Phase 4.5: 分析产物知识沉淀检查
+
+13. 回顾 Phase 2 调用链分析过程，检查是否发现了知识库未覆盖的新认知:
+    - 新的调用链路或依赖关系？（如发现某个方法的隐含调用方）
+    - 新的架构模式或设计约束？（如发现某个 protocol 的全部实现类）
+    - 新的变体差异行为？
+14. 如有新认知，创建知识点文件并更新 index.md
+
+### Phase 5: 用户确认（区分已确认和待确认）
+
+> **核心原则**: 调用链中已通过代码验证的路径（✅）不需要用户确认，只有推测性路径（⚠️）和需要技术判断的设计决策才需要用户确认。
+> **效率原则**: 如果所有决策点都已通过代码验证（全部 ✅），则**直接继续执行**，不需要等待用户确认。仅在存在 ⚠️ 级决策时才调用 AskUserQuestion。
+
+15. 向用户展示方案核心要点，区分两类:
+    - **✅ 已通过代码验证的设计决策**: 仅展示结论，**直接继续不等待确认**
+    - **⚠️ 需要用户确认的技术决策**: 使用 AskUserQuestion 确认
+16. AskUserQuestion 设计约束（继承 spec-proposal 优化）:
+    - 每个选项必须有具体技术含义，禁止无依据兜底选项
+    - 明确告知搜索覆盖范围（如"grep 搜索覆盖 $SUBMODULE_DIR/$LOCALPOD_DIR/主工程共 N 处调用"）
+17. 保存 design.md 到 `$SCOPE_OUTPUT_DIR/design.md`（scope 指定时）或 `$KNOWLEDGE_DIR/specs/[需求名]/design.md`（默认）
+
+## 约束
+- 调用链必须追踪到具体文件和方法名（不是抽象层级）
+- **调用链每个节点必须标注验证状态**（✅代码验证 / ⚠️推测路径）
+- **调用链每个修改点必须标注修改策略**（替换实现 / 替换API / 删除方法 / 新增方法）
+- **涉及方法语义变更时，必须对目标类做全量方法扫描**，检查是否有语义匹配的已有替代 API
+- Constitution 检查必须逐项完成，不可跳过
+- 如果 proposal.md 中有多通道场景，design.md 必须明确每个通道各自的处理逻辑
+- 变体差异化部分必须明确每个受影响变体的行为
+- 必须加载 spec-workflow 踩坑记录作为行为约束
+- **用户确认仅针对 ⚠️ 级决策**，✅ 级已验证路径只需展示结论并直接继续
+- **全部 ✅ 时不等待** — 如果所有决策点都已通过代码验证，直接推进到下一阶段
+- AskUserQuestion 禁止无依据兜底选项
+
+## 输出
+- 文件: `$SCOPE_OUTPUT_DIR/design.md`（scope 指定时）或 `$KNOWLEDGE_DIR/specs/[需求名]/design.md`（默认）
+- 文件: 可能新增 `$KNOWLEDGE_DIR/knowledge-points/*.kp.md`（调用链分析产物沉淀）
+- 交互: AskUserQuestion 确认 ⚠️ 级技术决策

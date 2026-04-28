@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "description": "Before `git commit`, lint deps.yml anchors",
+        "command": "if echo \"$TOOL_INPUT\" | grep -q 'git commit'; then bash .claude/scripts/lint-deps-anchors.sh || { echo 'deps.yml anchor lint failed; aborting commit'; echo 'Claude will skip this commit — fix anchors first'; exit 2; }; fi"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "description": "Swift 文件编辑后提醒检查 @objc 标注和 Bridging-Header",
+        "command": "if echo \"$TOOL_INPUT\" | grep -q '\\.swift'; then echo '提示: 如果该 Swift 文件需要被 OC 调用，请确认已添加 @objc 标注'; fi"
+      }
+    ]
+  },
+  "permissions": {
+    "additionalDirectories": [
+      "/Users/xpeng/.claude/profile"
+    ],
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "MultiEdit",
+      "NotebookEdit",
+      "TodoWrite",
+      "WebFetch",
+      "WebSearch",
+      "mcp__*",
+      "Bash(mkdir -p XiaoPengQiChe/.claude/rules XiaoPengQiChe/.ai-knowledge/specs XiaoPengQiChe/.ai-knowledge/modules XiaoPengQiChe/.ai-knowledge/pitfalls)",
+      "Bash(touch XiaoPengQiChe/.claude/rules/.gitkeep XiaoPengQiChe/.ai-knowledge/modules/.gitkeep XiaoPengQiChe/.ai-knowledge/pitfalls/.gitkeep)"
+    ],
+    "defaultPermissionMode": "acceptEdits",
+    "deny": [
+      "Bash(sudo *)",
+      "Bash(sudo rm *)",
+      "Bash(rm -rf /)",
+      "Bash(chmod -R 777 *)",
+      "Read(./secrets/**)",
+      "Read(./config/credentials.json)"
+    ]
+  }
+}

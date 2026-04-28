@@ -1,0 +1,34 @@
+# V3 蓝牙鉴权两步流程
+
+## 元信息
+- 触发关键词: ["Auth0", "Auth1", "V3鉴权", "sessionKey", "hmacKey", "蓝牙鉴权", "BleKeyV3", "RtAuth"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+V3 蓝牙协议有两种鉴权模式：
+
+### 模式一：普通蓝牙钥匙鉴权（Auth0 → Auth1）
+
+1. **Auth0**: App 发送 `generateAuth0DataIndictor:uid:hexKeyId:rand0:...` → 车端返回 `Auth0ResponseMessage`（含 rand01, rand1）
+2. **Auth1**: App 用 Auth0 响应数据生成 sessionKey（`generateSessionKey:hexKeyId:rand0:rand1:`），再完成鉴权
+
+**密钥说明**:
+- `sessionKey`: 通信加密密钥，Auth0 成功后生成
+- `hmacKey`: HMAC 签名密钥，用于 V3 消息完整性校验
+- `authKey`: 鉴权密钥
+
+**关键约束**: Auth0 和 Auth1 **必须按序执行**，不能跳过或乱序。sessionKey 生成依赖 Auth0 返回的 rand1。
+
+### 模式二：RT 鉴权（RtAuth，msgId=0x0B）
+
+独立于普通 Auth0/Auth1 流程，用于 RobotTaxi 小程序蓝牙鉴权。
+
+**关键区别**:
+- **明文传输**: 不使用 sessionKey/authKey 加密（鉴权完成前无加密通道）
+- **单步鉴权**: App 发送 certificate + deviceModel → 车端返回 result + errorCode
+- **编码 API**: `+[XPBleKeyV3DataProcessor generateRtAuthRequestData:deviceModel:]`
+- **详细协议**: 见 `ble-v3-rt-auth.kp.md`
+
+**代码位置**: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/XPBleKeyV3DataProcessor.h`

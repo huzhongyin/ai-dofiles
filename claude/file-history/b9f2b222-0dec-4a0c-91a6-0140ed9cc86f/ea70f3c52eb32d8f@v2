@@ -1,0 +1,163 @@
+# 小鹏 iOS AI 开发规范认证测试
+
+## 📋 基础认证测试（30分钟）
+
+### 第一部分：规范理解（10题 × 2分）
+
+**1. 代码风格题**
+以下哪种写法符合小鹏iOS规范？
+
+A) `func sendCommand( command:VehicleCommand )`
+B) `func sendCommand(command: VehicleCommand)`  ✅
+C) `func sendCommand(command : VehicleCommand)`
+D) `func sendCommand(command:VehicleCommand)`
+
+**2. 命名规范题**
+导出给OC使用的Swift类应该如何命名？
+
+A) `class VehicleManager: NSObject`
+B) `@objc class VehicleManager: NSObject`
+C) `@objc(XPVehicleManager) class VehicleManager: NSObject` ✅
+D) `@objc(VehicleManager) class VehicleManager: NSObject`
+
+**3. 内存管理题**
+delegate属性应该如何声明？
+
+A) `var delegate: VehicleDelegate?`
+B) `weak var delegate: VehicleDelegate?` ✅
+C) `unowned var delegate: VehicleDelegate?`
+D) `strong var delegate: VehicleDelegate?`
+
+**4. 架构依赖题**
+以下哪种依赖关系是正确的？
+
+A) `Utilities -> Core -> Function`
+B) `Core -> Function -> Utilities`
+C) `Function -> Core -> Utilities` ✅
+D) `Function -> Utilities -> Core`
+
+**5. 车控业务题**
+判断车辆功能应该使用什么方式？
+
+A) `if vehicle.type == .f30`
+B) `if vehicle.function.supportAirClean` ✅
+C) `if vehicle.modelCode == "FA"`
+D) `if vehicle.generation >= 2`
+
+### 第二部分：AI工具使用（5题 × 4分）
+
+**6. Claude Code使用题**
+生成车控指令代码的最佳提示词是？
+
+A) "写一个车控函数"
+B) "生成Swift代码"
+C) "基于小鹏iOS规范，生成车门解锁功能，包括成功/失败回调模式和内存安全处理" ✅
+D) "创建VehicleCommand"
+
+**7. Kimi检查题**
+以下代码有哪些规范问题？
+```swift
+class CarManager{
+var delegate:CarDelegate
+func unlock(success:()->(),failure:(Error)->())
+}
+```
+
+A) 缺少空格、缺少XP前缀、delegate未声明weak ✅
+B) 只有缺少空格问题
+C) 只有命名问题
+D) 代码没问题
+
+**8. 代码重构题**
+使用AI重构以下OC代码为Swift：
+```objc
+@interface XPCarController : NSObject
+@property (nonatomic, weak) id<XPCarDelegate> delegate;
+- (void)sendCommand:(NSInteger)command
+           success:(void(^)(void))success
+           failure:(void(^)(NSError *error))failure;
+@end
+```
+
+期望输出应该包含什么要素？
+A) @objc导出 + weak delegate + 枚举类型 + 错误类型 ✅
+B) 只需要语法转换
+C) 只需要添加@objc
+D) 只需要修改属性声明
+
+### 第三部分：实操题（2题 × 10分）
+
+**9. 架构设计题（10分钟）**
+为"远程空调控制"功能设计模块架构，要求：
+- 确定功能在SDK中的层级位置
+- 设计符合规范的接口
+- 考虑错误处理和超时机制
+
+请用AI工具辅助完成设计，并说明设计思路。
+
+**10. 代码审查题（10分钟）**
+使用Kimi检查以下代码片段，列出所有规范违规问题：
+```swift
+class VehicleController{
+    var vehicleDelegate:VehicleControllerDelegate
+    func executeCommand(cmd:Int,cb:@escaping()->()){
+        if cmd==1{
+            unlock(cb)
+        }else if cmd==2{
+            lock(cb)
+        }
+        // more commands...
+    }
+    private func unlock(_ callback:@escaping()->()) {
+        print("unlocking...")
+        DispatchQueue.main.asyncAfter(deadline:.now() + 1){
+            callback()
+        }
+    }
+}
+```
+
+## 📊 评分标准
+
+### 基础分数线（70分及格）
+- **80-100分**：AI开发规范专家，可指导其他同事
+- **70-79分**：基本掌握，可独立使用AI工具开发
+- **60-69分**：需要补充培训，建议重学相关章节
+- **60分以下**：必须重新培训
+
+### 进阶认证（额外10分）
+完成一个真实项目的AI辅助重构任务：
+- 选择现有代码模块（200-500行）
+- 使用AI工具进行规范化重构
+- 提供重构前后对比和改进说明
+- 团队评审通过
+
+## 🏆 认证等级
+
+### 🥉 Bronze级认证（70-79分）
+- 掌握基本规范和AI工具使用
+- 可以进行日常开发任务
+
+### 🥈 Silver级认证（80-89分）
+- 熟练使用AI工具解决复杂问题
+- 可以指导新人使用规范
+
+### 🥇 Gold级认证（90-100分 + 进阶任务）
+- AI开发规范专家
+- 可以优化和扩展团队规范
+- 负责规范培训和工具改进
+
+## 📅 认证安排
+
+### 集中认证时间
+- **第一批**：Week 4 周五下午
+- **补考时间**：Week 5 周三下午
+- **进阶认证**：Week 6-8 滚动评审
+
+### 认证后续
+- **重新认证**：每季度一次（规范更新时）
+- **持续改进**：月度AI工具使用经验分享
+- **专家晋级**：年度优秀实践者可申请规范委员会
+
+---
+**注意：** 本测试重点在实用性，不是应试教育。真实工作中遇到问题，鼓励使用AI工具查找答案和解决方案。

@@ -1,0 +1,3 @@
+{"type":"queue-operation","operation":"enqueue","timestamp":"2026-04-20T13:26:33.002Z","sessionId":"b006bd43-eabc-48e2-b50a-7bce0f4e3348","content":"有个新需求，PRD 来了"}
+{"type":"queue-operation","operation":"dequeue","timestamp":"2026-04-20T13:26:35.225Z","sessionId":"b006bd43-eabc-48e2-b50a-7bce0f4e3348"}
+{"type":"file-history-snapshot","messageId":"1372b597-0f7d-4d41-a575-b881582a53f8","snapshot":{"messageId":"1372b597-0f7d-4d41-a575-b881582a53f8","trackedFileBackups":{},"timestamp":"2026-04-20T13:26:35.334Z"},"isSnapshotUpdate":false}

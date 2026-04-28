@@ -1,0 +1,507 @@
+//
+//  Peripheral+Interface.swift
+//  XPVehicleSDK
+//
+//  Created by xp on 2023/12/12.
+//
+
+import Foundation
+@preconcurrency import CoreBluetooth
+@preconcurrency import Combine
+
+public struct Peripheral: Sendable {
+    public let cbperipheral: CBPeripheral?
+    public let delegate: PeripheralDelegate?
+
+    /// 信息
+    public var _name: @Sendable () -> String?
+    public var _identifier: @Sendable () -> UUID
+    public var _state: @Sendable () -> CBPeripheralState
+    public var _services: @Sendable () -> [CBService]?
+    public var _canSendWriteWithoutResponse: @Sendable () -> Bool
+
+    public var _ancsAuthorized: @Sendable () -> Bool
+
+    /// 操作
+    public var _readRSSI: @Sendable () -> Void
+    public var _discoverServices: @Sendable (_ serviceUUIDs: [CBUUID]?) -> Void
+    public var _discoverIncludedServices: @Sendable (_ includedServiceUUIDs: [CBUUID]?, _ service: CBService) -> Void
+    public var _discoverCharacteristics: @Sendable (_ characteristicUUIDs: [CBUUID]?, _ service: CBService) -> Void
+    public var _readValueForCharacteristic: @Sendable (_ characteristic: CBCharacteristic) -> Void
+    public var _maximumWriteValueLength: @Sendable (_ type: CBCharacteristicWriteType) -> Int
+    public var _writeValueForCharacteristic: @Sendable (_ data: Data, _ characteristic: CBCharacteristic, _ type: CBCharacteristicWriteType) -> Void
+    public var _setNotifyValue: @Sendable (_ enabled: Bool, _ characteristic: CBCharacteristic) -> Void
+    public var _discoverDescriptors: @Sendable (_ characteristic: CBCharacteristic) -> Void
+    public var _readValueForDescriptor: @Sendable (_ descriptor: CBDescriptor) -> Void
+    public var _writeValueForDescriptor: @Sendable (_ data: Data, _ descriptor: CBDescriptor) -> Void
+    public var _openL2CAPChannel: @Sendable (_ PSM: CBL2CAPPSM) -> Void
+
+    /// 事件
+    public var didReadRSSI:                             AnyPublisher<Result<Double, Error>, Never>
+    public var didDiscoverServices:                     AnyPublisher<([CBService], Error?), Never>
+    public var didDiscoverIncludedServices:             AnyPublisher<(CBService, Error?), Never>
+    public var didDiscoverCharacteristics:              AnyPublisher<(CBService, Error?), Never>
+    public var didUpdateValueForCharacteristic:         AnyPublisher<(CBCharacteristic, Error?), Never>
+    public var didWriteValueForCharacteristic:          AnyPublisher<(CBCharacteristic, Error?), Never>
+    public var didUpdateNotificationState:              AnyPublisher<(CBCharacteristic, Error?), Never>
+    public var didDiscoverDescriptorsForCharacteristic: AnyPublisher<(CBCharacteristic, Error?), Never>
+    public var didUpdateValueForDescriptor:             AnyPublisher<(CBDescriptor, Error?), Never>
+    public var didWriteValueForDescriptor:              AnyPublisher<(CBDescriptor, Error?), Never>
+
+    /// 状态变化
+    public var isReadyToSendWriteWithoutResponse: AnyPublisher<Void, Never>
+    public var nameUpdates: AnyPublisher<String?, Never>
+    public var invalidatedServiceUpdates: AnyPublisher<[CBService], Never>
+    
+    // MARK: - Implementations
+    
+    public var name: String? {
+        _name()
+    }
+
+    public var identifier: UUID {
+        _identifier()
+    }
+
+    public var state: CBPeripheralState {
+        _state()
+    }
+
+    public var services: [CBService]? {
+        _services()
+    }
+
+    public var canSendWriteWithoutResponse: Bool {
+        _canSendWriteWithoutResponse()
+    }
+
+    @available(macOS, unavailable)
+    public var ancsAuthorized: Bool {
+        _ancsAuthorized()
+    }
+    
+    public func readRSSI() -> AnyPublisher<Double, Error> {
+        didReadRSSI
+            .tryMap { result in
+                try result.get()
+            }
+            .first()
+            .handleEvents(receiveSubscription: { [_readRSSI] _ in
+                _readRSSI()
+            })
+            .shareCurrentValue()
+    }
+    
+    public func discoverServices(_ serviceUUIDs: [CBUUID]?) -> AnyPublisher<[CBService], Error> {
+        didDiscoverServices
+            .filterFirstValueOrThrow(where: { services in
+                // nil identifiers 表示我们想要发现任何 设备
+                guard let identifiers = serviceUUIDs else { return true }
+                // 所有的服务都被发现 才会继续
+                let neededUUIDs = Set(identifiers)
+                let foundUUIDs = Set(services.map(\.uuid))
+                let allFound = foundUUIDs.isSuperset(of: neededUUIDs)
+                return allFound
+            }) //
+            .handleEvents(receiveSubscription: { [_discoverServices] _ in
+                _discoverServices(serviceUUIDs)
+            })
+            .shareCurrentValue()
+    }
+    
+    public func discoverIncludedServices(_ serviceUUIDS: [CBUUID]?, for service: CBService) -> AnyPublisher<[CBService]?, Error> {
+        didDiscoverIncludedServices
+            .filterFirstValueOrThrow(where: { discoveredService in
+                // 不符合过滤
+                guard discoveredService.uuid == service.uuid else { return false }
+                // nil identifiers 表示我们想要发现任何 设备
+                guard let identifiers = serviceUUIDS else { return true }
+                // 所有服务都被发现 才会继续
+                let neededUUIDs = Set(identifiers)
+                let foundUUIDs = Set((discoveredService.includedServices ?? []).map(\.uuid))
+                let allFound = foundUUIDs.isSuperset(of: neededUUIDs)
+                return allFound
+            })
+            .map(\.includedServices)
+            .handleEvents(receiveSubscription: { [_discoverIncludedServices] _ in
+                _discoverIncludedServices(serviceUUIDS, service)
+            })
+            .shareCurrentValue()
+    }
+    
+    public func discoverCharacteristics(_ characteristicUUIDs: [CBUUID]?, for service: CBService) -> AnyPublisher<[CBCharacteristic], Error> {
+        return Future<[CBCharacteristic], Error> { promise in
+            var cancellable: AnyCancellable? = nil
+            cancellable = didDiscoverCharacteristics
+                .filterFirstValueOrThrow(where: { discoveredService in
+                    // 不符合过滤
+                    guard discoveredService.uuid == service.uuid else { return false }
+                    // 所有特性都可以
+                    guard let identifiers = characteristicUUIDs else { return true }
+                    // 所有特性都被发现后 继续
+                    let neededUUIDs = Set(identifiers)
+                    let foundUUIDs = Set((discoveredService.characteristics ?? []).map(\.uuid))
+                    let allFound = foundUUIDs.isSuperset(of: neededUUIDs)
+                    // 这里先返回，因为不必要发现所有特征。
+                    Log.i(tag: BleLogConfig.discoverCharacteristics, "neededUUIDs: \(neededUUIDs), foundUUIDs: \(foundUUIDs), allFound: \(allFound)")
+                    return true
+                })
+                .map({ $0.characteristics ?? [] })
+                .sink { completion in
+                    if case .failure(let error) = completion {
+                        promise(.failure(error))
+                    }
+                    BleCancellableTools.instance.removeCancellable(cancellable)
+                } receiveValue: { data in
+                    promise(.success(data))
+                }
+            BleCancellableTools.instance.addCancellable(cancellable)
+
+            _discoverCharacteristics(characteristicUUIDs, service)
+        } .shareCurrentValue()
+    }
+    
+    public func readValue(for characteristic: CBCharacteristic) -> AnyPublisher<Data?, Error> {
+        didUpdateValueForCharacteristic
+            .filterFirstValueOrThrow(where: {
+                $0.uuid == characteristic.uuid
+            })
+            .map(\.value)
+            .handleEvents(receiveSubscription: { [_readValueForCharacteristic] _ in
+                _readValueForCharacteristic(characteristic)
+            })
+            .shareCurrentValue()
+    }
+    
+    public func maximumWriteValueLength(for writeType: CBCharacteristicWriteType) -> Int {
+        _maximumWriteValueLength(writeType)
+    }
+    
+    public func writeValue(_ value: Data, for characteristic: CBCharacteristic, type writeType: CBCharacteristicWriteType) -> AnyPublisher<Void, Error> {
+        if writeType == .withoutResponse {
+            return writeValueWithoutResponse(value, for: characteristic)
+        } else {
+            return writeValueWithResponse(value, for: characteristic)
+        }
+    }
+    
+    private func writeValueWithoutResponse(_ value: Data, for characteristic: CBCharacteristic) -> AnyPublisher<Void, Error> {
+        if characteristic.properties.contains(.writeWithoutResponse) {
+            // 返回一个空的发布者，不需要等待响应
+            return Empty()
+                .handleEvents(receiveSubscription: { [_writeValueForCharacteristic] _ in
+                    _writeValueForCharacteristic(value, characteristic, .withoutResponse)
+                })
+                .eraseToAnyPublisher()
+        } else {
+            // 在写入一个不支持响应的特征时，Core Bluetooth 会默默地忽略它，并且不会发送到外围设备，因此在这里使用错误抛出这种情况。
+            return Fail(
+                error: NSError(
+                    domain: CBATTErrorDomain,
+                    code: CBATTError.writeNotPermitted.rawValue,
+                    userInfo: [
+                        NSLocalizedDescriptionKey: "Writing without response is not permitted."
+                    ]
+                )
+            )
+            .eraseToAnyPublisher()
+        }
+    }
+    
+    private func writeValueWithResponse(_ value: Data, for characteristic: CBCharacteristic) -> AnyPublisher<Void, Error> {
+        return Future<Void, Error> { promise in
+            var cancellable: AnyCancellable? = nil
+            cancellable = didWriteValueForCharacteristic
+                .filterFirstValueOrThrow(where: {
+                    $0.uuid == characteristic.uuid
+                })
+                .sink { completion in
+                    if case .failure(let error) = completion {
+                        promise(.failure(error))
+                    }
+                    BleCancellableTools.instance.removeCancellable(cancellable)
+                } receiveValue: { _ in
+                    promise(.success(()))
+                }
+            BleCancellableTools.instance.addCancellable(cancellable)
+
+            _writeValueForCharacteristic(value, characteristic, .withResponse)
+        } .shareCurrentValue()
+    }
+    
+    public func setNotifyValue(_ enabled: Bool, for characteristic: CBCharacteristic) -> AnyPublisher<Void, Error> {
+        didUpdateNotificationState
+            .filterFirstValueOrThrow(where: {
+                $0.uuid == characteristic.uuid
+            })
+            .map { _ in }
+            .handleEvents(receiveSubscription: { [_setNotifyValue] _ in
+                _setNotifyValue(enabled, characteristic)
+            })
+            .shareCurrentValue()
+    }
+    
+    public func discoverDescriptors(for characteristic: CBCharacteristic) -> AnyPublisher<[CBDescriptor]?, Error> {
+        didDiscoverDescriptorsForCharacteristic
+            .filterFirstValueOrThrow(where: {
+                $0.uuid == characteristic.uuid
+            })
+            .map(\.descriptors)
+            .handleEvents(receiveSubscription: { [_discoverDescriptors] _ in
+                _discoverDescriptors(characteristic)
+            })
+            .shareCurrentValue()
+    }
+    
+    public func readValue(for descriptor: CBDescriptor) -> AnyPublisher<Any?, Error> {
+        didUpdateValueForDescriptor
+            .filterFirstValueOrThrow(where: {
+                $0.uuid == descriptor.uuid
+            })
+            .map(\.value)
+            .handleEvents(receiveSubscription: { [_readValueForDescriptor] _ in
+                _readValueForDescriptor(descriptor)
+            })
+            .shareCurrentValue()
+    }
+    
+    public func writeValue(_ value: Data, for descriptor: CBDescriptor) -> AnyPublisher<Void, Error> {
+        didWriteValueForDescriptor
+            .filterFirstValueOrThrow(where: {
+                $0.uuid == descriptor.uuid
+            })
+            .map { _ in }
+            .handleEvents(receiveSubscription: { [_writeValueForDescriptor] _ in
+                _writeValueForDescriptor(value, descriptor)
+            })
+            .shareCurrentValue()
+    }
+    
+    // MARK: - 便捷方法
+    
+    /// 从外围设备中发现具有指定 UUID 的服务，并在该服务中发现指定 UUID 的特征
+    /// - Parameters:
+    ///   - characteristicUUIDs: 需要发现的特征 UUID
+    ///   - serviceUUID: 需要发现的服务UUID
+    /// - Returns: 发现的特征数组
+    public func discoverCharacteristics(withUUIDs characteristicUUIDs: [CBUUID]?, inServiceWithUUID serviceUUID: CBUUID) -> AnyPublisher<[CBCharacteristic], Error> {
+        discoverServices([serviceUUID])
+        // 服务发现后，发现特征
+            .flatMap { (services) -> AnyPublisher<[CBCharacteristic], Error> in
+                // 如果找不到指定 UUID 的服务，返回一个带有错误的发布者
+                guard let service = services.first(where: { $0.uuid == serviceUUID }) else {
+                    return Fail(error: PeripheralError.serviceNotFound(serviceUUID)).eraseToAnyPublisher()
+                }
+                // 在找到的服务中发现指定 UUID 的特征
+                return discoverCharacteristics(characteristicUUIDs, for: service)
+            }
+            .first() // 只取第一个发现的特征数组
+            .eraseToAnyPublisher()
+    }
+    
+    /// 发现单个特征
+    /// - Parameters:
+    ///   - characteristicUUIDs: 特征uuid
+    ///   - serviceUUID: 服务uuid
+    /// - Returns: 发现的特征
+    public func discoverCharacteristic(withUUID characteristicUUID: CBUUID, inServiceWithUUID serviceUUID: CBUUID) -> AnyPublisher<CBCharacteristic, Error> {
+        discoverCharacteristics(withUUIDs: [characteristicUUID], inServiceWithUUID: serviceUUID)
+            .tryMap { characteristics in
+                // 如果没找到，抛出错误
+                guard let characteristic = characteristics.first(where: { characteristic in characteristic.uuid == characteristicUUID }) else {
+                    throw PeripheralError.characteristicNotFound(characteristicUUID)
+                }
+                return characteristic
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    /// 读取指定特征内容
+    /// - Parameters:
+    ///   - characteristicUUID: 特征uuid
+    ///   - serviceUUID: 服务uuid
+    /// - Returns: 读取到的内容
+    public func readValue(forCharacteristic characteristicUUID: CBUUID, inService serviceUUID: CBUUID) -> AnyPublisher<Data?, Error> {
+        discoverCharacteristic(withUUID: characteristicUUID, inServiceWithUUID: serviceUUID)
+            .flatMap { characteristic in
+                self.readValue(for: characteristic)
+            }
+            .first()
+            .eraseToAnyPublisher()
+    }
+    
+    /// 写数据到指定特征
+    /// - Parameters:
+    ///   - value: 数据
+    ///   - writeType: 怎么写
+    ///   - characteristicUUID: 特征uuid
+    ///   - serviceUUID: 服务uuid
+    /// - Returns: 如果写入类型是“无响应”，则发布者会立即完成且没有输出；如果写入类型是“带响应”，则在写入完成时返回Void值。如果写入失败，发布者会以错误完成；如果写入类型不受支持，同样会以错误完成。
+    public func writeValue(_ value: Data, writeType: CBCharacteristicWriteType, forCharacteristic characteristicUUID: CBUUID, inService serviceUUID: CBUUID) -> AnyPublisher<Void, Error> {
+        discoverCharacteristic(withUUID: characteristicUUID, inServiceWithUUID: serviceUUID)
+            .flatMap { characteristic in
+                self.writeValue(value, for: characteristic, type: writeType)
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    
+    /// 在给定的服务中查找特征的所有描述符。
+    /// - Parameters:
+    ///   - characteristicUUID: 要查找其描述符的特征的ID。
+    ///   - serviceUUID: 包含要查找其描述符的特征的服务的ID。
+    /// - Returns: 输出给定特征的描述符，然后完成。如果未发现特征或服务，或者服务不包含具有给定ID的特征，或者其他情况下可能失败并输出错误。
+    public func discoverDescriptors(onCharacteristic characteristicUUID: CBUUID, inService serviceUUID: CBUUID) -> AnyPublisher<[CBDescriptor]?, Error> {
+        discoverCharacteristic(withUUID: characteristicUUID, inServiceWithUUID: serviceUUID)
+            .flatMap { self.discoverDescriptors(for: $0) }
+            .first()
+            .eraseToAnyPublisher()
+    }
+    
+    /// 在给定的服务中，发现具有指定特征的所有描述符，并将具有所需ID的描述符发送到返回的发布者。
+    /// - Parameters:
+    ///   - id: 所需描述符的ID
+    ///   - characteristicUUID: 要发现其描述符的特征的ID
+    ///   - serviceUUID: 包含要发现其描述符的特征的服务的ID
+    /// - Returns: 输出给定特征上的所需描述符，然后完成。如果特征不包含具有给定ID的描述符，未发现特征或服务，或者服务不包含具有给定ID的特征，则可能会失败并出现错误。
+    public func discoverDescriptor(id: CBUUID, onCharacteristic characteristicUUID: CBUUID, inService serviceUUID: CBUUID) -> AnyPublisher<CBDescriptor, Error> {
+        discoverDescriptors(onCharacteristic: characteristicUUID, inService: serviceUUID)
+            .tryMap { descriptors in
+                guard let descriptor = descriptors?.first(where: { d in d.uuid == id }) else {
+                    throw PeripheralError.descriptorNotFound(id, onCharacteristic: characteristicUUID)
+                }
+                return descriptor
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    /// 从指定的描述符中读取值。
+    /// - Parameters:
+    ///   - id: 指定描述符的 ID
+    ///   - characteristicUUID: 包含目标描述符的特征值的 ID
+    ///   - serviceUUID: 包含目标特征值的服务的 ID
+    /// - Returns: 输出目标描述符的值，或者在找不到描述符时失败。
+    public func readValue(forDescriptor id: CBUUID, onCharacteristic characteristicUUID: CBUUID, inService serviceUUID: CBUUID) -> AnyPublisher<Any?, Error> {
+        discoverDescriptor(id: id, onCharacteristic: characteristicUUID, inService: serviceUUID)
+            .flatMap { descriptor in
+                self.readValue(for: descriptor)
+            }
+            .first()
+            .eraseToAnyPublisher()
+    }
+    
+    /// 将给定的数据写入由给定的 ID 指定的描述符。
+    /// - Parameters:
+    ///   - value: 要写入的值
+    ///   - id: 目标描述符的 ID
+    ///   - characteristicUUID: 包含目标描述符的特征值的 ID
+    ///   - serviceUUID: 包含目标特征值的服务的 ID
+    /// - Returns: 如果写入成功，则发布者会在写入完成时返回 Void 值。如果写入失败，发布者会以错误完成。
+    public func writeValue(_ value: Data, forDescriptor id: CBUUID, onCharacteristic characteristicUUID: CBUUID, inService serviceUUID: CBUUID) -> AnyPublisher<Void, Error> {
+        discoverDescriptors(onCharacteristic: characteristicUUID, inService: serviceUUID)
+            .tryMap { descriptors in
+                guard let descriptor = (descriptors ?? []).first(where: { d in d.uuid == id }) else {
+                    throw PeripheralError.descriptorNotFound(id, onCharacteristic: characteristicUUID)
+                }
+                return descriptor
+            }
+            .flatMap {
+                self.writeValue(value, for: $0)
+            }
+            .first()
+            .eraseToAnyPublisher()
+    }
+    
+    /// 返回一个长期存在的发布者，用于接收给定特征值的所有值更新。它允许多个监听器对单次读取进行更新，或者对特征值的值更改进行指示/通知。
+    ///
+    /// 这个方法本身不会订阅通知或指示。
+    ///
+    /// - Parameter characteristic: 要监听更新的特征值。
+    /// - Returns: 将监听给定特征值的更新。除非遇到错误，否则将持续更新。
+    public func listenForUpdates(on characteristic: CBCharacteristic) -> AnyPublisher<Data?, Error> {
+        didUpdateValueForCharacteristic
+            .filter({ (readCharacteristic, error) -> Bool in
+                return readCharacteristic.uuid == characteristic.uuid
+            })
+            .selectValueOrThrowError()
+            .map(\.value)
+            .eraseToAnyPublisher()
+    }
+    
+    /// 返回一个长期存在的发布者，用于接收具有给定ID的服务中具有给定ID的特征值的所有值更新。它允许多个监听器对单次读取进行更新，或者对特征值的值更改进行指示/通知。
+    ///
+    /// 这个方法本身不会订阅通知或指示。
+    ///
+    /// - Parameters:
+    ///   - characteristicUUID: 要监听更新的特征值的ID。
+    ///   - serviceUUID: 包含所需特征值的服务的ID。
+    /// - Returns: 将监听给定特征值的更新。除非遇到错误，否则将持续更新。
+    public func listenForUpdates(onCharacteristic characteristicUUID: CBUUID, inService serviceUUID: CBUUID) -> AnyPublisher<Data?, Error> {
+        discoverCharacteristic(withUUID: characteristicUUID, inServiceWithUUID: serviceUUID)
+            .first()
+            .flatMap { self.listenForUpdates(on: $0) }
+            .eraseToAnyPublisher()
+    }
+    
+    /// 订阅给定特征值的更新，如果订阅成功，返回的发布者将接收该特征值的所有更新，直到取消对此发布者的订阅。
+    /// 如果特征值不支持通知或指示，则此发布者将失败并引发错误。
+    ///
+    /// - Parameter characteristic: 要订阅的特征值
+    /// - Returns: 用于接收给定特征值的值更新。
+    public func subscribeToUpdates(on characteristic: CBCharacteristic) -> AnyPublisher<Data?, Error> {
+        Publishers.Merge(
+            self.listenForUpdates(on: characteristic),
+            
+            didUpdateNotificationState
+                .filterFirstValueOrThrow(where: {
+                    $0.uuid == characteristic.uuid
+                })
+                .ignoreOutput(setOutputType: Data?.self)
+        )
+        .handleEvents(
+            receiveSubscription: { _ in
+                _setNotifyValue(true, characteristic)
+            },
+            receiveCancel: {
+                // 这里不应该关闭
+//                _setNotifyValue(false, characteristic)
+            }
+        )
+        .shareCurrentValue()
+    }
+}
+
+extension Peripheral {
+    public final class PeripheralDelegate: NSObject, Sendable {
+        public let nameUpdates: PassthroughSubject<String?, Never> = .init()
+        public let didReadRSSI: PassthroughSubject<Result<Double, Error>, Never> = .init()
+        public let didDiscoverServices: PassthroughSubject<([CBService], Error?), Never> = .init()
+        public let didDiscoverIncludedServicesForService: PassthroughSubject<(CBService, Error?), Never> = .init()
+        public let didDiscoverCharacteristicsForService: PassthroughSubject<(CBService, Error?), Never> = .init()
+        public let didUpdateValueForCharacteristic: PassthroughSubject<(CBCharacteristic, Error?), Never> = .init()
+        public let didWriteValueForCharacteristic: PassthroughSubject<(CBCharacteristic, Error?), Never> = .init()
+        public let didUpdateNotificationStateForCharacteristic: PassthroughSubject<(CBCharacteristic, Error?), Never> = .init()
+        public let didDiscoverDescriptorsForCharacteristic: PassthroughSubject<(CBCharacteristic, Error?), Never> = .init()
+        public let didUpdateValueForDescriptor: PassthroughSubject<(CBDescriptor, Error?), Never> = .init()
+        public let didWriteValueForDescriptor: PassthroughSubject<(CBDescriptor, Error?), Never> = .init()
+        public let isReadyToSendWriteWithoutResponse: PassthroughSubject<Void, Never> = .init()
+        //        let didOpenL2CAPChannel: PassthroughSubject<(CBL2CAPPSM, Error?), Never> = .init()
+        public let didModifyServices: PassthroughSubject<[CBService], Never> = .init()
+    }
+}
+
+extension Peripheral: Identifiable {
+    public var id: UUID {
+        identifier
+    }
+}
+
+extension Peripheral: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.identifier == rhs.identifier
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(identifier)
+    }
+}

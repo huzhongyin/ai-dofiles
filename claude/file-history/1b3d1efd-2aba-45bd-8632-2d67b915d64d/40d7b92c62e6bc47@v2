@@ -1,0 +1,49 @@
+# 模块名: XPBucket
+
+## 模块职责
+项目基础工具箱（Bucket = 桶），提供跨模块共用的底层基础设施。包含 5 个子模块：BaseTool（日志/文件/宏/计时器）、BaseUI（UI 基础宏）、CoreLocation（定位辅助）、CoreStatistics（埋点基础）、3rd（第三方工具封装）。是整个项目依赖树中最底层的基础组件之一。
+
+## 语言构成
+- OC 文件数: ~15
+- Swift 文件数: 0
+- 混编说明: **纯 OC 模块**，通过 CocoaPods 远程引入。大部分文件已迁移到独立 Pod（XPUtility/XPFile 等），当前保留的多为转发头文件。
+
+## 核心 API
+
+### DDLogDefine（统一日志宏）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `DLogInfo(frmt, ...)` | OC | 输出 Info 级别日志 | `DLogInfo(@"加载完成")` |
+| `DLogError(frmt, ...)` | OC | 输出 Error 级别日志 | `DLogError(@"请求失败: %@", error)` |
+| `DLogTagInfo(tag, frmt, ...)` | OC | 带 Tag 的 Info 日志 | `DLogTagInfo(@"XP车控", @"连接成功")` |
+| `DLogTagError(tag, frmt, ...)` | OC | 带 Tag 的 Error 日志 | `DLogTagError(@"MQTT", @"断线")` |
+| `DLogInfo_if(exp, frmt, ...)` | OC | 条件日志（exp 为 true 时输出） | `DLogInfo_if(isDebug, @"调试信息")` |
+
+### DurationTimeCounter（耗时统计）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+recordTimeWithTag:` | OC | 记录时间点 | `[DurationTimeCounter recordTimeWithTag:@"BLEConnect"]` |
+| `+getDurationWithTag:` | OC | 获取距离记录点的时间间隔 | `[DurationTimeCounter getDurationWithTag:@"BLEConnect"]` |
+
+### XPFileUtil（文件工具 — 转发）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| 转发到 `XPFile/XPFileUtil` | OC | 文件操作工具 | 实际实现在 XPFile Pod 中 |
+
+## 子模块说明（podspec subspecs）
+| 子模块 | 用途 | 说明 |
+|--------|------|------|
+| `BaseTool` | 日志宏/文件工具/基础宏/计时器 | 被车控模块广泛依赖 |
+| `BaseUI` | UI 基础宏（`XPBaseUIMacro.h`） | UI 组件基础 |
+| `CoreLocation` | 定位辅助（`XPApplicationState`） | 应用状态判断 |
+| `CoreStatistics` | 埋点基础（`XPBucketStatistics`） | 统计上报 |
+| `3rd` | 第三方工具封装（`JX_GCDTimerManager`） | GCD 定时器 |
+
+## 依赖关系
+- **上游依赖**: XLog（日志引擎，可选）、XPFile（文件工具）、XPUtility（基础工具宏）
+- **下游被依赖**: XPCarControlCore、XPCarBusiCH、XPAppBiz、XPVehicleSDK 等几乎所有模块
+
+## 已知限制/陷阱
+- 多个头文件是**转发壳**（如 `XPBaseToolMacro.h` → `XPUtility/XPBaseToolMacro.h`，`XPFileUtil.h` → `XPFile/XPFileUtil.h`），注释标注"等待车控去除依赖"后将删除
+- 日志宏分两套：有 XLog 时走 `XLOG_*` 系列，无 XLog 时降级为 `NSLog`
+- 远程 Pod，源码不在项目 submodule 中

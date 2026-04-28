@@ -1,0 +1,5 @@
+# 切车安全
+
+- 切车操作在后台线程 `switchVehicleQueue` 执行，创建车控实例有耗时
+- 业务层必须等 `vehicleSwitchedEvent` 或 `vehicleInfoUpdatedEvent` 回调后才能使用新 presenter
+- 切车期间 `vehicleInstance` 可能为 nil，所有访问需做空值检查

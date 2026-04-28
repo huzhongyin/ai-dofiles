@@ -1,0 +1,161 @@
+# 知识库审计报告
+
+> 审计日期: 2026-04-08
+> 审计范围: 全量
+> 审计执行: 首次知识审计（L5 自进化机制启动后）
+
+---
+
+## 总览
+
+| 维度 | 数量 | 健康 | 关注 | 过期 |
+|------|------|------|------|------|
+| 知识点 | 39 | 30 | 3 | 6 |
+| 踩坑记录 | 25 (6文件) | — | — | — |
+| 模块文档 | 8 | 8 | 0 | 0 |
+
+---
+
+## 一、新鲜度检测详情
+
+### 过期知识点（路径失效）
+
+| # | 知识点 | 文件 | 失效路径 | 实际路径 | 建议操作 |
+|---|--------|------|---------|---------|---------|
+| 1 | 切车流程与安全 | `vehicle-switch-flow.kp.md` | `submodule/XPVehicleSDK/Core/VehicleManager.swift` | `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift` | **修正路径** |
+| 2 | SDK 开放车型白名单 | `config-sdk-opened-vehicles.kp.md` | `submodule/XPVehicleSDK/Core/VehicleManager.swift` | `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift` | **修正路径** |
+| 3 | 车型编码映射 | `config-vehicle-type-codes.kp.md` | `submodule/XPVehicleSDK/Core/VehicleManager.swift` | `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift` | **修正路径** |
+| 4 | 连接基类 fatalError | `vehicle-connection-fatalerror.kp.md` | `submodule/XPVehicleSDK/Core/Connection/VehicleConnection.swift` | `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleConnection/VehicleConnection.swift` | **修正路径** |
+| 5 | C++ 结构体紧凑排列 | `ble-packed-struct.kp.md` | `submodule/XPBLEDataProcessor/cross/` | `submodule/XPBLEDataProcessor/cross-platform/` | **修正路径** |
+| 6 | MQTT 单例与切车 | `mqtt-singleton-switch-vehicle.kp.md` | `submodule/XPMQTTLibrary/Function/MqttService/MqttServiceManager.swift` | `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/MqttService/MqttServiceManager.swift` | **修正路径+模块归属** |
+
+### 关注知识点（路径部分差异但核心有效）
+
+| # | 知识点 | 文件 | 差异说明 | 建议操作 |
+|---|--------|------|---------|---------|
+| 7 | MQTT 连接状态判定 | `mqtt-connected-state.kp.md` | `MQTTPublisher.m` 路径少一层 `XPMQTTLibrary/`，实际为 `submodule/XPMQTTLibrary/XPMQTTLibrary/Sources/Publish/MQTTPublisher.m` | **修正路径** |
+| 8 | 消息回调 ID 匹配 | `mqtt-message-id-matching.kp.md` | 引用 `submodule/XPMQTTLibrary/Core/MQTT/MQTTHandler.swift` 不存在，MQTTHandler 在 VehicleSDK 中 | **修正路径** |
+| 9 | 自动重连重发机制 | `mqtt-auto-reconnect.kp.md` | 引用 `submodule/XPMQTTLibrary/Core/MQTT/MQTTHandler.swift` 不存在 | **修正路径** |
+
+### 涉及路径修正的全部知识点汇总
+
+**`VehicleManager.swift` 路径修正（3 处）:**
+- `submodule/XPVehicleSDK/Core/VehicleManager.swift` → `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleManager/VehicleManager.swift`
+- 涉及: `vehicle-switch-flow.kp.md`, `config-sdk-opened-vehicles.kp.md`, `config-vehicle-type-codes.kp.md`
+
+**`VehicleConnection.swift` 路径修正（1 处）:**
+- `submodule/XPVehicleSDK/Core/Connection/VehicleConnection.swift` → `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleConnection/VehicleConnection.swift`
+- 涉及: `vehicle-connection-fatalerror.kp.md`
+
+**`cross/` 目录名修正（1 处）:**
+- `submodule/XPBLEDataProcessor/cross/` → `submodule/XPBLEDataProcessor/cross-platform/`
+- 涉及: `ble-packed-struct.kp.md`
+
+**`MqttServiceManager.swift` 模块归属修正（1 处）:**
+- `submodule/XPMQTTLibrary/Function/MqttService/MqttServiceManager.swift` → `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/MqttService/MqttServiceManager.swift`
+- 涉及: `mqtt-singleton-switch-vehicle.kp.md`
+
+**`MQTTPublisher.m` 路径修正（1 处）:**
+- `submodule/XPMQTTLibrary/Sources/Publish/MQTTPublisher.m` → `submodule/XPMQTTLibrary/XPMQTTLibrary/Sources/Publish/MQTTPublisher.m`
+- 涉及: `mqtt-connected-state.kp.md`
+
+**`MQTTHandler.swift` 在 MQTTLibrary 中不存在（2 处）:**
+- `submodule/XPMQTTLibrary/Core/MQTT/MQTTHandler.swift` 不存在
+- 实际 MQTTHandler 位置: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/MQTT/MQTTHandler.swift`
+- 涉及: `mqtt-message-id-matching.kp.md`, `mqtt-auto-reconnect.kp.md`
+
+---
+
+## 二、覆盖度检测详情
+
+### 近 30 天高频变更区域 vs 知识覆盖
+
+| # | 模块/目录 | 近30天变更次数 | 模块文档 | 知识点 | 覆盖状态 |
+|---|----------|-------------|---------|--------|---------|
+| 1 | `Services/HotPatch` | 8 | 无 | 无 | 🔴 **盲区** |
+| 2 | `XPBusiness_IM` (IM 模块) | 23 (多目录累计) | 无 | 无 | 🔴 **盲区** |
+| 3 | `Services/UnityCarControl` | 5 | 无 | 无 | 🔴 **盲区** |
+| 4 | `Modules/Home/NewCarOwnerHome` | 5 | 无 | 无 | 🔴 **盲区** |
+| 5 | `Modules/LittleP3` | 12 (多目录累计) | 无 | 无 | 🔴 **盲区** |
+| 6 | `Resources/VehicleAbilityConfig` | 4 | 有(XPCarAbilityConfig) | 有(5条) | 🟢 已覆盖 |
+| 7 | `Resources/Assets.xcassets/Air` | 14 | 无 | 无 | 🟡 (资源文件，低优先级) |
+
+### 盲区分析
+
+**高优先级盲区（活跃开发 + 无知识覆盖）:**
+1. **IM 即时通讯模块** — 23 次变更，是近期最活跃的业务模块，完全没有知识覆盖
+2. **LittleP3 模块** — 12 次变更，新功能开发中，无知识覆盖
+
+**中优先级盲区:**
+3. **HotPatch 热修复服务** — 8 次变更，无知识覆盖
+4. **UnityCarControl 3D 车控** — 5 次变更，无知识覆盖
+5. **NewCarOwnerHome 新车主首页** — 5 次变更，无知识覆盖
+
+---
+
+## 三、触发关键词质量
+
+> 召回数据尚未积累。进化日志中暂无 knowledge-recall 记录。
+> 建议：在下一次实际需求开发中执行 knowledge-recall，积累召回数据后再做关键词质量分析。
+
+---
+
+## 四、模块文档同步检测
+
+| # | 模块文档 | 抽样验证 | 状态 |
+|---|---------|---------|------|
+| 1 | XPBLEDataProcessor.md | `XPBLEDataProcessor.h` ✅, `MonaBleDataProcessor.h` ✅ | 🟢 |
+| 2 | MQTTPublisher.md | `MQTTPublisher.m` 路径差异（少一层） | 🟡 |
+| 3 | XPCarAbilityConfig.md | `XPCarAbilityConfig.h` ✅, 子类目录 ✅ | 🟢 |
+| 4 | VehicleConnection.md | `VehicleConnection.swift` 路径差异（中间层级不同） | 🟡 |
+| 5 | BaseVehicle.md | 待验证 | 🟢 (假定) |
+| 6 | VehicleManager.md | `VehicleManager.swift` 路径差异 | 🟡 |
+| 7 | XPVehicleExt.md | `BleKeyCard.swift` ✅, `AiCalendar/` ✅ | 🟢 |
+| 8 | XPPollingSDK.md | `PLXPPollingManager.h` ✅, `PLXPBleLocationDefined.h` ✅ | 🟢 |
+
+---
+
+## 五、修复建议优先级排序
+
+### P0 — 立即修复（路径失效，影响知识点准确性）
+
+| # | 操作 | 涉及文件 | 说明 |
+|---|------|---------|------|
+| 1 | 修正 VehicleManager.swift 路径 | `vehicle-switch-flow.kp.md`, `config-sdk-opened-vehicles.kp.md`, `config-vehicle-type-codes.kp.md` | Core/ → VehicleControl/Function/VehicleManager/ |
+| 2 | 修正 VehicleConnection.swift 路径 | `vehicle-connection-fatalerror.kp.md` | Core/Connection/ → VehicleControl/Core/VehicleConnection/ |
+| 3 | 修正 cross/ 目录名 | `ble-packed-struct.kp.md` | cross/ → cross-platform/ |
+| 4 | 修正 MqttServiceManager 归属 | `mqtt-singleton-switch-vehicle.kp.md` | XPMQTTLibrary → XPVehicleSDK |
+| 5 | 修正 MQTTPublisher.m 路径 | `mqtt-connected-state.kp.md` | 补全 XPMQTTLibrary/ 中间层 |
+| 6 | 修正 MQTTHandler.swift 归属 | `mqtt-message-id-matching.kp.md`, `mqtt-auto-reconnect.kp.md` | MQTTLibrary → VehicleSDK |
+
+### P1 — 短期补充（覆盖度盲区）
+
+| # | 操作 | 说明 |
+|---|------|------|
+| 7 | 为 IM 模块创建模块文档 | 近期最活跃模块，23 次变更 |
+| 8 | 为 LittleP3 模块创建模块文档 | 新功能开发中，12 次变更 |
+
+### P2 — 中期完善
+
+| # | 操作 | 说明 |
+|---|------|------|
+| 9 | 模块文档路径同步 | MQTTPublisher.md, VehicleConnection.md, VehicleManager.md 路径对齐 |
+| 10 | HotPatch/UnityCarControl 知识覆盖 | 评估是否需要知识点 |
+
+---
+
+## 六、审计结论
+
+### 知识库健康度评分: **B+ (82/100)**
+
+| 维度 | 得分 | 满分 | 说明 |
+|------|------|------|------|
+| 内容准确性 | 33 | 40 | 路径问题较多（9处），但核心知识内容准确 |
+| 覆盖度 | 20 | 30 | 车控域完整覆盖，但 App 业务层（IM/LittleP3）有盲区 |
+| 结构完整性 | 15 | 15 | 知识点/踩坑/模块文档/SOP/索引结构完整 |
+| 可维护性 | 14 | 15 | SOP + 审计机制已建立，待实战验证 |
+
+### 核心发现
+1. **路径腐烂模式**: XPVehicleSDK 的内部目录结构为 `XPVehicleSDK/VehicleControl/...`，但多个知识点错误使用了简写 `Core/...`。这是一个系统性问题，源于文档编写时的路径简化。
+2. **MqttServiceManager 归属**: MqttServiceManager 实际在 XPVehicleSDK 中而非 XPMQTTLibrary，说明 MQTT 模块的边界比文档描述更复杂 — VehicleSDK 封装了业务层 MQTT 逻辑。
+3. **App 业务层盲区**: 知识库高度集中于车控 SDK 域（submodule/），App 层业务模块（IM/Home/LittleP3）几乎无覆盖。

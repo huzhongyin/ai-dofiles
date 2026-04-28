@@ -1,0 +1,146 @@
+# 依赖图运行时动态解析 — 可行性分析
+
+> 日期: 2026-04-17
+> 目标: 评估能否从 Podfile/podspec/Podfile.lock 自动生成 deps.yml，替代手动维护
+
+## 1. 数据源分析
+
+### 可用数据源
+
+| 数据源 | 格式 | 信息量 | 可解析性 |
+|--------|------|--------|----------|
+| **Podfile.lock** | YAML-like | 完整依赖树（传递依赖展开） | ⭐⭐⭐ 最佳，结构化 |
+| ***.podspec** | Ruby DSL | 直接依赖 + 版本约束 | ⭐⭐ 需 Ruby 解析或正则 |
+| **Podfile** | Ruby DSL | pod 声明 + target 分组 | ⭐ 复杂（Ruby 方法/变量/条件编译） |
+
+### Podfile.lock 结构
+
+```yaml
+PODS:
+  - XPVehicleSDK (5.9.0-test.1):     # 直接列出传递依赖
+    - CocoaMQTT/Core
+    - XPDataProcessor
+    
+DEPENDENCIES:                          # 顶层声明的依赖
+  - XPVehicleSDK (from `submodule/XPVehicleSDK`)
+
+EXTERNAL SOURCES:                      # 本地路径映射
+  XPVehicleSDK:
+    :path: submodule/XPVehicleSDK
+```
+
+**结论**: Podfile.lock 是最可靠的数据源 — 结构化、完整、已解析过。
+
+## 2. 自动生成 deps.yml 方案
+
+### 核心逻辑
+
+```
+输入: Podfile.lock + module-registry.md
+步骤:
+  1. 解析 Podfile.lock → 获取每个 pod 的直接依赖列表
+  2. 解析 EXTERNAL SOURCES → 建立 pod ↔ 本地路径映射
+  3. 与 module-registry 交叉匹配 → 区分"内部模块依赖"和"第三方库依赖"
+  4. 生成 deps.yml:
+     - depends_on: 内部模块依赖（module-registry 命中的）
+     - external_deps: 第三方库依赖（未命中的）
+输出: <module>/.ai-knowledge/deps.yml
+```
+
+### 示例推演 (XPVehicleSDK)
+
+Podfile.lock 中 XPVehicleSDK 依赖:
+- `CocoaMQTT/Core` → 第三方
+- `IFAASDK` → 第三方  
+- `MMKV` → 第三方
+- `XPDataProcessor` → 匹配 registry 中 `XPBLEDataProcessor` (podspec 名 vs module 名不同!)
+- `YYModel` → 第三方
+
+当前手写 deps.yml:
+```yaml
+depends_on:
+  - id: XPBLEDataProcessor    # podspec 名是 XPDataProcessor
+  - id: XPMQTTLibrary         # podspec 名是 CocoaMQTT（私有 fork）
+  - id: XPCarControlCore      # 未在 podspec 中声明，是源码级 import
+```
+
+### 关键差异
+
+| 自动解析 | 手动维护 | 差异原因 |
+|----------|----------|----------|
+| XPDataProcessor | XPBLEDataProcessor | **Pod 名 ≠ Module 名** |
+| 找不到 XPMQTTLibrary | 有 | **间接依赖 + 私有 fork 重命名** |
+| 找不到 XPCarControlCore | 有 | **源码级 import，不在 podspec 依赖中** |
+
+## 3. 可行性评估
+
+### ✅ 可自动化的部分
+
+1. **Pod 依赖图解析** — Podfile.lock 解析是确定性的，可靠提取
+2. **内部/外部分类** — 与 module-registry 交叉匹配
+3. **新增依赖检测** — 对比 deps.yml 声明 vs Podfile.lock 实际依赖，发现未声明的
+4. **初稿生成** — 新模块的 deps.yml 初始化
+
+### ❌ 无法完全自动化的部分
+
+1. **Pod 名 → Module ID 映射** — `XPDataProcessor` vs `XPBLEDataProcessor`，需维护一张映射表
+2. **源码级依赖** — `import XPCarControlCore` 在 podspec 中可能未声明（通过中间层传递），需源码扫描
+3. **reason 字段** — 语义信息（"BLE 数据编解码"），无法从依赖图自动推断
+4. **critical_constraints** — 关键约束（"禁止反向依赖"），纯业务知识
+
+### 🔶 半自动化可行
+
+| 场景 | 自动化程度 | 需人工补充 |
+|------|-----------|-----------|
+| 新模块 deps.yml 初始化 | 80% | reason + constraints |
+| 依赖变更检测（漂移告警） | 95% | 仅确认是否预期 |
+| 完整依赖图可视化 | 100% | 无 |
+| 循环依赖检测 | 100% | 无 |
+
+## 4. 推荐方案
+
+### 方案: Podfile.lock 解析 + 漂移检测（渐进式）
+
+**不替代手动 deps.yml，而是作为验证和辅助工具**：
+
+1. **`deps-sync` skill** — 从 Podfile.lock 解析依赖图，与现有 deps.yml 对比，报告漂移：
+   - 新增未声明的内部模块依赖 → 提示补充
+   - 已声明但实际已移除的依赖 → 提示清理
+   - 第三方库变化 → 信息性提醒
+
+2. **Pod 名 → Module ID 映射表** — 在 `module-registry.md` 中扩展一个 `pod_name` 字段：
+   ```yaml
+   - id: XPBLEDataProcessor
+     pod_name: XPDataProcessor    # 新增
+     path: submodule/XPBLEDataProcessor
+   ```
+
+3. **源码 import 扫描** — 补充 podspec 无法覆盖的源码级依赖检测
+
+### 实施成本
+
+| 步骤 | 工作量 | 产出 |
+|------|--------|------|
+| Podfile.lock 解析脚本 | 低 | `scripts/parse-podfile-lock.sh` |
+| module-registry 添加 pod_name | 低 | 映射表完善 |
+| deps-sync skill | 中 | 漂移检测 + 初稿生成 |
+| 源码 import 扫描 | 中 | 补充源码级依赖 |
+
+### 不推荐
+
+- ❌ 完全替代手动 deps.yml — reason/constraints 是不可自动化的语义信息
+- ❌ 解析 Podfile 本身 — Ruby DSL 太复杂（条件编译、方法定义、变量引用）
+
+## 5. 结论
+
+**可行性: 半自动化 (70%)**
+
+- Podfile.lock 是可靠数据源，依赖图解析技术上无障碍
+- 但 deps.yml 的核心价值不在"列出依赖"（这 Podfile.lock 已经有），而在 **reason + constraints 的语义注释**
+- 最佳策略是"自动检测漂移 + 辅助初始化"，而非"全自动生成替代手写"
+
+### 建议下一步
+
+1. 在 module-registry 中添加 `pod_name` 映射字段
+2. 编写 Podfile.lock 解析脚本（提取内部模块依赖图）
+3. 创建 `deps-sync` skill 做漂移检测

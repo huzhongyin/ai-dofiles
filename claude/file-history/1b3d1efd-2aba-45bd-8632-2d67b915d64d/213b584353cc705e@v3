@@ -1,0 +1,35 @@
+# 蓝牙通信踩坑记录
+
+> 涉及模块: XPBLEDataProcessor, VehicleConnection, XPPollingSDK
+
+---
+
+## 坑1: V3 鉴权顺序不能乱
+- **现象**: V3 蓝牙连接鉴权失败，sessionKey 为空
+- **根因**: Auth0 和 Auth1 必须严格按序执行。sessionKey 的生成依赖 Auth0 返回的 rand1，跳过或乱序会导致密钥生成失败
+- **修复**: 确保 Auth0 回调成功后再发起 Auth1
+
+## 坑2: BLE data 和 tboxData 混用
+- **现象**: 车端收到指令但无法执行，或执行了错误的操作
+- **根因**: `XPBLEData.data` 走 BLE 通道，`XPBLEData.tboxData` 走 TBox/MQTT 通道。将 tboxData 通过 BLE 发送会导致帧格式不匹配
+- **修复**: 严格按通道分发：`.data` → BLE，`.tboxData` → TBox
+
+## 坑3: 修改 C++ packed 结构体导致协议不兼容
+- **现象**: 更新 App 后蓝牙数据解析出乱码或崩溃
+- **根因**: `__attribute__((packed))` 结构体的字段顺序与车端协议一一对应，插入或重排字段会导致字节偏移错位
+- **修复**: 新字段只追加到结构体末尾，且与车端协议文档同步确认
+
+## 坑4: Polling 解锁指令码与普通解锁指令码混用
+- **现象**: 无感解锁成功但后端统计为手动解锁，或计费策略出错
+- **根因**: `PLXPTBoxCommandPollingUnlock` ≠ `PLXPTBoxCommandUnlock`，车端通过指令码区分解锁来源
+- **修复**: Polling 流程使用 Polling 专属指令码，手动车控使用标准指令码
+
+## 坑5: BLE 解析器跨车型影响
+- **现象**: 修改 E28 的解析逻辑后，D22 车型蓝牙数据解析异常
+- **根因**: 虽然各车型有独立 Parser，但共享部分基类代码。修改基类方法会影响所有车型
+- **修复**: 修改解析逻辑时，验证所有受影响车型的解析结果
+
+## 坑6: V3 新增 msgId 时 tag/type 与现有消息冲突
+- **现象**: 新增 RtAuth (msgId=0x0B) 响应数据被误解析为 RKE 响应，或 RtNotification (msgId=0x0C) 的 type=0xD0 被误解析为 CommonCarState
+- **根因**: V3 协议中不同 msgId 的消息可以使用相同的 tag 值（如 tag=0x7F6F 被 RKE 和 RtAuth 共用）和相同的 type 值（如 type=0xD0 被车态和 RtNotification 共用）。如果在通用 `handleXPBleKeyV3Content` 的 tag/type switch 中处理，会导致路由错误
+- **修复**: 在 `handleBleKeyV3Message` 中，进入通用 TLV 解析之前，通过 `message->msgId` 前置路由到专用 handler 函数（`handleRtAuthContent`/`handleRtNotificationContent`），避免进入共用的 tag/type 分发逻辑

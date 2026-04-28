@@ -1,0 +1,23 @@
+# GRDB 数据库使用规范
+
+## 元信息
+- 触发关键词: ["GRDB", "XPDBManager", "数据库", "BleKeyCard表", "数据库迁移", "XPDBClient"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+项目使用 GRDB 进行本地数据持久化，统一由 `XPDBManager` 管理：
+
+**注册的表**:
+1. `BleKeyCard` — 蓝牙钥匙卡（16 种状态、16 种类型）
+2. `CertKeyCard` — 证书钥匙卡
+3. `CertKeyMessage` — 证书钥匙消息
+4. `ChargeSearchHistoryModel` — 充电搜索历史
+
+**使用规范**:
+- 数据模型需实现 GRDB 的 `FetchableRecord` + `PersistableRecord` 协议
+- 表结构变更走数据库迁移（`BleKeyCard` 已有迁移支持）
+- 统一通过 `XPDBManager.client` 获取数据库连接
+
+**代码位置**: `submodule/XPVehicleExt/XPVehicleExt/DBModel/`

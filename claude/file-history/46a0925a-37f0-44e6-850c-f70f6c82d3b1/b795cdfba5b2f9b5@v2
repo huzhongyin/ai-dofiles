@@ -1,0 +1,78 @@
+# 故障描述与功能模块映射表
+
+本文件维护故障描述关键词到具体功能模块的映射关系，用于自动识别需要分析的目标模块。
+
+## 映射规则格式
+
+```
+故障描述关键词 → 功能模块名称
+```
+
+## 当前映射表
+
+### 汽车相关功能
+
+| 故障描述关键词 | 功能模块名称 | 平台支持 | 最后更新 |
+|-------------|------------|----------|---------|
+| 自动解锁失败 | auto-unlock | iOS/Android/HarmonyOS | 2026-03-25 |
+| 解锁异常 | auto-unlock | iOS/Android/HarmonyOS | 2026-03-25 |
+| 远程解锁不生效 | remote-unlock | iOS/Android/HarmonyOS | 2026-03-25 |
+| 车门无法打开 | door-control | iOS/Android/HarmonyOS | 2026-03-25 |
+| 空调控制失效 | climate-control | iOS/Android/HarmonyOS | 2026-03-25 |
+| 充电异常 | charging-system | iOS/Android/HarmonyOS | 2026-03-25 |
+| 导航问题 | navigation | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+
+### 支付相关功能
+
+| 故障描述关键词 | 功能模块名称 | 平台支持 | 最后更新 |
+|-------------|------------|----------|---------|
+| 支付失败 | payment-flow | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+| 扣款异常 | payment-process | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+| 订单状态错误 | order-management | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+| 退款问题 | refund-process | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+
+### 用户认证功能
+
+| 故障描述关键词 | 功能模块名称 | 平台支持 | 最后更新 |
+|-------------|------------|----------|---------|
+| 登录失败 | user-authentication | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+| 验证码收不到 | sms-verification | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+| 人脸识别失败 | face-recognition | iOS/Android/HarmonyOS | 2026-03-25 |
+| 指纹识别异常 | fingerprint-auth | iOS/Android/HarmonyOS | 2026-03-25 |
+
+### 网络通信功能
+
+| 故障描述关键词 | 功能模块名称 | 平台支持 | 最后更新 |
+|-------------|------------|----------|---------|
+| 网络请求超时 | network-request | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+| API调用失败 | api-gateway | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+| 数据同步问题 | data-sync | iOS/Android/HarmonyOS/MiniProgram | 2026-03-25 |
+
+## 映射表维护说明
+
+1. **添加新映射**：遇到新的故障描述时，按格式添加到对应分类
+2. **更新时间**：每次修改都需要更新"最后更新"时间戳
+3. **平台支持**：明确标注每个模块支持的平台类型
+4. **模块命名**：使用小写字母和连字符，保持命名一致性
+
+## 智能匹配策略
+
+如果故障描述不能精确匹配，使用以下策略：
+
+1. **关键词包含匹配**：故障描述包含映射表中的关键词
+2. **语义相似匹配**：识别语义上相似的描述
+3. **上下文推理**：结合平台类型和其他信息进行推理匹配
+
+## 示例用法
+
+```
+用户输入："iPhone上自动解锁功能失效"
+匹配结果：auto-unlock（自动解锁失败）
+平台确认：iOS ✓
+```
+
+```
+用户输入："小程序支付页面点击没反应"
+匹配结果：payment-flow（支付失败）
+平台确认：MiniProgram ✓
+```

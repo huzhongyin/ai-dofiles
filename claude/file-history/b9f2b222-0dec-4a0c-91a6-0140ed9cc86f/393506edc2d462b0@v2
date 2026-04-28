@@ -1,0 +1,456 @@
+# 小鹏汽车AI编码治理系统
+
+为小鹏汽车iOS开发团队打造的综合性AI编码治理解决方案，集成权限控制、代码标准验证、智能建议和团队协作功能。
+
+## 🚀 核心特性
+
+### 🏗️ 架构扫描与依赖分析
+- **自动项目扫描**：智能识别LocalPods模块结构和主应用架构
+- **依赖关系分析**：检测循环依赖、构建依赖层级图
+- **模块类型识别**：自动分类车控、业务、基础模块
+
+### 🔒 基于角色的权限控制
+- **细粒度权限**：支持模块级读取、写入、AI辅助权限控制
+- **角色管理**：预定义高级架构师、车控团队、业务开发等角色
+- **临时授权**：支持短期权限提升和审批流程
+- **降级模式**：系统异常时的安全降级策略
+
+### ✅ 代码标准验证
+- **8大类标准检查**：命名规范、文件头、导入组织、硬编码检查等
+- **多语言支持**：Swift、Objective-C、C++混合开发项目
+- **自动修复**：支持部分违规的自动化修复
+- **实时验证**：集成Claude Code工作流的实时检查
+
+### 🤖 智能AI编码建议
+- **模块特定建议**：针对不同模块类型提供专业化指导
+- **安全约束**：车控模块线程安全、错误处理等关键要求
+- **架构指导**：MVVM模式、设计原则、最佳实践
+- **权限约束**：根据用户权限级别限制AI建议范围
+
+### 🔄 Claude Code深度集成
+- **Pre-tool钩子**：编辑前权限检查
+- **Post-tool钩子**：编辑后标准验证
+- **实时提示**：违规即时提醒和修复建议
+- **项目健康度**：持续监控代码质量趋势
+
+## 🏛️ 系统架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AI工具适配层                              │
+│  ┌─────────────┬─────────────┬─────────────┬─────────────┐   │
+│  │ Claude Code │ GitHub      │    Kimi     │   Cursor    │   │
+│  │   适配器    │   Copilot   │    适配器   │   适配器    │   │
+│  └─────────────┴─────────────┴─────────────┴─────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────┐
+│                    统一抽象层                                │
+│  ┌─────────────┬─────────────┬─────────────┬─────────────┐   │
+│  │  权限检查   │  标准验证   │ AI建议生成  │  项目扫描   │   │
+│  │   接口      │    接口     │    接口     │    接口     │   │
+│  └─────────────┴─────────────┴─────────────┴─────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────┐
+│                   规范标准层                                 │
+│  ┌─────────────┬─────────────┬─────────────┬─────────────┐   │
+│  │ 小鹏编码    │   安全合规  │ 架构设计    │  团队协作   │   │
+│  │   规范      │    规范     │   规范      │   规范      │   │
+│  └─────────────┴─────────────┴─────────────┴─────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────┐
+│                    数据源层                                  │
+│  ┌─────────────┬─────────────┬─────────────┬─────────────┐   │
+│  │  飞书云文档 │   Git仓库   │  本地配置   │   审计日志  │   │
+│  │   标准库    │   代码库    │    文件     │    数据     │   │
+│  └─────────────┴─────────────┴─────────────┴─────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 📦 核心组件
+
+### 1. 项目架构扫描器 (`architecture_scanner.py`)
+```python
+from scripts.architecture_scanner import ArchitectureScanner
+
+scanner = ArchitectureScanner("/path/to/project")
+architecture = scanner.scan_project()
+print(f"发现模块: {len(architecture.modules)}")
+```
+
+### 2. 权限检查器 (`permission_checker.py`)
+```python
+from scripts.permission_checker import PermissionChecker
+
+checker = PermissionChecker()
+result = checker.check_permission(permission_request)
+print(f"权限结果: {result.allowed}")
+```
+
+### 3. 标准验证器 (`standards_validator.py`)
+```python
+from scripts.standards_validator import StandardsValidator
+
+validator = StandardsValidator()
+report = validator.validate_project("/path/to/project")
+print(f"违规数量: {report.total_violations}")
+```
+
+### 4. Claude Code适配器 (`claude_code_adapter.py`)
+```python
+from scripts.claude_code_adapter import ClaudeCodeAdapter
+
+adapter = ClaudeCodeAdapter()
+result = adapter.initialize_project()
+suggestions = adapter.get_ai_coding_suggestions(context)
+```
+
+## 🚀 快速开始
+
+### 1. 环境要求
+- Python 3.11+
+- YAML支持（可选，fallback到JSON）
+- iOS项目目录结构
+
+### 2. 安装配置
+
+1. **克隆项目配置文件**
+```bash
+# 复制配置文件到项目根目录
+cp config/xp_ai_coding_config.yaml.example config/xp_ai_coding_config.yaml
+```
+
+2. **配置Claude Code Skill**
+```bash
+# 创建skill链接（如使用Claude Code）
+ln -s $(pwd)/skills/xp-ai-coding.md ~/.claude/skills/
+```
+
+3. **初始化项目**
+```python
+from scripts.claude_code_adapter import ClaudeCodeAdapter
+
+adapter = ClaudeCodeAdapter()
+result = adapter.initialize_project()
+print(f"项目初始化: {result['status']}")
+```
+
+### 3. 基础使用
+
+#### 权限检查
+```python
+# 检查模块访问权限
+access = adapter.check_module_access(
+    user_id="developer_id",
+    module_name="XPVehicleSDK",
+    action="write",
+    user_context={"roles": ["vehicle_team_member"]}
+)
+```
+
+#### 代码验证
+```python
+# 验证文件标准符合性
+validation = adapter.validate_code_standards([
+    "LocalPods/XPVehicleSDK/Classes/XPVehicle.h"
+])
+```
+
+#### AI编码建议
+```python
+# 获取模块特定编码建议
+suggestions = adapter.get_ai_coding_suggestions({
+    "module": "XPBusiness_AI",
+    "action": "ai_assist",
+    "user_id": "developer_id"
+})
+```
+
+## ⚙️ 配置管理
+
+### 统一配置文件结构
+```yaml
+version: "1.0.0"
+project_name: "XPMotors_iOS"
+team_name: "小鹏汽车iOS团队"
+
+# 项目设置
+project_settings:
+  language: "mixed"  # swift, objective-c, mixed
+  platform: "ios"
+  minimum_ios_version: "12.0"
+
+# 权限配置
+permission_config:
+  rbac_enabled: true
+  roles:
+    senior_architect:
+      permissions: ["*:read", "*:write", "ai_assist:all_modules"]
+    vehicle_team_member:
+      permissions: ["vehicle_sdk:read", "vehicle_sdk:write"]
+
+# 标准配置
+standards_config:
+  enabled: true
+  enabled_rule_categories:
+    - naming_conventions
+    - code_style
+    - architecture
+    - security
+
+# AI辅助配置
+ai_assist_config:
+  enabled: true
+  suggestion_types:
+    code_completion: {enabled: true, priority: 1}
+    refactoring: {enabled: true, priority: 2}
+```
+
+### 配置管理API
+```python
+from scripts.config_manager import get_config_manager
+
+# 获取配置管理器
+config_mgr = get_config_manager()
+
+# 加载配置
+config = config_mgr.load_config()
+
+# 更新特定配置段
+config_mgr.update_config_section("ai_assist_config", {
+    "max_suggestions_per_request": 15
+})
+
+# 保存配置
+config_mgr.save_config()
+```
+
+## 🔧 开发指南
+
+### 添加新的编码标准
+
+1. **定义规则类**
+```python
+from scripts.models.standards_model import StandardRule, SeverityLevel
+
+rule = StandardRule(
+    rule_id="custom_naming_rule",
+    name="自定义命名规范",
+    description="检查自定义命名要求",
+    category=StandardType.NAMING_CONVENTIONS,
+    severity=SeverityLevel.WARNING,
+    enabled=True
+)
+```
+
+2. **实现验证逻辑**
+```python
+def validate_custom_rule(self, file_path: Path) -> List[ViolationInstance]:
+    violations = []
+    # 实现具体验证逻辑
+    return violations
+```
+
+### 扩展权限角色
+
+```python
+# 在permission_config中添加新角色
+"new_role": {
+    "description": "新角色描述",
+    "permissions": [
+        "specific_module:read",
+        "specific_module:write"
+    ]
+}
+```
+
+### 集成新的AI工具
+
+1. **实现适配器接口**
+```python
+class NewAIToolAdapter:
+    def check_permission(self, context) -> bool:
+        # 调用统一权限接口
+        return self.permission_checker.check_permission(request)
+
+    def validate_standards(self, files) -> Dict:
+        # 调用标准验证接口
+        return self.standards_validator.validate_files(files)
+```
+
+## 📊 质量指标与监控
+
+### 系统性能指标
+- **权限检查响应时间**: < 50ms (SLA)
+- **代码验证扫描速度**: < 200ms/文件
+- **AI建议生成时间**: < 500ms
+- **项目扫描完成时间**: < 2s
+
+### 代码质量指标
+- **标准符合率**: 目标 > 95%
+- **违规修复率**: 自动修复 > 80%
+- **AI建议准确性**: 相关性 > 90%，误报率 < 5%
+
+### 权限控制指标
+- **权限检查覆盖率**: 100%文件操作
+- **未授权访问拦截**: 100%
+- **权限缓存命中率**: > 85%
+
+### 项目健康度评分算法
+```python
+def calculate_health_score(violations, files):
+    base_score = 100
+    violation_density = violations / files
+
+    if violation_density < 0.5:
+        penalty = violation_density * 10
+    elif violation_density < 2.0:
+        penalty = 5 + (violation_density - 0.5) * 20
+    else:
+        penalty = 35 + min((violation_density - 2.0) * 15, 50)
+
+    return max(0, int(base_score - penalty))
+```
+
+## 🧪 测试与验证
+
+### 系统完整性验证
+```bash
+# 运行完整验证工具
+python tools/validate_xp_ai_coding.py --project . --verbose
+
+# 指定输出报告
+python tools/validate_xp_ai_coding.py --project . --output validation_report.json
+```
+
+### 验证项目包括：
+- ✅ 项目初始化功能
+- ✅ 架构扫描准确性
+- ✅ 权限系统完整性
+- ✅ 标准验证覆盖率
+- ✅ AI建议生成质量
+- ✅ Claude Code集成工作流
+- ✅ 性能指标达标情况
+
+### 单元测试
+```bash
+# 运行核心组件测试
+python -m pytest tests/ -v
+
+# 运行特定模块测试
+python -m pytest tests/test_permission_checker.py -v
+```
+
+## 👥 团队协作
+
+### 角色权限矩阵
+
+| 角色 | 车控模块 | 业务模块 | 基础模块 | AI辅助 | 系统配置 |
+|------|---------|---------|---------|--------|---------|
+| 高级架构师 | 读写 | 读写 | 读写 | 全模块 | 管理 |
+| 车控团队成员 | 读写 | 只读 | 只读 | 车控模块 | - |
+| 业务开发人员 | - | 读写 | 读写 | 业务模块 | - |
+| 实习生 | - | - | 只读 | 基础功能 | - |
+| 外包人员 | - | 只读 | - | - | - |
+
+### 审计与合规
+
+#### 操作审计日志
+- **权限检查记录**：所有访问控制决策
+- **标准违规跟踪**：违规类型、修复状态
+- **AI辅助使用**：建议采纳率、效果评估
+- **配置变更历史**：规则更新、权限调整
+
+#### 合规要求
+- **代码安全扫描**：敏感信息泄漏检测
+- **架构合规检查**：模块依赖合理性验证
+- **开发规范执行**：强制性规范100%覆盖
+- **质量门禁控制**：CI/CD集成验证点
+
+### 知识沉淀机制
+
+#### 最佳实践固化
+- **编码模式库**：团队优秀代码模式提取
+- **问题解决方案**：常见问题标准化处理
+- **架构决策记录**：重要设计决策文档化
+- **经验传承体系**：新人快速上手指南
+
+#### 持续改进流程
+- **规则优化**：基于违规统计调整规则权重
+- **权限调整**：根据团队演化优化权限模型
+- **工具集成**：新工具接入标准化流程
+- **反馈收集**：开发体验持续优化
+
+## 🔗 集成指南
+
+### Git Hooks集成
+```bash
+# Pre-commit标准检查
+#!/bin/sh
+python scripts/claude_code_adapter.py --pre-commit-check
+
+# Pre-push权限验证
+#!/bin/sh
+python scripts/claude_code_adapter.py --pre-push-permission-check
+```
+
+### CI/CD集成
+```yaml
+# .github/workflows/xp-coding-governance.yml
+name: XPeng Coding Governance
+on: [push, pull_request]
+
+jobs:
+  governance-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Run Governance Validation
+        run: python tools/validate_xp_ai_coding.py --project .
+```
+
+### IDE集成示例
+```json
+// .vscode/tasks.json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "XP Coding Standards Check",
+            "type": "shell",
+            "command": "python",
+            "args": ["scripts/claude_code_adapter.py", "--validate-current-file", "${file}"]
+        }
+    ]
+}
+```
+
+## 📚 相关文档
+
+- **[架构设计文档](docs/architecture.md)** - 系统架构详细设计
+- **[权限管理指南](docs/permission-guide.md)** - 权限配置和管理
+- **[编码规范手册](docs/coding-standards.md)** - 团队编码标准详解
+- **[API参考文档](docs/api-reference.md)** - 详细API文档
+- **[故障排查指南](docs/troubleshooting.md)** - 常见问题解决方案
+
+## 🤝 贡献指南
+
+1. **Fork项目** 并创建功能分支
+2. **编写测试** 确保新功能有对应测试覆盖
+3. **遵循代码规范** 使用本系统验证自身代码
+4. **提交PR** 并通过所有CI检查
+5. **代码审查** 等待团队成员审查通过
+
+## 📄 许可证
+
+Copyright © 2024 XPeng Motors. All rights reserved.
+
+---
+
+*该系统为小鹏汽车iOS团队量身定制，集成了团队多年的开发经验和最佳实践。通过AI技术和治理机制的深度融合，为团队提供智能、安全、高效的编码体验。*

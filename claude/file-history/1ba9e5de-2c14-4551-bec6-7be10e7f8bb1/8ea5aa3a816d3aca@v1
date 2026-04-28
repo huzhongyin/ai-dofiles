@@ -1,0 +1,37 @@
+# XPWidget — Target 规范
+
+## 模块定位
+
+TODO: 一句话说明本模块职责（如 Widget Extension / Watch App / Notification Service Extension）。
+
+## 本层加载时机
+
+knowledge-recall 路径命中对应 target 目录时加载。
+
+## 语言与架构规范
+
+TODO: 根据探测到的语言组合填充（Target 通常为 Swift，可能受 iOS/watchOS 版本限制）。
+
+## 运行环境约束
+
+TODO: 占位 — 内存预算（Widget ≤ 30MB / Notification Extension ≤ 24MB 等）；可用 API 白名单；后台执行时长限制；禁用的框架（如 WidgetExtension 不可用 UIApplication）。
+
+## Extension 生命周期
+
+TODO: 占位 — 进程启动/挂起/唤醒时机；App Group 共享数据约定；与宿主 App 的通信方式（UserDefaults(suiteName:) / Darwin Notification / URL Scheme）。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+TODO: 列出 Target 层禁止事项（占位）。
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言语法细节 → `.claude/rules/ios-coding.md`
+- 主工程 App 架构规则 → L2 `CLAUDE.app.md`
+- **target 内部实现细节下沉到 `.claude/targets/<target>/rules/`**

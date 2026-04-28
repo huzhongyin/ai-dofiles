@@ -1,0 +1,56 @@
+graph TB
+    subgraph "L1 Project 根（常驻加载）"
+        L1_CLAUDE["CLAUDE.md<br/>(瘦身版根入口)"]
+        L1_RULES["rules/project-common.md<br/>(通用编码方针)"]
+        L1_CONST["constitution.md<br/>(项目宪法 — 最高约束)"]
+        L1_KP["knowledge-points/*.kp.md<br/>(跨模块通用知识)"]
+        L1_SPECS["specs/template-*.md<br/>(模板文件)"]
+        L1_REG["module-registry.md<br/>(模块注册表 — 单一数据源)"]
+    end
+
+    subgraph "L2 主工程 App"
+        L2_CLAUDE["XiaoPengQiChe/.claude/CLAUDE.md"]
+        L2_RULES["rules/architecture.md + coding-style.md"]
+        L2_DEPS["deps.yml"]
+        L2_MODULES["modules/*.md"]
+    end
+
+    subgraph "L3 Target（6 个 Extension）"
+        L3_WATCH["XPWatch"]
+        L3_WIDGET["XPWidget"]
+        L3_WATCHWIDGET["XPWatchWidget"]
+        L3_INTENTS["XPIntentsExtension"]
+        L3_SHARE["XP3rdShareLocation"]
+        L3_MIRROR["XPMirrorExtension + XPPushService"]
+    end
+
+    subgraph "L4 Submodule（独立仓库）"
+        L4_VSDK["XPVehicleSDK<br/>(车控 SDK 门面)"]
+        L4_CCCORE["XPCarControlCore<br/>(车控配置核心)"]
+        L4_BLE["XPBLEDataProcessor<br/>(蓝牙编解码)"]
+        L4_MQTT["XPMQTTLibrary<br/>(MQTT 通信)"]
+        L4_POLL["XPPollingSDK<br/>(轮询 SDK)"]
+        L4_VEXT["XPVehicleExt<br/>(车辆扩展)"]
+        L4_BUSI["XPCarBusiCH<br/>(车控业务)"]
+    end
+
+    subgraph "L5 LocalPod（组件化）"
+        L5_ROUTER["XPBase_Router"]
+        L5_COMMON["XPBase_Common"]
+        L5_UI["XPBase_UI"]
+        L5_THEME["XPBase_Theme"]
+        L5_WEB["XPBase_WebView"]
+        L5_RN["XPBase_RN"]
+        L5_CAR["XPBusiness_Car"]
+        L5_USER["XPCenter_User"]
+        L5_KITS["XPKits"]
+    end
+
+    L1_CLAUDE --> L2_CLAUDE
+    L2_CLAUDE --> L3_WATCH
+    L2_CLAUDE --> L3_WIDGET
+    L1_CLAUDE --> L4_VSDK
+    L1_CLAUDE --> L5_ROUTER
+
+    style L1_CONST fill:#ff6b6b,color:#fff
+    style L1_REG fill:#ffd93d,color:#333

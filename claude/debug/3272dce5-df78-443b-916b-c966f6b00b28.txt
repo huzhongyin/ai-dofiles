@@ -1,0 +1,25 @@
+2026-04-20T13:22:02.728Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:02.861Z [DEBUG] MDM settings load completed in 3110ms
+2026-04-20T13:22:07.820Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:07.824Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:08.311Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:08.311Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:22:08.311Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:08.311Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:09.804Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-20T13:22:09.809Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-20T13:22:09.809Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-20T13:22:09.812Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-20T13:22:10.660Z [DEBUG] Error log sink initialized
+2026-04-20T13:22:10.723Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:10.723Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:10.728Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:10.728Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:22:10.728Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:10.728Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:10.730Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'userSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:22:10.733Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'userSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:22:10.733Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'projectSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:22:10.734Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'projectSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:22:10.736Z [DEBUG] Git remote URL: null
+2026-04-20T13:22:10.736Z [DEBUG] No git remote URL found

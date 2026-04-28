@@ -1,0 +1,39 @@
+# XPBase_Common — LocalPod 规范
+
+## 模块定位
+
+全 App 基础通用库，提供系统配置管理（SystemConfig）、基础工具集（DateExtension/String.Localized/Combine扩展）、全局事件定义（XPCommonEvent）、管理器集合（IDFA/实验室/红点/统计/第三方导航/待办中心/版本升级/日志文件）及宏定义与常量。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPBase_Common/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+OC 为主（SystemConfig、宏定义、Manager 大部分子模块），Swift 新增（DateExtension/String.Localized/UIControl.Combine）。OC 头文件通过 Bridging-Header 暴露，Swift 类暴露给 OC 需 `@objc`。
+
+## Podspec 依赖约束
+
+被几乎所有上层模块依赖。依赖 XPCategory（OC 分类扩展）。私有源 `gitlab.x-peng.com`，语义化版本。按功能域划分子目录（SystemConfig/Manager/Macros/Combine 等），非 subspec。
+
+## 命名前缀与 API 稳定性
+
+OC 类名 `XP` 前缀（如 `XPBlockDispatcher`、`XPLogFileHandle`）。Swift 类无前缀。公开 API 需保持稳定，Breaking Change 需同步所有上层调用方。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止引入业务逻辑或 UI 组件（本模块纯基础设施）
+- 禁止直接依赖上层业务 Pod（XPBusiness_*、XPCenter_*）
+- 禁止在 SystemConfig 中硬编码环境 URL（必须从后端配置拉取）
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

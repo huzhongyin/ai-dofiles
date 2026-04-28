@@ -1,0 +1,48 @@
+---
+name: oc-to-swift
+description: 将 OC 代码安全迁移到 Swift，保持功能等价性，处理 OC/Swift 互操作
+---
+
+## 触发条件
+当任务涉及以下关键词时激活: "转Swift", "OC迁移", "迁移到Swift", "Swift重写"
+
+## 输入
+- $ARGUMENTS: 需要迁移的 OC 文件路径或类名
+
+## 输出
+- 格式: Swift 源文件 + 迁移说明
+- 位置: 与原文件同目录或指定目录
+
+## 约束
+- IMPORTANT: 迁移后的 Swift 代码必须遵循共版模块化设计原则
+- 差异化通过配置抹平，不要硬编码平台差异
+- 保持与其他 OC 代码的互操作性（@objc 标注）
+- 不要在迁移过程中改变业务逻辑
+- 迁移一个文件后，确认编译通过再继续下一个
+- 更新 Bridging-Header（如果需要）
+
+## 执行步骤
+
+### Phase 0: 知识预加载
+0. 以目标 OC 文件路径和"OC迁移 Swift"关键词为输入，执行 knowledge-recall 三路触发:
+   - 自动加载目标模块的踩坑记录、知识点（特别是 OC-Swift 互操作相关）
+   - 加载 `.ai-knowledge/knowledge-points/oc-swift-bridge.kp.md`（根级跨模块通用知识）
+
+1. 读取目标 OC 文件（.h + .m）
+2. 分析该类的公开接口和内部实现
+3. 识别该类被其他 OC 代码调用的位置（grep 搜索）
+4. 生成等价的 Swift 代码:
+   - NS 前缀类型 → Swift 原生类型
+   - Block → Closure
+   - Delegate → Protocol
+   - 属性关键字映射（nonatomic, strong, copy 等）
+5. 对于被 OC 代码调用的方法，添加 @objc 标注
+6. 如有必要，创建过渡期的兼容层
+7. 列出需要手动验证的风险点
+8. 生成迁移清单:
+   - [ ] Swift 文件创建
+   - [ ] OC 文件标记废弃（或删除）
+   - [ ] Bridging-Header 更新
+   - [ ] 调用方更新
+   - [ ] 编译验证
+   - [ ] 功能测试

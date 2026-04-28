@@ -1,0 +1,53 @@
+{
+  "skill_name": "log-analyzer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "分析用户问题：iPhone上自动解锁功能失效，Swift代码调用了Objective-C的底层模块。日志文件路径：/Users/test/ios_auto_unlock_mixed.log，故障时间：14:35，平台：iOS",
+      "expected_output": "识别iOS混编场景，分析Swift->OC调用链，定位具体语言层问题，生成混编调用链分析报告",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "分析测试问题：Android App的支付模块在Kotlin层调用了JNI的C++加密算法后崩溃。日志路径：/Users/test/android_payment_jni_crash.log，故障时间：09:22，平台：Android",
+      "expected_output": "识别Android混编场景，分析Kotlin->JNI->C++调用栈，定位C++层崩溃原因，输出跨语言错误传播分析",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "分析用户问题：鸿蒙系统上车辆控制模块异常，涉及ArkTS调用Native C++。日志文件：/Users/test/harmonyos_vehicle_native.log，时间：16:45，平台：HarmonyOS",
+      "expected_output": "识别HarmonyOS混编场景，分析ArkTS->NAPI->C++调用链，生成车辆控制模块方案书，输出Native层问题分析",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "分析测试问题：小程序中用户认证流程超时，但后端日志显示请求已处理完成。日志路径：/Users/test/miniprogram_auth_timeout.log，故障时间：11:30，平台：MiniProgram",
+      "expected_output": "识别小程序平台，分析用户认证模块，发现跨系统时序问题，生成边界分析报告要求检查后端系统",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "分析用户问题：新功能模块'语音助手'在所有平台都出现性能问题。日志文件：/Users/test/voice_assistant_performance.log，时间：13:20，平台：iOS",
+      "expected_output": "检测到新模块，触发边界场景3.2生成方案书，分析性能问题根因，输出语音助手模块标准化分析报告",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "分析测试问题：C++核心算法模块在多线程环境下出现数据竞争。日志路径：/Users/test/cpp_multithreading_race.log，故障时间：08:15，平台：Android",
+      "expected_output": "识别C++模块专项问题，分析多线程数据竞争，识别线程安全问题模式，输出C++层专项分析报告",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "分析用户问题：系统整体响应缓慢，用户无法确定是哪个模块的问题。日志文件：/Users/test/system_general_slow.log，时间：15:00，平台：iOS",
+      "expected_output": "触发边界场景3.5用户确认机制，询问用户选择分析方向，提供A/B/C选项供用户决策",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "分析测试问题：HarmonyOS上导航模块的.js脚本与ArkTS主代码交互异常。日志路径：/Users/test/harmonyos_nav_js_arkts.log，时间：10:45，平台：HarmonyOS",
+      "expected_output": "识别HarmonyOS多语言场景，分析.js与ArkTS交互，定位跨语言数据传递问题，生成导航模块交互分析",
+      "files": []
+    }
+  ]
+}

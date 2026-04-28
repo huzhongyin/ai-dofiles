@@ -1,0 +1,60 @@
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional, Any
+from enum import Enum
+from datetime import datetime, timedelta
+
+class ActionType(Enum):
+    READ = "read"
+    WRITE = "write"
+    AI_ASSIST = "ai_assist"
+
+class PermissionResult(Enum):
+    ALLOWED = "allowed"
+    DENIED = "denied"
+    REQUIRES_APPROVAL = "requires_approval"
+
+@dataclass
+class User:
+    id: str
+    name: str
+    roles: List[str] = field(default_factory=list)
+    teams: List[str] = field(default_factory=list)
+    source_ip: Optional[str] = None
+    user_agent: Optional[str] = None
+
+@dataclass
+class PermissionRequest:
+    user: User
+    module: str
+    action: ActionType
+    context: Dict[str, Any] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=datetime.now)
+
+@dataclass
+class PermissionResponse:
+    allowed: bool
+    restrictions: List[str] = field(default_factory=list)
+    warning: Optional[str] = None
+    error: Optional[str] = None
+    cache_ttl: int = 300  # 5分钟默认缓存
+    audit_required: bool = False
+
+@dataclass
+class TemporaryGrant:
+    user_id: str
+    module: str
+    action: ActionType
+    granted_by: str
+    expires_at: datetime
+    reason: str
+    auto_revoke: bool = True
+
+@dataclass
+class AuditEntry:
+    timestamp: datetime
+    user_id: str
+    module: str
+    action: ActionType
+    result: PermissionResult
+    source_ip: Optional[str] = None
+    additional_context: Dict[str, Any] = field(default_factory=dict)

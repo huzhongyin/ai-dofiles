@@ -1,0 +1,135 @@
+#!/bin/bash
+# deps-sync-check.sh — 依赖漂移检测
+# 对比 Podfile.lock 实际依赖 vs deps.yml 声明，报告漂移
+# 用法: ./scripts/deps-sync-check.sh
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "=== Deps Sync Check ==="
+echo ""
+
+# 全部逻辑委托给 Python，避免 bash 3.x 兼容问题
+python3 - "$SCRIPT_DIR" <<'PYEOF'
+import sys, os, json, subprocess, re
+
+script_dir = sys.argv[1]
+root = os.path.dirname(script_dir)
+os.chdir(root)
+
+# Step 1: 解析 Podfile.lock
+result = subprocess.run(['ruby', os.path.join(script_dir, 'parse-podfile-lock.rb'), 'Podfile.lock'],
+                       capture_output=True, text=True)
+if result.returncode != 0:
+    print(f"Error parsing Podfile.lock: {result.stderr}", file=sys.stderr)
+    sys.exit(1)
+lock_data = json.loads(result.stdout)
+pods = lock_data['pods']
+
+# Step 2: 解析 module-registry
+registry_path = '.ai-knowledge/module-registry.md'
+with open(registry_path) as f:
+    content = f.read()
+
+modules = []
+for m in re.finditer(r'```yaml\n(.*?)```', content, re.DOTALL):
+    block = m.group(1)
+    entry = {}
+    for line in block.strip().split('\n'):
+        line = line.strip().lstrip('- ')
+        if ':' in line:
+            key, val = line.split(':', 1)
+            val = val.strip().strip('"').strip("'")
+            # Handle keywords list
+            if key == 'keywords':
+                continue
+            entry[key.strip()] = val
+    if 'id' in entry:
+        modules.append(entry)
+
+# Build mappings
+id_to_pod = {}
+pod_to_id = {}
+for mod in modules:
+    if mod.get('status') == 'pending':
+        continue
+    mid = mod['id']
+    pname = mod.get('pod_name', mid)
+    id_to_pod[mid] = pname
+    pod_to_id[pname] = mid
+
+# Step 3: 对每个有 deps.yml 的模块检测漂移
+drift_count = 0
+checked = 0
+
+for mod in modules:
+    if mod.get('status') == 'pending':
+        continue
+    mid = mod['id']
+    path = mod.get('path', '')
+    pod_name = mod.get('pod_name', mid)
+
+    # 查找 deps.yml
+    deps_yml = None
+    for candidate in [
+        os.path.join(path, '.ai-knowledge', 'deps.yml'),
+        os.path.join('.claude', 'targets', mid, '.ai-knowledge', 'deps.yml'),
+    ]:
+        if os.path.isfile(candidate):
+            deps_yml = candidate
+            break
+
+    if not deps_yml:
+        continue
+    checked += 1
+
+    # 解析 deps.yml 声明的依赖（简单正则，不依赖 PyYAML）
+    with open(deps_yml) as f:
+        deps_content = f.read()
+
+    declared = set()
+    for line in deps_content.split('\n'):
+        m = re.match(r'\s+-?\s*id:\s*(.+)', line)
+        if m:
+            declared.add(m.group(1).strip())
+
+    # 从 Podfile.lock 获取实际依赖
+    pod_info = pods.get(pod_name, {})
+    actual_pod_deps = set(pod_info.get('deps', []))
+
+    # 转换 pod 名为 module id
+    actual_module_deps = set()
+    for dep_pod in actual_pod_deps:
+        if dep_pod in pod_to_id:
+            actual_module_deps.add(pod_to_id[dep_pod])
+
+    # 排除自身
+    actual_module_deps.discard(mid)
+
+    # 检测漂移
+    ghost = declared - actual_module_deps
+    missing = actual_module_deps - declared
+
+    has_drift = False
+    for g in sorted(ghost):
+        print(f"  ⚠️  [{mid}] 幽灵依赖: {g} (deps.yml 声明但 Podfile.lock 无)")
+        has_drift = True
+    for m in sorted(missing):
+        print(f"  ❌ [{mid}] 遗漏依赖: {m} (Podfile.lock 有但 deps.yml 未声明)")
+        has_drift = True
+
+    if has_drift:
+        drift_count += 1
+
+print()
+print("================================")
+print(f"已检查模块: {checked}")
+print(f"存在漂移:   {drift_count}")
+print("================================")
+
+if drift_count > 0:
+    print(f"⚠️  发现 {drift_count} 个模块存在依赖漂移，建议检查并更新 deps.yml")
+else:
+    print("✅ 所有模块依赖声明与 Podfile.lock 一致")
+PYEOF

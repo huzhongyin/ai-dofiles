@@ -1,0 +1,112 @@
+import pytest
+from datetime import datetime, timedelta
+from scripts.permission_checker import PermissionChecker
+from scripts.models.permission_model import (
+    User, PermissionRequest, ActionType, PermissionResult
+)
+
+class TestPermissionChecker:
+
+    def setup_method(self):
+        """设置测试环境"""
+        self.permission_checker = PermissionChecker()
+
+        # 测试用户
+        self.vehicle_dev = User(
+            id="user001",
+            name="张三",
+            roles=["vehicle_team_member"],
+            teams=["vehicle-team"]
+        )
+
+        self.ai_dev = User(
+            id="user002",
+            name="李四",
+            roles=["business_developer"],
+            teams=["ai-team"]
+        )
+
+        self.architect = User(
+            id="user003",
+            name="王五",
+            roles=["senior_architect"],
+            teams=["architecture-team"]
+        )
+
+    def test_vehicle_team_can_modify_vehicle_sdk(self):
+        """测试车控团队可以修改车控SDK"""
+        request = PermissionRequest(
+            user=self.vehicle_dev,
+            module="XPVehicleSDK",
+            action=ActionType.WRITE
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == True
+        assert response.error is None
+
+    def test_ai_team_cannot_modify_vehicle_sdk(self):
+        """测试AI团队不能修改车控SDK"""
+        request = PermissionRequest(
+            user=self.ai_dev,
+            module="XPVehicleSDK",
+            action=ActionType.WRITE
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == False
+        assert "无权限" in response.error
+
+    def test_architect_has_universal_access(self):
+        """测试架构师拥有全局访问权限"""
+        request = PermissionRequest(
+            user=self.architect,
+            module="XPVehicleSDK",
+            action=ActionType.WRITE
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == True
+
+    def test_ai_assist_requires_special_check(self):
+        """测试AI辅助需要特殊检查"""
+        request = PermissionRequest(
+            user=self.vehicle_dev,
+            module="XPVehicleSDK",
+            action=ActionType.AI_ASSIST
+        )
+
+        response = self.permission_checker.check_permission(request)
+        # 车控模块的AI辅助应该需要审核
+        assert response.audit_required == True
+
+    def test_degraded_mode_allows_read_only(self):
+        """测试降级模式允许只读访问"""
+        # 模拟系统不健康状态
+        self.permission_checker._system_healthy = False
+
+        request = PermissionRequest(
+            user=self.ai_dev,
+            module="XPBase_Common",
+            action=ActionType.READ
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == True
+        assert "degraded_mode" in response.restrictions
+        assert response.warning is not None
+
+    def test_degraded_mode_blocks_writes(self):
+        """测试降级模式阻止写操作"""
+        # 模拟系统不健康状态
+        self.permission_checker._system_healthy = False
+
+        request = PermissionRequest(
+            user=self.ai_dev,
+            module="XPBase_Common",
+            action=ActionType.WRITE
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == False
+        assert "system_unavailable" in response.restrictions

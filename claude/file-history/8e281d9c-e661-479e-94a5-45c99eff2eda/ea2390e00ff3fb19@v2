@@ -1,0 +1,132 @@
+# 功能模块：auto-lock（自动闭锁）
+所属平台：iOS
+最后更新：2026-03-31 10:00
+版本号：V2.0
+
+代码文件清单：
+  - submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/PLXPPollingManager.mm
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Mona/Service/Business/BleKeyManage/BleKeyHandler.swift
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Mona/Service/Business/BleKeyManage/BleKeyConfigModel.swift
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/Plugins/SelfKeyV3Manager.swift
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/CarKeyAutoLockRequestParam.swift
+  - submodule/XPCarControlCore/XPCarControlCore/Sources/Services/DigitalKey/PollingEffect/XPKeySettingSyncTool.m
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleState/SubState/SeatState.swift
+
+---
+
+## 前置条件
+
+- Polling 模式为 `PLPollingRunModeLockAndUnlock` 或 `PLPollingRunModeLock` [PLXPPollingManager.mm:363]
+- 自动闭锁开关（pollingLock）已开启 [XPKeySettingSyncTool.m:306]
+- 蓝牙钥匙已建立连接并持续接收车辆状态
+
+## 激活条件
+
+自动4G闭锁触发路径（`revealHttpLock`）：
+1. 蓝牙主断开连接 [PLXPMultiBleEventTool.m:225] → 触发 `theBLEConnectStateChanged`
+2. Polling SDK 接收断连回调，调用 `resetAllPollingCommandLimit` [PLXPPollingManager.mm:350]
+3. 调用 `revealHttpLock` [PLXPPollingManager.mm:288]
+
+## 基础事件流（完整版）
+
+1. `vehicleStateChanged:` [PLXPPollingManager.mm:143] → 持续记录车辆状态快照到成员变量：
+   - `beforeDisconnectDoorLockState` ← `driver_door_lock_st`
+   - `beforeDisconnectDriverSeatOccupied` ← `polling.driverSeatOccupied`
+   - `beforeDisconnectTemporaryLockState` ← `temp_lock_st`
+
+2. 蓝牙断连后调用 `revealHttpLock` [PLXPPollingManager.mm:362]：
+   - 检查1: pollingRunMode 是否为锁模式 → 否则 return
+   - 检查2: 临停状态检查 `beforeDisconnectTemporaryLockState` → Active 则 return
+   - 检查3: 车门已锁检查 `beforeDisconnectDoorLockState == Locked` → return
+   - 检查4: **主驾有人检查** `beforeDisconnectDriverSeatOccupied == Occupied` → return（关键拦截点）
+   - 检查5: 距离圈检查 `distanceLevel <= compareDistanceLevel` → return
+   - 检查6: Polling暂停检查 `isPaused` → return
+   - 全部通过 → `sendPollingBussinessCommand:XPPollingBussiness4GRevertLock` [PLXPPollingManager.mm:398]
+
+3. 4G闭锁成功 [PLXPPollingManager.mm:406]：
+   - `postAutoLockNotificationWithLockSuccess:YES`
+   - `pollingLockCommandDidSuccess`
+
+## 异常事件流（完整版）
+
+| 位置 | 条件 | 行为 | 日志 | 恢复策略 |
+|------|------|------|------|---------|
+| mm:364 | 非锁模式 | return | `<PA>不是Polling解闭锁,或不是Polling闭锁，不发4G闭锁` | 无 |
+| mm:368 | 临停状态 | return | `临停状态，不发4G闭锁` | 无 |
+| mm:373 | 已锁 | return | `<PA>车门已锁，不发4G闭锁` | 无 |
+| **mm:377** | **主驾有人** | **return** | **`<PA>主驾有人，不发4G闭锁`** | **无，丢失本次闭锁** |
+| mm:386 | 未出圈 | return | `<PA>未超过解锁圈，不发4G闭锁` | 无 |
+| mm:394 | Polling暂停 | return | `<PA>Polling暂停中，不发4G闭锁` | 无 |
+
+## 调用链路径
+
+### 上游（触发点）
+```
+BLE 主连接断开
+  → PLXPMultiBleEventTool.theBLEConnectStateChanged [MultiBleOptTag]
+    → PLXPPollingManager.resetAllPollingCommandLimit [mm:350]
+      → PLXPPollingManager.revealHttpLock [mm:362]
+```
+
+### 下游（执行点）
+```
+revealHttpLock 通过全部检查
+  → sendPollingBussinessCommand:XPPollingBussiness4GRevertLock [mm:398]
+    → PLXPCommandTool.sendCommand:XPVehicleCommandPollingLock
+      → HTTPS 4G 上锁请求
+        → 成功: pollingLockResultWithIsSuccess:YES
+        → 失败: pollingLockResultWithIsSuccess:NO
+```
+
+### 状态机（`driverSeatOccupied`）
+```
+-1 (default) → 1 (occupied) → 0 (empty) → 1 (occupied) ...
+                   ↑ 车辆上报有人     ↑ 车辆上报无人
+```
+**关键**: `beforeDisconnectDriverSeatOccupied` 只在 `vehicleStateChanged` 且值 != default 时更新，
+若BLE断连时最后一次收到的值为 `occupied=1`，则闭锁被永久阻止。
+
+---
+
+## 日志关键字映射（严格OR逻辑）
+
+### 入口标识
+- `<PA>开始Polling初始化` [PLXPPollingManager.mm:196, tag:MultiBleOptTag]
+- `<PA>主蓝牙断开连接` [PLXPMultiBleEventTool.m:225, tag:MultiBleOptTag]
+
+### 状态转换标识
+- `重置所有重连次数` [PLXPPollingManager.mm:350, tag:BLEKeyTagPolling]
+- `driverSeatOccupied` (BLE数据流) [BLEDataParser+cpp.swift:13, tag:cppParser]
+
+### 异常标识（闭锁失败原因）
+- `<PA>主驾有人，不发4G闭锁` [PLXPPollingManager.mm:377] ← **本次故障**
+- `<PA>不是Polling解闭锁,或不是Polling闭锁，不发4G闭锁` [mm:364]
+- `临停状态，不发4G闭锁` [mm:368]
+- `<PA>车门已锁，不发4G闭锁` [mm:373]
+- `<PA>未超过解锁圈，不发4G闭锁` [mm:386]
+- `<PA>Polling暂停中，不发4G闭锁` [mm:394]
+
+### 退出标识（成功/失败）
+- `<PA>发送HTTPS上锁指令成功` [mm:406, tag:BLEKeyTagPolling]
+- `<PA>发送HTTPS上锁指令失败` [mm:431, tag:BLEKeyTagPolling]
+- `<PA>车门未锁，主蓝牙断开连接，不在解锁圈，且主驾无人，4G闭锁` [mm:397]
+
+## 决策分支清单
+
+| 文件:行号 | 条件表达式 | true分支 | false分支 | 日志覆盖 |
+|-----------|-----------|---------|---------|---------|
+| mm:363 | pollingRunMode != Lock | return，不闭锁 | 继续检查 | ✅ |
+| mm:367 | TempLockState == Active | return，不闭锁 | 继续检查 | ✅ |
+| mm:372 | DoorLockState == Locked | return，不闭锁 | 继续检查 | ✅ |
+| **mm:376** | **DriverSeatOccupied == Occupied** | **return，不闭锁** | **继续检查** | **✅** |
+| mm:385 | distanceLevel <= UnlockCircle | return，不闭锁 | 继续检查 | ✅ |
+| mm:389 | !isCanRevealHttpLock | return，不闭锁 | 继续检查 | ✅ |
+| mm:393 | isPaused | return，不闭锁 | 发4G闭锁 | ✅ |
+
+## 静默失败风险点
+
+1. `vehicleStateChanged:` 中仅在 `seatState != XPDriverSeatStateDefault` 时才更新 `beforeDisconnectDriverSeatOccupied`，
+   若BLE曾断连重连导致状态临时为Default，则旧的Occupied值会保留到下次断连 [mm:149-151]
+
+2. `driverSeatOccupied` 从BLE数据解析 (`driverSeatOccupied` in polling JSON)，
+   若车辆固件延迟上报座椅状态，App侧可能在断连时持有过期数据（传感器响应延迟属外部不可控因素）

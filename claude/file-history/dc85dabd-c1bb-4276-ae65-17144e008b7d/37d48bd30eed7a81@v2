@@ -1,0 +1,1654 @@
+//
+//  XPKeyCheckViewController.m
+//  XiaoPengQiChe
+//
+//  Created by liaojx on 2023/5/22.
+//  Copyright © 2023 xiaopeng.com. All rights reserved.
+//
+
+#import "XPKeyCheckViewController.h"
+#import "XPKeyCheckingView.h"
+#import "XPKeyCheckSuccessView.h"
+#import "XPKeyCheckFailView.h"
+#import "XPKeyCheckFinalView.h"
+#import "UrgentWifiViewController.h"
+#import "UIColor+YCF.h"
+#import <Masonry/Masonry.h>
+#import "UIImage+GradientColor.h"
+#import "XPCarControlViewModel.h"
+#import "MyCarInfo.h"
+#import "CTMediator+CarState.h"
+#import "CarPermissionManager.h"
+#import "XPAlertController+Simplify.h"
+#import "XPBleGuideViewController.h"
+#import "XPBLEKeyMessage.h"
+#import <MMKV/MMKV.h>
+#import "XPCreateEtasKeyViewController.h"
+#import "XPCreateSelfKeyViewController.h"
+#import "CTMediator+Login.h"
+#import "NetworkMonitorManager.h"
+#import "XPCarStateViewModel.h"
+#import "XPStatisticsKit.h"
+#import "JRDeleteKeyViewController.h"
+#import "JRDeleteCertKeyViewController.h"
+#import "XPCreateDigitalKeyViewModel.h"
+#import "RACSignal+XWExtension.h"
+#import "XPAlertViewControllerCommonly.h"
+#import "XPUIGradientView.h"
+
+#import "XPCommonNavigationBar.h"
+#import "SystemConfig.h"
+#import "XPCarKeyHelp.h"
+
+@import XPVehicleSDK;
+@import XPVehicleExt;
+
+#define kResumeKeyCheckFromRestart @"com.xiaopeng.XPKeyCheck.Resume"
+#define kResumeCommandKeyCheckFromRestart @"com.xiaopeng.XPKeyCheck.Resume.Command"
+#define kResumeSkipAlertKeyCheckFromRestart @"com.xiaopeng.XPKeyCheck.Resume.SkipAlert"
+#define kResumeSessionIdKeyCheckFromRestart @"com.xiaopeng.XPKeyCheck.Resume.SessionId"
+
+NSString *const XPKeyCheckErrorDomain = @"com.xiaopeng.XPKeyCheck.Error";
+
+#define kKeyCheckTag @"钥匙检查"
+
+typedef NS_ENUM(NSInteger, XPKeyCheckErrorCode) {
+    XPKeyCheckErrorCodeDefault = 0,
+    XPKeyCheckErrorCodeNoKey,
+    XPKeyCheckErrorCodeFailToCreateKey,
+    XPKeyCheckErrorCodePoweredOff,
+    XPKeyCheckErrorCodeNoPermission,
+    XPKeyCheckErrorCodeNotNearby,
+    XPKeyCheckErrorCodeOccupied,
+    XPKeyCheckErrorCodeFailToConnect,
+    XPKeyCheckErrorCodeFailToAuth,
+    XPKeyCheckErrorCodeFailToSend,
+    XPKeyCheckErrorCodeFailToExecute,
+    XPKeyCheckErrorCodeFailToResetBle,
+    XPKeyCheckErrorCodeExecuteTimeout,
+    XPKeyCheckErrorCodeKeyError,
+    XPKeyCheckErrorCodeRemoteStarted,
+    XPKeyCheckErrorCodeRemoteLocked,
+    XPKeyCheckErrorCodeGoToFinal,
+    XPKeyCheckErrorCodeCancel,
+};
+
+typedef NS_ENUM(NSInteger, XPKeyCheckProgress) {
+    XPKeyCheckProgressDefault = 0,
+    XPKeyCheckProgressCreateKeyChecking,
+    XPKeyCheckProgressCreateKeyChecked,
+    XPKeyCheckProgressBleStateChecking,
+    XPKeyCheckProgressBleStateChecked,
+    XPKeyCheckProgressNearbyChecking,
+    XPKeyCheckProgressNearbyChecked,
+    XPKeyCheckProgressResetBleChecking,
+    XPKeyCheckProgressResetBleChecked,
+    XPKeyCheckProgressRestartChecking,
+    XPKeyCheckProgressRestartChecked,
+    XPKeyCheckProgressConnectChecking,
+    XPKeyCheckProgressConnectChecked,
+    XPKeyCheckProgressCommandChecking,
+    XPKeyCheckProgressCommandChecked,
+    XPKeyCheckProgressResetKeyChecking,
+    XPKeyCheckProgressResetKeyChecked,
+};
+
+@interface XPKeyCheckViewController ()
+
+@property (nonatomic, strong) MyCarInfo *carInfo;
+@property (nonatomic, strong) XPUIGradientView *bgGradientView;
+@property (nonatomic, strong) XPKeyCheckingView *checkingView;
+@property (nonatomic, strong) XPKeyCheckSuccessView *successView;
+@property (nonatomic, strong) XPKeyCheckFailView *failView;
+@property (nonatomic, strong) XPKeyCheckFinalView *finalView;
+@property (nonatomic, strong) RACCommand<NSDictionary *,NSNumber *> *checkCommand;
+@property (nonatomic, strong) NSMutableArray<XPKeyCheckingCellItem *> *items;
+@property (nonatomic, strong) XPCreateKeyViewController *createKeyViewController;
+@property (nonatomic, assign, readonly) XPTBoxCommand command;
+@property (nonatomic, assign, readonly) BOOL isStart;
+@property (nonatomic, assign, readonly) BOOL skipAlert;
+@property (nonatomic, assign) uint64_t sessionId;
+@property (nonatomic, assign, readonly) NSInteger from;
+@property (nonatomic, strong) NSError *currentError;
+@property (nonatomic, assign) BOOL isRemoteComplete;
+@property (nonatomic, strong) RACSubject *viewDidAppearSubject;
+@property (nonatomic, strong) RACSubject *bleConnectStateSubject;
+@property (nonatomic, strong) RACReplaySubject *sysBleStateSubject;
+@property (nonatomic, strong) XPBleCheckManager *bleCheckManager;
+@end
+
+@implementation XPKeyCheckViewController
+
++ (BOOL)resumeFromRestart{
+    return [MMKV.defaultMMKV getBoolForKey:kResumeKeyCheckFromRestart defaultValue:NO];
+}
+
++ (void)markResumeFromRestart:(BOOL)resume{
+    [MMKV.defaultMMKV setBool:resume forKey:kResumeKeyCheckFromRestart];
+}
+
++ (uint8_t)resumeCommand{
+    return [MMKV.defaultMMKV getUInt32ForKey:kResumeCommandKeyCheckFromRestart];
+}
+
++ (void)markResumeCommand:(uint8_t)cmd{
+    [MMKV.defaultMMKV setUInt32:cmd forKey:kResumeCommandKeyCheckFromRestart];
+}
+
++ (BOOL)resumeSkipAlert{
+    return [MMKV.defaultMMKV getBoolForKey:kResumeSkipAlertKeyCheckFromRestart defaultValue:NO];
+}
+
++ (void)markSkipAlert:(BOOL)skipAlert{
+    [MMKV.defaultMMKV setBool:skipAlert forKey:kResumeSkipAlertKeyCheckFromRestart];
+}
+
++ (uint64_t)resumeSessionId{
+    return [MMKV.defaultMMKV getUInt64ForKey:kResumeSessionIdKeyCheckFromRestart];
+}
+
++ (void)markResumeSessionId:(uint64_t)sessionId{
+    [MMKV.defaultMMKV setUInt64:sessionId forKey:kResumeSessionIdKeyCheckFromRestart];
+}
+
+- (void)dealloc{
+    DLogTagInfo(kBLEKeyTag, @"dealloc");
+}
+
+- (instancetype)init{
+    self = [super init];
+    if (self) {
+        _sessionId = (uint64_t)([[NSDate date] timeIntervalSince1970] * 1000);
+        _viewDidAppearSubject = [RACSubject subject];
+        _bleConnectStateSubject = [RACSubject subject];
+        _sysBleStateSubject = [RACReplaySubject replaySubjectWithCapacity:1];
+    }
+    return self;
+}
+
+- (void)setupNav {
+    self.fd_prefersNavigationBarHidden = YES;
+
+    XPCommonNavigationBar *textBar = [[XPCommonNavigationBar alloc] initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, kTopBarHeight)];
+    textBar.layer.zPosition = 999;
+    [textBar setTitle:@"钥匙检查与启动"];
+    textBar.titleLabel.font = [UIFont xp_titleRegularFont];
+    textBar.backgroundColor = UIColorClear;
+    [self.view addSubview:textBar];
+}
+
+- (void)loadView{
+    [super loadView];
+    [self setupNav];
+    
+    UIImageView *bgImageView = [UIImageView new];
+    [self.view insertSubview:bgImageView atIndex:0];
+    [bgImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.mas_equalTo(0);
+        make.height.mas_equalTo(500*AdaptiveRatio);
+    }];
+    
+    [self.view insertSubview:self.bgGradientView atIndex:0];
+    [self.bgGradientView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.mas_equalTo(0);
+        make.height.mas_equalTo(500*AdaptiveRatio);
+    }];
+    
+    [self.contentView addSubview:self.checkingView];
+    [self.checkingView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(0);
+    }];
+    
+    [self.contentView addSubview:self.successView];
+    [self.successView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(0);
+    }];
+    
+    [self.contentView addSubview:self.failView];
+    [self.failView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(0);
+    }];
+    
+    [self.contentView addSubview:self.finalView];
+    [self.finalView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(0);
+    }];
+    
+    [self updateViewWithTheme];
+}
+
+- (XPTBoxCommand)command{
+    XPTBoxCommand result = [self.params[@"command"] unsignedShortValue];
+    if(result == 0) result = XPTBoxCommandUnlock;
+    return result;
+}
+
+- (uint64_t)sessionId{
+    uint64_t sessionId = [self.params[@"sessionId"] unsignedLongLongValue];
+    if(sessionId != 0) return sessionId;
+    return _sessionId;
+}
+
+- (NSInteger)from{
+    NSInteger from = [self.params[@"from"] integerValue];
+    if(from == 0) return 4;
+    return from;
+}
+
+- (BOOL)skipAlert{
+    BOOL skipAlert = [self.params[@"skipAlert"] boolValue];
+    return skipAlert;
+}
+
+- (BOOL)isStart{
+    return self.carInfo.isE28 || self.carInfo.isD22;
+}
+
+- (BOOL)remoteStartIsSupported{
+    return self.carInfo.isSupportRemoteStart;
+}
+
+- (void)qmui_themeDidChangeByManager:(QMUIThemeManager *)manager identifier:(__kindof NSObject<NSCopying> *)identifier theme:(__kindof NSObject *)theme{
+    [super qmui_themeDidChangeByManager:manager identifier:identifier theme:theme];
+    [self updateViewWithTheme];
+}
+
+- (void)updateViewWithTheme{
+    BOOL isDark = [[QMUIThemeManagerCenter defaultThemeManager].currentThemeIdentifier isEqual:XPThemeIdentifierDark];
+    if(isDark){
+        [self.bgGradientView setGradientBackgroundWithColors:@[[UIColor colorWithHexValue:0x0E0F14], [UIColor xp_baseBackgroundColor]] locations:@[@0, @1] startPoint:CGPointMake(0.5, 0) endPoint:CGPointMake(0.5, 1)];
+    }else{
+        [self.bgGradientView setGradientBackgroundWithColors:@[[UIColor colorWithHexValue:0xD7E0F1], [UIColor xp_baseBackgroundColor]] locations:@[@0, @1] startPoint:CGPointMake(0.5, 0) endPoint:CGPointMake(0.5, 1)];
+    }
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor xp_baseBackgroundColor];
+    
+    [self addBleConnectStateObserver];
+    
+    [self.class markResumeFromRestart:NO];
+    
+    self.carInfo = CTMediator.defaultCarInfo;
+    if(!(self.carInfo.hasBleAbility && !self.carInfo.carFunction.WITHOUT_BLE)){
+        DLogTagInfo(kBLEKeyTag, @"车辆不支持蓝牙钥匙");
+        [XPToast showMessage:@"当前车辆不支持手机钥匙"];
+        [self.navigationController popViewControllerAnimated:YES];
+        return;
+    }
+    
+    self.bleCheckManager = [XPVehicleExt createBleCheckManager:XPVehicleSDK.shared.vehicleManager.currentVehicle];
+    
+    @weakify(self);
+    [self.rac_deallocDisposable addDisposable:[CTMediator.defaultCarSwitchedSignal.deliverOnMainThread subscribeNext:^(MyCarInfo * _Nullable x) {
+        @strongify(self);
+        if(![x.vin isEqualToString:self.carInfo.vin]){
+            [XPToast showMessage:@"车辆切换，退出检查"];
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[self.checkingView.finalSubject subscribeNext:^(id _Nullable x) {
+        @strongify(self);
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_EMERGENCY_KEY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        [self popToWifiViewController];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[self.checkingView.callSubject subscribeNext:^(id _Nullable x) {
+        @strongify(self);
+        [self contactCustomerService];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[[self.checkingView.stopButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        [self.navigationController popViewControllerAnimated:YES];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[[self.successView.backButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        [self.navigationController popViewControllerAnimated:YES];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[self.failView.finalSubject subscribeNext:^(id _Nullable x) {
+        @strongify(self);
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_EMERGENCY_KEY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        [self popToWifiViewController];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[self.failView.callSubject subscribeNext:^(id _Nullable x) {
+        @strongify(self);
+        [self contactCustomerService];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[[self.failView.nextButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        switch (self.currentError.code) {
+            case XPKeyCheckErrorCodePoweredOff:
+            {
+                if([self isPoweredOn]){
+                    [self restartCheck];
+                }else{
+                    XPBleGuideViewController *vc = [XPBleGuideViewController new];
+                    [vc showInViewController:self];
+                }
+            }
+                break;
+            case XPKeyCheckErrorCodeNoPermission:
+            {
+                NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                if([UIApplication.sharedApplication canOpenURL:url]) [UIApplication.sharedApplication openURL:url options:@{} completionHandler:^(BOOL success) {}];
+            }
+                break;
+            default:
+                [self restartCheck];
+                break;
+        }
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[[self.failView.backButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        [self.navigationController popViewControllerAnimated:YES];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[self.finalView.finalSubject subscribeNext:^(id _Nullable x) {
+        @strongify(self);
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_EMERGENCY_KEY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        [self popToWifiViewController];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[self.finalView.callSubject subscribeNext:^(id _Nullable x) {
+        @strongify(self);
+        [self contactCustomerService];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[[self.finalView.backButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        [self.navigationController popViewControllerAnimated:YES];
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[[self.finalView.nextButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        if([self wifiKeySupported]){
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_EMERGENCY_KEY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            [self popToWifiViewController];
+        }else{
+            [self restartCheck];
+        }
+    }]];
+    
+    if(![self.params[@"resume"] boolValue]){
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_ENTRY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId), @"from": @(self.from)}];
+    }
+    
+    //如果数字钥匙3.0，开通了钱包钥匙,那就不归App控制了
+    if ([XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        [QMUIAlertController showAlertWithTitle:@"如遇手机钥匙无法连接车辆，请查看钥匙状态是否正常"
+                                        message:@""
+                               leftButtionTitle:@"关闭"
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            @strongify(self);
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+                               rightButtonTitle:@"查看钥匙状态"
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            [XPCarKeyHelp.shared openCarKeyPass];
+            [self.navigationController popViewControllerAnimated:YES];
+        }];
+        return;
+    }
+    
+    [self startCheck];
+}
+
+- (void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    [self.viewDidAppearSubject sendNext:nil];
+}
+
+- (void)viewDidDisappear:(BOOL)animated{
+    [super viewDidDisappear:animated];
+}
+
+- (void)restartCheck{
+    NSMutableDictionary *params = self.params.mutableCopy;
+    params[@"resume"] = @NO;
+    self.params = [NSDictionary dictionaryWithDictionary:params];
+    [self startCheck];
+}
+    
+- (void)startCheck{
+    @weakify(self);
+    [[self.checkCommand execute:self.params?:@{}].deliverOnMainThread subscribeNext:^(NSNumber * _Nullable x) {
+        @strongify(self);
+        [self updateView];
+        self.checkingView.hidden = NO;
+        self.successView.hidden = YES;
+        self.failView.hidden = YES;
+        self.finalView.hidden = YES;
+        
+        XPKeyCheckProgress progress = [x integerValue];
+        switch (progress) {
+            case XPKeyCheckProgressDefault:
+                self.items = [NSMutableArray new];
+                break;
+            case XPKeyCheckProgressCreateKeyChecking:
+                [self makeItemCheckingWithType:XPKeyCheckingCellTypeCreateKey];
+                break;
+            case XPKeyCheckProgressCreateKeyChecked:
+                [self makeItemSuccessWithType:XPKeyCheckingCellTypeCreateKey];
+                break;
+            case XPKeyCheckProgressBleStateChecking:
+                [self makeItemCheckingWithType:XPKeyCheckingCellTypeBleState];
+                break;
+            case XPKeyCheckProgressBleStateChecked:
+                [self makeItemSuccessWithType:XPKeyCheckingCellTypeBleState];
+                break;
+            case XPKeyCheckProgressNearbyChecking:
+                [self makeItemCheckingWithType:XPKeyCheckingCellTypeNearby];
+                break;
+            case XPKeyCheckProgressNearbyChecked:
+                [self makeItemSuccessWithType:XPKeyCheckingCellTypeNearby];
+                break;
+            case XPKeyCheckProgressResetBleChecking:
+                [self makeItemCheckingWithType:XPKeyCheckingCellTypeResetBle];
+                break;
+            case XPKeyCheckProgressResetBleChecked:
+                [self makeItemSuccessWithType:XPKeyCheckingCellTypeResetBle];
+                break;
+            case XPKeyCheckProgressRestartChecking:
+                [self makeItemCheckingWithType:XPKeyCheckingCellTypeRestart];
+                break;
+            case XPKeyCheckProgressRestartChecked:
+                [self makeItemSuccessWithType:XPKeyCheckingCellTypeRestart];
+                break;
+            case XPKeyCheckProgressConnectChecking:
+                [self makeItemCheckingWithType:XPKeyCheckingCellTypeConnect];
+                break;
+            case XPKeyCheckProgressConnectChecked:
+                [self makeItemSuccessWithType:XPKeyCheckingCellTypeConnect];
+                break;
+            case XPKeyCheckProgressCommandChecking:
+                if(self.command == XPTBoxCommandUnlock){
+                    if(self.isStart){
+                        [self makeItemCheckingWithType:XPKeyCheckingCellTypeStart];
+                    }else{
+                        [self makeItemCheckingWithType:XPKeyCheckingCellTypeUnlock];
+                    }
+                }else{
+                    [self makeItemCheckingWithType:XPKeyCheckingCellTypeLock];
+                }
+                break;
+            case XPKeyCheckProgressCommandChecked:
+                if(self.command == XPTBoxCommandUnlock){
+                    if(self.isStart){
+                        [self makeItemSuccessWithType:XPKeyCheckingCellTypeStart];
+                    }else{
+                        [self makeItemSuccessWithType:XPKeyCheckingCellTypeUnlock];
+                    }
+                }else{
+                    [self makeItemSuccessWithType:XPKeyCheckingCellTypeLock];
+                }
+                break;
+            case XPKeyCheckProgressResetKeyChecking:
+                [self makeItemCheckingWithType:XPKeyCheckingCellTypeResetKey];
+                break;
+            case XPKeyCheckProgressResetKeyChecked:
+                [self makeItemSuccessWithType:XPKeyCheckingCellTypeResetKey];
+                break;
+            default:
+                break;
+        }
+        self.checkingView.items = [NSArray arrayWithArray:self.items];
+    } error:^(NSError * _Nullable error) {
+        @strongify(self);
+        [self updateView];
+        
+        if(error.code == XPKeyCheckErrorCodeCancel){
+            [self.navigationController popViewControllerAnimated:YES];
+            return;
+        }
+        
+        if(error.code == XPKeyCheckErrorCodeGoToFinal){
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FINAL module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            
+            self.finalView.hidden = NO;
+            self.failView.hidden = YES;
+            self.checkingView.hidden = YES;
+            self.successView.hidden = YES;
+            return;
+        }
+        
+        self.currentError = error;
+        NSString *title = error.userInfo[@"title"];
+        if(title.length == 0){
+            if(self.command == XPTBoxCommandUnlock){
+                if(self.isStart){
+                    title = @"启动失败";
+                }else{
+                    title = @"解锁失败";
+                }
+            }else{
+                title = @"闭锁失败";
+            }
+        }
+        self.failView.titleLabel.text = title;
+        self.failView.subtitleLabel.text = error.localizedFailureReason;
+        
+        NSString *nextButtonTitle = @"重试";
+        switch (error.code) {
+            case XPKeyCheckErrorCodePoweredOff:
+                nextButtonTitle = @"开启蓝牙";
+                break;
+            case XPKeyCheckErrorCodeNoPermission:
+                nextButtonTitle = @"开启权限";
+                break;
+            case XPKeyCheckErrorCodeFailToExecute:
+                nextButtonTitle = @"重新检查";
+                break;
+            default:
+                break;
+        }
+        [self.failView.nextButton setTitle:nextButtonTitle forState:UIControlStateNormal];
+        
+        self.failView.hidden = NO;
+        self.finalView.hidden = YES;
+        self.checkingView.hidden = YES;
+        self.successView.hidden = YES;
+    } completed:^{
+        @strongify(self);
+        if(!(self.command == XPTBoxCommandUnlock && self.from == 1 && self.isRemoteComplete)){
+            if(self.command == XPTBoxCommandUnlock){
+                if(self.isStart){
+                    [XPToast showMessage:@"车辆已启动"];
+                }else{
+                    [XPToast showMessage:@"车门已解锁"];
+                }
+            }else if(self.command == XPTBoxCommandLock){
+                [XPToast showMessage:@"车门已上锁"];
+            }else{
+                [XPToast showMessage:@"操作成功"];
+            }
+            [self.navigationController popToRootViewControllerAnimated:YES];
+        }
+        
+        [self updateView];
+        self.successView.command = self.command;
+        self.successView.isStart = self.isStart;
+        self.successView.hidden = NO;
+        self.checkingView.hidden = YES;
+        self.failView.hidden = YES;
+        self.finalView.hidden = YES;
+    }];
+}
+
+- (BOOL)wifiKeySupported{
+    return XPVehicleSDK.currentAbilityConfig.isSupportUrgentKey &&
+    [self existValidBlePrivateKey];
+}
+
+- (void)updateView{
+    BOOL wifiKeySupported = [self wifiKeySupported];
+    self.checkingView.wifiKeySupported = wifiKeySupported;
+    self.failView.wifiKeySupported = wifiKeySupported;
+    self.finalView.wifiKeySupported = wifiKeySupported;
+    self.successView.wifiKeySupported = wifiKeySupported;
+}
+
+- (void)popToWifiViewController{
+    UINavigationController *naviVC = self.navigationController;
+    UrgentWifiViewController *vc = [[UrgentWifiViewController alloc] init];
+    [naviVC safePushViewController:vc animated:YES];
+    NSMutableArray *vcs = naviVC.viewControllers.mutableCopy;
+    [vcs removeObject:self];
+    naviVC.viewControllers = [NSArray arrayWithArray:vcs];
+}
+
+- (void)contactCustomerService{
+    NSString *phoneNum = SystemConfig.currentConfig.telephone.length > 0 ? SystemConfig.currentConfig.telephone : @"4007836688";
+    NSURL *telUrl = [NSURL URLWithString:[NSString stringWithFormat:@"tel://%@", phoneNum]];
+    if ([[UIApplication sharedApplication] canOpenURL:telUrl]) {
+        [[UIApplication sharedApplication] openURL:telUrl options:@{} completionHandler:^(BOOL success) {}];
+    }
+}
+
+- (RACSignal<NSNumber *> *)alertControllerSignalWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray<NSString *> *)buttonTitles{
+    NSTextAlignment alignment = NSTextAlignmentCenter;
+    if([message containsString:@"\n"]){
+        alignment = NSTextAlignmentLeft;
+    }
+    return [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        NSString *leftStr = nil;
+        NSString *rightStr = nil;
+        if (buttonTitles.count > 0) {
+            if (buttonTitles.count > 1) {
+                leftStr = buttonTitles[0];
+                rightStr = buttonTitles[1];
+            } else {
+                rightStr = buttonTitles[1];
+            }
+        }
+        QMUIAlertController * alert = [QMUIAlertController showAlertWithTitle:title
+                                        message:message
+                               leftButtionTitle:leftStr
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            
+            [subscriber sendNext:@(0)];
+            [subscriber sendCompleted];
+        }
+                               rightButtonTitle:rightStr
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            [subscriber sendNext:leftStr.length ? @(1): @(0)];
+            [subscriber sendCompleted];
+        }];
+        return [RACDisposable disposableWithBlock:^{
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [alert hideWithAnimated:NO];
+            });
+        }];
+    }];
+}
+
+- (XPKeyCheckingCellItem *)itemWithType:(XPKeyCheckingCellType)type{
+    NSArray *items = [NSArray arrayWithArray:self.items];
+    for(XPKeyCheckingCellItem *item in items){
+        if(item.type == type){
+            return item;
+        }
+    }
+    return nil;
+}
+
+- (void)makeItemCheckingWithType:(XPKeyCheckingCellType)type{
+    XPKeyCheckingCellItem *item = [self itemWithType:type];
+    if(!item){
+        item = [XPKeyCheckingCellItem new];
+        item.type = type;
+        item.state = XPKeyCheckingStateChecking;
+        [self.items addObject:item];
+    }else{
+        [self.items removeObject:item];
+        [self.items addObject:item];
+        item.state = XPKeyCheckingStateChecking;
+    }
+    if(self.items.count > 5) [self.items removeObjectAtIndex:0];
+}
+
+- (void)makeItemSuccessWithType:(XPKeyCheckingCellType)type{
+    XPKeyCheckingCellItem *item = [self itemWithType:type];
+    item.state = XPKeyCheckingStateSuccess;
+}
+
+#pragma mark - SDK2.0支持
+
+- (void)cleanBleInfoCache {
+    [self.bleCheckManager cleanBleInfoCache];
+}
+
+- (void)addBleConnectStateObserver {
+    @weakify(self);
+    [[[[[NSNotificationCenter defaultCenter] rac_addObserverForName:XPVehicleNotification.BLEConnectStateChanged object:nil] takeUntil:self.rac_willDeallocSignal] deliverOnMainThread] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        XPBLEConnectionNotiObject *not = x.userInfo[@"state"];
+        if (![not isKindOfClass:[XPBLEConnectionNotiObject class]]) {
+            return;
+        }
+        NSDictionary *dict = @{
+            XP_BLEKEY_CONNECT_STATE_KEY: @(not.connectState),
+        };
+        [self.bleConnectStateSubject sendNext:dict];
+    }];
+    
+    [self.sysBleStateSubject sendNext:@(XPVehicleSDK.shared.vehicleManager.bleSysState)];
+    [[[[[NSNotificationCenter defaultCenter] rac_addObserverForName:XPVehicleNotification.BLESysStateChanged object:nil] takeUntil:self.rac_willDeallocSignal] deliverOnMainThread] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        XPBLESysStateNotiObject *not = x.userInfo[@"state"];
+        if (![not isKindOfClass:[XPBLESysStateNotiObject class]]) {
+            return;
+        }
+        [self.sysBleStateSubject sendNext:@(not.bleSysState)];
+    }];
+}
+
+- (BOOL)isPoweredOn {
+    return XPVehicleSDK.shared.vehicleManager.bleSysState == XPBLESysStatePoweredOn;
+}
+
+- (BOOL)isUnauthorized {
+    return XPVehicleSDK.shared.vehicleManager.bleSysState == XPBLESysStateUnauthorized;
+}
+
+- (RACCommand *)checkCommand{
+    if(!_checkCommand){
+        @weakify(self);
+        _checkCommand = [[RACCommand alloc] initWithSignalBlock:^RACSignal * _Nonnull(id  _Nullable input) {
+            @strongify(self);
+            BOOL isResume = [input[@"resume"] boolValue];
+            BOOL skipAlert = [input[@"skipAlert"] boolValue];
+            NSInteger tryCount = isResume?0:2;
+            
+            //mona从哪里来都要询问远程
+            if (CTMediator.isMona) {
+                skipAlert = NO;
+            }
+            
+            RACSignal *checkStateSignal = [[[self checkBleKeySignal] concat:[self checkRemoteSignalWithSkipAlert:skipAlert]] concat:[self checkBleStateSignalWithTimeout:isResume?5:2]];
+            
+            RACSignal *checkConnectSignal = [[[self checkNearbySignalWithTryCount:tryCount] concat:[self checkConnectSignalWithTryCount:tryCount]] concat:[self sendCommandSignalWithTryCount:tryCount]];
+            
+            if(CTMediator.isMona){
+                checkConnectSignal = [[self monaCheckConnectSignalWithTryCount:tryCount] concat:[self sendMonaCommandSignalWithTryCount:tryCount tryDelete:NO]];
+            }
+            RACSignal *resultSignal = [[[RACSignal return:@(XPKeyCheckProgressDefault)] concat:checkStateSignal] concat:checkConnectSignal];
+            if(isResume){
+                resultSignal = [[[[RACSignal return:@(XPKeyCheckProgressDefault)] concat:checkStateSignal] concat:@[
+                    @(XPKeyCheckProgressResetBleChecking),
+                    @(XPKeyCheckProgressResetBleChecked),
+                    @(XPKeyCheckProgressRestartChecking),
+                    @(XPKeyCheckProgressRestartChecked),
+                ].rac_sequence.signal] concat:checkConnectSignal];
+            }
+            
+            resultSignal = [resultSignal catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+                @strongify(self);
+                if(error.code == XPKeyCheckErrorCodeRemoteStarted || error.code == XPKeyCheckErrorCodeRemoteLocked){
+                    self.isRemoteComplete = YES;
+                    return RACSignal.empty;
+                }
+                return [RACSignal error:error];
+            }];
+            
+            return [resultSignal takeUntil:self.rac_willDeallocSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeCancel userInfo:@{}]];
+        }];
+    }
+    return _checkCommand;
+}
+
+- (RACSignal<NSNumber *> *)checkBleKeySignal{
+    @weakify(self);
+    return [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        @strongify(self);
+        [subscriber sendNext:@(XPKeyCheckProgressBleStateChecking)];
+        
+        if([self existValidBlePrivateKey]){
+            [subscriber sendCompleted];
+        }else{
+            [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeNoKey userInfo:@{NSLocalizedDescriptionKey: @"创建手机钥匙", NSLocalizedRecoverySuggestionErrorKey: @"未创建手机钥匙，请先创建手机钥匙以正常使用"}]];
+        }
+        return nil;
+    }] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        @strongify(self);
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_NO_KEY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        
+        return [[self alertControllerSignalWithTitle:error.localizedDescription message:error.localizedRecoverySuggestion buttonTitles:@[@"退出", @"创建"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+            @strongify(self);
+            if([value integerValue] == 0){
+                [self.navigationController popViewControllerAnimated:YES];
+                return [RACSignal error:error];
+            }
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_CREATE_KEY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            return [self showCreateKeySignalWithNeedDelete:NO];
+        }];
+    }];
+}
+
+
+- (BOOL)existValidBlePrivateKey{
+    return [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager existValidBlePrivateKey];
+}
+
+- (RACSignal<NSNumber *> *)showCreateKeySignalWithNeedDelete:(BOOL)needDelete{
+    if(!NetworkMonitorManager.sharedManager.isReachable){
+        return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToCreateKey userInfo:@{NSLocalizedFailureReasonErrorKey: @"创建手机钥匙失败，请检查手机和车辆网络"}]];
+    }
+    
+    @weakify(self);
+    RACSignal *deleteSignal = RACSignal.empty;
+    if(needDelete){
+        deleteSignal = [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+            @strongify(self);
+            RACDisposable *disposable = [[[self.viewDidAppearSubject take:1] delay:3].deliverOnMainThread subscribeCompleted:^{
+                @strongify(self);
+                if(![self existValidBlePrivateKey]){
+                    [subscriber sendCompleted];
+                }else{
+                    [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToCreateKey userInfo:@{NSLocalizedFailureReasonErrorKey: @"删除手机钥匙失败，请检查手机和车辆网络"}]];
+                }
+            }];
+            
+            XPBLEKeyCard *safeKeyCard = nil;
+            if(self.carInfo.isE28){
+                XPDigitalKey *key = [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager digitalKeyWithKeyCardType:XPKeyCardTypeSAFE];
+                XPSDKBLEKeyCard *card = key.bleKeyCard;
+                NSDictionary *dict = [card toDict];
+                XPBLEKeyCard *bleKeyCard = [XPBLEKeyCard yy_modelWithDictionary:dict];
+                safeKeyCard = bleKeyCard;
+            }
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if(safeKeyCard){
+                    JRDeleteKeyViewController *vc = [[JRDeleteKeyViewController alloc] init];
+                    vc.vin = self.carInfo.vin;
+                    vc.card = safeKeyCard;
+                    [self safePushViewController:vc animated:YES];
+                }else{
+                    JRDeleteCertKeyViewController *vc = [[JRDeleteCertKeyViewController alloc] init];
+                    vc.vin = self.carInfo.vin;
+                    [self safePushViewController:vc animated:YES];
+                }
+            });
+            
+            return disposable;
+        }];
+    }
+    
+    RACSignal *createSignal = [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        @strongify(self);
+        RACDisposable *disposable = [[[self.viewDidAppearSubject take:1] delay:3].deliverOnMainThread subscribeCompleted:^{
+            @strongify(self);
+            if([self existValidBlePrivateKey]){
+                [subscriber sendCompleted];
+            }else{
+                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToCreateKey userInfo:@{NSLocalizedFailureReasonErrorKey: @"创建手机钥匙失败，请检查手机和车辆网络"}]];
+            }
+        }];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            XPCreateDigitalKeyViewModel *createViewModel = [[XPCreateDigitalKeyViewModel alloc] init];
+            [createViewModel createKeyWithViewController:self andCarInfo:self.carInfo preventPopToRootViewController:YES];
+        });
+        
+        return disposable;
+    }];
+    
+    RACSignal *prefixSignal = @[@(XPKeyCheckProgressDefault), @(XPKeyCheckProgressCreateKeyChecking)].rac_sequence.signal;
+    RACSignal *suffixSignal = [RACSignal return:@(XPKeyCheckProgressCreateKeyChecked)];
+    if(needDelete){
+        prefixSignal = [RACSignal return:@(XPKeyCheckProgressResetKeyChecking)];
+        suffixSignal = [RACSignal return:@(XPKeyCheckProgressResetKeyChecked)];
+    }
+    
+    return [[prefixSignal concat:[deleteSignal concat:createSignal]] concat:suffixSignal];
+}
+
+- (RACSignal<NSNumber *> *)createKeySignalWithNeedDelete:(BOOL)needDelete{
+    if(!NetworkMonitorManager.sharedManager.isReachable){
+        return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToCreateKey userInfo:@{NSLocalizedFailureReasonErrorKey: @"创建手机钥匙失败，请检查手机和车辆网络"}]];
+    }
+    
+    RACSignal *createSignal = nil;
+    if(self.carInfo.isE28){
+        XPCreateEtasKeyViewController *vc = [[XPCreateEtasKeyViewController alloc] init];
+        vc.carInfo = self.carInfo;
+        if(!self.carInfo.isMyOwnerCar){
+            vc.shareFromUid = self.carInfo.ownerInfo.uid;
+        }
+        createSignal = [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+            RACCompoundDisposable *disposable = [RACCompoundDisposable compoundDisposable];
+            
+            __block NSError *etasError = nil;
+            __block BOOL etasComplete = NO;
+            __block NSError *certError = nil;
+            __block BOOL certComplete = NO;
+            [disposable addDisposable:[[vc.createEtasKeyCommand execute:@{}].deliverOnMainThread subscribeNext:^(id  _Nullable x) {
+                
+            } error:^(NSError * _Nullable error) {
+                etasError = error;
+                if(certError){
+                    [subscriber sendError:error];
+                }else if(certComplete){
+                    [subscriber sendCompleted];
+                }
+            } completed:^{
+                etasComplete = YES;
+                if(certError || certComplete){
+                    [subscriber sendCompleted];
+                }
+            }]];
+            
+            [disposable addDisposable:[[vc.createCertKeyCommand execute:@{@"needDelete": @(needDelete)}].deliverOnMainThread subscribeNext:^(id  _Nullable x) {
+                
+            } error:^(NSError * _Nullable error) {
+                certError = error;
+                if(etasError){
+                    [subscriber sendError:etasError];
+                }else if(etasComplete){
+                    [subscriber sendCompleted];
+                }
+            } completed:^{
+                certComplete = YES;
+                if(etasError || etasComplete){
+                    [subscriber sendCompleted];
+                }
+            }]];
+            
+            return disposable;
+        }];
+        self.createKeyViewController = vc;
+    }else{
+        XPCreateSelfKeyViewController *vc = [[XPCreateSelfKeyViewController alloc] init];
+        vc.carInfo = self.carInfo;
+        createSignal = [vc.createSelfKeyCommand execute:@{@"needDelete": @(needDelete)}];
+        self.createKeyViewController = vc;
+    }
+    
+    RACSignal *prefixSignal = @[@(XPKeyCheckProgressDefault), @(XPKeyCheckProgressCreateKeyChecking)].rac_sequence.signal;
+    RACSignal *suffixSignal = [RACSignal return:@(XPKeyCheckProgressCreateKeyChecked)];
+    if(needDelete){
+        prefixSignal = [RACSignal return:@(XPKeyCheckProgressResetKeyChecking)];
+        suffixSignal = [RACSignal return:@(XPKeyCheckProgressResetKeyChecked)];
+    }
+    
+    @weakify(self);
+    createSignal = [createSignal doCompleted:^{
+        @strongify(self);
+        // SDK 2.0 车型无需手动刷新钥匙列表
+        [[NSNotificationCenter defaultCenter] postNotificationName:BLEKeyButtonUpdateNotification object:nil];
+    }];
+    
+    return [[[prefixSignal concat:[createSignal.ignoreValues delay:5]] concat:suffixSignal] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        DLogTagError(kBLEKeyTag, @"create key failed with error %@", error);
+        return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToCreateKey userInfo:@{NSLocalizedFailureReasonErrorKey: @"创建手机钥匙失败，请检查手机和车辆网络"}]];
+    }];
+}
+
+- (RACSignal<NSNumber *> *)checkRemoteSignalWithSkipAlert:(BOOL)skipAlert{
+    if(self.command == XPTBoxCommandLock) return [self checkRemoteLockSignalWithSkipAlert:skipAlert];
+    if(self.command == XPTBoxCommandUnlock) return [self checkRemoteStartSignalWithSkipAlert:skipAlert];
+    return RACSignal.empty;
+}
+
+- (RACSignal<NSNumber *> *)checkRemoteLockSignalWithSkipAlert:(BOOL)skipAlert{
+    if(self.command != XPTBoxCommandLock){
+        return RACSignal.empty;
+    }
+    
+    if(!NetworkMonitorManager.sharedManager.isReachable){
+        return RACSignal.empty;
+    }
+    
+    if(XPCarStateViewModel.sharedInstance.remoteConnectState != XPCarConnectStateConnected){
+        return RACSignal.empty;
+    }
+    
+    @weakify(self);
+    RACSignal *lockSignal = [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        RACDisposable *disposable = [[XPCarControlViewModel.sharedInstance.lockDoorCommand execute:@{@"tryBle": @NO}] subscribeNext:^(id  _Nullable x) {
+            
+        } error:^(NSError * _Nullable error) {
+            [XPToast showMessage:@"远程闭锁失败"];
+            [subscriber sendCompleted];
+        } completed:^{
+            @strongify(self);
+            [XPStatisticsMgr sendEvent:skipAlert? XP_MOBILE_KEY_CHECK_REMOTE_SUCCESS_WITHOUT_ALERT: XP_MOBILE_KEY_CHECK_REMOTE_SUCCESS_WITH_ALERT module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeRemoteLocked userInfo:@{}]];
+        }];
+        return disposable;
+    }];
+    
+    if(skipAlert){
+        return lockSignal;
+    }
+    
+    return [[self alertControllerSignalWithTitle:@"是否闭锁车辆" message:@"当前网络通畅，请确认闭锁车辆" buttonTitles:@[@"取消", @"确认"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+        if([value integerValue] == 0){
+            return RACSignal.empty;
+        }
+        return lockSignal;
+    }];
+}
+
+- (RACSignal<NSNumber *> *)checkRemoteStartSignalWithSkipAlert:(BOOL)skipAlert{
+    if(![self remoteStartIsSupported]){
+        return RACSignal.empty;
+    }
+    
+    if(self.command != XPTBoxCommandUnlock){
+        return RACSignal.empty;
+    }
+    
+    if(!NetworkMonitorManager.sharedManager.isReachable){
+        return RACSignal.empty;
+    }
+    
+    if(XPCarStateViewModel.sharedInstance.remoteConnectState != XPCarConnectStateConnected){
+        return RACSignal.empty;
+    }
+    
+    @weakify(self);
+    RACSignal *startSignal = [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        RACDisposable *disposable = [[XPCarControlViewModel.sharedInstance.controlRemoteStartCommand execute:@{}] subscribeNext:^(id  _Nullable x) {
+            
+        } error:^(NSError * _Nullable error) {
+            [XPToast showMessage:@"远程启动失败"];
+            [subscriber sendCompleted];
+        } completed:^{
+            @strongify(self);
+            [XPStatisticsMgr sendEvent:skipAlert? XP_MOBILE_KEY_CHECK_REMOTE_SUCCESS_WITHOUT_ALERT: XP_MOBILE_KEY_CHECK_REMOTE_SUCCESS_WITH_ALERT module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeRemoteStarted userInfo:@{}]];
+        }];
+        return disposable;
+    }];
+    
+    if(skipAlert){
+        return startSignal;
+    }
+    
+    return [[self alertControllerSignalWithTitle:@"是否解锁并启动车辆" message:@"当前网络通畅，请确认解锁并启动车辆" buttonTitles:@[@"取消", @"确认"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+        if([value integerValue] == 0){
+            return RACSignal.empty;
+        }
+        return startSignal;
+    }];
+}
+
+- (RACSignal<NSNumber *> *)checkBleStateSignalWithTimeout:(NSTimeInterval)timeout{
+    @weakify(self);
+    return [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        [subscriber sendNext:@(XPKeyCheckProgressBleStateChecking)];
+        
+        RACCompoundDisposable *disposable = [RACCompoundDisposable compoundDisposable];
+    
+        @strongify(self);
+        NSError *error = [NSError errorWithDomain:XPKeyCheckErrorDomain code:5 userInfo:@{NSLocalizedFailureReasonErrorKey: @"蓝牙未开启"}];
+        RACSignal *sysBleStateSingal = [[[self.sysBleStateSubject filter:^BOOL(id  _Nullable value) {
+            return [value integerValue] == XPBLESysStatePoweredOn;
+        }] take:1] timeout:timeout onScheduler:RACScheduler.scheduler error:error];
+        
+        [disposable addDisposable: [sysBleStateSingal subscribeNext:^(id  _Nullable x) {} error:^(NSError * _Nullable error) {
+            @strongify(self);
+            if([self isUnauthorized]){
+                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeNoPermission userInfo:@{NSLocalizedFailureReasonErrorKey: @"手机蓝牙权限开启失败，请开启权限", NSLocalizedRecoverySuggestionErrorKey: @"手机钥匙需访问蓝牙扫描和连接权限，用于识别与连接您的车辆", NSLocalizedDescriptionKey: @"请开启蓝牙权限"}]];
+            }else{
+                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodePoweredOff userInfo:@{NSLocalizedFailureReasonErrorKey: @"手机蓝牙开启失败，请开启蓝牙", NSLocalizedRecoverySuggestionErrorKey: @"使用蓝牙钥匙需打开手机蓝牙开关", NSLocalizedDescriptionKey: @"请开启蓝牙开关"}]];
+            }
+        } completed:^{
+            [subscriber sendNext:@(XPKeyCheckProgressBleStateChecked)];
+            [subscriber sendCompleted];
+        }]];
+        
+        return disposable;
+    }] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        @strongify(self);
+        if(error.code == XPKeyCheckErrorCodeNoPermission){
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_BLE_PERMISSION module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        }else{
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_BLE_POWERED_OFF module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        }
+        
+        return [[[self alertControllerSignalWithTitle:error.localizedDescription message:error.localizedRecoverySuggestion buttonTitles:@[@"取消", @"立即开启"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+            @strongify(self);
+            if([self isPoweredOn]){
+                return RACSignal.empty;
+            }
+            if([value integerValue] == 1){
+                if(error.code == XPKeyCheckErrorCodeNoPermission){
+                    [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_BLE_PERMISSION module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+                }else{
+                    [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_BLE_POWER_ON module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+                }
+                
+                if(error.code == XPKeyCheckErrorCodePoweredOff){
+                    return [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+                        @strongify(self);
+                        XPBleGuideViewController *vc = [XPBleGuideViewController new];
+                        vc.confirmBlock = ^{
+                            if([self isPoweredOn]){
+                                [subscriber sendCompleted];
+                            }else if([self isUnauthorized]){
+                                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeNoPermission userInfo:@{NSLocalizedFailureReasonErrorKey: @"手机蓝牙权限开启失败，请开启权限", NSLocalizedRecoverySuggestionErrorKey: @"手机钥匙需访问蓝牙扫描和连接权限，用于识别与连接您的车辆", NSLocalizedDescriptionKey: @"请开启蓝牙权限"}]];
+                            }else{
+                                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodePoweredOff userInfo:@{NSLocalizedFailureReasonErrorKey: @"手机蓝牙开启失败，请开启蓝牙", NSLocalizedRecoverySuggestionErrorKey: @"使用蓝牙钥匙需打开手机蓝牙开关", NSLocalizedDescriptionKey: @"请开启蓝牙开关"}]];
+                            }
+                        };
+                        vc.closeBlock = ^{
+                            @strongify(self);
+                            if([self isPoweredOn]){
+                                [subscriber sendCompleted];
+                            }else if([self isUnauthorized]){
+                                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeNoPermission userInfo:@{NSLocalizedFailureReasonErrorKey: @"手机蓝牙权限开启失败，请开启权限", NSLocalizedRecoverySuggestionErrorKey: @"手机钥匙需访问蓝牙扫描和连接权限，用于识别与连接您的车辆", NSLocalizedDescriptionKey: @"请开启蓝牙权限"}]];
+                            }else{
+                                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodePoweredOff userInfo:@{NSLocalizedFailureReasonErrorKey: @"手机蓝牙开启失败，请开启蓝牙", NSLocalizedRecoverySuggestionErrorKey: @"使用蓝牙钥匙需打开手机蓝牙开关", NSLocalizedDescriptionKey: @"请开启蓝牙开关"}]];
+                            }
+                        };
+                        [vc showInViewController:self];
+                        return [RACDisposable disposableWithBlock:^{
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                [vc dismiss];
+                            });
+                        }];
+                    }];
+                }else{
+                    NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                    if([UIApplication.sharedApplication canOpenURL:url]) [UIApplication.sharedApplication openURL:url options:@{} completionHandler:^(BOOL success) {}];
+                    return [[RACSignal.empty delay:0.5] concat:[RACSignal error:error]];
+                }
+            }
+            
+            return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeCancel userInfo:@{}]];
+        }] then:^RACSignal * _Nonnull{
+            @strongify(self);
+            return [self checkBleStateSignalWithTimeout:2];
+        }];
+    }];
+}
+
+- (RACSignal<NSNumber *> *)checkNearbySignal{
+    return [self checkNearbySignalWithTryCount:2];
+}
+
+- (RACSignal<NSNumber *> *)checkNearbySignalWithTryCount:(NSInteger)tryCount{
+    // Debug
+//    return @[@(XPKeyCheckProgressNearbyChecking), @(XPKeyCheckProgressNearbyChecked)].rac_sequence.signal;
+    
+    if(XPCarStateViewModel.sharedInstance.bleConnectState == XPCarConnectStateConnected){
+        return @[@(XPKeyCheckProgressNearbyChecking), @(XPKeyCheckProgressNearbyChecked)].rac_sequence.signal;
+    }
+    
+    @weakify(self);
+    return [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        @strongify(self);
+        [subscriber sendNext:@(XPKeyCheckProgressNearbyChecking)];
+        
+        RACCompoundDisposable *disposable = [RACCompoundDisposable compoundDisposable];
+        
+        RACSignal *currentBleStateSignal = [RACSignal return:@{
+            XP_BLEKEY_IS_COMMUNICATE_KEY: @(true),
+            XP_BLEKEY_CONNECT_STATE_KEY: @([XPVehicleSDK bleConnectState])
+        }];
+        [disposable addDisposable:[[self.bleConnectStateSubject merge:currentBleStateSignal]
+                                   subscribeNext:^(NSDictionary * _Nullable x){
+            BOOL isCommunicate = [x[XP_BLEKEY_IS_COMMUNICATE_KEY] boolValue];
+            XPBLEConnectionState state = [x[XP_BLEKEY_CONNECT_STATE_KEY] intValue];
+            if (isCommunicate && state == XPBLEConnectionStateAvailable) {
+                [subscriber sendNext:@(XPKeyCheckProgressNearbyChecked)];
+                [subscriber sendCompleted];
+            }
+        }]];
+        
+        if(tryCount == 0){
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_RESET_CAR_BLE module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            [XPCarControlViewModel.sharedInstance.resetBleCommand execute:@{}];
+        }
+        
+        __block BOOL isConnectable = NO;
+        RACSignal *tmpScanSingal = [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+            RACCompoundDisposable *disposable = [RACCompoundDisposable compoundDisposable];
+            [disposable addDisposable:[self.sysBleStateSubject subscribeNext:^(id  _Nullable x) {
+                XPBLESysState state = [x integerValue];
+                if (state != XPBLESysStatePoweredOn) {
+                    [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPCreateKeyErrorCodeBleNotPowerOn  userInfo:@{}]];
+                }
+            }]];
+            if (XPVehicleSDK.currentVehicle == nil) {
+                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeNotNearby userInfo:@{NSLocalizedFailureReasonErrorKey: @"未设置当前车辆"}]];
+                return disposable;
+            }
+            [self cleanBleInfoCache];
+            [self.bleCheckManager scanBleAdvertiseWithTimeout:15 success: ^{
+                isConnectable = YES;
+                [subscriber sendNext:nil];
+                [subscriber sendCompleted];
+            } failed:^(XPVehicleError * _Nonnull error) {
+                if (error.code == 1) {
+                    DLogTagInfo(kBLEKeyTag, @"车辆附近检查-检测到车辆，但已被其它设备连接");
+                    isConnectable = NO;
+                    [subscriber sendNext:nil];
+                    [subscriber sendCompleted];
+                    return;
+                }
+                DLogTagInfo(kBLEKeyTag, @"车辆附近检查-未检测到车辆");
+                [subscriber sendError:error.toNSError];
+            }];
+            return disposable;
+        }];
+        
+        [disposable addDisposable:[tmpScanSingal subscribeNext:^(CBPeripheral * _Nullable x) {
+            if(!isConnectable){
+                if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3 || CTMediator.isMona ) {
+                    [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeOccupied userInfo:@{NSLocalizedDescriptionKey: @"未检测到附近小鹏汽车，请靠近车辆后重试。如在车辆附近，请点击下一步", NSLocalizedRecoverySuggestionErrorKey: @"", NSLocalizedFailureReasonErrorKey: @"请断开周围其他已授权手机/手表钥匙蓝牙后重试", @"title": @"启动失败，车辆已连接其他设备"}]];
+                }else{
+                    [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeOccupied userInfo:@{NSLocalizedDescriptionKey: @"未检测到附近小鹏汽车，请确认", NSLocalizedRecoverySuggestionErrorKey: @"1、手机靠近车辆\n2、无其他手机/手表钥匙连接车辆，如有请断开其蓝牙，并重新检查", NSLocalizedFailureReasonErrorKey: @"请断开周围其他已授权手机/手表钥匙蓝牙后重试", @"title": @"启动失败，车辆已连接其他设备"}]];
+                }
+                
+            }else{
+                [subscriber sendNext:@(XPKeyCheckProgressNearbyChecked)];
+                [subscriber sendCompleted];
+            }
+        } error:^(NSError * _Nullable error) {
+            if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3 || CTMediator.isMona) {
+                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeNotNearby userInfo:@{NSLocalizedDescriptionKey: @"未检测到附近小鹏汽车，请靠近车辆后重试。如在车辆附近，请点击下一步", NSLocalizedRecoverySuggestionErrorKey: @"", NSLocalizedFailureReasonErrorKey: @"请断开周围其他已授权手机/手表钥匙蓝牙后重试"}]];
+            }else{
+                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeNotNearby userInfo:@{NSLocalizedDescriptionKey: @"未检测到附近小鹏汽车，请确认", NSLocalizedRecoverySuggestionErrorKey: @"1、手机靠近车辆\n2、无其他手机/手表钥匙连接车辆，如有请断开其蓝牙，并重新检查", NSLocalizedFailureReasonErrorKey: @"请断开周围其他已授权手机/手表钥匙蓝牙后重试"}]];
+            }
+            
+        } completed:^{
+            
+        }]];
+        
+        return disposable;
+    }] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        @strongify(self);
+        if(error.code == XPKeyCheckErrorCodeOccupied){
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_OCCUPIED module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            return [RACSignal error:error];
+        }
+        
+        if(tryCount == 0){
+            return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeGoToFinal userInfo:@{}]];
+        }
+        
+        if(tryCount == 1){
+            return [self restartAppSignal];
+        }
+        
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_NOT_NEARBY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        return [[self alertControllerSignalWithTitle:error.localizedDescription message:error.localizedRecoverySuggestion buttonTitles:@[@"重新检查", @"确认，下一步"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+            @strongify(self);
+            if([value integerValue] == 1){
+                return [[self resetBleSignal] concat:[self checkNearbySignalWithTryCount:tryCount-1]];
+            }
+            return [self checkNearbySignal];
+        }];
+    }];
+}
+
+- (RACSignal<NSNumber*> *)resetBleSignal{
+    @weakify(self);
+    return [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        @strongify(self);
+        RACCompoundDisposable *disposable = [RACCompoundDisposable compoundDisposable];
+        
+        __block BOOL isReset = NO;
+        [disposable addDisposable:[[[self.sysBleStateSubject filter:^BOOL(id  _Nullable value) {
+            return [value integerValue] != XPBLESysStatePoweredOn;
+        }] take: 1].deliverOnMainThread subscribeCompleted:^{
+            isReset = YES;
+        }]];
+        
+        [disposable addDisposable:[[[self alertControllerSignalWithTitle:@"即将重启手机蓝牙" message:@"能解决92%的问题，请先关闭蓝牙，再打开" buttonTitles:@[@"取消", @"确定"]] flattenMap:^__kindof RACSignal * _Nullable(NSNumber * _Nullable value) {
+            @strongify(self);
+            if([value integerValue] == 0){
+                return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeCancel userInfo:@{}]];
+            }
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_RESET_BLE module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            if(isReset && [self isPoweredOn]){
+                return RACSignal.empty;
+            }
+            return [[[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+                @strongify(self);
+                XPBleGuideViewController *vc = [XPBleGuideViewController new];
+                vc.titleString = @"请重启手机蓝牙";
+                vc.confirmBlock = ^{
+                    [subscriber sendCompleted];
+                };
+                vc.closeBlock = ^{
+                    [subscriber sendCompleted];
+                };
+                [vc showInViewController:self];
+                return [RACDisposable disposableWithBlock:^{
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [vc dismiss];
+                    });
+                }];
+            }] delay:2].deliverOnMainThread then:^RACSignal * _Nonnull{
+                @strongify(self);
+                if(isReset && [self isPoweredOn]){
+                    return RACSignal.empty;
+                }
+                return [RACSignal error:nil];
+            }];
+        }] subscribeNext:^(id  _Nullable x) {
+            
+        } error:^(NSError * _Nullable error) {
+            [subscriber sendError:error];
+        } completed:^{
+            [subscriber sendNext:@(XPKeyCheckProgressResetBleChecking)];
+            [subscriber sendNext:@(XPKeyCheckProgressResetBleChecked)];
+            [subscriber sendCompleted];
+        }]];
+        
+        return disposable;
+    }] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        @strongify(self);
+        if(error){
+            return [RACSignal error:error];
+        }
+        return [self resetBleSignal];
+    }];
+}
+
+- (RACSignal<NSNumber *> *)restartAppSignal{
+    @weakify(self);
+    return [[self alertControllerSignalWithTitle:@"即将重启App" message:@"重启App能解决大部分未知问题，请点击确认重启后，在桌面重新打开App" buttonTitles:@[@"取消", @"确认重启"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+        @strongify(self);
+        if([value integerValue] == 0){
+            return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeCancel userInfo:@{}]];
+        }
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_RESET_BLE_CACHE module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        
+        [self cleanBleInfoCache];
+        
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_RESTART_APP module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        [self.class markResumeFromRestart:YES];
+        [self.class markResumeCommand:self.command];
+        [self.class markSkipAlert:self.skipAlert];
+        [self.class markResumeSessionId:self.sessionId];
+        [NSNotificationCenter.defaultCenter postNotificationName:UIApplicationWillTerminateNotification object:nil];
+        exit(0);
+        return RACSignal.empty;
+    }];
+}
+
+- (RACSignal<NSNumber*> *)checkConnectSignal{
+    return [self checkConnectSignalWithTryCount:2];
+}
+
+- (RACSignal<NSNumber*> *)checkConnectSignalWithTryCount:(NSInteger)tryCount{
+    return [self checkConnectSignalWithTryCount:tryCount tryDelete:YES];
+}
+
+- (RACSignal<NSNumber*> *)monaCheckConnectSignalWithTryCount:(NSInteger)tryCount{
+    @weakify(self);
+    return [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        [subscriber sendNext:@(XPKeyCheckProgressConnectChecking)];
+        
+        RACCompoundDisposable *disposable = [RACCompoundDisposable compoundDisposable];
+        
+        [disposable addDisposable:[[XPCarControlViewModel.sharedInstance currentVehicleBleConnectSignalWithTimeout:10] subscribeNext:^(id  _Nullable x) {
+            
+        } error:^(NSError * _Nullable error) {
+            [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeNotNearby userInfo:@{NSLocalizedDescriptionKey: @"未检测到附近小鹏汽车，请确认", NSLocalizedRecoverySuggestionErrorKey: @"1、手机靠近车辆\n2、无其他手机/手表钥匙连接车辆，如有请断开其蓝牙，并重新检查", NSLocalizedFailureReasonErrorKey: @"请断开周围其他已授权手机/手表钥匙蓝牙后重试"}]];
+        } completed:^{
+            [subscriber sendNext:@(XPKeyCheckProgressConnectChecked)];
+            [subscriber sendCompleted];
+        }]];
+        
+        return disposable;
+    }] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        @strongify(self);
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_CONNECT_FAILED module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        
+        if(tryCount == 0){
+            return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeGoToFinal userInfo:@{}]];
+        }
+        
+        if(tryCount == 1){
+            return [self restartAppSignal];
+        }
+        
+        return [[self alertControllerSignalWithTitle:error.localizedDescription message:error.localizedRecoverySuggestion buttonTitles:@[@"重新检查", @"确认，下一步"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+            @strongify(self);
+            if([value integerValue] == 1){
+                return [[self resetBleSignal] concat:[self monaCheckConnectSignalWithTryCount:tryCount-1]];
+            }
+            return [self monaCheckConnectSignalWithTryCount:tryCount];
+        }];
+    }];
+}
+
+- (RACSignal<NSNumber*> *)checkConnectSignalWithTryCount:(NSInteger)tryCount tryDelete:(BOOL)tryDelete{
+    // Debug
+//    return @[@(XPKeyCheckProgressConnectChecking), @(XPKeyCheckProgressConnectChecked)].rac_sequence.signal;
+    
+    @weakify(self);
+    return [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        [subscriber sendNext:@(XPKeyCheckProgressConnectChecking)];
+        @strongify(self);
+        __block BOOL authFail = NO;
+        RACCompoundDisposable *disposable = [RACCompoundDisposable compoundDisposable];
+       
+        RACSignal *currentBleStateSignal = [RACSignal return:@{
+            XP_BLEKEY_IS_COMMUNICATE_KEY: @(YES),
+            XP_BLEKEY_CONNECT_STATE_KEY: @([XPVehicleSDK bleConnectState])
+        }];
+        [disposable addDisposable:[[self.bleConnectStateSubject merge:currentBleStateSignal]
+                                   subscribeNext:^(NSDictionary * _Nullable x){
+            BOOL isCommunicate = [x[XP_BLEKEY_IS_COMMUNICATE_KEY] boolValue];
+            XPBLEConnectionState state = [x[XP_BLEKEY_CONNECT_STATE_KEY] intValue];
+            if (isCommunicate && state == XPBLEConnectionStateConnecting) {
+                authFail = YES;
+            }
+        }]];
+        
+        RACSignal *bleConnectSignal = [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+            if ([XPVehicleSDK bleConnectState] == XPBLEConnectionStateAvailable) {
+                [subscriber sendCompleted];
+                return nil;
+            }
+            RACDisposable *disposable = [self.bleConnectStateSubject subscribeNext:^(id  _Nullable x) {
+                if ([x[XP_BLEKEY_CONNECT_STATE_KEY] integerValue] == XPBLEConnectionStateAvailable) {
+                    [subscriber sendCompleted];
+                }
+            }];
+            return disposable;
+        }] timeout:10 onScheduler:RACScheduler.scheduler error:[NSError errorWithDomain:XPCarControlErrorDomain code:XPCarControlErrorCodeBleNotConnected userInfo:@{}]] ;
+        
+        [disposable addDisposable:[bleConnectSignal subscribeNext:^(id  _Nullable x) {
+            
+        } error:^(NSError * _Nullable error) {
+            if(authFail){
+                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToAuth userInfo:@{NSLocalizedDescriptionKey: @"连接失败", NSLocalizedRecoverySuggestionErrorKey: @"尝试重新连接"}]];
+            }else{
+                [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToConnect userInfo:@{NSLocalizedDescriptionKey: @"连接失败", NSLocalizedRecoverySuggestionErrorKey: @"尝试重新连接"}]];
+            }
+        } completed:^{
+            [subscriber sendNext:@(XPKeyCheckProgressConnectChecked)];
+            [subscriber sendCompleted];
+        }]];
+        
+        return disposable;
+    }] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        @strongify(self);
+        
+        if(error.code == XPKeyCheckErrorCodeFailToAuth){
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_AUTH_FAILED module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            
+            if(tryDelete){
+                return [[self alertControllerSignalWithTitle:@"重建手机钥匙" message:@"将先删除、再创建手机钥匙，可解决大部分手机钥匙问题。请确保网络畅通" buttonTitles:@[@"取消", @"确认"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+                    @strongify(self);
+                    if([value integerValue] == 0){
+                        return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeCancel userInfo:@{}]];
+                    }
+                    [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_RECREATE_KEY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+                    return [[self showCreateKeySignalWithNeedDelete:YES] concat:[self checkConnectSignalWithTryCount:tryCount tryDelete:NO]];
+                }];
+            }
+            
+            return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeGoToFinal userInfo:@{}]];
+        }
+        
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_CONNECT_FAILED module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        
+        if(tryCount == 0){
+            return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeGoToFinal userInfo:@{}]];
+        }
+        
+        if(tryCount == 1){
+            return [self restartAppSignal];
+        }
+        
+        return [[self resetBleSignal] concat:[self checkConnectSignalWithTryCount:tryCount-1 tryDelete:tryDelete]];
+    }];
+}
+
+- (RACSignal<NSNumber*> *)sendCommandSignal{
+    return [self sendCommandSignalWithTryCount:2 tryDelete:YES];
+}
+
+- (RACSignal<NSNumber*> *)sendCommandSignalWithTryCount:(NSInteger)tryCount{
+    return [self sendCommandSignalWithTryCount:tryCount tryDelete:YES];
+}
+
+- (RACSignal<NSNumber*> *)sendMonaCommandSignalWithTryCount:(NSInteger)tryCount tryDelete:(BOOL)tryDelete{
+    
+    @weakify(self);
+    return [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        [subscriber sendNext:@(XPKeyCheckProgressCommandChecking)];
+        RACCompoundDisposable* disposable = [RACCompoundDisposable compoundDisposable];
+        [XPVehicleSDK.shared.vehicleManager.currentVehicle sendCommand:XPVehicleCommandBleUnlockStart success:^{
+            DLogTagInfo(kBLEKeyTag, @"Mona发送解锁启动成功");
+            [subscriber sendNext:@(XPKeyCheckProgressCommandChecked)];
+            [subscriber sendCompleted];
+
+        } failed:^(XPVehicleError * error) {
+            [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeKeyError userInfo:@{}]];
+            DLogTagError(kBLEKeyTag, @"Mona发送解锁启动失败");
+        }];
+        
+        return disposable;
+    }] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        @strongify(self);
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_COMMAND_FAILED module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        
+        return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeGoToFinal userInfo:@{}]];
+    }];
+}
+- (RACSignal<NSNumber*> *)sendCommandSignalWithTryCount:(NSInteger)tryCount tryDelete:(BOOL)tryDelete{
+    @weakify(self);
+    return [[RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        @strongify(self);
+        [subscriber sendNext:@(XPKeyCheckProgressCommandChecking)];
+        RACSignal *cmdExecuteSignal = nil;
+        // 蓝牙发送指令方法改为SDK调用
+        XPVehicleCommand command = XPVehicleCommandBleUnlockStart;
+        if (self.command == XPTBoxCommandLock) {
+            command = XPVehicleCommandLock;
+        }
+        cmdExecuteSignal = [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+            if (XPVehicleSDK.currentVehicle == nil) {
+                [subscriber sendError:[NSError errorWithDomain:XPCarControlErrorDomain code:XPCarControlErrorCodeDefault userInfo:@{NSLocalizedFailureReasonErrorKey: @"未设置当前车辆"}]];
+                return nil;
+            }
+            [XPVehicleSDK.currentVehicle sendCommand:command success:^{
+                [subscriber sendCompleted];
+            } failed:^(XPVehicleError * _Nonnull error) {
+                NSInteger code = error.code;
+                if (error.channel == XPVehicleChannelBLE) {
+                    if (error.code > 0) {
+                        code = XPCarControlErrorCodeBleExecFailed;
+                    } else if (error.code == XPVehicleErrorCodeTimeout){
+                        code = XPCarControlErrorCodeBleExecTimeout;
+                    } else if (error.code == XPVehicleErrorCodeBLEDisconnected || error.code == XPVehicleErrorCodeBLEWriteError) {
+                        code = XPCarControlErrorCodeBleSendFailed;
+                    }
+                }
+                [subscriber sendError:[NSError errorWithDomain:XPCarControlErrorDomain code:code userInfo:@{}]];
+            }];
+            return nil;
+        }];
+        
+        RACDisposable *disposable = [cmdExecuteSignal subscribeNext:^(id  _Nullable x) {
+
+        } error:^(NSError * _Nullable error) {
+            @strongify(self);
+            if([error.domain isEqualToString:XPCarControlErrorDomain]){
+                if(error.code == XPCarControlErrorCodeBleSendFailed){
+                    [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToSend userInfo:@{}]];
+                }else if(error.code == XPCarControlErrorCodeBleExecFailed){
+                    XPTBoxCommand cmd = self.command;
+                    NSString *failTitle = @"操作失败";
+                    if(cmd == XPTBoxCommandUnlock){
+                        failTitle = self.isStart?@"启动失败":@"解锁失败";
+                    }else if(cmd == XPTBoxCommandLock){
+                        failTitle = @"闭锁失败";
+                    }
+                    [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeFailToExecute userInfo:@{NSLocalizedFailureReasonErrorKey: error.localizedFailureReason?:@"", @"title": failTitle, @"code": error.userInfo[@"code"]?:@0}]];
+                }else if(error.code == XPCarControlErrorCodeBleExecTimeout){
+                    [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeExecuteTimeout userInfo:@{}]];
+                }else{
+                    [subscriber sendError:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeKeyError userInfo:@{}]];
+                }
+            }
+        } completed:^{
+            @strongify(self);
+            [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_SUCCESS module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+            if(self.command == XPTBoxCommandUnlock){
+                [XPCarControlViewModel.sharedInstance sendLoginUidIfNeeded];
+            }
+            [subscriber sendNext:@(XPKeyCheckProgressCommandChecked)];
+            [subscriber sendCompleted];
+        }];
+
+        return disposable;
+    }] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+        @strongify(self);
+        [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_FAIL_COMMAND_FAILED module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+        
+        if(error.code == XPKeyCheckErrorCodeFailToSend){
+            if(tryCount == 0){
+                return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeGoToFinal userInfo:@{}]];
+            }
+            
+            if(tryCount == 1){
+                return [self restartAppSignal];
+            }
+            
+            return [[self resetBleSignal] concat:[self sendCommandSignalWithTryCount:tryCount-1]];
+        }
+        
+        if(error.code == XPKeyCheckErrorCodeFailToExecute){
+            XPTBoxCanControlState state = [error.userInfo[@"code"] unsignedIntValue];
+            if(state != XPTBoxCanControlStateDuoChannelLockDuplicated && state != XPTBoxCanControlState4GControlIsProcessing && error.localizedFailureReason.length > 0){
+                return [RACSignal error:error];
+            }
+        }
+        
+        if(tryDelete){
+            return [[self alertControllerSignalWithTitle:@"重建手机钥匙" message:@"将先删除、再创建手机钥匙，可解决大部分手机钥匙问题。请确保网络畅通" buttonTitles:@[@"取消", @"确认"]] flattenMap:^__kindof RACSignal * _Nullable(id  _Nullable value) {
+                @strongify(self);
+                if([value integerValue] == 0){
+                    return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeCancel userInfo:@{}]];
+                }
+                [XPStatisticsMgr sendEvent:XP_MOBILE_KEY_CHECK_TRY_RECREATE_KEY module:XP_MOBILE_KEY_CHECK_MODULE data:@{@"sessionid": @(self.sessionId)}];
+                return [[self showCreateKeySignalWithNeedDelete:YES] concat:[self sendCommandSignalWithTryCount:tryCount tryDelete:NO]];
+            }];
+        }
+        
+        return [RACSignal error:[NSError errorWithDomain:XPKeyCheckErrorDomain code:XPKeyCheckErrorCodeGoToFinal userInfo:@{}]];
+    }];
+}
+
+- (XPUIGradientView *)bgGradientView{
+    if(!_bgGradientView){
+        _bgGradientView = [XPUIGradientView new];
+    }
+    return _bgGradientView;
+}
+
+- (XPKeyCheckingView *)checkingView{
+    if(!_checkingView){
+        _checkingView = [XPKeyCheckingView new];
+    }
+    return _checkingView;
+}
+
+- (XPKeyCheckSuccessView *)successView{
+    if(!_successView){
+        _successView = [XPKeyCheckSuccessView new];
+        _successView.hidden = YES;
+    }
+    return _successView;
+}
+
+- (XPKeyCheckFailView *)failView{
+    if(!_failView){
+        _failView = [XPKeyCheckFailView new];
+        _failView.hidden = YES;
+    }
+    return _failView;
+}
+
+- (XPKeyCheckFinalView *)finalView{
+    if(!_finalView){
+        _finalView = [XPKeyCheckFinalView new];
+        _finalView.hidden = YES;
+    }
+    return _finalView;
+}
+
+@end

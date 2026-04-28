@@ -1,0 +1,377 @@
+//
+//  XPCoreSessionAppLaunch.m
+//  XiaoPengQiChe
+//
+//  Created by liwj on 2018/11/19.
+//  Copyright © 2018 xiaopeng.com. All rights reserved.
+//
+
+#import "XPCoreSessionAppLaunch.h"
+#import "CTMediator+Account.h"
+#import "CTMediator+Login.h"
+#import "FlowManager.h"
+#import "LocationHelper.h"
+#import "LoginInfoViewModel.h"
+#import "NSDictionary+ToJson.h"
+#import "NSString+toDictionary.h"
+#import "Notification.h"
+#import "RefreshTokenHelper.h"
+#import "ResponseHandler.h"
+#import "UIViewController+Display.h"
+#import "XPAPIConfig.h"
+#import "XPAPIRequestManager.h"
+#import "XPAlertController.h"
+#import "XPBLEHandlerManager.h"
+#import "XPBLEKeyManager.h"
+#import "XPDispatchQueue.h"
+#import "XPMacroLocalizedDef.h"
+#import "XPSplashViewController.h"
+#import "XPStatisticsKit.h"
+#import "XPTeeSecurityManager.h"
+#import "XPUtility.h"
+#import <KeyChain/KeyChain.h>
+#import <XPDeviceInfo/UIDevice+Info.h>
+#import <XPNetwork/AsyncHttpClient.h>
+#import <XPNetwork/HttpRequestHeader.h>
+#import <XPNetwork/HttpRequestModel.h>
+#import <XPNetwork/Response.h>
+#if __has_include(<XPNetwork/CronetManager.h>)
+#import <XPNetwork/CronetManager.h>
+#endif
+#if __has_include(<XPResolver/XPResolver.h>)
+#import <XPResolver/XPResolver.h>
+#import <XPResolver/XPResolverDataProvider.h>
+#endif
+#import <CloudConfig/CloudConfig.h>
+#import "CTMediator+CarState.h"
+#import <XPKeyValueStore/KeyValueStore.h>
+#import <bBox/BBDomain.h>
+#import "XPUIAlertController.h"
+#import <bBox/BBDomain.h>
+
+@interface XPCoreSessionAppLaunch()<AsyncHttpClientParams, XPAPIRequestManagerParams, HttpRequestHeaderParams, RefreshTokenHelperDelegate, ResponseHandlerDelegate, ResponseParams>
+
+@property (nonatomic, assign) HttpRequestEncryptionType httpRequestEncryptionType;
+
+@end
+
+@implementation XPCoreSessionAppLaunch
+
++ (instancetype)sharedInstance
+{
+    static id instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        instance = [[self alloc] init];
+    });
+    
+    return instance;
+}
+
+- (void)run {
+    // HttpRequestHeader
+    HttpRequestHeader.sharedManager.params = self;
+    
+    // AsyncHttpClient
+    AsyncHttpClient.client.params = self;
+    
+    // XPAPIRequestManager
+    XPAPIRequestManager.sharedManager.params = self;
+    XPAPIRequestManager.sharedManager.appWhiteLogUrlList = XPAPIConfig.getAppWhiteLogUrlList;
+    
+    //Response
+    Response.sharedManager.params = self;
+    
+    // ResponseHandler
+    ResponseHandler.sharedInstance.delegate = self;
+    
+    // RefreshTokenHelper
+    RefreshTokenHelper.shareInstance.delegate = self;
+
+#if __has_include(<XPNetwork/CronetManager.h>)
+    [CronetManager setupCronet];
+
+#if __has_include(<XPResolver/XPResolver.h>)
+    if (XPResolver.enable) {
+        NSString *VIN = CTMediator.vin;
+        NSInteger uid = CTMediator.uid;
+        if (VIN.length == 0 && uid != 0) {
+            VIN = [KeyValueStore stringForObjectId:@"com.xiaopeng.defaultCarVinLocal" userId:[NSString stringWithFormat:@"%ld", uid]];
+        }
+
+        NSString *UID = [NSString stringWithFormat:@"%ld", (long)uid];
+
+        XPResolverDataProvider *provider = [[XPResolverDataProvider alloc] init];
+        provider.VIN = VIN ?: @"";
+        provider.UID = UID;
+        provider.appname = @"xiaopeng";
+
+        [XPResolver setupProvider:provider];
+    }
+#endif // __has_include(<XPResolver/XPResolver.h>)
+#endif // __has_include(<XPNetwork/CronetManager.h>)
+}
+
+- (void)encryptionReady:(HttpRequestEncryptionType)encryptionType {
+    assert(EncryptionOpen);
+    _httpRequestEncryptionType = encryptionType;
+    DLogTagInfo(@"XPCoreSessionAppLaunch", @"encryptionReady %ld", (long)encryptionType);
+}
+
+
+#pragma mark -
+#pragma mark - AsyncHttpClientParams
+
+- (NSString * _Nonnull)defaultDomainInAsyncHttpClient {
+    return HTTPApiRequestDefaultDomain;
+}
+
+
+#pragma mark -
+#pragma mark - XPAPIRequestManagerParams
+
+- (NSString * _Nonnull)defaultDomainInApiRequestManager {
+    return HTTPApiRequestDefaultDomain;
+}
+- (NSString * _Nonnull)chargeDomainInApiRequestManager {
+    return HTTPApiRequestChargeDomain;
+}
+- (NSString * _Nonnull)dragonDomainInApiRequestManager {
+    return HTTPApiRequestDragonDomain;
+}
+- (NSString * _Nonnull)dasDomainInApiRequestManager {
+    return HTTPApiRequestDasDomain;
+}
+- (NSString * _Nonnull)cloudTechDomainInApiRequestManager {
+    return HTTPApiRequestCloudTechDomain;
+}
+- (NSString * _Nonnull)experienceStoreDomainInApiRequestManager {
+    return HTTPApiRequestExperienceStoreDomain;
+}
+- (NSString * _Nonnull)chargeInsuranceDomainInApiRequestManager {
+    return HTTPApiRequestChargeInsuranceDomain;
+}
+- (NSString * _Nonnull)vehicleOwnerServiceDomainInApiRequestManager {
+    return HTTPApiRequestVehicleOwnerServiceDomain;
+}
+
+- (BOOL)isLoginInApiRequestManager {
+    return [CTMediator isLogin];
+}
+- (long)uidInApiRequestManager {
+    return [CTMediator uid];
+}
+    
+- (HttpRequestEncryptionType)encryptionType {
+    if (EncryptionOpen) {
+        return _httpRequestEncryptionType;
+    }
+    return HttpRequestEncryptionTypeNone;
+}
+
+- (NSString * _Nullable)accessTokenInApiRequestManager {
+    return [CTMediator loginInfoViewModel].loginInfo.accessToken;
+}
+- (NSString * _Nullable)refreshTokenApiRequestManager {
+    return [CTMediator loginInfoViewModel].loginInfo.refreshToken;
+}
+
+
+#pragma mark -
+#pragma mark - HttpRequestHeaderParams
+
+- (NSString *)appIdConfigInHttpRequestHeader {
+    // XPNetwork read from XPNetwork.box file automatically
+    return @"";
+}
+- (NSString *)appIdConfigDefaultInHttpRequestHeader {
+    // XPNetwork read from XPNetwork.box file automatically
+    return @"";
+}
+- (NSString *)appSecrectConfigInHttpRequestHeader {
+    // XPNetwork read from XPNetwork.box file automatically
+    return @"";
+}
+- (NSString *)appSecrectConfigDefaultInHttpRequestHeader {
+    // XPNetwork read from XPNetwork.box file automatically
+    return @"";
+}
+- (NSString * _Nonnull)fIdConfigInHttpRequestHeaderWithPath:(NSString *)path {
+    if(path.length == 0) return nil;
+    return [[FlowManager instance] getFidWithUrl:path];
+}
+
+- (NSString * _Nullable)encyptedAuthrizationWithSignatureDictionary:(NSDictionary *_Nullable)signatureDictionary isNeedToken:(BOOL)isNeedToken {
+    NSString *authorization = nil;
+    if(XPCoreSessionAppLaunch.sharedInstance.encryptionType == HttpRequestEncryptionTypeTee) {
+        authorization = [[XPTeeSecurityManager instance] encode4Network:[signatureDictionary dictionaryToJson] isNeedToken:isNeedToken];
+    }
+    return authorization;
+}
+
+- (NSString *)refreshTokenInHttpRequestHeader {
+    return [CTMediator loginInfoViewModel].loginInfo.refreshToken;
+}
+- (NSString *)accessTokenInHttpRequestHeader {
+    return [CTMediator loginInfoViewModel].loginInfo.accessToken;
+}
+- (NSString *)authorizationHttpRequestHeaderWithPath:(NSString *)path {
+    NSString *authorization;
+    if ([path isEqualToString:self.refreshTokenHelperRefreshPath]) {
+        NSString *refreshToken = self.refreshTokenInHttpRequestHeader;
+        if (refreshToken.length > 0) {
+            authorization = refreshToken;
+        }
+    } else {
+        NSString *accessToken = self.accessTokenInHttpRequestHeader;
+        if (accessToken.length > 0) {
+            authorization = accessToken;
+        }
+    }
+    return authorization;
+}
+- (long)uidInhttpRequestHeader {
+    return [CTMediator loginInfoViewModel].loginInfo.uid;
+}
+
+- (BOOL)IsReGeocodeExistInHttpRequestHeader {
+    return LocationHelper.sharedInstance.userLocationReGeocode ? YES : NO;
+}
+- (NSString *)citycodeInHttpRequestHeader {
+    return LocationHelper.sharedInstance.userLocationReGeocode.citycode;
+}
+- (NSString *)adcodeInHttpRequestHeader {
+    return LocationHelper.sharedInstance.userLocationReGeocode.adcode;
+}
+- (CLLocation *)locationInHttpRequestHeader {
+    return LocationHelper.sharedInstance.userLocation;
+}
+
+- (NSString * _Nonnull)deviceIdInHttpRequestHeader {
+    return [XPUtility deviceID];
+}
+- (NSString * _Nonnull)deviceModelNameInHttpRequestHeader {
+    return [XPUtility deviceModelName];
+}
+- (NSString * _Nonnull)userAgentInHttpRequestHeader {
+    return [UIDevice customUserAgent];
+}
+
+
+#pragma mark -
+#pragma mark - RefreshTokenHelperDelegate
+- (NSString *)refreshTokenHelperRefreshBaseURL {
+    return [BBDomain baseURLWithType:BBUserCenterDomain];
+}
+
+- (NSString *)refreshTokenHelperRefreshPath {
+    return APIUrlRefreshToken;
+}
+
+- (BOOL)refreshTokenHelperShouldUpdateRefreshToken {
+    // 如果token都没有了，则不需要进行刷新的尝试了
+    if([CTMediator loginInfoViewModel].loginInfo.refreshToken.length <= 0 || [CTMediator loginInfoViewModel].loginInfo.accessToken.length <= 0) {
+        return NO;
+    }
+    return YES;
+}
+- (void)refreshTokenHelperDidRespondWithData:(id)data {
+    LoginInfo *loginInfo = [LoginInfo yy_modelWithJSON:data];
+    [[CTMediator loginInfoViewModel] updateLoginInfo:loginInfo];
+}
+- (void)refreshTokenHelperDidRespondErrorWithCode:(NSInteger)code message:(NSString *)message {
+    [XPStatisticsMgr sendEvent:XP_APM_EVENT_REFRESH_ACCESS_TOKEN_ERROR module:XP_APM_MODULE data:@{@"error-code" : @(code), @"error-message" : message ? : @"fail" }];
+}
+- (void)refreshTokenHelperDidUpdate {
+    //延迟0.2秒是为了保证能取得最新的token,因为保存token需要时间
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [[NSNotificationCenter defaultCenter] postNotificationName:RefreshAccessTokenSuccessNotificaiton object:nil];
+    });
+}
+
+
+#pragma mark -
+#pragma mark - ResponseHandlerDelegate
+
+- (void)responseHandlerDidHandleRefreshTokenInvalidWithMessage:(NSString * _Nullable)message {
+    DLogTagInfo(kBLEKeyTag, @"登录态过期，断开蓝牙");
+    [XPBLEHandlerManager disconnectIsForce:true];
+    [XPBLEKeyManager.instance deleteSafeKey];
+
+    UIViewController *currentFrontVC = [UIViewController currentFrontViewController];
+    if (currentFrontVC && [currentFrontVC isKindOfClass:[XPSplashViewController class]]) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            //广告页消失后，再显示登出消息
+            if (CTMediator.isLogin) {
+                //如果此时还处于登录状态，才显示登出消息
+                [self responseHandlerDidHandleRefreshTokenInvalidWithMessage:message];
+            }
+        });
+        return;
+    }
+    xp_async_execute_in_main_thread(^{ [XPToast dismissLoadingMessage]; });
+    [CTMediator clearAllLoginInfos];
+    
+    if (self.isShowingLogoutAlertController) {
+        //如果已经在显示登出弹框，包括外部弹框，则不再显示此弹框
+        DLogTagInfo(@"XPCoreSessionAppLaunch", @"已经在显示登出弹框，包括外部弹框，则不再显示此登出弹框");
+        return;
+    }
+    self.isShowingLogoutAlertController = YES;
+    
+    if (!message || 0 == message.length) {
+        message = XP_ACCOUNT_LOCALIZED_STRING(@"account_server_error_message", nil);
+    }
+    @weakify(self);
+    XPUIAlertController *alertVC = [XPUIAlertController alertControllerWithTitle:message message:nil imageURLString:nil localImage:nil configuration:^(XPUIAlertControllerConfig * _Nonnull config) {
+        config.titleLabel.font = kPingFangSCMediumFont(18);
+        config.messageTextView.textAlignment = NSTextAlignmentLeft;
+    }];
+
+    XPUIAlertAction *confirmAction = [XPUIAlertAction actionWithTitle:XP_ACCOUNT_LOCALIZED_STRING(@"account_force_logout_cancel_button_title", nil)
+                                                            style:UIAlertActionStyleDefault
+                                                    actionHandler:^(XPUIAlertAction * _Nonnull action) {
+        @strongify(self);
+        [CTMediator jumpToLoginWithCompletion:^() { DLogInfo(@"登录%@",@"成功"); } cancelAction:^{ DLogInfo(@"登录%@",@"失败"); }];
+        self.isShowingLogoutAlertController = NO;
+    } configuration:nil];
+    [alertVC addAction:confirmAction];
+    [[UIViewController currentFrontViewController] presentViewController:alertVC animated:YES completion:nil];
+}
+
+- (void)responseHandlerDidHandleTeeDecryptFailedWithMessage:(NSString * _Nullable)message{
+    [KeyChain save:kXPBizTeeShouldIgnoreInitKey data:@NO];
+    [[XPTeeSecurityManager instance] loadIndiv:^(NSError * _Nonnull error, BOOL didInit, CGFloat duration) { } didInit:^{ }];
+}
+
+- (void)responseHandlerDidHandleFailedWithMessage:(NSString * _Nullable)message {
+    if (message.length > 0) {
+        [XPToast showMessage:message];
+    } else {
+        [XPToast showMessage:XP_COMMON_MODULE_LOCALIZED_STRING(@"http_response_common_message", nil)];
+    }
+}
+
+#pragma mark -
+#pragma mark - ResponseParams
+
+- (BOOL)isIndivSaveSuccessInResponse {
+    BOOL sucess = NO;
+    if(XPCoreSessionAppLaunch.sharedInstance.encryptionType == HttpRequestEncryptionTypeTee) {
+        sucess = [XPTeeSecurityManager instance].isIndivSaveSuccess;
+    }
+    return sucess;
+}
+- (BOOL)isNeedDencryptedInResponse {
+    return XPCoreSessionAppLaunch.sharedInstance.encryptionType != HttpRequestEncryptionTypeNone;
+}
+- (NSDictionary * _Nullable)dencryptedDictionaryInResponseWithString:(NSString * _Nonnull)string {
+    NSDictionary *dataDic = nil;
+    if(XPCoreSessionAppLaunch.sharedInstance.encryptionType == HttpRequestEncryptionTypeTee) {
+        dataDic = [[[XPTeeSecurityManager instance] decode4Network:string] toDictionary];
+    }
+    return dataDic;
+}
+   
+
+@end

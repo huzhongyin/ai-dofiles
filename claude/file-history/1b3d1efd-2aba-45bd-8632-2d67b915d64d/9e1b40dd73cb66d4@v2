@@ -1,0 +1,16 @@
+# BLE C++ 结构体紧凑排列
+
+## 元信息
+- 触发关键词: ["packed", "__attribute__", "结构体对齐", "协议字段", "BLE结构体", "数据解析结构"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+BLE 数据解析的 C++ 结构体（DoorMessage, WindowMessage, ChargePortMessage, ParkingMessage 等）使用 `__attribute__((packed))` 紧凑排列。
+
+**禁止操作**: 手动修改字段顺序或插入新字段到中间位置，否则会导致蓝牙协议解析不兼容。
+
+**正确做法**: 新增字段只能追加到结构体末尾，且需与车端协议文档同步确认。
+
+**代码位置**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/` 各车型 DataParser 文件

@@ -1,0 +1,178 @@
+# 配置管理详细说明
+
+## 目录
+- [配置文件结构](#配置文件结构)
+- [项目设置配置](#项目设置配置)
+- [AI辅助配置](#ai辅助配置)
+- [集成配置](#集成配置)
+- [配置管理API](#配置管理api)
+
+---
+
+## 配置文件结构
+
+配置文件位于 `config/xp_ai_coding_config.yaml`（YAML不可用时自动fallback到JSON）。
+
+```yaml
+version: "1.0.0"
+project_name: "XPMotors_iOS"
+team_name: "小鹏汽车iOS团队"
+created_at: "2024-01-01T00:00:00"
+updated_at: "2024-01-01T00:00:00"
+
+project_settings: { ... }    # 项目扫描范围
+permission_config: { ... }   # RBAC权限配置 → 详见 permissions.md
+standards_config: { ... }    # 编码标准规则 → 详见 coding-standards.md
+ai_assist_config: { ... }    # AI建议配置
+integration_config: { ... }  # Claude Code/Git/CI集成
+```
+
+---
+
+## 项目设置配置
+
+```yaml
+project_settings:
+  language: "mixed"            # swift | objective-c | mixed
+  platform: "ios"
+  minimum_ios_version: "12.0"
+  architecture_patterns: ["MVVM", "MVC", "VIPER"]
+  dependency_manager: "cocoapods"
+
+  scan_paths:
+    include:
+      - "LocalPods/**/*"       # 本地Pod模块
+      - "XPApp/**/*"           # 主应用代码
+      - "submodule/**/*"       # Git子模块
+    exclude:
+      - "**/Pods/**"           # 外部依赖（不扫描）
+      - "**/build/**"
+      - "**/DerivedData/**"
+      - "**/.git/**"
+      - "**/ThirdParty/**"
+
+  file_patterns:
+    source_files: ["**/*.swift", "**/*.h", "**/*.m", "**/*.mm"]
+    config_files: ["**/Podfile", "**/*.podspec", "**/*.xcconfig"]
+```
+
+---
+
+## AI辅助配置
+
+```yaml
+ai_assist_config:
+  enabled: true
+  max_suggestions_per_request: 10
+  cache_suggestions: true
+  cache_ttl_seconds: 600       # 建议缓存10分钟
+
+  suggestion_types:
+    code_completion:      {enabled: true, priority: 1}
+    refactoring:          {enabled: true, priority: 2}
+    best_practices:       {enabled: true, priority: 3}
+    architecture_guidance:{enabled: true, priority: 4}
+    security_recommendations: {enabled: true, priority: 5}
+
+  module_specific_guidance:
+    XPVehicleSDK:
+      focus_areas: ["thread_safety", "error_handling", "performance"]
+      forbidden_patterns: ["ui_operations_on_background_thread"]
+      required_patterns: ["xp_prefix_naming", "error_callbacks"]
+
+    "XPBusiness_*":
+      focus_areas: ["mvvm_compliance", "network_handling", "ui_responsiveness"]
+      architecture_patterns: ["MVVM", "Observer"]
+      networking_guidelines: ["timeout_configuration", "retry_logic"]
+
+    "XPBase_*":
+      focus_areas: ["reusability", "documentation", "api_design"]
+      design_principles: ["single_responsibility", "interface_segregation"]
+
+  quality_metrics:
+    suggestion_relevance_threshold: 0.8   # 相关性阈值
+    false_positive_rate_threshold: 0.1    # 误报率上限
+    response_time_sla_ms: 500             # 响应时间SLA
+```
+
+---
+
+## 集成配置
+
+```yaml
+integration_config:
+  claude_code:
+    enabled: true
+    hooks:
+      pre_tool_use: true       # 编辑前权限检查
+      post_tool_use: true      # 编辑后标准验证
+      session_start: false     # 会话启动不自动扫描
+    auto_validation: true
+    auto_suggestions: true
+
+  git_integration:
+    enabled: true
+    pre_commit_hooks: ["standards_validation", "permission_check"]
+    commit_message_templates: true
+    branch_protection: ["main", "develop"]
+
+  ide_integration:
+    xcode:
+      enabled: true
+      build_phase_scripts: true
+      analyzer_integration: true
+
+  ci_cd:
+    enabled: true
+    validation_on_pr: true        # PR时强制验证
+    auto_fix_on_merge: false      # 合并时不自动修复（需人工确认）
+    notification_channels: ["slack", "email"]
+
+  feishu_sync:
+    enabled: true
+    sync_interval_hours: 24       # 每天同步一次飞书文档
+    auto_update_standards: true   # 自动更新标准规则
+    document_ids: []              # 填入飞书文档ID
+```
+
+---
+
+## 配置管理API
+
+```python
+from scripts.config_manager import get_config_manager
+
+# 获取单例配置管理器
+config_mgr = get_config_manager(config_dir="config")
+
+# 加载配置（自动优先YAML，fallback JSON）
+config = config_mgr.load_config()
+
+# 更新特定配置段（不影响其他配置）
+config_mgr.update_config_section("ai_assist_config", {
+    "max_suggestions_per_request": 15,
+    "cache_ttl_seconds": 900
+})
+
+# 验证配置完整性
+errors = config_mgr.validate_config()
+if errors:
+    print(f"配置错误: {errors}")
+
+# 保存（自动创建备份）
+config_mgr.save_config(backup=True)
+
+# 导出为指定格式
+output_path = config_mgr.export_config(format="json", output_file="config_export.json")
+```
+
+### 配置备份机制
+
+每次保存配置时自动创建带时间戳的备份：
+```
+config/
+├── xp_ai_coding_config.yaml       # 当前配置
+└── backups/
+    ├── xp_ai_coding_config_20240101_120000.yaml
+    └── xp_ai_coding_config_20240102_090000.yaml
+```

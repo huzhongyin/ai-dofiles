@@ -1,0 +1,29 @@
+# 车型配置四层覆盖
+
+## 元信息
+- 触发关键词: ["XPCarAbilityConfig", "配置覆盖", "OCM配置", "车型配置", "能力配置", "ConfigManager"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+车型能力配置有严格的四层覆盖优先级（从低到高）：
+
+```
+基础默认值 (baseCarAbilityConfigDictionary)
+    ↓ 被覆盖
+车型配置字典 (getCarAbilityConfigDictionary)  — 各子类重写
+    ↓ 被覆盖
+扩展车型配置 (expandConfigDictionary:)        — D55A/E28B 等变体
+    ↓ 被覆盖
+OCM 远程配置                                  — 云端动态下发
+```
+
+**关键约束**:
+- 修改基类属性影响**所有 15+ 车型**
+- 扩展车型通过 `expandConfigDictionary:` 叠加差异，不要修改基础车型配置
+- OCM 远程配置可动态覆盖任何属性，优先级最高
+
+**新增车型**: 必须创建 `XP<型号>CarAbilityConfig` 子类并在工厂方法中注册
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/XPCarAbilityConfig/`

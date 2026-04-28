@@ -1,0 +1,159 @@
+# XPMotors iOS — AI 知识库索引
+
+> 最后更新: 2026-04-20 (五层分布式知识体系，数据同步 .ai-engineering/ v3.0)
+> 说明: 本文件是 AI 知识库的全局导航，knowledge-recall Skill 会首先读取此文件
+
+---
+
+## 五层规范体系
+
+> 由 `knowledge-recall` skill 按「路径 + 关键词 + 依赖图」三路触发分层加载。
+
+| 层级 | 范围 | 知识库入口 | CLAUDE 规范入口 |
+|------|------|-----------|-----------------|
+| L1 Project 根 | XPMotors iOS 主仓全局 | `.ai-knowledge/` (本文件) + `.ai-knowledge/specs/constitution.md` | `CLAUDE.md` + `.claude/rules/project-common.md` |
+| L2 主工程 app | `XiaoPengQiChe/` | `XiaoPengQiChe/.ai-knowledge/` | `XiaoPengQiChe/.claude/CLAUDE.md` |
+| L3 Target | `XiaoPengQiChe/**/<target>/` | `.claude/targets/<target>/` | `.claude/targets/<target>/CLAUDE.md` |
+| L4 Submodule | `submodule/<name>/` (独立仓) | `submodule/<name>/.ai-knowledge/` | `submodule/<name>/.claude/CLAUDE.md` |
+| L5 LocalPod | `LocalPods/<pod>/` | `LocalPods/<pod>/.ai-knowledge/` | `LocalPods/<pod>/.claude/CLAUDE.md` |
+
+**权威入口**：
+- 模块注册表（单一数据源）：[`module-registry.md`](./module-registry.md)
+- 架构设计文档：[`docs/superpowers/specs/2026-04-17-spec-coding-tiered-architecture-design.md`](../docs/superpowers/specs/2026-04-17-spec-coding-tiered-architecture-design.md)
+- 架构验证报告：[`docs/superpowers/specs/2026-04-17-spec-coding-tiered-architecture-validation.md`](../docs/superpowers/specs/2026-04-17-spec-coding-tiered-architecture-validation.md)
+
+---
+
+## 模块 Context 文档（15 篇，已分发至各 submodule/.ai-knowledge/）
+> 原路径: `.ai-knowledge/modules/` — 已清空，文档已下沉至各模块层级
+
+| 模块 | 当前路径 | 状态 | 说明 |
+|------|---------|------|------|
+| XPBLEDataProcessor | `submodule/XPBLEDataProcessor/.ai-knowledge/` | ✅ L4 | 蓝牙数据解析与组装库（C++/OC） |
+| MQTTPublisher | `submodule/XPMQTTLibrary/.ai-knowledge/` | ✅ L4 | MQTT 远程连接与消息收发层 |
+| XPCarAbilityConfig | `submodule/XPCarControlCore/.ai-knowledge/` | ✅ L4 | 差异化能力配置层（OC，100+ 属性） |
+| VehicleConnection | `submodule/XPVehicleSDK/.ai-knowledge/` | ✅ L4 | 车辆连接层协议（BLE/TCP/NFC） |
+| BaseVehicle | `submodule/XPVehicleSDK/.ai-knowledge/` | ✅ L4 | 基础车辆协议（含 XiaopengVehicle/MonaVehicle） |
+| VehicleManager | `submodule/XPVehicleSDK/.ai-knowledge/` | ✅ L4 | 车辆管理器（切车/列表/生命周期） |
+| XPVehicleExt | `submodule/XPVehicleExt/.ai-knowledge/` | ✅ L4 | 车端扩展（BLEKey/Xcombo/AI日历/行程/WiFi） |
+| XPPollingSDK | `submodule/XPPollingSDK/.ai-knowledge/` | ✅ L4 | 蓝牙无感进入/闭锁 SDK（OC/C++ 混编） |
+| XPCarControlCore | `submodule/XPCarControlCore/.ai-knowledge/` | ✅ L4 | 车控业务核心层（纯 OC） |
+| XPCarBusiCH | `submodule/XPCarBusiCH/.ai-knowledge/` | ✅ L4 | 车控业务国内版资源壳（纯 OC） |
+| XPNetwork | — (远程 Pod，待迁移) | ✅ 文档已生成 | HTTP 网络请求统一封装层（纯 OC） |
+| XPBucket | — (远程 Pod，待迁移) | ✅ 文档已生成 | 基础工具箱（远程 Pod） |
+| XPAppBiz | — (本地 Pod，待迁移) | ✅ 文档已生成 | App 级业务公共组件 |
+| XPCarControlUtils | — (远程 Pod，待迁移) | ✅ 文档已生成 | 车控 SDK 工具集 |
+| XPBase_Router | `LocalPods/XPBase_Router/.ai-knowledge/` | ✅ L5 | App 路由导航框架 |
+
+## 业务术语映射
+> 路径: `.ai-knowledge/term-mapping.md`
+
+| 域 | 覆盖术语数 | 状态 |
+|----|-----------|------|
+| 车控核心域 | 16 | ✅ 已完成 |
+| 蓝牙钥匙域 | 5 | ✅ 已完成 |
+| 泊车域 | 5 | ✅ 已完成 |
+| 充电域 | 4 | ✅ 已完成 |
+| 服务层 | 7 | ✅ 已完成 |
+| 组件层 | 11 | ✅ 已完成 |
+| 子模块 | 7 | ✅ 已完成 |
+
+## 知识点（根级 4 条 + 模块专属已下沉至 submodule 级）
+> 路径: `.ai-knowledge/knowledge-points/`（根级通用）+ `submodule/<name>/.ai-knowledge/knowledge-points/`（模块专属）
+> 格式: `*.kp.md`，每个文件含触发关键词 + 分类 + 优先级 + 内容
+> 注意: 以下仅列出根级通用知识点。模块专属 KP 见各 submodule/.ai-knowledge/ 下的索引
+
+### 工程规范域（3 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| OC/Swift 互操作规范 | `oc-swift-bridge.kp.md` | OC调用Swift, @objc, Bridging-Header | 高 |
+| submodule 独立仓库管理 | `submodule-management.kp.md` | submodule, 独立仓库, git submodule | 高 |
+| 存量拼写错误不修改 | `legacy-typo-no-rename.kp.md` | VEVeihcle, 拼写错误, remuseBlePolling | 中 |
+
+### 通用功能域（1 条）
+| 知识点 | 文件 | 触发关键词 | 优先级 |
+|--------|------|------------|--------|
+| GRDB 数据库使用 | `grdb-database-usage.kp.md` | GRDB, XPDBManager, 数据库 | 中 |
+
+**根级知识点总计: 4 条**
+
+### 已下沉的模块专属 KP 分布
+
+| submodule | KP 数量 | 涵盖域 |
+|-----------|---------|--------|
+| XPBLEDataProcessor | N | BLE 蓝牙通信 |
+| XPMQTTLibrary | N | MQTT 远程通信 |
+| XPVehicleSDK | N | 车控架构 + Combine |
+| XPCarControlCore | 5+ | 车型差异化配置 |
+| XPVehicleExt | 3+ | AI日历/文件传输/Extension 模式 |
+| XPPollingSDK | N | Polling 无感进入 |
+
+> `N` 表示在之前 tiered architecture 下沉时已移入，具体数量见各 submodule 内的索引。
+
+## 踩坑记录（根级 2 文件 + 模块专属已下沉至 submodule 级）
+> 路径: `.ai-knowledge/pitfalls/`（根级通用）+ `submodule/<name>/.ai-knowledge/pitfalls/`（模块专属）
+
+| 记录 | 文件 | 涉及模块 |
+|------|------|----------|
+| OC/Swift 互操作踩坑 | `pitfalls/oc-swift-interop.md` | 全局 |
+| Spec 流程踩坑 | `pitfalls/spec-workflow.md` | Spec 驱动开发全流程 |
+
+**注意**: BLE/MQTT/切车/Polling/配置 等模块专属踩坑已下沉至对应 submodule/.ai-knowledge/pitfalls/
+
+## Spec 驱动开发体系
+> 路径: `.ai-knowledge/specs/`
+
+### 项目宪法
+| 文件 | 用途 | 说明 |
+|------|------|------|
+| `specs/constitution.md` | 项目宪法（最高优先级约束） | 6 大约束域：架构分层、语言策略、车控安全、共版设计、代码质量、知识库维护 |
+
+### Spec 模板
+| 模板 | 文件 | 阶段 | 用途 |
+|------|------|------|------|
+| 变更提案模板 | `specs/template-proposal.md` | Why/What | 需求概述、影响分析、疑问点机制、知识关联 |
+| 技术方案模板 | `specs/template-design.md` | How | 调用链路、数据模型、状态管理、Constitution 检查 |
+| 任务清单模板 | `specs/template-tasks.md` | Execute | 分 Phase 任务拆解、提交计划、验证步骤、知识沉淀 |
+
+### Spec 案例（2/3 完成）
+| 案例 | 目录 | 状态 |
+|------|------|------|
+| BLE V3 RT Protocol | `specs/ble-v3-rt-protocol/` | ✅ F1-doc 97/A, F1-code A/95 |
+| CarKey Freeze Private Key Strategy | `specs/carkey-freeze-private-key-strategy/` | ✅ 完成 |
+
+### Spec Skills
+| Skill | 路径 | 触发关键词 | 说明 |
+|-------|------|------------|------|
+| spec-proposal | `.claude/skills/spec-proposal/` | 提案, proposal, 需求分析 | 6 阶段：Constitution 加载→知识召回→影响分析→疑问点→生成→确认 |
+| spec-design | `.claude/skills/spec-design/` | 技术方案, design, 调用链 | 5 阶段：上下文加载→调用链分析→方案设计→Constitution 检查→确认 |
+| spec-tasks | `.claude/skills/spec-tasks/` | 任务清单, tasks, 开始实施 | 5 阶段：上下文加载→任务拆解→约束注入→生成→输出 |
+
+## L5 自进化体系
+> 知识飞轮：自感知 → 自修复 → 自增长
+
+### 自进化 Skills
+| Skill | 路径 | 触发关键词 | 说明 |
+|-------|------|------------|------|
+| post-task-review | `.claude/skills/post-task-review/` | 沉淀, review, 总结, 任务完成 | 5 阶段：修改回顾→差异检测(新发现/纠错/补充)→沉淀决策→执行沉淀→记录日志 |
+| knowledge-audit | `.claude/skills/knowledge-audit/` | 知识审计, 知识体检, 审计 | 8 阶段：加载索引→新鲜度检测→覆盖度检测→关键词质量→文档同步→审计报告→修复→日志 |
+| spec-quality-score | `.claude/skills/spec-quality-score/` | 质量评测, spec评分, F1-doc | 7 阶段：加载Spec→F1-doc评分(4维)→F1-code评分→效率评测→评分卡→趋势分析→日志 |
+
+### 进化日志
+| 文件 | 用途 | 说明 |
+|------|------|------|
+| `evolution-log.md` | 进化动作日志 | 记录所有 knowledge-recall/post-task-review/knowledge-audit/spec-quality-score 事件 |
+
+### 评测产物目录
+| 目录 | 用途 | 说明 |
+|------|------|------|
+| `audit-reports/` | 审计报告 | knowledge-audit 生成的知识库健康检查报告 |
+| `quality-scores/` | Spec 评分卡 | spec-quality-score 生成的 F1-doc/F1-code 评分记录 |
+
+## 五层架构支撑 Skills
+> 2026-04-20 新增，支持分层架构运维
+
+| Skill | 路径 | 触发关键词 | 说明 |
+|-------|------|------------|------|
+| spec-coding-scaffold | `.claude/skills/spec-coding-scaffold/` | 脚手架, scaffold, 初始化 | 为 submodule/LocalPod 生成 .claude/CLAUDE.md + .ai-knowledge/ 模板 |
+| deps-sync | `.claude/skills/deps-sync/` | 依赖同步, deps-sync | 检查 module-registry.md ↔ 实际代码依赖一致性 |
+| deps-lint | `.claude/skills/deps-lint/` | 依赖检查, deps-lint | 检测未注册依赖、循环依赖、废弃依赖 |

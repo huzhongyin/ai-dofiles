@@ -1,0 +1,38 @@
+# iOS 架构规则
+
+## MVVM 架构
+- 新功能模块使用 MVVM 架构，ViewController 只负责 UI 绑定和生命周期，业务逻辑放在 ViewModel
+- 禁止在 ViewController 中直接操作数据库、发起网络请求或持有大量业务状态
+- ViewModel 对外暴露数据通过 @Published 属性或回调闭包，不直接操作 UI
+
+## 继承规范
+- 所有 UIViewController 子类继承自项目基类 XPBaseViewController（OC）或对应 Swift 基类
+- 所有 UIView 子类继承自 XPBaseView（如有）或直接 UIView
+- 禁止多层继承超过 3 层，优先使用协议组合（Protocol Composition）
+
+## 模块化边界
+- 新功能放在 `XiaoPengQiChe/Modules/` 对应子目录下，一个功能一个目录
+- 公共组件放在 `LocalPods/` 对应 Pod 中，不要在 Modules 之间直接互相引用
+- 模块间通信使用 Router 路由或 NotificationCenter，禁止直接 import 其他 Module 的内部类
+- submodule 中的代码（XPVehicleSDK 等）有独立仓库，修改需单独提交
+
+## 网络请求
+- 所有 HTTP 请求必须通过项目封装的网络层（XPNetworking / VehicleHttpRequestManager），禁止直接使用 URLSession 或 Alamofire
+- 新增请求路径在 VehicleHttpRequestPath 枚举中定义
+- 响应 Model 放在 HTTPRequest/Model/ 目录下，使用 Codable 协议
+
+## 车控 SDK（submodule/XPVehicleSDK）
+- 车控指令必须通过 VehiclePresenter 协议的 `sendControlCommand` 方法发送
+- 禁止绕过 VehicleConnection 层直接操作 BLE 或 MQTT
+- 修改 VehicleConnection / BaseVehicle / VehicleManager 层需确认调用链路完整性
+
+## 数据持久化
+- 轻量级数据使用 MMKV（项目已集成），禁止使用 UserDefaults 存储大量数据
+- 敏感数据（token、密钥等）存储到 Keychain
+- 缓存数据使用项目封装的 CacheManager
+
+## 条件编译
+- 国内/国际版差异使用 `#if !APP_ENV_INTL` / `#if APP_ENV_INTL`
+- Mona/小鹏差异使用 `#if MONA_APP` / `#if !MONA_APP`
+- 调试代码使用 `#if DEBUG`
+- 新增接口需处理 Mona 兼容（不支持的接口返回错误码而非崩溃）

@@ -1,0 +1,73 @@
+# 五层规范架构合理性审计报告
+
+> 审计日期: 2026-04-17
+> 审计范围: L1-L5 全层架构、module-registry、knowledge-recall、规则文件
+
+---
+
+## 1. 审计发现摘要
+
+| # | 类别 | 严重度 | 描述 | 建议 |
+|---|------|--------|------|------|
+| F1 | L1 冗余 | ⚠️ 中 | `ios-architecture.md` / `ios-coding.md` 内容已完整下沉到 L2，但 L1 副本未删除 | 删除 L1 副本（仅保留标注注释指向 L2） |
+| F2 | L1 临时说明过时 | ℹ️ 低 | CLAUDE.md §6 提到 `ios-vehicle-sdk.md` 但该文件已删除 | 更新临时说明 |
+| F3 | Spec 产物位置 | ℹ️ 低 | 2 个已完成 spec 存放在 L1 而非逻辑归属层 | 已通过 _metadata.yml 标注，待 --scope 支持后新 spec 直接输出到正确层 |
+| F4 | Target 不完整 | ⚠️ 中 | 仅 4/7 target 有骨架（缺 XP3rdShareLocation / XPMirrorExtension / XPPushServiceExtension） | 子项目 ⑤ 检查目录是否存在并补齐 |
+| F5 | LocalPod 骨架缺失 | ⚠️ 中 | XPAppBiz / XPBusiness_Charge 等已注册但无 .claude/ 目录 | 子项目 ⑤ 补齐 |
+| F6 | keywords 盲区 | ℹ️ 低 | "首页"/"Home" 未被任何模块关键词覆盖（UC1 仅靠路径命中） | 考虑在 XiaoPengQiChe 的 keywords 中补充高频业务关键词 |
+
+---
+
+## 2. 详细分析
+
+### 2.1 L1 规则文件冗余（F1）
+
+**现状：**
+- `.claude/rules/ios-architecture.md` — 已标注"待下沉"，内容 = L2 `architecture.md` + 车控 SDK 章节（已下沉到 L4）
+- `.claude/rules/ios-coding.md` — 已标注"待下沉"，内容 = L2 `coding-style.md`（完全重叠）
+
+**问题：** Claude Code 会自动加载 `.claude/rules/` 下的所有文件作为 project instructions。这意味着 L1 和 L2 的规则会**重复加载**，浪费上下文 token。
+
+**建议：** 删除 L1 副本。L2 的 `architecture.md` 和 `coding-style.md` 已是完整版本。如果担心历史追溯，git log 可查看。
+
+### 2.2 CLAUDE.md 临时说明过时（F2）
+
+`CLAUDE.md` §6 写道：
+> `.claude/rules/ios-architecture.md` / `ios-coding.md` / `ios-vehicle-sdk.md` 为存量规则，将由后续 Task 下沉到对应层级
+
+实际上 `ios-vehicle-sdk.md` 已在上一轮删除（内容已下沉到 `submodule/XPVehicleSDK/.claude/rules/`）。需要更新此说明。
+
+### 2.3 Registry keywords 覆盖度（F6）
+
+对照 knowledge-recall 的 3 个 UC：
+- **UC1（纯 UI：首页卡片）**：路径命中 `XiaoPengQiChe`✅，关键词"首页"未被覆盖 ⚠️（仅靠路径命中可工作，但关键词冗余保护缺失）
+- **UC2（BLEKey 鉴权日志）**：路径 + 关键词"蓝牙鉴权"双重命中 ✅
+- **UC3（XPVehicleSDK 切车）**：路径 + 关键词"切车"双重命中 ✅
+
+建议在 `XiaoPengQiChe` 的 keywords 中补充常见业务关键词：`[首页, Home, 充电, Charge, 设置, Setting]`
+
+### 2.4 架构整体合理性评估
+
+| 维度 | 评估 | 说明 |
+|------|------|------|
+| L1 瘦身程度 | ✅ 合理 | CLAUDE.md 49 行，聚焦目录地图和加载索引 |
+| L2 内容完整性 | ✅ 良好 | MVVM/编码/架构规范已完整迁移 |
+| L4 pilot 质量 | ✅ 良好 | XPVehicleSDK 有 7 个 rules + 填充的 constitution |
+| L5 pilot 质量 | ⚠️ 待确认 | XPBase_Router 仅有 CLAUDE.md，constitution 需检查 |
+| knowledge-recall | ✅ 良好 | 三路触发 + trigger_keywords 精细化 + depth ≤ 2 |
+| module-registry | ✅ 良好 | 37 模块注册，字段齐全 |
+| deps.yml 机制 | ✅ 良好 | trigger_keywords 有效减少噪声加载 |
+
+---
+
+## 3. 建议修改优先级
+
+1. **立即修改（本轮 T1.3）：** F1 删除 L1 冗余规则文件 + F2 更新临时说明
+2. **子项目 ⑤ 处理：** F4 target 骨架补齐 + F5 LocalPod 骨架补齐
+3. **可选优化：** F6 keywords 补充
+
+---
+
+## 4. 结论
+
+五层架构整体设计合理，核心机制（knowledge-recall + module-registry + deps.yml + trigger_keywords）运转正常。主要问题是**上一轮下沉的收尾工作未完成**（L1 冗余规则文件未删除、临时说明未更新），以及**骨架生成不完整**（部分 target/LocalPod 缺失）。这些都是增量完善而非架构缺陷。

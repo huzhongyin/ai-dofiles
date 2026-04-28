@@ -1,0 +1,166 @@
+---
+name: spec-coding-scaffold
+description: 为五层规范架构中的任一模块（project/app/target/submodule/localpod）生成标准规范骨架，自动探测语言组合与依赖、注册到 module-registry
+---
+
+> **This skill requires `project-config.yml`.** See `project-config.example.yml` for setup.
+
+## 触发条件
+
+当任务涉及以下关键词时激活: "搭建规范", "scaffold", "spec-coding-scaffold", "规范骨架", "添加模块规范", "初始化模块 spec", "新模块接入五层规范"。
+
+本 skill 只产出骨架文件与注册记录，不负责填充具体宪法条款、变体判断、接口契约等业务内容，这些内容由 Phase 5 "待人工精修清单" 引导使用者后续手工补齐。
+
+## 输入参数
+
+- `--level`: `project` | `app` | `target` | `submodule` | `localpod` （必填）
+- `--path`: 目标目录相对主工程根路径（必填），如 `$SUBMODULE_DIR/SomeSDK`
+- `--name`: 模块名称（必填，后续作为 module-registry id），如 `SomeSDK`
+- `--dry-run`: 仅输出将生成的内容，不落盘、不写 registry（可选）
+
+## 前置条件
+
+1. 主工程根存在 `$KNOWLEDGE_DIR/module-registry.md`，且含 `<!-- scaffold:begin -->` / `<!-- scaffold:end -->` 标记区
+2. 主工程根存在 `.claude/skills/spec-coding-scaffold/templates/` 下 7 份模板：
+   - `CLAUDE.project.md` / `CLAUDE.app.md` / `CLAUDE.target.md` / `CLAUDE.submodule.md` / `CLAUDE.localpod.md`
+   - `constitution.template.md`
+   - `deps.schema.yml`
+3. 所有模板的占位符统一为 `{{MODULE_NAME}}`（后续可扩展 `{{LEVEL}}` / `{{PATH}}` 等）
+
+## 执行步骤
+
+### Phase 1: 参数校验
+
+1. 校验 `--level` 合法，只能取 5 个枚举值之一；非法值直接停止并打印 usage
+2. 校验 `--path` 在主工程根下真实存在（目录），不存在则停止
+3. 读取 `$KNOWLEDGE_DIR/module-registry.md`，解析 `<!-- scaffold:begin -->` / `<!-- scaffold:end -->` 之间的已注册 id 列表：
+   - 若 `--name` 已作为 id 登记 → 停止并提示"模块已注册，若需重建请先移除对应 block"
+   - 若标记区不存在 → 停止并提示"module-registry 缺失 scaffold 标记区，请手动修复"
+4. 校验对应层模板文件存在：`templates/CLAUDE.<level>.md` / `templates/constitution.template.md` / `templates/deps.schema.yml`
+
+### Phase 2: 目标目录探测
+
+5. 扫描 `--path` 下所有源文件扩展名分布：`.swift` / `.m` / `.mm` / `.h` / `.cpp` / `.cc` / `.hpp`
+6. 依扩展名组合推断语言标签（按出现数量组合，择优输出）：
+   - 仅 .swift → `Swift-only`
+   - 仅 .m/.h → `OC-only`
+   - .m/.h + .swift → `OC+Swift`
+   - .m/.mm + .cpp → `OC+C++`
+   - .swift + .cpp (通过桥接) → `Swift+C++`
+   - 三者都有 → `OC+Swift+C++`
+7. 依赖抽取：
+   - 若存在 `*.podspec`：解析 `s.dependency` 获取依赖模块名列表
+   - 否则读取项目依赖管理文件（如主工程 `Podfile`），定位 `--path` 对应 target 的依赖段
+8. 扫描源码 `#import` / `@import` / `import` 语句，与已注册 module-registry id 做交叉匹配，产出"跨模块引用列表"
+9. 判断是否独立仓 `owner_repo`：
+   - `level=submodule` → 必为 `subrepo`
+   - 其他层：检查 `.gitmodules` 是否登记了 `--path`；命中则 `subrepo`，否则 `main`
+10. 核心依赖启发式（影响 keywords 默认值）：根据 `project-config.yml` 中的 `core_sdk_imports` 列表，若源文件里出现任一匹配的 import，标记 `touches_core_sdk = true`
+
+### Phase 3: 生成骨架
+
+11. 依据 `--level` 选对应 `templates/CLAUDE.<level>.md`，将占位符 `{{MODULE_NAME}}` 替换为 `--name`。在填充后的 CLAUDE.md "语言与架构规范" 节补充探测结论：
+    - 写入 Phase 2 推断的语言组合一句话，如"本模块检测到 OC+Swift 混编，请补充 bridging-header 约束"
+    - 若 `touches_core_sdk = true`，在"关键依赖"节加一行"依赖核心 SDK 链路，见 deps.yml"
+12. 输出文件清单（默认情况）：
+    - `<path>/.claude/CLAUDE.md`
+    - `<path>/.claude/rules/.gitkeep`
+    - `<path>/$KNOWLEDGE_DIR/specs/constitution.md`（基于 `templates/constitution.template.md`，替换 `{{MODULE_NAME}}`）
+    - `<path>/$KNOWLEDGE_DIR/modules/.gitkeep`
+    - `<path>/$KNOWLEDGE_DIR/pitfalls/.gitkeep`
+    - `<path>/$KNOWLEDGE_DIR/deps.yml`（由 `templates/deps.schema.yml` 注入 Phase 2 探测到的依赖作为初稿；`critical_constraints` 显式留 `TODO` 注释）
+13. 层级特殊路径：
+    - `--level=target`：输出位置改为主工程根下 `.claude/targets/<name>/...`，具体为：
+      - `.claude/targets/<name>/CLAUDE.md`
+      - `.claude/targets/<name>/rules/.gitkeep`
+      - `.claude/targets/<name>/$KNOWLEDGE_DIR/specs/constitution.md`
+      - `.claude/targets/<name>/$KNOWLEDGE_DIR/modules/.gitkeep`
+      - `.claude/targets/<name>/$KNOWLEDGE_DIR/pitfalls/.gitkeep`
+      - `.claude/targets/<name>/$KNOWLEDGE_DIR/deps.yml`
+      - 若 `.claude/targets/` 不存在，自动创建
+    - `--level=submodule`：落盘后必须额外打印醒目提示"本骨架位于 submodule 独立仓，完成后需在 `<path>` 子仓内单独 commit，不要只在主仓 commit"
+14. `--dry-run`：跳过所有写盘，仅把预计产出的文件路径 + 内容摘要输出给用户审阅
+
+### Phase 4: 注册到 module-registry
+
+15. 构造待写入的 YAML block：
+
+    ```yaml
+    - id: <name>
+      level: <level>
+      path: <path>
+      knowledge: <path>/$KNOWLEDGE_DIR/            # target 层改为 .claude/targets/<name>/$KNOWLEDGE_DIR/
+      claude_md: <path>/.claude/CLAUDE.md         # target 层改为 .claude/targets/<name>/CLAUDE.md
+      keywords: [<name>, <path 末段>]              # 若 touches_core_sdk=true，追加核心 SDK 相关关键词
+      owner_repo: <subrepo|main>
+    ```
+
+16. 在 `$KNOWLEDGE_DIR/module-registry.md` 的 `<!-- scaffold:begin -->` 与 `<!-- scaffold:end -->` 之间 append 该 block，保持已有 block 顺序，仅在末尾追加；不改动标记区外的任何内容
+17. `--dry-run` 下跳过写入，只打印将要 append 的 block
+
+### Phase 5: 输出待人工精修清单
+
+18. 无论是否 dry-run，最后必须打印如下结构：
+
+    ```
+    [scaffold] 已生成 <N> 个文件：
+      - <file list>
+    [scaffold] 已在 module-registry 注册 <name> (level=<level>, owner_repo=<...>)
+    [scaffold] 以下内容需要人工精修：
+      1. constitution.md §1 模块定位 —— 替换 TODO 为一句话描述
+      2. constitution.md §6 与其他模块的接口契约 —— 明确对外 API
+      3. deps.yml critical_constraints —— 当前仅自动推断了依赖 id，关键约束锚点需手工指定
+      4. module-registry.md keywords —— 当前为默认值（<name> + <path 末段>），精修以提高 knowledge-recall 命中率
+    [scaffold] level=submodule 时额外提示：
+      本骨架位于子仓，完成后需在 <path> 单独 commit
+    ```
+
+19. 探测启发式可能出错（如漏识别依赖、语言组合判断偏差），清单必须显式提醒用户核查 Phase 2 的探测结论
+
+## 特殊说明
+
+- `--dry-run` 仅跳过 Phase 3/4 落盘，Phase 1/2/5 仍完整执行
+- skill 产物是"骨架 + 注册记录"，**不代替人工审校**
+- 不要自动执行 `git add` / `git commit`，由调用方（主控 agent 或用户）决定何时入库
+- 骨架里不应预填任何业务层内容（变体判断、具体宪法条款、pitfall 案例）；这些通过 Phase 5 提示用户补齐或由其他 skill（spec-design / post-task-review 等）后续注入
+- CLAUDE.md 填充后只含模板骨架 + 本次探测摘要，不要写死项目特定的业务策略
+
+## 冲突与错误处理
+
+- 若 `<path>/.claude/CLAUDE.md`（或 target 层对应路径下的 CLAUDE.md）已存在：直接报错并停止，提示"文件已存在，本轮不支持 --force，若需重建请先人工删除"
+- 若 module-registry 缺失 scaffold 标记区：报错并提示手动修复，不要擅自补标记
+- 若 `--level=target` 但主工程不存在 `.claude/targets/` 目录：自动创建该目录
+- 若 `--path` 下无任何源文件：Phase 2 语言组合标记为 `unknown`，deps.yml dependencies 留空并在 Phase 5 清单中提示
+
+## 产物示例
+
+示例调用：`/spec-coding-scaffold --level submodule --path $SUBMODULE_DIR/SomeSDK --name SomeSDK`
+
+产物预期：
+
+- 落盘文件 6 个：
+  - `$SUBMODULE_DIR/SomeSDK/.claude/CLAUDE.md`
+  - `$SUBMODULE_DIR/SomeSDK/.claude/rules/.gitkeep`
+  - `$SUBMODULE_DIR/SomeSDK/$KNOWLEDGE_DIR/specs/constitution.md`
+  - `$SUBMODULE_DIR/SomeSDK/$KNOWLEDGE_DIR/modules/.gitkeep`
+  - `$SUBMODULE_DIR/SomeSDK/$KNOWLEDGE_DIR/pitfalls/.gitkeep`
+  - `$SUBMODULE_DIR/SomeSDK/$KNOWLEDGE_DIR/deps.yml`
+- `$KNOWLEDGE_DIR/module-registry.md` 追加 1 个 YAML block，`owner_repo: subrepo`
+- 控制台打印：独立仓 commit 提醒 + 待人工精修清单
+
+示例调用：`/spec-coding-scaffold --level target --path $APP_NAME --name $APP_NAME`
+
+产物预期：
+
+- 落盘文件落到 `.claude/targets/$APP_NAME/...`（而非源码目录下）
+- registry block 的 `claude_md` / `knowledge` 指向 `.claude/targets/$APP_NAME/...`
+- `owner_repo: main`
+
+## 与其他 skill 的协作
+
+- 本 skill 是五层规范落地的"脚手架起点"
+- 骨架生成后：
+  - 用 `spec-proposal` / `spec-design` / `spec-tasks` 产出该模块的具体规范内容
+  - 用 `knowledge-recall` 验证 registry keywords 是否能命中典型任务描述
+  - 用 `knowledge-audit` 周期性检测骨架文件是否长期保持 TODO 未精修
+  - 用 `post-task-review` 将踩坑案例归档到 `$KNOWLEDGE_DIR/pitfalls/`

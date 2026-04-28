@@ -1,0 +1,31 @@
+module: XiaoPengQiChe
+depends_on:
+  - id: XPVehicleSDK
+    reason: 车控指令下发与状态回调
+    trigger_keywords: [车控, 蓝牙, BLE, MQTT, 鉴权, VehiclePresenter, 车状态]
+    critical_constraints:
+      - submodule/XPVehicleSDK/.ai-knowledge/specs/constitution.md#车控指令流程
+      - submodule/XPVehicleSDK/.ai-knowledge/specs/constitution.md#蓝牙安全
+  - id: XPBase_Router
+    reason: Module 间跳转
+    trigger_keywords: [路由, 跳转, Router, Deeplink]
+    critical_constraints:
+      - LocalPods/XPBase_Router/.ai-knowledge/specs/constitution.md#路由注册约定
+  - id: XPCarControlCore
+    reason: OC 车控业务封装层
+    trigger_keywords: [车控, OC 车控封装, CarControl]
+  - id: XPPollingSDK
+    reason: Polling SDK（OC/C++ 混编）依赖
+    trigger_keywords: [Polling, 轮询, 车状态轮询]
+  - id: XPBLEDataProcessor
+    reason: 蓝牙数据解析
+    trigger_keywords: [BLE, 蓝牙解析, 数据帧]
+  - id: XPBase_Common
+    reason: 基础工具库
+    trigger_keywords: [基础工具, Common]
+  - id: XPKits
+    reason: 工具集
+    trigger_keywords: [Kits, 工具集]
+  - id: XPBase_UI
+    reason: 基础 UI 组件
+    trigger_keywords: [基础UI, Toast, Alert, XPBaseView]

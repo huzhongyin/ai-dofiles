@@ -1,0 +1,7 @@
+[marketplaces.openai-bundled]
+last_updated = "2026-04-21T07:38:50Z"
+source_type = "local"
+source = "/Users/xpeng/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[plugins."computer-use@openai-bundled"]
+enabled = true

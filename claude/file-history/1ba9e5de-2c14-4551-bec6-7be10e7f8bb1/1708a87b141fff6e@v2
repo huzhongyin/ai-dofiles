@@ -1,0 +1,49 @@
+# xp-spec-framework 项目配置模板
+# 复制此文件到你的项目根目录，重命名为 project-config.yml，按实际情况填写
+
+# 项目基本信息
+project_name: "YourProject"
+prefix: ""                          # 类名前缀（如 XP、MN），留空则无前缀
+
+# 目录结构
+knowledge_dir: ".ai-knowledge"      # 知识库根目录
+specs_dir: ".ai-knowledge/specs"    # Spec 产物目录
+rules_dir: ".claude/rules"          # 规则文件目录
+skills_dir: ".claude/skills"        # Skills 目录
+registry_path: ".ai-knowledge/module-registry.md"  # 模块注册表路径
+
+# 模块层级配置
+levels:
+  - name: project
+    description: "项目根"
+  - name: app
+    description: "主工程 App"
+    path_pattern: ""                # 主工程路径（如 "MyApp/"）
+  - name: target
+    description: "Extension Target"
+    path_pattern: ".claude/targets/{name}"
+  - name: submodule
+    description: "Git Submodule"
+    path_pattern: "submodule/{name}"  # 替换为实际路径（如 "Modules/{name}"）
+  - name: localpod
+    description: "本地 Pod/Package"
+    path_pattern: "LocalPods/{name}"  # 替换为实际路径（如 "Packages/{name}"）
+
+# 语言与工具链
+package_manager: "cocoapods"        # cocoapods / spm / gradle / npm
+languages: ["swift", "objc"]        # 项目使用的语言
+
+# 系统框架排除列表（deps-lint 用）
+system_frameworks:
+  - UIKit
+  - Foundation
+  - SwiftUI
+  - Combine
+  - CoreLocation
+  - CoreBluetooth
+  - Security
+  - CryptoKit
+  - UserNotifications
+  - WidgetKit
+  - WatchKit
+  - Intents

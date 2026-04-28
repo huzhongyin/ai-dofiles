@@ -1,0 +1,1485 @@
+//
+//  DigitalKeyManager.swift
+//  XPVehicleSDK
+//
+//  Created by Xpeng on 2023/12/5.
+//
+
+import Foundation
+import Combine
+
+@objc(XPDigitalKeyManagerDelegate)
+protocol DigitalKeyManagerDelegate : NSObjectProtocol {
+    @objc optional func willCreateKey(vin: String!, keyCardType: KeyCardType)
+    @objc optional func didCreateKey(vin: String!, keyCardType: KeyCardType, success: Bool)
+    @objc optional func willRemoveKey(vin: String!, keyCardType: KeyCardType)
+    @objc optional func didRemoveKey(vin: String!, keyCardType: KeyCardType, success: Bool)
+    
+    @objc optional func didLoadKeys(vin: String!)
+}
+
+//@objc(XPDigitalKeyManager)
+class DigitalKeyManager: NSObject, DigitalKeyManagerProtocol, ObservableObject, MonaKeyStatusDelegate {
+
+    var uid: UInt64                             // 用户UID
+    @Published public var bleInfo: BLEInfo?     // BLE 信息
+
+    @objc @Published public var digitalKeyList: [DigitalKey] = []
+    
+    var isTboxBad: Bool = false          // TBOX 是否在线
+    
+    private var _selfCalibration: PollingSelfCalibrationProtocol?
+    var selfCalibration: PollingSelfCalibrationProtocol? {
+        return _selfCalibration
+    }
+
+    var cancellables = Set<AnyCancellable>()
+    let keyTypeList: [Int] // KeyCardType 支持的钥匙类型
+    let vehicle: VehicleInfo.Vehicle
+    weak var delegate: DigitalKeyManagerDelegate?
+    var createKeyPlugin: DigitalKeyManagerPluginProtocol?
+    var removeKeyPlugin: DigitalKeyManagerPluginProtocol?
+    let vehiclePreference: VehiclePreference
+    weak var communication: VehicleCommunication?
+    var fetchMacTimer: Timer?
+    static var staticPlugin: [String:DigitalKeyManagerPluginProtocol?] = [:]
+    static let serialPluginQueue = DispatchQueue(label: "com.xpvehicle.sdk.digitalkey.serialQueue")
+    static var keyManagerMap: [KeyCardType: AnyObject] = [
+        KeyCardType.SAFE:IFAAKeyManager.self,
+        KeyCardType.CERT:IFAAKeyManager.self,
+        KeyCardType.SELF:SelfKeyManager.self,
+        KeyCardType.MONA_BLE:MonaKeyManager.self,
+        KeyCardType.NFC_WATCH:NFCKeyManager.self,
+        KeyCardType.SELF_V3:SelfKeyV3Manager.self,
+        KeyCardType.CCC:SelfKeyV3Manager.self
+    ]
+    
+    private var _carKeyPlugin: CarKeyPassAccessProtocol?
+    private var currentCCCVid: String?
+
+    var carKeyPlugin: CarKeyPassAccessProtocol? {
+        guard let cccVid = vehiclePreference.extInfo?.cccVid else { return nil }
+        if !vehiclePreference.function.CCC_DK_THIRD {
+            return nil;
+        }
+        if _carKeyPlugin == nil || currentCCCVid != cccVid {
+            guard CarKeyConditionCheck.isSupportCarKeySoftware(cccVid: vehiclePreference.extInfo?.cccVid, bleKeyVersion: Int(vehiclePreference.abilityConfig.bleKeyVersion.rawValue), isSupportCCC: vehiclePreference.function.CCC_DK_THIRD) else { return nil }
+            let plugin = CarKeyPassAccesser(cccVid: cccVid, delegate: self)
+            _carKeyPlugin = plugin
+            currentCCCVid = cccVid
+            plugin.initConfigure()
+        }
+        return _carKeyPlugin
+    }
+    
+    public init(uid: UInt64, vehicle: VehicleInfo.Vehicle!, keyTypeList: [Int], vehiclePreference: VehiclePreference, communication: VehicleCommunication? = nil) {
+        Log.i("DigitalKeyManager init vin:\(vehicle.vin ?? "")")
+        self.uid = uid
+        self.vehicle = vehicle
+        self.keyTypeList = keyTypeList
+        self.vehiclePreference = vehiclePreference
+        self.communication = communication
+        super.init()
+        
+        loadAllDigitalKey(uid: uid, isFromInit: true)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshDigitalKeyFromNotification), name: VehicleNotification.CallBackConnectAuthError, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(connectStateChanged), name: VehicleNotification.BLEConnectStateChanged, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(networkResumeAction), name: VehicleNotification.NetworkResume, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(tboxRunStateNotification), name: VehicleNotification.tboxRunStateNotification, object: nil)
+        
+        // 自标定协议实现
+        var calibrationVer = BleSelfCalibrationVersion.v1
+        if vehiclePreference.abilityConfig.isSupportPollingV1 == true {
+            calibrationVer = .v1
+        } else if vehiclePreference.abilityConfig.isSupportPollingV2 == true {
+            calibrationVer = .v2
+        } else {
+            calibrationVer = .v3
+        }
+        
+        if let communication = communication {
+            _selfCalibration = SelfCalibrationManger(communication: communication, version: calibrationVer)
+        }
+        
+        CarService.registerMonaKeyListener(listener: self)
+        //        mockDigitalKey("00:60:37:6b:4b:5d")  // BLE_MOCK 本地调试蓝牙件时打开，但不要提交
+        Log.i("DigitalKeyManager init end vin:\(vehicle.vin ?? "")")
+    }
+    
+    deinit {
+        Log.i(tag:"DigitalKeyManager", "DigitalKeyManager deinit")
+        NotificationCenter.default.removeObserver(self)
+        CarService.unregisterMonaKeyListener(listener: self)
+        self.stopTimerMacAddress()
+    }
+    
+    func mockDigitalKey(_ address: String) {
+        let digitalKey = DigitalKey(uid: uid, vin: vehicle.vin ?? "", keyCardType: KeyCardType.SELF, cardNo: "1000")
+        setDigitalKeyList(digitalKeyList: [digitalKey])
+        let bleInfo = BLEInfo()
+        bleInfo.macAddress = address;
+        bleInfo.useScanUUIDs = false
+        digitalKey.bleInfo = bleInfo
+        digitalKey._keyMessageManager = MockKeyMessageManager(uid: self.uid, vin: vehicle.vin ?? "", cardNo: digitalKey.cardNo)
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.repareBleInfo()
+            self?.delegate?.didLoadKeys?(vin: self?.vehicle.vin)
+        }
+    }
+    
+    func setDigitalKeyList(digitalKeyList: [DigitalKey]) {
+        Log.i("更新数字钥匙列表：", digitalKeyList)
+        if (digitalKeyList.count > 0) {
+            self.digitalKeyList = digitalKeyList
+        }
+    }
+    
+    func appendDigitalKey(digitalKey: DigitalKey) -> DigitalKey? {
+        let arr = self.digitalMultiKeyArray(keyCardType: digitalKey.keyCardType)
+        for key in arr {
+            if key.cardNo == digitalKey.cardNo {
+                if let index = self.digitalKeyList.firstIndex(of: key) {
+                    self.digitalKeyList.remove(at: index) // 删除旧钥匙
+                }
+            }
+        }
+        self.digitalKeyList.append(digitalKey)
+        Log.i(tag:"DigitalKeyManager", "  数字钥匙报文剩余:", digitalKey.keyMessageCount() )
+
+        return digitalKey
+    }
+    
+    func repareBleInfo() {
+        var bleInfo: BLEInfo? = nil
+        if self.digitalKey(keyCardType: .SELF) != nil {
+            bleInfo = self.digitalKey(keyCardType: .SELF)!.bleInfo
+        } else if self.digitalKey(keyCardType: .CERT) != nil {
+            bleInfo = self.digitalKey(keyCardType: .CERT)!.bleInfo
+        } else if self.digitalKey(keyCardType: .SAFE) != nil {
+            bleInfo = self.digitalKey(keyCardType: .SAFE)!.bleInfo
+        } else if self.digitalKey(keyCardType: .MONA_BLE) != nil {
+            bleInfo = self.digitalKey(keyCardType: .MONA_BLE)!.bleInfo
+        } else if self.digitalKey(keyCardType: .SELF_V3) != nil {
+            bleInfo = self.digitalKey(keyCardType: .SELF_V3)!.bleInfo
+        }
+        Log.i(tag:"DigitalKeyManager", "设置数字钥匙BLEInfo: ", bleInfo ?? "<Null>")
+        if (self.bleInfo != bleInfo) {
+            self.bleInfo = bleInfo
+        }
+    }
+        
+    // 从数据库中加载该车辆所有的数字钥匙，请求云端数据
+    func loadAllDigitalKey(uid: UInt64!, isFromInit: Bool!) {
+        Log.i(tag:"DigitalKeyManager", "数字钥匙加载 vin: ", self.vehicle.vin ?? "")
+        if (self.vehicle.vin!.count > 0) {
+            // 暂时使用同步加载数据库，不然会出现UI层车辆切换完毕但是钥匙还未Ready，激活按钮状态不对的问题
+            let digitalKeyList = DigitalKey.queryDigitalKeyList(vin: self.vehicle.vin ?? "")
+            Log.i(tag:"DigitalKeyManager", "数字钥匙加载缓存结果(\(digitalKeyList.count)): ", digitalKeyList)
+            setDigitalKeyList(digitalKeyList: digitalKeyList)
+            if let validKey = validBlePrivateKey(){
+                self.bleInfo = validKey.bleInfo
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.repareBleInfo()
+                self?.delegate?.didLoadKeys?(vin: self?.vehicle.vin)
+                self?.requestRemoteKeyList(isFromInit: isFromInit)
+            }
+        }
+    }
+    
+    func requestRemoteKeyList(isFromInit: Bool) {
+        DigitalKeyManager.requestDigitalKeyList(uid: uid, vehicle: self.vehicle, vin: self.vehicle.vin ?? "", vehiclePreference: self.vehiclePreference) { data in
+            self.dealWithRemoteKeys(cards: data?.cardList ?? [], isFromInit: isFromInit, localBleInfoOutsideSDK: nil, noBioVerify: nil, doublesidedAuthCode: nil)
+            if let jsonData = try? JSONEncoder().encode(data),
+               let jsonDict = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+                ProxyManger.shared.dbProxy?.refreshDigitalKeyList?(dataList: jsonDict, uid: self.uid, vin: self.vehicle.vin)
+            }
+           
+            guard let cardList = data?.cardList else {
+                self.carKeyPlugin?.remoteCarKeyChanged(keyIdList: nil, uid: self.uid)
+                return
+            }
+            var keyIdList: [String] = [String]()
+            for card in cardList {
+                if card.cardType == .CCC {
+                    keyIdList.append(card.cardNo ?? "")
+                }
+            }
+            if keyIdList.count == 0 {
+                self.carKeyPlugin?.remoteCarKeyChanged(keyIdList: nil, uid: self.uid)
+            } else {
+                self.carKeyPlugin?.remoteCarKeyChanged(keyIdList: keyIdList, uid: self.uid)
+            }
+        } failed: { error in
+            self.failLoadRemoteDigitalKeyList()
+            guard self.bleInfo == nil else {
+                return
+            }
+            self.fetchMac()
+        }
+    }
+    
+    func failLoadRemoteDigitalKeyList() {
+        if self.digitalKeyList.count == 0{
+            if let keys = ProxyManger.shared.dbProxy?.readDigitalKeyList?() {
+                let cardInfo: BleCardInfo = decodeToModel(dictionary: keys, to: BleCardInfo.self) ?? BleCardInfo()
+                let keyList: [BLEKeyCard]? = cardInfo.cardList ?? []
+                if keyList?.count ?? 0 > 0 {
+                    self.dealWithRemoteKeys(cards: keyList ?? [], isFromInit: true, localBleInfoOutsideSDK: cardInfo.bleInfo, noBioVerify: cardInfo.noBioVerify, doublesidedAuthCode: cardInfo.doublesidedAuthCode)
+                }
+                Log.i("钥匙数据的迁移", "获取到APP旧数据，保存至 sdk 2.0 数据库，钥匙数目\(cardInfo.cardList?.count)个")
+            } else {
+                Log.i("钥匙数据的迁移", "APP旧数据为空")
+            }
+        }
+    }
+    
+    func decodeToModel<T: Codable>(dictionary: [String: Any], to type: T.Type) -> T? {
+        let jsonData = try? JSONSerialization.data(withJSONObject: dictionary, options: [])
+        return jsonData.flatMap { try? JSONDecoder().decode(T.self, from: $0) }
+    }
+    
+    func dealWithRemoteKeys(cards: [BLEKeyCard]!, isFromInit: Bool!, localBleInfoOutsideSDK: BLEInfo?, noBioVerify:Int?, doublesidedAuthCode: String?) {
+        var allKey: [DigitalKey]! = []
+        for localKey in self.digitalKeyList ?? []{
+            var isFound = false
+            for remoteKey in cards {
+                if localKey.cardNo == remoteKey.cardNo && localKey.keyCardType == remoteKey.cardType {
+                    isFound = true
+                    break
+                }
+                if localKey.keyCardType == .MONA_BLE && remoteKey.cardType == .MONA_BLE, localKey.vin == remoteKey.vin {
+                    isFound = true
+                    break
+                }
+            }
+            if isFound == false {
+                localKey.removeAllKeyMessages()
+                localKey.remove()
+                var index = 0
+                for key: DigitalKey in self.digitalKeyList {
+                    let isSupportCarControl = key.isSupportMultiKey()
+                    if ((!isSupportCarControl && key.keyCardType == localKey.keyCardType) ||
+                        isSupportCarControl && key.cardNo == localKey.cardNo)
+                        {
+                        self.digitalKeyList.remove(at: index)
+                        break;
+                    }
+                    index = index + 1
+                }
+                self.repareBleInfo()
+                self.delegate?.didRemoveKey?(vin: self.vehicle.vin, keyCardType: localKey.keyCardType, success: true)
+            }
+        }
+        
+        for remoteKey in cards {
+            var isFound = false
+            var targetKey: DigitalKey?
+            for localKey in self.digitalKeyList {
+
+                if (localKey.keyCardType == .MONA_BLE && remoteKey.cardType == .MONA_BLE) ||
+                            
+                (localKey.cardNo == remoteKey.cardNo && localKey.keyCardType == remoteKey.cardType)
+                {
+                    isFound = true
+                    localKey.bleKeyCard = remoteKey
+                    localKey.save()
+                    allKey .append(localKey)
+                    targetKey = localKey
+                    break
+                }
+            }
+            if isFound == false {
+                let digitalKey = DigitalKey(bleKeyCard: remoteKey, uid:self.uid, vin: remoteKey.vin ?? "", keyCardType: remoteKey.cardType ?? KeyCardType.NONE, cardNo: remoteKey.cardNo)
+                digitalKey.doublesidedAuthCode = doublesidedAuthCode
+                digitalKey.bleKeyCard = remoteKey
+                if digitalKey.keyCardType == KeyCardType.SAFE {
+                    if ProxyManger.shared.dbProxy?.checkKeyExist?(cardNo: digitalKey.cardNo) == true {
+                        digitalKey.isRegisterInThisInstall = true
+                    }
+                    if noBioVerify == 1 {
+                        digitalKey.noBioVerfy = true
+                    } else {
+                        digitalKey.noBioVerfy = false
+                    }
+                }
+                digitalKey.save()
+                targetKey = self.appendDigitalKey(digitalKey: digitalKey)
+            }
+            if targetKey?.supportKeyMessage() == true {
+                targetKey?.downloadKeyMessages(callBack: { isSuc in
+                    if targetKey?.supportDoublesidedAuth() == true && targetKey?.doublesidedAuthCode == nil {
+                        self.downloadDoubleSideCode { isSuc, code in
+                            if isSuc == true {
+                                targetKey?.doublesidedAuthCode = code
+                                targetKey?.save()
+                            }
+                            self.downloadMacAddress(cards: cards, targetKey: targetKey, isFromInit: isFromInit, localBleInfoOutsideSDK: localBleInfoOutsideSDK)
+                        }
+                    } else {
+                        self.downloadMacAddress(cards: cards, targetKey: targetKey, isFromInit: isFromInit, localBleInfoOutsideSDK: localBleInfoOutsideSDK)
+                    }
+                })
+            } else {
+                self.downloadMacAddress(cards: cards, targetKey: targetKey, isFromInit: isFromInit, localBleInfoOutsideSDK: localBleInfoOutsideSDK)
+            }
+        }
+    }
+    
+    func downloadMacAddress(cards: [BLEKeyCard]!, targetKey: DigitalKey?, isFromInit: Bool!, localBleInfoOutsideSDK: BLEInfo?) {
+        if targetKey?.isNeedMacAddress() == false {
+            self.finishLoadKeys(cards: cards)
+            return;
+        }
+        if isFromInit == false {
+            if let bleInfo = targetKey?.bleInfo {
+                if bleInfo.macAddress != nil {
+                    self.finishLoadKeys(cards: cards)
+                    return;
+                }
+            }
+        }
+        let responseCallback: BLEKeyHttpRequestCallback<BLEInfo> = { response in
+            if (response.code == 200 && response.data != nil) {
+                let info = response.data!
+                self.receiveMacAddress(info: info, isLocal: false, targetKey: targetKey)
+            } else {
+                if localBleInfoOutsideSDK != nil {
+                    self.receiveMacAddress(info: localBleInfoOutsideSDK ?? BLEInfo(), isLocal: true, targetKey: targetKey)
+                } else {
+                    if let digitalKey: DigitalKey = self.validBlePrivateKey() {
+                        if digitalKey.bleInfo?.macAddress != nil {
+                            self.bleInfo = digitalKey.bleInfo
+                        } else {
+                            self.fetchMac()
+                        }
+                    } else {
+                        self.fetchMac()
+                    }
+                }
+            }
+            self.finishLoadKeys(cards: cards)
+        }
+        BLEKeyHttpRequest.postRequest(path: BLEKeyHttpRequestPath.bleInfo, payload: ["vin": targetKey?.vin ?? ""], callback: responseCallback)
+    }
+    
+    func receiveMacAddress(info :BLEInfo, isLocal: Bool, targetKey: DigitalKey?) {
+        let macAddress = (info.macAddress ?? "") as String
+        let preText = isLocal == true ? "app旧版" : "下载到"
+        Log.i(tag:"DigitalKeyManager", "\(preText)Mac地址 macAddress:", macAddress)
+        if (self.vehicle.vehicleTypeCode != "ED") {
+            info.useScanUUIDs = true
+        }
+        targetKey?.bleInfo = info
+        self.bleInfo = info
+        targetKey?.save()
+        let klist = DigitalKey.queryDigitalKeyList(vin: targetKey?.vin ?? "")
+        Log.i(tag:"DigitalKeyManager", "数字钥匙写入后加载结果: ", klist)
+    }
+    
+    func downloadDoubleSideCode(callBack: @escaping (_ isSuc: Bool, _ code: String?) -> Void) {
+        let responseCallback: BLEKeyHttpRequestCallback<requestVehicleVerifyCodeResponse> = { verifyResponse in
+            guard verifyResponse.code == 200 else {
+                callBack(false, nil)
+                return
+            }
+            if let data: requestVehicleVerifyCodeResponse = verifyResponse.data {
+                callBack(true, data.verifyCodes.phoneCode.code)
+            } else {
+                callBack(false, nil)
+            }
+        }
+        BLEKeyHttpRequest.postRequest(path: BLEKeyHttpRequestPath.requestVehicleVerifyCode, payload:["typeList":[1, 2],"vin":self.vehicle.vin ?? ""],callback: responseCallback)
+    }
+    
+    func finishLoadKeys(cards: [BLEKeyCard]!) {
+        Log.i(tag:"DigitalKeyManager", "数字钥匙加载Online结果(\(cards.count ?? 0)): ", cards)
+        self.delegate?.didLoadKeys?(vin: self.vehicle.vin)
+    }
+    
+    func allowCallMonaSDK() -> Bool {
+        return DigitalKeyManager.allowCallMonaSDK(vehiclePreference: self.vehiclePreference)
+    }
+    
+    func isBleKeyV3() -> Bool {
+        return DigitalKeyManager.isBleKeyV3(vehiclePreference: self.vehiclePreference)
+    }
+    
+    public func digitalKey(keyCategory: DigitalKeyCategory) -> DigitalKey? {
+        var digitalKey: DigitalKey?
+        self.digitalKeyList.forEach({ (key) in
+            if (key.keyCategory == keyCategory) {
+                digitalKey = key
+            }
+        })
+        
+        if digitalKey != nil && digitalKey?.bleKeyCard != nil && digitalKey?.bleKeyCard?.status == XPBLEKeyCardStatus.XPBLEKeyCardStatusToBeActivated {
+            digitalKey = nil
+        }
+        return digitalKey
+    }
+    
+    public func digitalKey(keyCardType: KeyCardType) -> DigitalKey? {
+        var digitalKey: DigitalKey?
+        self.digitalKeyList.forEach({ (key) in
+            if (key.keyCardType == keyCardType) {
+                digitalKey = key
+            }
+        })
+        
+        if digitalKey != nil && digitalKey?.bleKeyCard != nil && digitalKey?.bleKeyCard?.status == XPBLEKeyCardStatus.XPBLEKeyCardStatusToBeActivated {
+            digitalKey = nil
+        }
+        return digitalKey
+    }
+    
+    public func digitalKeyList(keyCardType: KeyCardType) -> Array<Any>? {
+        var digitalKeyList = Array<Any>()
+        
+        self.digitalKeyList.forEach({ (key) in
+            if (key.keyCardType == keyCardType) {
+                digitalKeyList.append(key.bleKeyCard?.toDict())
+            }
+        })
+        return digitalKeyList
+    }
+    
+    func digitalKeyListObject(keyCardType: KeyCardType) -> [DigitalKey]? {
+        var digitalKeyList: [DigitalKey] = []
+        self.digitalKeyList.forEach({ (key) in
+            if (key.keyCardType == keyCardType) {
+                digitalKeyList.append(key)
+            }
+        })
+        return digitalKeyList
+    }
+
+    
+    func digitalMultiKeyList(keyCardTypeArray: Array<NSNumber>) -> Array<Any>? {
+        var digitalKeyList = Array<Any>()
+        for key in self.digitalKeyList {
+            for keyCardType in keyCardTypeArray {
+                if key.keyCardType.rawValue == keyCardType.intValue {
+                    digitalKeyList.append(key.bleKeyCard?.toDict())
+                }
+            }
+        }
+        return digitalKeyList
+    }
+    
+    func digitalMultiKeyArray(keyCardType: KeyCardType) -> Array<DigitalKey> {
+        var digitalKeyList = Array<DigitalKey>()
+        for key in self.digitalKeyList {
+            if key.keyCardType == keyCardType {
+                digitalKeyList.append(key)
+            }
+        }
+        return digitalKeyList
+    }
+    
+    public func existValidBlePrivateKey() -> Bool {
+        return validBlePrivateKey() != nil
+    }
+    
+    
+    public func existValidBleKey() -> Bool {
+        guard validBlePrivateKey() != nil else {
+            return vaildBleKeyCategory() == .PHONE_UWB_KEY
+        }
+        return true
+    }
+    
+    func vaildBleKeyCategory() -> DigitalKeyCategory {
+        var fallbackCategory: DigitalKeyCategory {
+            return validBlePrivateKey()?.keyCategory ?? .NONE
+        }
+        
+        guard let communication = self.communication,
+              let cccVid = self.vehiclePreference.extInfo?.cccVid,
+              let carKeyManager = self.carKeyPlugin else {
+            return fallbackCategory
+        }
+        
+        if CarKeyPassAccesser.supportCarKeyType().rawValue < CarKeyPairType.ble.rawValue {
+            return fallbackCategory
+        }
+        
+        return carKeyManager.passIsAvailable() == .None ? .PHONE_UWB_KEY : fallbackCategory
+    }
+    
+    func existToBeActivateBLEKey() -> Bool {
+        //只有mona才有待激活
+        var digitalKey: DigitalKey?
+        self.digitalKeyList.forEach({ (key) in
+            if (key.keyCardType == .MONA_BLE) {
+                digitalKey = key
+            }
+        })
+        guard let digitalKey else {
+            return false
+        }
+        return digitalKey.bleKeyCard?.status == XPBLEKeyCardStatus.XPBLEKeyCardStatusToBeActivated || digitalKey.bleKeyCard?.status == XPBLEKeyCardStatus.XPBLEKeyCardStatusReadyToActivate
+    }
+    
+    public func validBlePrivateKey() -> DigitalKey? {
+        var key: DigitalKey?
+        if isBleKeyV3() == true {
+            key = self.digitalKey(keyCardType:.SELF_V3)
+        } else {
+            key = self.digitalKey(keyCardType: .SELF)
+        }
+        if (key == nil) {
+            key = self.digitalKey(keyCardType: .MONA_BLE)
+            if key?.bleKeyCard != nil && (key?.bleKeyCard?.status == XPBLEKeyCardStatus.XPBLEKeyCardStatusToBeActivated || key?.bleKeyCard?.status == XPBLEKeyCardStatus.XPBLEKeyCardStatusReadyToActivate) {
+                key = nil
+            }
+        }
+        if (key == nil) {
+            key = self.digitalKey(keyCardType: .SAFE)
+            if !(key?.isRegisterInThisInstall == true && key?.bleKeyCard?.deviceId != nil && key?.bleKeyCard?.deviceId == VehicleCommon.deviceID()) {
+                key = nil
+            }
+        }
+        if (key == nil) {
+            key = self.digitalKey(keyCardType: .CERT)
+        }
+
+        return key
+    }
+    
+    func configNoBioVerfy(noBioVerfy: Bool) {
+        let key: DigitalKey? = self.digitalKey(keyCardType: KeyCardType.SAFE)
+        if (key != nil) {
+            key?.noBioVerfy = noBioVerfy
+        }
+    }
+    
+    func createPlugin(keyCardType: KeyCardType) -> DigitalKeyManagerPluginProtocol? {
+        let aClass: AnyClass? = DigitalKeyManager.keyManagerMap[keyCardType] as? AnyClass
+        guard let typeClass = aClass as? DigitalKeyManagerPluginBase.Type else {
+            Log.i(tag:"DigitalKeyManager", "数字钥匙创建 \(keyCardType) DigitalKeyManagerPlugin 不存在或不符合要求")
+            return nil
+        }
+        let key = digitalKey(keyCardType: keyCardType)
+        
+        let plugin: DigitalKeyManagerPluginProtocol = typeClass.init(uid: self.uid, vehicle: self.vehicle, cardNo: key?.cardNo) as! DigitalKeyManagerPluginProtocol
+
+        return plugin
+    }
+    
+    func removeKey(keyCategory: DigitalKeyCategory, success: @escaping VehicleSuccessCallback, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        if (keyCategory != DigitalKeyCategory.PHONE_BLE_KEY) {
+            Log.e(tag:"digitalKey", "删除数字钥匙：失败 ", "不支持的类型:", keyCategory)
+            failed(VehicleError(code: VehicleErrorCode.NotSupported, desc: "尚未支持，操作失败"))
+          return;
+        }
+
+        self.removeKey(success: success, failed: failed)
+    }
+
+    
+    func createKey(keyCategory: DigitalKeyCategory, success: @escaping VehicleDigitalKeySuccessResponseCallback<DigitalKey>, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        if (keyCategory != DigitalKeyCategory.PHONE_BLE_KEY) {
+            Log.e(tag:"digitalKey", "创建数字钥匙：失败 ", "不支持的类型:", keyCategory)
+            failed(VehicleError(code: VehicleErrorCode.NotSupported, desc: "尚未支持，操作失败"))
+          return;
+        }
+
+        if (self.vehiclePreference.abilityConfig.isSupportBleKey != true) {
+            Log.e(tag:"digitalKey", "创建数字钥匙：失败 ", "isSupportBleKey != true")
+            failed(VehicleError(code: VehicleErrorCode.NotSupported, desc: "尚未支持，操作失败"))
+          return;
+        }
+        
+        var keyCardType: KeyCardType = .SELF
+        if (self.vehiclePreference.vehicleTypeCode == "ED") {
+            keyCardType = .SAFE
+        } else if (self.vehiclePreference.v3KeySupported()) {
+            keyCardType = .SELF_V3
+        }
+
+        self.createKey(keyCardType: keyCardType, success: success, failed: failed)
+    }
+
+
+    public func createKey(success: @escaping VehicleSuccessCallback, failed: @escaping VehicleFailedCallback<VehicleError>){
+        if isBleKeyV3() {
+            createKey(keyCardType: KeyCardType.SELF_V3, success: { data in
+                if (success != nil) {
+                    success()
+                }
+            }, failed: failed)
+        } else {
+            createKey(keyCardType: KeyCardType.SELF, success: { data in
+                if (success != nil) {
+                    success()
+                }
+            }, failed: failed)
+        }
+    }
+    
+    public func createKey(keyCardType: KeyCardType, success: @escaping VehicleDigitalKeySuccessResponseCallback<DigitalKey>, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        let key: DigitalKey? = self.digitalKey(keyCardType: keyCardType)
+        if (key != nil && key?.isValidKey() == true) {
+            Log.i(tag:"DigitalKeyManager", "数字钥匙创建 \(keyCardType) createKey 该类型的钥匙已经存在，不允许重复创建")
+            let resp = VehicleError(code: .EnvironmentError, desc: "执行失败(重复创建)")
+            failed(resp)
+            return
+        }
+        
+        let plugin = self.createPlugin(keyCardType: keyCardType)
+        if (plugin == nil) {
+            let resp = VehicleError(code: .NotSupported, desc: "尚未支持，操作失败")
+            failed(resp)
+            return
+        }
+
+        self.delegate?.willCreateKey?(vin: self.vehicle.vin, keyCardType: keyCardType)
+        self.createKeyPlugin = plugin
+
+        plugin!.createKey(success: { data in
+            if (data != nil && data!.digitalKeyList != nil && (data!.digitalKeyList.count ?? 0) > 0) {
+                for digitalKeyItem in data!.digitalKeyList{
+                    digitalKeyItem.save()
+                    let digitalKeyAppend = self.appendDigitalKey(digitalKey: digitalKeyItem)
+                    if (digitalKeyAppend != nil && data!.authDataList != nil) {
+                        digitalKeyAppend!.saveAuthDataList(dataList: data!.authDataList!)
+                    }
+                }
+                var digitalKey: DigitalKey?
+                if data!.digitalKeyList.count > 1 {
+                    digitalKey = data!.digitalKeyList[1]
+                } else {
+                    digitalKey = data!.digitalKeyList[0]
+                }
+                self.delegate?.didCreateKey?(vin: self.vehicle.vin, keyCardType: keyCardType, success: true)
+                Log.i(tag:"DigitalKeyManager", "创建钥匙后当前报文数量:", digitalKey?.keyMessageCount())
+
+                let test: BLEKeyHttpRequestCallback<BLEInfo> = { response in
+                    if (response.code == 200 && response.data != nil) {
+                        let info = response.data!
+                        let macAddress = (info.macAddress ?? "") as String
+                        Log.i(tag:"DigitalKeyManager", "下载到Mac地址 macAddress:", macAddress)
+                        if (self.vehicle.vehicleTypeCode != "ED") {
+                            info.useScanUUIDs = true
+                        }
+                        digitalKey?.bleInfo = info
+                        self.bleInfo = info // 业务方会监听 self.bleInfo 变化，重连蓝牙
+                        let klist = DigitalKey.queryDigitalKeyList(vin: self.vehicle.vin!)
+                        Log.i(tag:"DigitalKeyManager", "数字钥匙写入后加载结果: ", klist)
+                        if digitalKey?.bleKeyCard != nil && digitalKey?.bleKeyCard?.status == XPBLEKeyCardStatus.XPBLEKeyCardStatusReadyToActivate {
+                            digitalKey?.bleKeyCard?.status = XPBLEKeyCardStatus.XPBLEKeyCardStatusToBeActivated
+                            if let saveKey = digitalKey {
+                                saveKey.save()
+                                let digitalKeyAppend = self.appendDigitalKey(digitalKey: saveKey)
+                            }
+                            self.createKey(keyCardType: KeyCardType.MONA_BLE, success: success, failed: failed)
+                        }else {
+                            if let saveKey = digitalKey {
+                                saveKey.save()
+                                let digitalKeyAppend = self.appendDigitalKey(digitalKey: saveKey)
+                            }
+                            success(digitalKey)
+                        }
+                    } else {
+                        self.fetchMac()
+                        success(digitalKey)
+                    }
+                }
+                BLEKeyHttpRequest.postRequest(path: BLEKeyHttpRequestPath.bleInfo, payload: ["vin": self.vehicle.vin ?? ""], callback: test)
+            } else {
+                self.delegate?.didCreateKey?(vin: self.vehicle.vin, keyCardType: keyCardType, success: false)
+                let resp = VehicleError(code: .UnknownError, desc: "执行失败")
+                failed(resp)
+            }
+            self.createKeyPlugin = nil
+        }, failed: { error in
+            if (error.digitalKey != nil) {
+                error.digitalKey!.save()
+                _ = self.appendDigitalKey(digitalKey: error.digitalKey!)
+            }
+            self.delegate?.didCreateKey?(vin: self.vehicle.vin, keyCardType: keyCardType, success: false)
+            failed(VehicleError(code: VehicleErrorCode.UnknownError, msg: error.msg, desc: error.desc))
+            self.createKeyPlugin = nil
+        })
+    }
+    
+    func fetchMac() {
+        if self.fetchMacTimer != nil {
+            self.fetchMacTimer?.invalidate()
+            self.fetchMacTimer = nil
+        }
+        guard let currentVin: String = self.vehicle.vin else {
+            return
+        }
+        startTimerMacAddress(currentVin: currentVin)
+    }
+    
+    func startTimerMacAddress(currentVin: String) {
+        let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
+            if let digitalKey: DigitalKey = self?.validBlePrivateKey() {
+                if digitalKey.bleInfo?.macAddress != nil {
+                    self?.fetchMacTimer?.invalidate()
+                    self?.fetchMacTimer = nil
+                    self?.bleInfo = digitalKey.bleInfo
+                    return
+                }
+            }
+            self?.requestMacAddressOnce(currentVin: currentVin, callBack: nil)
+        }
+        RunLoop.current.add(timer, forMode: .common)
+        self.fetchMacTimer = timer
+    }
+    
+    func requestMacAddressOnce(currentVin: String, callBack: ((_ isSuc: Bool) -> Void)?) {
+        let responseCallback: BLEKeyHttpRequestCallback<BLEInfo> = { response in
+            if (response.code == 200 && response.data != nil) {
+                callBack?(true)
+                let info = response.data!
+                guard let macAddress: String = info.macAddress as? String else {
+                    return
+                }
+                self.fetchMacTimer?.invalidate()
+                self.fetchMacTimer = nil
+                Log.i(tag:"DigitalKeyManager", "定时器下载到Mac地址:%@ vin:%@", macAddress, currentVin)
+                var currentKey: DigitalKey? = self.validBlePrivateKey()
+                if currentKey == nil {
+                    let digitalKeyList = DigitalKey.queryDigitalKeyList(vin: currentVin)
+                    for digitalKey: DigitalKey in digitalKeyList {
+                        if digitalKey.vin == currentVin {
+                            currentKey = digitalKey
+                        }
+                    }
+                }
+                guard let targetKey: DigitalKey = currentKey else {
+                    return
+                }
+                
+                if targetKey.bleInfo?.macAddress != nil {
+                    self.bleInfo = info
+                    return
+                }
+                targetKey.bleInfo = info
+                targetKey.save()
+                self.appendDigitalKey(digitalKey: targetKey)
+                self.bleInfo = info
+            } else {
+                callBack?(false)
+            }
+        }
+        BLEKeyHttpRequest.postRequest(path: BLEKeyHttpRequestPath.bleInfo, payload: ["vin": currentVin], callback: responseCallback)
+    }
+    
+    func stopTimerMacAddress() {
+        if self.fetchMacTimer != nil {
+            self.fetchMacTimer?.invalidate()
+            self.fetchMacTimer = nil
+        }
+    }
+    
+    public func removeKey(success: @escaping VehicleSuccessCallback, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        guard let digitalKey: DigitalKey = self.validBlePrivateKey() else {
+            let resp = VehicleError(code: .EnvironmentError, desc:"钥匙不存在，操作失败")
+            failed(resp)
+            return
+        }
+        removeKey(digitalKey: digitalKey, success: success, failed: failed)
+    }
+    
+    public func removeNfcKey(success: @escaping VehicleSuccessCallback, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        if let plugin = self.createPlugin(keyCardType: KeyCardType.NFC_WATCH) {
+            if let digitalKey = self.digitalKey(keyCardType: KeyCardType.NFC_WATCH) {
+                plugin.removeKey(digitalKey: digitalKey) { data in
+                    success()
+                } failed: { error in
+                    failed(VehicleError(code: -1))
+                }
+            }
+        }
+    }
+
+    public func removeKey(digitalKey: DigitalKey, success: @escaping VehicleSuccessCallback, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        var keyCardType = digitalKey.keyCardType
+        let plugin = self.createPlugin(keyCardType: keyCardType)
+        if (plugin == nil) {
+            let resp = VehicleError(code: .NotSupported, desc:"尚未支持，操作失败")
+            failed(resp)
+            return
+        }
+        self.removeKeyPlugin = plugin
+        self.delegate?.willRemoveKey?(vin: self.vehicle.vin, keyCardType: keyCardType)
+        plugin!.removeKey(digitalKey: digitalKey) { data in
+            self.removeKeyPlugin = nil
+            var keyReturned = false
+            if let reponse: RemoveDigitalKeySuccessResponse = data {
+                if let digitalKeyList = data?.digitalKeyList {
+                    if (digitalKeyList.count ?? 0) > 0 {
+                        keyReturned = true
+                        for item in digitalKeyList {
+                            self.removeSuccess(digitalKey: item)
+                        }
+                    }
+                }
+            }
+            if keyReturned == false {
+                self.removeSuccess(digitalKey: digitalKey)
+            }
+            self.repareBleInfo()
+            self.delegate?.didRemoveKey?(vin: self.vehicle.vin, keyCardType: digitalKey.keyCardType, success: true)
+            success()
+        } failed: { error in
+            self.removeKeyPlugin = nil
+            self.delegate?.didRemoveKey?(vin: self.vehicle.vin, keyCardType: digitalKey.keyCardType, success: false)
+            failed(error)
+        }
+    }
+    
+    func removeSuccess(digitalKey: DigitalKey){
+        digitalKey.removeAllKeyMessages()
+        digitalKey.remove()
+        for (index, key) in self.digitalKeyList.enumerated() {
+            if (key.keyCardType == digitalKey.keyCardType) {
+                self.digitalKeyList.remove(at: index)
+            }
+        }
+        self.bleInfo = nil
+    }
+     
+    public func certMessageCount() -> Int {
+        if let key: DigitalKey = self.validBlePrivateKey(){
+            guard (key.keyCardType == KeyCardType.SELF || key.keyCardType == KeyCardType.SELF_V3) else {
+                return 0;
+            }
+            return key.keyMessageCount();
+        }
+        return 0;
+    }
+    
+    public func refreshRemoteKeyList() {
+        self.requestRemoteKeyList(isFromInit: false)
+    }
+    
+    public func refreshRemoteKeyListInit() {
+        self.requestRemoteKeyList(isFromInit: true)
+    }
+
+    // 报文失效，清理本地数据
+    public func clearKeyMessage() {
+        guard let key: DigitalKey = self.validBlePrivateKey() else {
+            return
+        }
+        guard key.supportKeyMessage() == true else {
+            return
+        }
+        key.removeAllKeyMessages()
+    }
+    
+    public func disableSafeKey() {
+        guard let key: DigitalKey = self.digitalKey(keyCardType: .SAFE) else {
+            return
+        }
+        key.removeAllKeyMessages()
+        removeKey(digitalKey: key, success: {
+            
+        }, failed: { error in
+            
+        })
+    }
+    
+    @objc func refreshDigitalKeyFromNotification(noti: Notification) {
+        let code: Int = noti.userInfo?["code"] as? Int ?? 0
+        switch code {
+        case 0xF2:  // 钥匙已拉黑
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.ban.rawValue])
+            break
+        case 0xF3:  // 钥匙激活超过一天有效期
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.oneDay.rawValue])
+            break
+        case 0xF4:  // vin校验不对
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.vin.rawValue])
+            break
+        case 0xF5:  // 钥匙过期（使用期限）
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.disabled.rawValue])
+            break
+        case 0xF6:  // 钥匙已满
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.full.rawValue])
+            break
+        case 0xF7:  // 钥匙信息签名校验不通过
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.otherError.rawValue])
+            break
+        case 0xF8:  // 钥匙信息不匹配
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.otherError.rawValue])
+            break
+        default:
+            break
+        }
+        self.requestRemoteKeyList(isFromInit: false)
+    }
+    
+    //MonaKeyStatusDelegate
+    func onBleKeyChange(type: KeyChangeType, key: BleKeyInfo?) {
+        switch type {
+        case KeyChangeType.activate:
+            if self.existValidBlePrivateKey() == true {
+                return;
+            }
+            let card: BLEKeyCard = BLEKeyCard.init()
+            card.cardType = KeyCardType.MONA_BLE
+            card.status = XPBLEKeyCardStatus.XPBLEKeyCardStatusNormal;
+            card.vin = key?.vin
+            self.dealWithRemoteKeys(cards: [card], isFromInit: false, localBleInfoOutsideSDK: nil, noBioVerify: nil, doublesidedAuthCode: nil)
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.activate.rawValue])
+            break
+        case KeyChangeType.delete:
+            if self.existValidBlePrivateKey() == false {
+                return;
+            }
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.delete.rawValue])
+            break
+        case KeyChangeType.create:
+            if self.existValidBlePrivateKey() == true {
+                return;
+            }
+            NotificationCenter.default.post(name: VehicleNotification.DigitalKeyCreateKey, object: nil, userInfo: ["type": CreateKeyChangeType.create.rawValue])
+            break
+        default:
+            break
+        }
+    }
+    
+    public static func downloadDigitalKeyList(uid: UInt64!, vehicle: VehicleInfo.Vehicle!, keyTypeList: [Int], vehiclePreference: VehiclePreference!) {
+        let digitalKeyList = DigitalKey.queryDigitalKeyList(vin: vehicle.vin ?? "")
+        if digitalKeyList.count > 0 {
+            for digitalKey in digitalKeyList {
+                downloadKeyMessagesCheck(digitalKey: digitalKey, vehicle: vehicle)
+            }
+        } else {
+            var keyCardType: KeyCardType = .NONE
+            if allowCallMonaSDK(vehiclePreference: vehiclePreference) {
+                keyCardType = KeyCardType.MONA_BLE
+            } else if vehiclePreference.abilityConfig.bleKeyVersion == BleKeyProtocolVesion.V3 {
+                keyCardType = KeyCardType.SELF_V3
+            } else if let pluginSelf = generatePlugin(uid: uid, keyCardType: KeyCardType.SELF, vehicle: vehicle) {
+                keyCardType = KeyCardType.SELF
+            }
+            if DigitalKeyManager.staticPlugin[DigitalKeyManager.pluginKey(uid: uid, vin: vehicle.vin ?? "", keyCardType: keyCardType)] != nil {
+                return;
+            }
+            Log.i(tag:"DigitalKeyManager", "其他车辆数字钥匙开始预加载 \(uid ?? 0) \(vehicle.vin ?? "")")
+            DigitalKeyManager.requestDigitalKeyList(uid: uid, vehicle: vehicle, vin: vehicle.vin ?? "", vehiclePreference: vehiclePreference){ data in
+                let list: [BLEKeyCard]! = data?.cardList ?? []
+                for remoteKey in list {
+                    let digitalKey = DigitalKey(bleKeyCard: remoteKey, uid:uid, vin: remoteKey.vin ?? "", keyCardType: remoteKey.cardType ?? KeyCardType.NONE, cardNo: remoteKey.cardNo)
+                    digitalKey.bleKeyCard = remoteKey
+                    digitalKey.save()
+                    downloadKeyMessagesCheck(digitalKey: digitalKey, vehicle: vehicle)
+                }
+            } failed: { error in
+
+            }
+        }
+    }
+    
+    static func requestDigitalKeyList(uid: UInt64!, vehicle: VehicleInfo.Vehicle!, vin: String, vehiclePreference: VehiclePreference!, success: @escaping VehicleDigitalKeySuccessResponseCallback<RequestDigitalKeyListResponse>, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        if allowCallMonaSDK(vehiclePreference: vehiclePreference) {
+            if let pluginMona = generatePlugin(uid: uid, keyCardType: KeyCardType.MONA_BLE, vehicle: vehicle) {
+                setCachePlugin(plugin: pluginMona, uid: uid, vin: vin, keyCardType: KeyCardType.MONA_BLE)
+                pluginMona.requestCardListOwn(vin: vin ?? "", uid: uid ?? 0) { response in
+                    let res = RequestDigitalKeyListResponse()
+                    if let data: RequestCardListResponse = response.data {
+                        res.cardList = data.cardList
+                    }
+                    setCachePlugin(plugin: nil, uid: uid, vin: vin, keyCardType: KeyCardType.MONA_BLE)
+                    success(res)
+                    Log.i(tag:"DigitalKeyManager", "拉取钥匙列表成功")
+                }
+            }
+        } else if vehiclePreference.abilityConfig.bleKeyVersion == BleKeyProtocolVesion.V3 {
+            if let pluginSelfV3 = generatePlugin(uid: uid, keyCardType: KeyCardType.SELF_V3, vehicle: vehicle) {
+                setCachePlugin(plugin: pluginSelfV3, uid: uid, vin: vin, keyCardType: KeyCardType.SELF_V3)
+                
+                
+                self.requestNomalList(pluginSelf: pluginSelfV3, needRequestEmpower: false, uid: uid, vin: vin, success: { data in
+                    setCachePlugin(plugin: nil, uid: uid, vin: vin, keyCardType: KeyCardType.SELF_V3)
+                    success(data)
+                    Log.i(tag:"DigitalKeyManager", "拉取钥匙列表成功")
+
+                }) { error in
+                    setCachePlugin(plugin: nil, uid: uid, vin: vin, keyCardType: KeyCardType.SELF_V3)
+                    failed(error)
+                    Log.i(tag:"DigitalKeyManager", "拉取钥匙列表失败")
+                }
+            }
+        } else if let pluginSelf = generatePlugin(uid: uid, keyCardType: KeyCardType.SELF, vehicle: vehicle) {
+            setCachePlugin(plugin: pluginSelf, uid: uid, vin: vin, keyCardType: KeyCardType.SELF)
+            self.requestNomalList(pluginSelf: pluginSelf, needRequestEmpower:true, uid: uid, vin: vin, success: { data in
+                setCachePlugin(plugin: nil, uid: uid, vin: vin, keyCardType: KeyCardType.SELF)
+                success(data)
+            }) { error in
+                setCachePlugin(plugin: nil, uid: uid, vin: vin, keyCardType: KeyCardType.SELF)
+                failed(error)
+            }
+        } else {
+            let resp = VehicleError(code: .UnknownError, msg:nil)
+            failed(resp)
+        }
+    }
+    
+    static func requestNomalList(pluginSelf: DigitalKeyManagerPluginProtocol!, needRequestEmpower: Bool!, uid: UInt64!, vin:String, success: @escaping VehicleDigitalKeySuccessResponseCallback<RequestDigitalKeyListResponse>, failed: @escaping VehicleFailedCallback<VehicleError>){
+        pluginSelf.requestCardListOwn(vin: vin ?? "", uid: uid ?? 0, callback: { response in
+            if (response.code == 200) {
+                let cardListOwn = response.data?.cardList
+                guard needRequestEmpower == true else {
+                    let res = RequestDigitalKeyListResponse()
+                    res.cardList = cardListOwn
+                    success(res)
+                    return
+                }
+                self.requestEmpowerDigitalKeyList(cardlistOwn: cardListOwn, uid: uid, vin: vin, success: success, failed: failed)
+            } else {
+                guard needRequestEmpower == true else {
+                    let resp = VehicleError(code: .UnknownError, desc:response.msg)
+                    failed(resp)
+                    return
+                }
+                self.requestEmpowerDigitalKeyList(cardlistOwn: [], uid: uid, vin: vin, success: success, failed: failed)
+            }
+        })
+    }
+    
+    
+    static func requestEmpowerDigitalKeyList(cardlistOwn: [BLEKeyCard]?, uid: UInt64!, vin: String, success: @escaping VehicleDigitalKeySuccessResponseCallback<RequestDigitalKeyListResponse>, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        SelfKeyManager.requestCardListEmpower(vin: vin) { response in
+            if (response.code == 200) {
+                Log.i(tag:"DigitalKeyManager", "拉取被授权钥匙列表成功: \(String(describing: response.data))")
+                let cardListEmpower = response.data?.cardList
+                let res = RequestDigitalKeyListResponse()
+                res.cardList = ((cardlistOwn ?? []) + (cardListEmpower ?? [])).filter { $0.cardType != KeyCardType.SAFE }
+                success(res)
+            } else {
+                Log.i(tag:"DigitalKeyManager", "拉取被授权钥匙列表失败: \(String(describing: response.msg))")
+                let resp = VehicleError(code: .UnknownError, desc:response.msg)
+                failed(resp)
+            }
+        }
+    }
+    
+    static func generatePlugin(uid: UInt64!, keyCardType: KeyCardType, vehicle: VehicleInfo.Vehicle!) -> DigitalKeyManagerPluginProtocol?{
+        let aClass: AnyClass? = DigitalKeyManager.keyManagerMap[keyCardType] as? AnyClass
+        guard let typeClass = aClass as? DigitalKeyManagerPluginBase.Type else {
+            Log.i(tag:"DigitalKeyManager", "数字钥匙创建 \(keyCardType) DigitalKeyManagerPlugin 不存在或不符合要求")
+            return nil
+        }
+        let plugin: DigitalKeyManagerPluginProtocol = typeClass.init(uid: uid, vehicle: vehicle, cardNo: nil) as! DigitalKeyManagerPluginProtocol
+        return plugin
+    }
+    
+    static func setCachePlugin(plugin: DigitalKeyManagerPluginProtocol?, uid: UInt64?, vin: String?, keyCardType: KeyCardType?){
+        serialPluginQueue.async {
+            let key = pluginKey(uid: uid, vin: vin, keyCardType: keyCardType)
+            if key != nil && DigitalKeyManager.staticPlugin != nil {
+                if plugin == nil {
+                    DigitalKeyManager.staticPlugin.removeValue(forKey: key)
+                } else {
+                    DigitalKeyManager.staticPlugin[key] = plugin
+                }
+            }
+        }
+    }
+    
+    static func pluginKey(uid: UInt64?, vin: String?, keyCardType: KeyCardType?) -> String {
+        return String(uid ?? 0) + (vin ?? "") + (String((keyCardType ?? KeyCardType.NONE).rawValue) ?? "")
+    }
+    
+    static func downloadKeyMessagesCheck(digitalKey: DigitalKey, vehicle: VehicleInfo.Vehicle!) {
+        if digitalKey.supportKeyMessage() == true{
+            if digitalKey.keyMessageCount() == 0 {
+                digitalKey.downloadKeyMessages(callBack: { isSuc in
+                    macAddressCheck(digitalKey: digitalKey, vehicle: vehicle)
+                })
+            } else {
+                macAddressCheck(digitalKey: digitalKey, vehicle: vehicle)
+            }
+        } else {
+            macAddressCheck(digitalKey: digitalKey, vehicle: vehicle)
+        }
+    }
+    
+    static func macAddressCheck(digitalKey: DigitalKey, vehicle: VehicleInfo.Vehicle!) {
+        if digitalKey.isNeedMacAddress() == false {
+            return;
+        }
+        if let bleInfo = digitalKey.bleInfo {
+            if bleInfo.macAddress != nil {
+                return
+            }
+        }
+        let responseCallback: BLEKeyHttpRequestCallback<BLEInfo> = { response in
+            if (response.code == 200 && response.data != nil) {
+                let info = response.data!
+                let macAddress = (info.macAddress ?? "") as String
+                Log.i(tag:"DigitalKeyManager", "预先下载到Mac地址 macAddress:", macAddress)
+                if (vehicle.vehicleTypeCode != "ED") {
+                    info.useScanUUIDs = true
+                }
+                digitalKey.bleInfo = info
+                digitalKey.save()
+            }
+        }
+        BLEKeyHttpRequest.postRequest(path: BLEKeyHttpRequestPath.bleInfo, payload: ["vin": digitalKey.vin ?? ""], callback: responseCallback)
+    }
+    
+    public func pollingStateChange(pollingMode: VehiclePollingMode) {
+        if let xiaopengBleConnection = self.communication?.bleConnection as? XiaopengBLEConnection {
+            Log.i(tag: "plllingSetting", "pollingStateChange: \(pollingMode)")
+            if pollingMode != .NONE {
+                xiaopengBleConnection.bleSwitcheCheck.setPollingActive(true)
+            } else {
+                xiaopengBleConnection.bleSwitcheCheck.setPollingActive(false)
+            }
+            xiaopengBleConnection.updatePollingConfigData()
+        }
+    }
+    
+    public func pollingEnableSwitchChange(pollingEnableSwitch: Bool) {
+        if let xiaopengBleConnection = self.communication?.bleConnection as? XiaopengBLEConnection {
+            Log.i(tag: "plllingSetting", "pollingEnableSwitchChange: \(pollingEnableSwitch)")
+            xiaopengBleConnection.updatePollingEnableConfigData()
+        }
+    }
+     
+    public func pollingUnlockDistanceChange(unlockDistance: Float) {
+        if let xiaopengBleConnection = self.communication?.bleConnection as? XiaopengBLEConnection {
+            xiaopengBleConnection.updatePollingConfigData()
+        }
+     }
+     
+    public func pollingLockDistanceChange(lockDistance: Float) {
+        if let xiaopengBleConnection = self.communication?.bleConnection as? XiaopengBLEConnection {
+            xiaopengBleConnection.updatePollingConfigData()
+        }
+    }
+     
+    public func pollingWelcomeModeChange(welcomeMode: Bool) {
+        if let xiaopengBleConnection = self.communication?.bleConnection as? XiaopengBLEConnection {
+            xiaopengBleConnection.updatePollingConfigData()
+        }
+     }
+     
+    public func pollingSelfCalibrationDataChange(txPowerArray: Array<String>?) {
+        if let xiaopengBleConnection = self.communication?.bleConnection as? XiaopengBLEConnection {
+            xiaopengBleConnection.updatePollingConfigData()
+        }
+     }
+    
+    public func requestKeySettings(vin: String, device: String?, success: @escaping VehicleDigitalKeySuccessResponseCallback<KeySettingInfo>, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        guard !vin.isEmpty else {
+            let emptyError = VehicleError(code: -1, desc: "vin参数不能为空")
+            failed(emptyError)
+            return
+        }
+        var param: [String : Any] = ["vin":vin,
+                     "platformType": 1,
+                     "bizKey":"POLLING"]
+        if let device = device {
+            param["deviceModel"] = device
+        }
+        Log.i(tag:"DigitalKeyManager", "kkl param:", param)
+
+        BLEKeyHttpRequest.getRequest(path: BLEKeyHttpRequestPath.getPollingSettingV2, payload: param) {(response: VehicleRequestResponse<KeySettingInfo>) in
+            if response.code == 200, let data = response.data {
+                success(data)
+            } else {
+                let resp = VehicleError(code: response.code, desc: response.msg)
+                failed(resp)
+            }
+        }
+    }
+    
+    public func uploadKeySettings(vin: String, device: String?, settings: KeySettingInfo, success: @escaping VehicleSuccessCallback, failed: @escaping VehicleFailedCallback<VehicleError>) {
+        guard !vin.isEmpty else {
+            let emptyError = VehicleError(code: -1, desc: "vin参数不能为空")
+            failed(emptyError)
+            return
+        }
+
+        var param = ["vin":vin,
+                     "platformType": 1,
+                     "bizKey":"POLLING"] as [String : Any]
+        if let device = device {
+            param["deviceModel"] = device
+        }
+        param["bizValue"] = settings.toDictionary()
+        BLEKeyHttpRequest.postRequest(path: BLEKeyHttpRequestPath.uploadPollingSettingV2, payload: param) {(response: VehicleRequestResponse<Bool>) in
+            if response.code == 200 && response.data == true {
+                success()
+            } else {
+                let resp = VehicleError(code: response.code, desc: response.msg)
+                failed(resp)
+            }
+        }
+    }
+    
+    static func allowCallMonaSDK(vehiclePreference: VehiclePreference) -> Bool {
+        return vehiclePreference.function.POLLING_STRATEGY_D01_BAN == true
+    }
+    
+    static func isBleKeyV3(vehiclePreference: VehiclePreference) -> Bool {
+        return vehiclePreference.abilityConfig.bleKeyVersion == BleKeyProtocolVesion.V3
+    }
+
+    @objc func connectStateChanged(noti: Notification)  {
+        Log.i(tag: "connectStateChanged", "ii收到蓝牙连接状态变更通知 userinfo:\(noti.userInfo)")
+        guard let obj: BLEConnectionNotiObject = noti.userInfo?["state"] as? BLEConnectionNotiObject else { return }
+        if obj.vin == self.vehicle.vin && obj.connectState == BLEConnectionState.Available {
+            isTboxBad = false
+            Log.i(tag: "connectStateChanged", " isTboxBad:\(isTboxBad)")
+            if let key = self.validBlePrivateKey(), let plugin = self.createPlugin(keyCardType: key.keyCardType) {
+                plugin.clearWaitToActivate()
+            }
+        }
+    }
+    
+    @objc func tboxRunStateNotification(noti: Notification)  {
+        Log.i(tag: "tboxRunStateNotification", "收到TBOX状态变更通知 userinfo:\(noti.userInfo)")
+        isTboxBad = noti.userInfo?["result"] as? Int ?? 0 != 0
+    }
+    
+    @objc func networkResumeAction() {
+        if let digitalKey: DigitalKey = self.validBlePrivateKey() {
+            guard digitalKey.supportKeyMessage() == true else {
+                return
+            }
+            digitalKey.downloadKeyMessages { isSuc in
+                Log.i(tag:"DigitalKeyManager", "网络恢复，触发报文数检查(量足则不拉)", isSuc)
+            }
+            guard self.bleInfo == nil else {
+                return
+            }
+            self.requestMacAddressOnce(currentVin: digitalKey.vin ?? "") { isSuc in
+                Log.i(tag:"DigitalKeyManager", "网络恢复，尝试拉mac", isSuc)
+                guard isSuc == false else {
+                    return
+                }
+                self.fetchMac()
+            }
+        }
+    }
+    
+    public func setDigitalKeySwitch(lockParam: CarKeyAutoLockRequestParam, vin: String, uid: UInt64, success:  ((Bool) -> Void)? = nil, failed: ((VehicleError) -> Void)? = nil) {
+        guard let plugin = self.createPlugin(keyCardType: KeyCardType.CCC) else {
+            failed?(VehicleError(code: .NotSupported, desc: "尚未支持，操作失败"))
+            return
+        }
+        plugin.setDigitalKeySwitch(lockParam: lockParam, vin: vin, uid: uid, success: { result in
+            success?(result ?? true)
+        }, failed: { error in
+            failed?(error)
+        })
+    }
+        
+    func setIsDriverMode(_ isDriverMode: Bool) {
+        if let xiaopengBleConnection = self.communication?.bleConnection as? XiaopengBLEConnection {
+            xiaopengBleConnection.getKeySettingData().isDriverMode = isDriverMode
+            xiaopengBleConnection.bleSwitcheCheck.needDisconnectInBackground = !isDriverMode
+        }
+    }
+    
+    func getCurrentCarKeyPlugin() -> CarKeyPassAccessProtocol? {
+        return self.carKeyPlugin
+    }
+
+}
+
+extension DigitalKeyManager: CarKeyPassManageDelegate {
+    
+    func localPassDidRefresh() {
+        self.delegate?.didLoadKeys?(vin: self.vehicle.vin)
+        self.communication?.bleConnection?.didLoadKey()
+    }
+}
+
+public enum XPCreateKeyErrorCode : Int, Codable {
+    case codeDefault = 0
+    case networkUnreachable = 1
+    case failToLock = 2
+    case failToCheckCarState = 3
+    case carStateNotParked = 4
+    case carStateIgOn = 5
+    case notSupported = 6
+    case deleteSafeKeyFail = 7
+    case deleteSafeKeyTimeout = 8
+    case noIdPermission = 9
+    case failToCreateSafeKeyCard = 10
+    case failToId = 11
+    case bleNotPowerOn = 12
+    case bleNotConnected = 13
+    case createSafeKeyTimeout = 14
+    case createCertKeyFail = 15
+    case createCertKeyTimeout = 16
+    case createSelfKeyFail = 17
+    case createSelfKeyTimeout = 18
+    case createHuamiWatchKeyFail = 19
+    case createHuamiWatchKeyTimeout = 20
+    case createHuamiWatchKeyOperationFail = 21
+    case createHuamiWatchKeySendResultFail = 22
+    case createHuamiWatchKeyFeedbackResultFail = 23
+    case createAppleWatchKeyFail = 24
+    case createAppleWatchKeyFetchDataFail = 25
+    case failToAuthorizationFull = 11092112 //后端返回
+    case cccVidIsNil = 26
+    case walletPairParamsMiss = 27
+    
+    public init(rawValue: Int) {
+        switch rawValue {
+        case 1:
+            self = .networkUnreachable
+        case 2:
+            self = .failToLock
+        case 3:
+            self = .failToCheckCarState
+        case 4:
+            self = .carStateNotParked
+        case 5:
+            self = .carStateIgOn
+        case 6:
+            self = .notSupported
+        case 7:
+            self = .deleteSafeKeyFail
+        case 8:
+            self = .deleteSafeKeyTimeout
+        case 9:
+            self = .noIdPermission
+        case 10:
+            self = .failToCreateSafeKeyCard
+        case 11:
+            self = .failToId
+        case 12:
+            self = .bleNotPowerOn
+        case 13:
+            self = .bleNotConnected
+        case 14:
+            self = .createSafeKeyTimeout
+        case 15:
+            self = .createCertKeyFail
+        case 16:
+            self = .createCertKeyTimeout
+        case 17:
+            self = .createSelfKeyFail
+        case 18:
+            self = .createSelfKeyTimeout
+        case 19:
+            self = .createHuamiWatchKeyFail
+        case 20:
+            self = .createHuamiWatchKeyTimeout
+        case 21:
+            self = .createHuamiWatchKeyOperationFail
+        case 22:
+            self = .createHuamiWatchKeySendResultFail
+        case 23:
+            self = .createHuamiWatchKeyFeedbackResultFail
+        case 24:
+            self = .createAppleWatchKeyFail
+        case 25:
+            self = .createAppleWatchKeyFetchDataFail
+        case 11092112:
+            self = .failToAuthorizationFull
+        case 26:
+            self = .cccVidIsNil
+        case 27:
+            self = .walletPairParamsMiss
+        default:
+            self = .codeDefault // 默认值
+        }
+    }
+}
+
+public enum ERR_XPBLEKey : UInt64, Codable {
+    case ERR_REMAIN_IFAA_SUCCESS = 0x0
+    case ERR_REMAIN_IFAA_AUTH_DATACOUNT_EMPTY = 0x8734
+    case ERR_IFAA_DEVICE_NOT_REGISTERED = 0x8735
+    case ERR_BLUETOOTH_NOT_ENABLE  = 0x8736
+    case ERR_BLUETOOTH_NOT_DISCONNECT = 0x8737
+    case ERR_SSID_EMPTY = 0x8738
+    case ERR_BLUETOOTH_CONNECT_TIMEOUT = 0x8739
+    case ERR_IFAA_MSG_EMPTY = 0x873A
+    case ERR_BLUETOOTH_DISCONNECT_FAILED = 0x873B
+    case ERR_IFAA_KEY_EMPTY = 0x873C
+    case ERR_IFAA_KEY_SYNCING = 0x873D
+    case ERR_BLUETOOTH_DISCONNECT_ACCIDENT = 0x873E
+    case ERR_IFAA_PERMISSION_DENIED = 0x873F
+    case ERR_STATUS_RESULT_FALLBACK = 0x8740
+    case ERR_USER_CANCEL_VERIFY = 0x8741
+    case ERR_USER_INVALID_CARD = 0x8742
+    case ERR_UNKNOWN = 0x8743
+    case ERR_SSID_NOT_EQUAL = 0x8744
+    case ERR_BLE_DISCONNECT_FAILED = 0x8745
+    case ERR_BLE_DISCONNECT_TIMEOUT = 0x8746
+    case ERR_BLE_LAST_SESSION = 0x8747
+    case ERR_BLE_CANCEL_MONITOER = 0x8748
+    case ERR_BLE_NEED_CANCEL = 0x8749
+    case ERR_BLE_RECONNECT_MORE_COUNT = 0x8750
+    case ERR_BLE_RECONNECT_MORE_TIME = 0x8751
+    case ERR_BLE_RECONNECT_FAILED = 0x8752
+    
+    public init(rawValue: UInt64) {
+        switch rawValue {
+        case 0x0:
+            self = .ERR_REMAIN_IFAA_SUCCESS
+        case 0x8734:
+            self = .ERR_REMAIN_IFAA_AUTH_DATACOUNT_EMPTY
+        case 0x8735:
+            self = .ERR_IFAA_DEVICE_NOT_REGISTERED
+        case 0x8736:
+            self = .ERR_BLUETOOTH_NOT_ENABLE
+        case 0x8737:
+            self = .ERR_BLUETOOTH_NOT_DISCONNECT
+        case 0x8738:
+            self = .ERR_SSID_EMPTY
+        case 0x8739:
+            self = .ERR_BLUETOOTH_CONNECT_TIMEOUT
+        case 0x873A:
+            self = .ERR_IFAA_MSG_EMPTY
+        case 0x873B:
+            self = .ERR_BLUETOOTH_DISCONNECT_FAILED
+        case 0x873C:
+            self = .ERR_IFAA_KEY_EMPTY
+        case 0x873D:
+            self = .ERR_IFAA_KEY_SYNCING
+        case 0x873E:
+            self = .ERR_BLUETOOTH_DISCONNECT_ACCIDENT
+        case 0x873F:
+            self = .ERR_IFAA_PERMISSION_DENIED
+        case 0x8740:
+            self = .ERR_STATUS_RESULT_FALLBACK
+        case 0x8741:
+            self = .ERR_USER_CANCEL_VERIFY
+        case 0x8742:
+            self = .ERR_USER_INVALID_CARD
+        case 0x8743:
+            self = .ERR_UNKNOWN
+        case 0x8744:
+            self = .ERR_SSID_NOT_EQUAL
+        case 0x8745:
+            self = .ERR_BLE_DISCONNECT_FAILED
+        case 0x8746:
+            self = .ERR_BLE_DISCONNECT_TIMEOUT
+        case 0x8747:
+            self = .ERR_BLE_LAST_SESSION
+        case 0x8748:
+            self = .ERR_BLE_CANCEL_MONITOER
+        case 0x8749:
+            self = .ERR_BLE_NEED_CANCEL
+        case 0x8750:
+            self = .ERR_BLE_RECONNECT_MORE_COUNT
+        case 0x8751:
+            self = .ERR_BLE_RECONNECT_MORE_TIME
+        case 0x8752:
+            self = .ERR_BLE_RECONNECT_FAILED
+        default:
+            self = .ERR_UNKNOWN // 默认值
+        }
+    }
+}

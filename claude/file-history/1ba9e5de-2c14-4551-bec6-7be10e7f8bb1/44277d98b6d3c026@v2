@@ -1,0 +1,162 @@
+#!/bin/bash
+# spec-architecture-lint.sh — 五层规范架构一致性自动检查
+# 用法: 在 XPMotors_IOS 根目录执行 ./scripts/spec-architecture-lint.sh
+
+set -euo pipefail
+
+ERRORS=0
+WARNINGS=0
+REGISTRY=".ai-knowledge/module-registry.md"
+
+echo "=== Spec Architecture Lint ==="
+echo ""
+
+# ─── Check 1: Module Registry 路径一致性 ───
+echo "Check 1: Module registry path consistency"
+# 提取所有非 pending 模块的 knowledge 路径
+while IFS= read -r kpath; do
+  kpath=$(echo "$kpath" | xargs)
+  if [ ! -d "$kpath" ]; then
+    echo "  ❌ Missing knowledge dir: $kpath"
+    ERRORS=$((ERRORS + 1))
+  fi
+done < <(awk '
+  /^```yaml/       { in_block=1; has_pending=0; kpath=""; next }
+  /^```$/          { if (in_block && !has_pending && kpath != "") print kpath; in_block=0; next }
+  in_block && /status: pending/ { has_pending=1 }
+  in_block && /knowledge:/ { gsub(/.*knowledge: */, ""); gsub(/ *$/, ""); kpath=$0 }
+' "$REGISTRY")
+
+if [ $ERRORS -eq 0 ]; then
+  echo "  ✅ All active module knowledge paths exist"
+fi
+
+# ─── Check 2: Constitution 无 TODO ───
+echo ""
+echo "Check 2: No TODO in active constitutions"
+TODO_COUNT=0
+while IFS= read -r cfile; do
+  if grep -q "TODO" "$cfile" 2>/dev/null; then
+    echo "  ❌ TODO found in: $cfile"
+    TODO_COUNT=$((TODO_COUNT + 1))
+    ERRORS=$((ERRORS + 1))
+  fi
+done < <(find . -path "*/.ai-knowledge/specs/constitution.md" -not -path "*/node_modules/*" 2>/dev/null)
+
+if [ $TODO_COUNT -eq 0 ]; then
+  echo "  ✅ All constitutions are TODO-free"
+fi
+
+# ─── Check 3: CLAUDE.md 无 TODO ───
+echo ""
+echo "Check 3: No TODO in active CLAUDE.md files"
+CMD_TODO=0
+while IFS= read -r cfile; do
+  if grep -q "TODO" "$cfile" 2>/dev/null; then
+    echo "  ❌ TODO found in: $cfile"
+    CMD_TODO=$((CMD_TODO + 1))
+    ERRORS=$((ERRORS + 1))
+  fi
+done < <(find . -path "*/.claude/CLAUDE.md" -not -path "*/node_modules/*" -not -path "./.claude/*" 2>/dev/null)
+
+if [ $CMD_TODO -eq 0 ]; then
+  echo "  ✅ All CLAUDE.md files are TODO-free"
+fi
+
+# ─── Check 4: deps.yml 覆盖率 ───
+echo ""
+echo "Check 4: deps.yml coverage for active modules"
+MISSING_DEPS=0
+for dir in submodule/*/; do
+  if [ -d "$dir/.ai-knowledge" ] && [ ! -f "$dir/.ai-knowledge/deps.yml" ]; then
+    echo "  ❌ Missing deps.yml: $dir"
+    MISSING_DEPS=$((MISSING_DEPS + 1))
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+for dir in LocalPods/*/; do
+  if [ -d "$dir/.ai-knowledge" ] && [ -f "$dir/.ai-knowledge/specs/constitution.md" ] && [ ! -f "$dir/.ai-knowledge/deps.yml" ]; then
+    echo "  ⚠️  Missing deps.yml: $dir (has constitution but no deps)"
+    WARNINGS=$((WARNINGS + 1))
+  fi
+done
+
+if [ $MISSING_DEPS -eq 0 ]; then
+  echo "  ✅ All submodules have deps.yml"
+fi
+
+# ─── Check 5: Skill 交叉引用完整性 ───
+echo ""
+echo "Check 5: Skill cross-reference integrity"
+DANGLING=0
+# 只检查真正不存在的 skill 引用（排除 skill 自身目录中的匹配）
+for ref in "pitfall-logger"; do
+  # 在非 $ref 目录的 skill 文件中搜索引用
+  count=$(grep -rl "$ref" .claude/skills/ 2>/dev/null | grep -v ".claude/skills/$ref/" | wc -l || true)
+  if [ "$count" -gt 0 ] && [ ! -d ".claude/skills/$ref" ]; then
+    echo "  ❌ Dangling reference '$ref' in skills (skill directory does not exist)"
+    DANGLING=$((DANGLING + 1))
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
+if [ $DANGLING -eq 0 ]; then
+  echo "  ✅ No dangling skill references"
+fi
+
+# ─── Check 6: xp-spec-framework 参数化验证 ───
+echo ""
+echo "Check 6: Framework parameterization (xp-spec-framework)"
+if [ -d "../xp-spec-framework/skills" ]; then
+  HARDCODED=$(grep -rl "\.ai-knowledge/" ../xp-spec-framework/skills/ 2>/dev/null | wc -l || true)
+  if [ "$HARDCODED" -gt 0 ]; then
+    echo "  ❌ $HARDCODED files with hardcoded .ai-knowledge/ in framework"
+    ERRORS=$((ERRORS + $HARDCODED))
+  else
+    echo "  ✅ Framework fully parameterized"
+  fi
+else
+  echo "  ⚠️  xp-spec-framework not found at ../xp-spec-framework/, skipping"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
+# ─── Check 7: Pending 模块标记一致性 ───
+echo ""
+echo "Check 7: Pending module consistency"
+PENDING_NO_STATUS=0
+# 检查 <!-- skeleton: pending --> 区域内的模块是否都有 status: pending
+awk '
+  /skeleton: pending/ { in_pending=1 }
+  /scaffold:end/ { in_pending=0 }
+  in_pending && /^- id:/ { current_id=$3 }
+  in_pending && /status: pending/ { has_status=1 }
+  in_pending && /^```$/ {
+    if (current_id != "" && !has_status) {
+      print "  ❌ Pending module missing status: pending — " current_id
+      errors++
+    }
+    current_id=""; has_status=0
+  }
+  END { exit errors }
+' "$REGISTRY" || PENDING_NO_STATUS=$?
+
+if [ $PENDING_NO_STATUS -eq 0 ]; then
+  echo "  ✅ All pending modules properly marked"
+else
+  ERRORS=$((ERRORS + PENDING_NO_STATUS))
+fi
+
+# ─── Summary ───
+echo ""
+echo "================================"
+echo "Errors:   $ERRORS"
+echo "Warnings: $WARNINGS"
+echo "================================"
+
+if [ $ERRORS -gt 0 ]; then
+  echo "❌ FAILED — $ERRORS error(s) found"
+  exit 1
+else
+  echo "✅ PASSED — architecture is consistent"
+  exit 0
+fi

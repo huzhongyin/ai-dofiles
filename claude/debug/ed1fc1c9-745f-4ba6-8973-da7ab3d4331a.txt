@@ -1,0 +1,38 @@
+2026-04-20T13:21:12.495Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:12.502Z [DEBUG] MDM settings load completed in 3001ms
+2026-04-20T13:21:15.179Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:15.198Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:15.317Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:15.317Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:21:15.317Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:15.317Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:16.866Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-20T13:21:16.946Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-20T13:21:16.946Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-20T13:21:17.093Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-20T13:21:18.586Z [DEBUG] Error log sink initialized
+2026-04-20T13:21:21.842Z [DEBUG] Lock acquisition took longer than expected - another Claude instance may be running
+2026-04-20T13:21:24.366Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:24.367Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:24.440Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:24.440Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:21:24.440Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:24.440Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:24.478Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'userSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:21:24.998Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'userSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:21:25.006Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'projectSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:21:25.006Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'projectSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:21:25.026Z [DEBUG] Git remote URL: null
+2026-04-20T13:21:25.026Z [DEBUG] No git remote URL found
+2026-04-20T13:21:25.410Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-04-20T13:21:27.166Z [DEBUG] [claudeai-mcp] Checking gate (cached)...
+2026-04-20T13:21:27.167Z [DEBUG] [claudeai-mcp] Gate returned: false
+2026-04-20T13:21:27.167Z [DEBUG] [claudeai-mcp] Disabled via gate
+2026-04-20T13:21:27.194Z [DEBUG] [ToolSearch:optimistic] mode=tst, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-04-20T13:21:27.244Z [DEBUG] [STARTUP] Running setup()...
+2026-04-20T13:21:27.941Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:27.941Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:27.968Z [DEBUG] Loading skills from: managed=/Library/Application Support/ClaudeCode/.claude/skills, user=/Users/xpeng/.claude/skills, project=[]
+2026-04-20T13:21:27.980Z [DEBUG] Error log sink initialized
+2026-04-20T13:21:28.430Z [DEBUG] [STARTUP] setup() completed in 1186ms
+2026-04-20T13:21:28.430Z [DEBUG] [STARTUP] Loading commands and agents...

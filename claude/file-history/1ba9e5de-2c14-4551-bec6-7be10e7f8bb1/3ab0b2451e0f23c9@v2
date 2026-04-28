@@ -1,0 +1,44 @@
+# XPWidget 宪法
+
+> 本文件是 XPWidget 的**稳定规范**，描述模块边界、核心约束与对外契约。
+
+## 1. 模块定位
+
+iOS 主屏幕 Widget Extension。核心职责：
+- 车辆信息小组件（InfoWidget）— 展示电量/里程等
+- 车控快捷操作小组件（ControlWidget / FlatControlWidget）
+- 锁屏小组件（LockScreen/）
+- 灵动岛 / Live Activity（LiveActivity/）
+- 定时刷新逻辑（Refresh/）
+
+**明确不属于**：完整车控流程、网络请求发起、用户登录。
+
+## 2. 架构约束
+
+WidgetKit Timeline Provider 模式。Widget → TimelineProvider → App Group 共享数据读取。禁止直接发起网络请求。
+
+## 3. 语言策略
+
+Swift + SwiftUI（WidgetKit 强制要求）。OC 通过 Bridging-Header 桥接（用于读取共享数据模型）。
+
+## 4. 依赖边界
+
+**允许**：App Group 共享的 UserDefaults、Keychain 数据。
+**禁止**：UIApplication（Extension 不可用）、直接 import 主工程代码。
+
+## 5. 禁止事项
+
+- 禁止使用 UIApplication.shared（Extension 不可用）
+- 禁止在 Widget 中发起长耗时网络请求
+- 禁止 Widget 内存超过 30MB
+- 禁止在 Timeline Provider 中执行阻塞操作
+
+## 6. 与其他模块的接口契约
+
+- 数据来源：App Group UserDefaults(suiteName:)
+- Intent 定义：XPWidget.intentdefinition
+- Entitlements: XPWidgetExtension.entitlements
+
+---
+
+> 变更本文件请同步更新 `.ai-knowledge/deps.yml` 与 module-registry。

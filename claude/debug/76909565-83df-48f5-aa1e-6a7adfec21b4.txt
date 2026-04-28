@@ -1,0 +1,176 @@
+2026-04-20T13:24:24.566Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:24.567Z [DEBUG] MDM settings load completed in 1250ms
+2026-04-20T13:24:26.658Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:26.659Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:27.207Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:27.208Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:24:27.208Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:27.208Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:28.967Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-20T13:24:28.969Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-20T13:24:28.969Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-20T13:24:28.975Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-20T13:24:29.176Z [DEBUG] Error log sink initialized
+2026-04-20T13:24:29.510Z [ERROR] Failed to save config with lock: Error: Lock file is already being held
+2026-04-20T13:24:30.200Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:30.200Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:30.567Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:30.567Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:24:30.567Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:30.568Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:30.572Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'userSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:24:30.575Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'userSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:24:30.575Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'projectSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:24:30.575Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'projectSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:24:30.579Z [DEBUG] Git remote URL: null
+2026-04-20T13:24:30.579Z [DEBUG] No git remote URL found
+2026-04-20T13:24:30.612Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-04-20T13:24:31.303Z [DEBUG] [claudeai-mcp] Checking gate (cached)...
+2026-04-20T13:24:31.303Z [DEBUG] [claudeai-mcp] Gate returned: false
+2026-04-20T13:24:31.303Z [DEBUG] [claudeai-mcp] Disabled via gate
+2026-04-20T13:24:31.325Z [DEBUG] [ToolSearch:optimistic] mode=tst, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-04-20T13:24:31.334Z [DEBUG] [STARTUP] Running setup()...
+2026-04-20T13:24:31.348Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:31.348Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:31.358Z [DEBUG] Loading skills from: managed=/Library/Application Support/ClaudeCode/.claude/skills, user=/Users/xpeng/.claude/skills, project=[]
+2026-04-20T13:24:31.361Z [DEBUG] Error log sink initialized
+2026-04-20T13:24:31.449Z [DEBUG] [STARTUP] setup() completed in 115ms
+2026-04-20T13:24:31.449Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-04-20T13:24:32.526Z [DEBUG] Loaded 17 installed plugins from /Users/xpeng/.claude/plugins/installed_plugins.json
+2026-04-20T13:24:32.932Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.016Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.017Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.017Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.045Z [DEBUG] Loading plugin agent-sdk-dev from source: "./plugins/agent-sdk-dev"
+2026-04-20T13:24:33.047Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.047Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.047Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.047Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.177Z [DEBUG] Loading plugin claude-code-setup from source: "./plugins/claude-code-setup"
+2026-04-20T13:24:33.180Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.180Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.180Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.180Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.180Z [DEBUG] Loading plugin claude-md-management from source: "./plugins/claude-md-management"
+2026-04-20T13:24:33.181Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.185Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.191Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.191Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.191Z [DEBUG] Loading plugin code-review from source: "./plugins/code-review"
+2026-04-20T13:24:33.192Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.192Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.196Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.196Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.196Z [DEBUG] Loading plugin code-simplifier from source: "./plugins/code-simplifier"
+2026-04-20T13:24:33.196Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.196Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.196Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.196Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.196Z [DEBUG] Loading plugin context7 from source: "./external_plugins/context7"
+2026-04-20T13:24:33.196Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.196Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.196Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.196Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.196Z [DEBUG] Loading plugin feature-dev from source: "./plugins/feature-dev"
+2026-04-20T13:24:33.196Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.196Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.204Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.205Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.205Z [DEBUG] Loading plugin frontend-design from source: "./plugins/frontend-design"
+2026-04-20T13:24:33.205Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.205Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.205Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.205Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.205Z [DEBUG] Loading plugin greptile from source: "./external_plugins/greptile"
+2026-04-20T13:24:33.205Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.205Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.205Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.205Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.205Z [DEBUG] Loading plugin hookify from source: "./plugins/hookify"
+2026-04-20T13:24:33.205Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.205Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.205Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.205Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.205Z [DEBUG] Loading plugin playwright from source: "./external_plugins/playwright"
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] Loading plugin plugin-dev from source: "./plugins/plugin-dev"
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] Loading plugin project-reader from source: "./project-reader"
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] Loading plugin ralph-loop from source: "./plugins/ralph-loop"
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] Loading plugin security-guidance from source: "./plugins/security-guidance"
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.206Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.206Z [DEBUG] Loading plugin skill-creator from source: "./plugins/skill-creator"
+2026-04-20T13:24:33.206Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.207Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.207Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:24:33.207Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:24:33.207Z [DEBUG] Loading plugin superpowers from source: {"source":"url","url":"https://github.com/obra/superpowers.git"}
+2026-04-20T13:24:33.215Z [DEBUG] Using provided version for superpowers@claude-plugins-official: 5.0.2
+2026-04-20T13:24:33.311Z [DEBUG] Using versioned cached plugin superpowers from /Users/xpeng/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.2
+2026-04-20T13:24:33.374Z [DEBUG] Loaded 95 unique skills (95 unconditional, 0 conditional, managed: 0, user: 28, project: 0, additional: 0, legacy commands: 67)
+2026-04-20T13:24:34.418Z [DEBUG] Using manifest version for project-reader@local: 1.0.0
+2026-04-20T13:24:34.915Z [DEBUG] Using manifest version for claude-code-setup@claude-plugins-official: 1.0.0
+2026-04-20T13:24:35.379Z [DEBUG] Using manifest version for claude-md-management@claude-plugins-official: 1.0.0
+2026-04-20T13:24:35.383Z [DEBUG] Using manifest version for code-simplifier@claude-plugins-official: 1.0.0
+2026-04-20T13:24:35.624Z [DEBUG] Plugin project-reader@local version 1.0.0 already cached at /Users/xpeng/.claude/plugins/cache/local/project-reader/1.0.0
+2026-04-20T13:24:35.624Z [DEBUG] Resolved local plugin project-reader to versioned cache: /Users/xpeng/.claude/plugins/cache/local/project-reader/1.0.0
+2026-04-20T13:24:35.625Z [DEBUG] Plugin code-simplifier@claude-plugins-official version 1.0.0 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/code-simplifier/1.0.0
+2026-04-20T13:24:35.625Z [DEBUG] Resolved local plugin code-simplifier to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/code-simplifier/1.0.0
+2026-04-20T13:24:35.625Z [DEBUG] Using git SHA for code-review@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:35.625Z [DEBUG] Using git SHA for context7@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:35.625Z [DEBUG] Using git SHA for greptile@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:35.625Z [DEBUG] Using git SHA for feature-dev@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:35.625Z [DEBUG] Using git SHA for hookify@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:35.625Z [DEBUG] Using git SHA for agent-sdk-dev@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:35.625Z [DEBUG] Plugin claude-md-management@claude-plugins-official version 1.0.0 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/claude-md-management/1.0.0
+2026-04-20T13:24:35.625Z [DEBUG] Resolved local plugin claude-md-management to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/claude-md-management/1.0.0
+2026-04-20T13:24:35.625Z [DEBUG] Using git SHA for plugin-dev@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:36.088Z [DEBUG] Using git SHA for frontend-design@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:36.095Z [DEBUG] Using git SHA for ralph-loop@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:36.095Z [DEBUG] Using git SHA for skill-creator@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:36.095Z [DEBUG] Using git SHA for security-guidance@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:36.095Z [DEBUG] Using git SHA for playwright@claude-plugins-official: b36fd4b75301
+2026-04-20T13:24:36.098Z [DEBUG] Plugin claude-code-setup@claude-plugins-official version 1.0.0 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/claude-code-setup/1.0.0
+2026-04-20T13:24:36.098Z [DEBUG] Resolved local plugin claude-code-setup to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/claude-code-setup/1.0.0
+2026-04-20T13:24:36.098Z [DEBUG] Loaded hooks from standard location for plugin superpowers: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.2/hooks/hooks.json
+2026-04-20T13:24:36.101Z [DEBUG] Plugin feature-dev@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/feature-dev/b36fd4b75301
+2026-04-20T13:24:36.101Z [DEBUG] Resolved local plugin feature-dev to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/feature-dev/b36fd4b75301
+2026-04-20T13:24:36.101Z [DEBUG] Plugin code-review@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/code-review/b36fd4b75301
+2026-04-20T13:24:36.101Z [DEBUG] Resolved local plugin code-review to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/code-review/b36fd4b75301
+2026-04-20T13:24:36.101Z [DEBUG] Plugin context7@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/context7/b36fd4b75301
+2026-04-20T13:24:36.102Z [DEBUG] Resolved local plugin context7 to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/context7/b36fd4b75301
+2026-04-20T13:24:36.102Z [DEBUG] Plugin greptile@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/greptile/b36fd4b75301
+2026-04-20T13:24:36.102Z [DEBUG] Resolved local plugin greptile to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/greptile/b36fd4b75301
+2026-04-20T13:24:36.104Z [DEBUG] Plugin agent-sdk-dev@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/agent-sdk-dev/b36fd4b75301
+2026-04-20T13:24:36.104Z [DEBUG] Resolved local plugin agent-sdk-dev to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/agent-sdk-dev/b36fd4b75301
+2026-04-20T13:24:36.104Z [DEBUG] Plugin hookify@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/hookify/b36fd4b75301
+2026-04-20T13:24:36.104Z [DEBUG] Resolved local plugin hookify to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/hookify/b36fd4b75301
+2026-04-20T13:24:36.104Z [DEBUG] Plugin plugin-dev@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/plugin-dev/b36fd4b75301
+2026-04-20T13:24:36.104Z [DEBUG] Resolved local plugin plugin-dev to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/plugin-dev/b36fd4b75301
+2026-04-20T13:24:36.117Z [DEBUG] Plugin playwright@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/playwright/b36fd4b75301
+2026-04-20T13:24:36.117Z [DEBUG] Resolved local plugin playwright to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/playwright/b36fd4b75301
+2026-04-20T13:24:36.117Z [DEBUG] Plugin security-guidance@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/security-guidance/b36fd4b75301
+2026-04-20T13:24:36.118Z [DEBUG] Resolved local plugin security-guidance to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/security-guidance/b36fd4b75301
+2026-04-20T13:24:36.118Z [DEBUG] Plugin ralph-loop@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/ralph-loop/b36fd4b75301
+2026-04-20T13:24:36.118Z [DEBUG] Resolved local plugin ralph-loop to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/ralph-loop/b36fd4b75301
+2026-04-20T13:24:36.118Z [DEBUG] Plugin skill-creator@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/skill-creator/b36fd4b75301
+2026-04-20T13:24:36.118Z [DEBUG] Resolved local plugin skill-creator to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/skill-creator/b36fd4b75301
+2026-04-20T13:24:36.118Z [DEBUG] Plugin frontend-design@claude-plugins-official version b36fd4b75301 already cached at /Users/xpeng/.claude/plugins/cache/claude-plugins-official/frontend-design/b36fd4b75301
+2026-04-20T13:24:36.118Z [DEBUG] Resolved local plugin frontend-design to versioned cache: /Users/xpeng/.claude/plugins/cache/claude-plugins-official/frontend-design/b36fd4b75301

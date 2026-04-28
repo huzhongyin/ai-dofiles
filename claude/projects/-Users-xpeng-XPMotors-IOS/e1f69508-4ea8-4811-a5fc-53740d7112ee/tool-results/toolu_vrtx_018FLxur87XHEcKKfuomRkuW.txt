@@ -1,0 +1,112 @@
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Proxy/Statistics/Module/Statistics+Control.swift:44:                                                   sessionError: CarKeySessionError = .None,
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:2://  XPCarKeySessionAccesser.swift
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:13:enum CarKeySessionError: Int, Error, Codable, CustomStringConvertible {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:15:    case CarKeySessionIsNil
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:27:    case CarKeySessionIsConnecting
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:28:    case CarKeySessionIsDisconnecting
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:37:        case .CarKeySessionIsNil:
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:38:            return "CarKeySessionIsNil"
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:61:        case .CarKeySessionIsConnecting:
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:62:            return "CarKeySessionIsConnecting"
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:63:        case .CarKeySessionIsDisconnecting:
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:64:            return "CarKeySessionIsDisconnecting"
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:75:enum CarKeySessionState: Int, CustomStringConvertible {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:113:protocol CarKeySessionEventDelegate: NSObjectProtocol {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:114:    func carKeyFunctionExceptionError(error: CarKeySessionError)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:119:protocol CarKeySessionAccesserProtocol {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:120:    func startCarKeySession(timeOut: TimeInterval, _ complete: @escaping ((CarKeySessionError) -> Void))
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:121:    func endCarKeySession(_ completion: ((CarKeySessionError) -> Void)?)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:122:    func sendPassthroughtData(data: Data, timeOut: TimeInterval, _ complete: @escaping ((CarKeySessionError) -> Void))
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:123:    func getLocalKeyPollingSwitchState(complete: @escaping (CarKeyPollingSwitchState, CarKeySessionError) -> Void)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:127:class CarKeySessionAccesser: NSObject, CarKeySessionAccesserProtocol {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:144:                        throw CarKeySessionError.TaskTimedOut
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:151:            } catch CarKeySessionError.TaskTimedOut {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:189:    var stateSubject: PassthroughSubject<CarKeySessionState, Never> = .init()
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:190:    var _state: CarKeySessionState = .NotConnected
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:191:    var state: CarKeySessionState {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:212:    weak var carKeyEventDelegate: CarKeySessionEventDelegate?
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:214:    public init(vehicleIdentifier: String, delegate: CarKeySessionEventDelegate?) {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:231:                Log.i(tag: "carKeySession", "deinit end session error: \(error.localizedDescription)")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:238:        NotificationCenter.default.addObserver(self, selector: #selector(mockExceptionTypeChanged), name: NSNotification.Name(rawValue: "CarKeySessionMockExceptionTypeChanged"), object: nil)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:246:    public func startCarKeySession(timeOut: TimeInterval, _ complete: @escaping ((CarKeySessionError) -> Void)) {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:248:            complete(CarKeySessionError.CarKeySessionIsConnecting)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:252:            complete(CarKeySessionError.CarKeySessionIsDisconnecting)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:257:            let result = refreshRealTimeCarKeySessionState(carKeySession: carKeySession)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:261:            Log.i(tag: "carKeySession", "startCarKeySession")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:273:                self.carKeyEventDelegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.vehicleIdentifier, exceptionType: .Block, sessionError: .Block))
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:276:            CarKeySessionAccesser.detachedWithTimeout(
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:280:                        throw CarKeySessionError.Unknown
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:287:                        throw CarKeySessionError.RequestTimedOut
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:295:                    let connectState = self.refreshRealTimeCarKeySessionState(carKeySession: result)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:299:                    self.carKeyEventDelegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.vehicleIdentifier, exceptionType: .None, sessionError: .None))
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:306:                    self.carKeyEventDelegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.vehicleIdentifier, exceptionType: .Timeout, sessionError: .TaskTimedOut))
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:309:                    Log.i(tag: "carKeySession", "start session error occurred: \(error.localizedDescription)")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:311:                    var sessionError: CarKeySessionError = .Unknown
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:333:                    self.carKeyEventDelegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.vehicleIdentifier, exceptionType: .Error, sessionError: sessionError))
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:339:    func endCarKeySession(_ completion: ((CarKeySessionError) -> Void)?) {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:340:        if state != CarKeySessionState.Connecting {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:346:            .filter { $0 != CarKeySessionState.Connecting }
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:360:    private func executeEndSessionOperation() -> CarKeySessionError {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:362:            Log.i(tag: "carKeySession", "car key session is nil")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:364:            return CarKeySessionError.CarKeySessionIsNil
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:368:            Log.i(tag: "carKeySession", "end key session")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:372:            return CarKeySessionError.None
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:376:            Log.i(tag: "carKeySession", "end session error occurred: \(error.localizedDescription)")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:377:            return CarKeySessionError.Unknown
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:381:    public func sendPassthroughtData(data: Data, timeOut: TimeInterval, _ complete: @escaping ((CarKeySessionError) -> Void)) {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:383:            complete(.CarKeySessionIsNil)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:390:        let result = self.refreshRealTimeCarKeySessionState(carKeySession: carkeySession)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:396:        CarKeySessionAccesser.detachedWithTimeout(
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:400:                    throw CarKeySessionError.Unknown
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:442:    public func getLocalKeyPollingSwitchState(complete: @escaping (CarKeyPollingSwitchState, CarKeySessionError) -> Void) {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:461:    private func refreshRealTimeCarKeySessionState(carKeySession: CarKeyRemoteControlSession) -> (CarKeySessionState, CarKeySessionError) {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:480:    func getRealTimeCarKeySessionState() -> CarKeySessionState {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:482:            Log.i(tag: "carKeySession", "car key session is connecting")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:486:            Log.i(tag: "carKeySession", "car key session is nil")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:489:        let result = refreshRealTimeCarKeySessionState(carKeySession: carKeySession)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:519:extension CarKeySessionAccesser: CarKeyRemoteControlSessionDelegate {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeySessionAccesser.swift:523:        self.carKeyEventDelegate?.carKeyFunctionExceptionError(error: CarKeySessionError.Unknown)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeyException.swift:40:    var sessionError: CarKeySessionError = .None
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeyException.swift:61:    init(cccVid: String, exceptionType: CarKeyExceptionType = .None, sessionError: CarKeySessionError = .None, passError: CarKeyPassEventError = .None) {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeyException.swift:121:        sessionError = CarKeySessionError(rawValue: Int(sessionErrorRawValue) ?? 0) ?? .None
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Definition/VehicleNotification.swift:36:    @objc static public let CarKeySessionExceptionReport: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationCarKeySessionExceptionReport")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:57:    private var _carKeyPlugin: CarKeyPassAccessProtocol?
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:60:    var carKeyPlugin: CarKeyPassAccessProtocol? {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:65:        if _carKeyPlugin == nil || currentCCCVid != cccVid {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:68:            _carKeyPlugin = plugin
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:72:        return _carKeyPlugin
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:201:                self.carKeyPlugin?.remoteCarKeyChanged(keyIdList: nil, uid: self.uid)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:211:                self.carKeyPlugin?.remoteCarKeyChanged(keyIdList: nil, uid: self.uid)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:213:                self.carKeyPlugin?.remoteCarKeyChanged(keyIdList: keyIdList, uid: self.uid)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:501:              let carKeyManager = self.carKeyPlugin else {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:1290:    func getCurrentCarKeyPlugin() -> CarKeyPassAccessProtocol? {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift:1291:        return self.carKeyPlugin
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManagerProtocol.swift:114:    func getCurrentCarKeyPlugin() -> CarKeyPassAccessProtocol?
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:2://  BLEKeyCarKeySessionHandler.swift
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:12:class BLEKeyCarKeySessionHandler : BLEHandler  {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:19:    lazy var carKeySession: CarKeySessionAccesser = {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:20:        return CarKeySessionAccesser(vehicleIdentifier: self.cccVid, delegate: self)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:40:                NotificationCenter.default.post(name: VehicleNotification.kGetCarKeyPassiveEntrySwitchResult, object: nil, userInfo: ["pollingState": CarKeyPollingSwitchState.Unknown.rawValue, "error": CarKeySessionError.BleIsNotConnected.rawValue])
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:62:        self.carKeySession.startCarKeySession(timeOut: 6) { [weak self] error in
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:67:            Log.i(tag: "carKeySession", "startCarKeySession error:", error)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:75:        self.carKeySession.endCarKeySession { error in
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:76:            Log.i(tag: "carKeySession", "endCarKeySession error:", error)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:93:        let state = self.carKeySession.getRealTimeCarKeySessionState()
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:123:extension BLEKeyCarKeySessionHandler: BLESendDataFlowProtocol {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:148:extension BLEKeyCarKeySessionHandler: CarKeySessionEventDelegate {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:150:    func carKeyFunctionExceptionError(error: CarKeySessionError) {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEKeyCarKeySessionHandler.swift:160:        NotificationCenter.default.post(name: VehicleNotification.CarKeySessionExceptionReport, object: data)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:156:        NotificationCenter.default.addObserver(self, selector: #selector(carKeySessionExceptionReport), name: VehicleNotification.CarKeySessionExceptionReport, object: nil)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:246:                    Log.i("carKeyExceptionReport:", "exceptionType is not none, no session cache")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:257:                Log.i("carKeyExceptionReport:", "exceptionType is not none, has session cache")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:283:                Log.i("carKeyExceptionReport:", "exceptionType is not none, no session cache")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:288:                        Log.i("carKeyExceptionReport:", "exceptionType is not none, no normal session cache")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:292:                    Log.i("carKeyExceptionReport:", "exceptionType is not none, has normal session cache")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:299:                    Log.i("carKeyExceptionReport:", "exceptionType is not none, no normal session cache")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:303:                Log.i("carKeyExceptionReport:", "exceptionType is not none, has normal session cache")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift:308:            Log.i("carKeyExceptionReport:", "exceptionType is not none, has session cache, return")
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEHandlerFactory.swift:38:            if (bleHandler as? BLEKeyCarKeySessionHandler)?.cccVid == cccVid {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEHandlerFactory.swift:98:    static private func createCarKeyKeyBleHandler(macAddress: String?, cccVid: String, delegate: BLEDataParserResultDelegate, presenter: VehicleCommunication, keySetting: XiaopengKeyDataSetting? = nil) -> BLEKeyCarKeySessionHandler {
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/BLE/BLEHandlerFactory.swift:103:        return BLEKeyCarKeySessionHandler(name: name, macAddress: macAddress, cccVid: cccVid, cccKeyId: cccKeyId ?? "", dataParser: dataParser)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleConnection/BLEConnection/XiaopengBLEConnection+AppRunEvent.swift:35:            self.presenter?.digitalKeyManager?.getCurrentCarKeyPlugin()?.handleAppRunState(isInBackground: isInBackground)
+submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleConnection/BLEConnection/XiaopengBLEConnection+Connect.swift:347:    private func syncCarKeySessionKeySettingData() {

@@ -1,0 +1,25 @@
+# OC/Swift 互操作规范
+
+## 元信息
+- 触发关键词: ["OC调用Swift", "Swift调用OC", "桥接", "@objc", "Bridging-Header", "互操作"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+项目 OC/Swift 互操作规范：
+
+1. **Swift 暴露给 OC**: 必须添加 `@objc` 和 `public` 修饰符
+   - 类: `@objc(XPBLEKeyCard) public class BleKeyCard`
+   - 枚举: `@objc(XPBLEKeyCardStatus) public enum BleKeyCardStatus`
+   - 方法: `@objc public func xxx()`
+
+2. **OC 暴露给 Swift**: 通过 Bridging-Header
+   - 新增 OC 文件需同步更新 Bridging-Header
+
+3. **典型互操作模式**:
+   - `XPVehicleExt` 中: OC 的 `VEXcomboInstance` 供 Swift 调用
+   - `XPBLEDataProcessor`: .mm 文件桥接 C++ → OC → Swift
+   - `XPCarAbilityConfig`: 纯 OC，通过 Bridging-Header 暴露给 Swift
+
+4. **禁止**: 在 Swift 中直接 import OC 的 .h 文件（必须走 Bridging-Header）

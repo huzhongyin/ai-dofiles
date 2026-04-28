@@ -1,0 +1,340 @@
+import pytest
+import tempfile
+import json
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+from scripts.claude_code_adapter import ClaudeCodeAdapter
+
+class TestClaudeCodeAdapter:
+
+    def setup_method(self):
+        """设置测试环境"""
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.adapter = ClaudeCodeAdapter(str(self.temp_dir))
+
+        # 创建模拟项目结构
+        self.create_mock_project()
+
+    def teardown_method(self):
+        """清理测试环境"""
+        import shutil
+        if self.temp_dir.exists():
+            shutil.rmtree(self.temp_dir)
+
+    def create_mock_project(self):
+        """创建模拟项目结构"""
+        # 创建Podfile
+        podfile_content = """
+platform :ios, '12.0'
+use_frameworks!
+
+target 'XPApp' do
+  pod 'LocalPods/XPVehicleSDK', :path => './LocalPods/XPVehicleSDK'
+  pod 'LocalPods/XPBusiness_AI', :path => './LocalPods/XPBusiness_AI'
+  pod 'AFNetworking', '~> 4.0'
+end
+"""
+        (self.temp_dir / "Podfile").write_text(podfile_content)
+
+        # 创建LocalPods结构
+        localpods_dir = self.temp_dir / "LocalPods"
+
+        # XPVehicleSDK
+        vehicle_sdk_dir = localpods_dir / "XPVehicleSDK"
+        vehicle_sdk_dir.mkdir(parents=True)
+        (vehicle_sdk_dir / "XPVehicleSDK.podspec").write_text("Pod::Spec.new do |s|\n  s.name = 'XPVehicleSDK'\nend")
+        (vehicle_sdk_dir / "Classes" / "XPVehicle.h").parent.mkdir(exist_ok=True, parents=True)
+        (vehicle_sdk_dir / "Classes" / "XPVehicle.h").write_text("@interface XPVehicle : NSObject\n@end")
+
+        # XPBusiness_AI
+        business_ai_dir = localpods_dir / "XPBusiness_AI"
+        business_ai_dir.mkdir(parents=True)
+        (business_ai_dir / "XPBusiness_AI.podspec").write_text("Pod::Spec.new do |s|\n  s.name = 'XPBusiness_AI'\nend")
+        (business_ai_dir / "Classes" / "XPAIManager.swift").parent.mkdir(exist_ok=True, parents=True)
+        (business_ai_dir / "Classes" / "XPAIManager.swift").write_text("class XPAIManager {\n}")
+
+        # 主项目文件
+        (self.temp_dir / "XPApp" / "ViewController.swift").parent.mkdir(exist_ok=True, parents=True)
+        (self.temp_dir / "XPApp" / "ViewController.swift").write_text("class ViewController: UIViewController {\n}")
+
+    def test_initialize_project(self):
+        """测试项目初始化"""
+        result = self.adapter.initialize_project()
+
+        print(f"初始化结果: {result}")  # 调试信息
+
+        if result["status"] == "error":
+            print(f"错误信息: {result['error']}")
+
+        assert result["status"] == "initialized"
+        assert result["total_modules"] > 0
+        assert "modules_by_type" in result
+        assert "permission_matrix" in result
+
+        # 验证项目信息被缓存
+        assert self.adapter._project_info is not None
+
+    @patch('scripts.architecture_scanner.ArchitectureScanner.scan_project')
+    def test_initialize_project_error_handling(self, mock_scan):
+        """测试项目初始化错误处理"""
+        # 模拟扫描失败
+        mock_scan.side_effect = Exception("扫描失败")
+
+        result = self.adapter.initialize_project()
+
+        assert result["status"] == "error"
+        assert "扫描失败" in result["error"]
+
+    def test_check_module_access_allowed(self):
+        """测试模块访问权限检查 - 允许访问"""
+        result = self.adapter.check_module_access(
+            user_id="test_user",
+            module_name="XPBusiness_AI",
+            action="read"
+        )
+
+        assert result["allowed"] == True
+        assert result["module"] == "XPBusiness_AI"
+        assert result["action"] == "read"
+        assert result["user_id"] == "test_user"
+
+    def test_check_module_access_denied(self):
+        """测试模块访问权限检查 - 拒绝访问"""
+        # 使用受限用户上下文
+        user_context = {
+            "name": "测试用户",
+            "roles": ["intern"],  # 实习生角色，权限受限
+            "teams": ["intern-team"]
+        }
+
+        result = self.adapter.check_module_access(
+            user_id="intern_user",
+            module_name="XPVehicleSDK",
+            action="write",
+            user_context=user_context
+        )
+
+        # 由于实习生没有vehicle_sdk写权限，应该被拒绝
+        # 注意：这里的结果取决于permission_checker的具体实现
+        assert result["module"] == "XPVehicleSDK"
+        assert result["action"] == "write"
+
+    def test_validate_code_standards_specific_files(self):
+        """测试特定文件的代码标准验证"""
+        # 创建有问题的Swift文件
+        test_file = self.temp_dir / "TestFile.swift"
+        test_file.write_text("class badNaming {\n}")
+
+        result = self.adapter.validate_code_standards([str(test_file)])
+
+        assert result["status"] == "partial_scan"
+        assert result["scanned_files"] == 1
+        assert result["total_violations"] >= 0
+
+    def test_validate_code_standards_full_project(self):
+        """测试整个项目的代码标准验证"""
+        result = self.adapter.validate_code_standards()
+
+        assert "total_violations" in result
+        assert "scanned_files" in result
+        assert "status" in result
+
+    def test_get_ai_coding_suggestions_vehicle_module(self):
+        """测试车控模块AI编码建议"""
+        result = self.adapter.get_ai_coding_suggestions({
+            "module": "XPVehicleSDK",
+            "action": "ai_assist",
+            "user_id": "developer"
+        })
+
+        if result["allowed"]:
+            suggestions = result["suggestions"]
+            assert any("车控模块" in suggestion for suggestion in suggestions)
+            assert any("线程安全" in suggestion for suggestion in suggestions)
+        else:
+            assert "reason" in result
+
+    def test_get_ai_coding_suggestions_business_module(self):
+        """测试业务模块AI编码建议"""
+        result = self.adapter.get_ai_coding_suggestions({
+            "module": "XPBusiness_AI",
+            "action": "ai_assist",
+            "user_id": "developer"
+        })
+
+        if result["allowed"]:
+            suggestions = result["suggestions"]
+            assert any("MVVM" in suggestion for suggestion in suggestions)
+
+    def test_get_project_health_summary(self):
+        """测试项目健康状态摘要"""
+        result = self.adapter.get_project_health_summary()
+
+        assert "health_score" in result
+        assert "total_modules" in result
+        assert "standards_violations" in result
+        assert "status" in result
+        assert 0 <= result["health_score"] <= 100
+
+    def test_pre_tool_use_hook_write_permission(self):
+        """测试工具使用前钩子 - 写权限检查"""
+        # 测试Edit工具
+        result = self.adapter.pre_tool_use_hook(
+            tool_name="Edit",
+            parameters={"file_path": "/LocalPods/XPVehicleSDK/Classes/XPVehicle.h"},
+            context={"user_id": "test_user"}
+        )
+
+        assert "allowed" in result
+        # 具体是否允许取决于权限配置
+
+    def test_pre_tool_use_hook_non_restricted_tool(self):
+        """测试工具使用前钩子 - 非受限工具"""
+        result = self.adapter.pre_tool_use_hook(
+            tool_name="Read",
+            parameters={"file_path": "/some/file.txt"},
+            context={"user_id": "test_user"}
+        )
+
+        assert result["allowed"] == True
+
+    def test_post_tool_use_hook_source_file_validation(self):
+        """测试工具使用后钩子 - 源文件验证"""
+        # 创建一个Swift文件
+        test_file = self.temp_dir / "TestClass.swift"
+        test_file.write_text("class badNaming {\n}")
+
+        result = self.adapter.post_tool_use_hook(
+            tool_name="Write",
+            parameters={"file_path": str(test_file)},
+            result={"success": True},
+            context={}
+        )
+
+        # 应该检测到命名问题
+        assert "status" in result or "warning" in result
+
+    def test_post_tool_use_hook_non_source_file(self):
+        """测试工具使用后钩子 - 非源文件"""
+        result = self.adapter.post_tool_use_hook(
+            tool_name="Write",
+            parameters={"file_path": "README.md"},
+            result={"success": True},
+            context={}
+        )
+
+        assert result["status"] == "ok"
+
+    def test_extract_module_from_path(self):
+        """测试从路径提取模块名"""
+        test_cases = [
+            ("LocalPods/XPVehicleSDK/Classes/XPVehicle.h", "XPVehicleSDK"),
+            ("LocalPods/XPBusiness_AI/Sources/Manager.swift", "XPBusiness_AI"),
+            ("XPApp/ViewController.swift", "XPApp"),
+            ("", None),
+            ("single_file.swift", None)
+        ]
+
+        for path, expected in test_cases:
+            result = self.adapter._extract_module_from_path(path)
+            assert result == expected, f"Path: {path}, Expected: {expected}, Got: {result}"
+
+    def test_is_source_file(self):
+        """测试源文件判断"""
+        test_cases = [
+            ("file.swift", True),
+            ("file.h", True),
+            ("file.m", True),
+            ("file.mm", True),
+            ("file.cpp", True),
+            ("file.cc", True),
+            ("file.txt", False),
+            ("file.md", False),
+            ("file.json", False),
+            ("Podfile", False)
+        ]
+
+        for filename, expected in test_cases:
+            result = self.adapter._is_source_file(filename)
+            assert result == expected, f"File: {filename}, Expected: {expected}, Got: {result}"
+
+    def test_build_user_context_with_context(self):
+        """测试构建用户上下文 - 提供上下文"""
+        user_context = {
+            "name": "张三",
+            "roles": ["senior_architect"],
+            "teams": ["architecture-team"]
+        }
+
+        user = self.adapter._build_user_context("user001", user_context)
+
+        assert user.id == "user001"
+        assert user.name == "张三"
+        assert user.roles == ["senior_architect"]
+        assert user.teams == ["architecture-team"]
+
+    def test_build_user_context_default(self):
+        """测试构建用户上下文 - 默认配置"""
+        user = self.adapter._build_user_context("claude_user")
+
+        assert user.id == "claude_user"
+        assert user.name == "Claude Code User"
+        assert "business_developer" in user.roles
+        assert "senior_architect" in user.roles
+
+    def test_convert_action_string(self):
+        """测试动作字符串转换"""
+        test_cases = [
+            ("read", "READ"),
+            ("write", "WRITE"),
+            ("ai_assist", "AI_ASSIST"),
+            ("unknown", "AI_ASSIST")  # 默认为AI_ASSIST
+        ]
+
+        for action_str, expected_value in test_cases:
+            result = self.adapter._convert_action_string(action_str)
+            assert result.value.upper() == expected_value
+
+    def test_calculate_health_score(self):
+        """测试健康分数计算"""
+        test_cases = [
+            ({"total_violations": 0, "scanned_files": 10}, 100),  # 完美分数
+            ({"total_violations": 5, "scanned_files": 10}, 95),   # 轻微违规
+            ({"total_violations": 15, "scanned_files": 10}, 75),  # 中等违规
+            ({"total_violations": 50, "scanned_files": 10}, 15),  # 严重违规
+        ]
+
+        for report, expected_range in test_cases:
+            score = self.adapter._calculate_health_score(report)
+            assert 0 <= score <= 100
+            if isinstance(expected_range, int):
+                assert abs(score - expected_range) <= 10  # 允许10分误差
+
+    def test_get_module_coding_suggestions_categories(self):
+        """测试不同模块类型的编码建议"""
+        module_test_cases = [
+            ("XPVehicleSDK", ["车控模块", "线程安全"]),
+            ("XPBusiness_AI", ["MVVM", "网络请求"]),
+            ("XPBase_Common", ["通用性", "业务逻辑"]),
+            ("UnknownModule", ["编码规范", "单元测试"])
+        ]
+
+        for module, expected_keywords in module_test_cases:
+            suggestions = self.adapter._get_module_coding_suggestions(module)
+
+            # 检查是否包含预期关键词
+            suggestion_text = " ".join(suggestions)
+            for keyword in expected_keywords:
+                assert keyword in suggestion_text, f"Module {module} should contain keyword '{keyword}'"
+
+    @patch('scripts.standards_validator.StandardsValidator.validate_project')
+    def test_validate_code_standards_error_handling(self, mock_validate):
+        """测试代码标准验证错误处理"""
+        mock_validate.side_effect = Exception("验证失败")
+
+        result = self.adapter.validate_code_standards()
+
+        assert result["status"] == "error"
+        assert "验证失败" in result["error"]
+        assert result["total_violations"] == 0

@@ -1,0 +1,45 @@
+# XPMQTTLibrary — Submodule 规范
+
+> ⚠️ 本仓库为独立 git 仓，本文件与同目录 `.ai-knowledge/` 需在子仓单独提交
+
+## 模块定位
+
+MQTT 远程车控通信通道。负责 MQTT 连接管理、消息发布/订阅、心跳保活与指令执行上报。由 XPVehicleSDK 调用，不直接面向 App 层。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `submodule/XPMQTTLibrary/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+纯 Objective-C（全部 .h/.m，无 Swift，无 C++）。源码分 CoreMQTT / Publish / Bulk / ResponseHandler 四层。
+
+## 对外 API 边界
+
+- 入口：`MQTTClientManager`（遵循 `MQTTClientManagerProtocol`）
+- 发布：`MQTTPublisher` + Category 扩展（`+CarControl`, `+HeartJump`）
+- 中介：`MQTTPublisherMediator` 协调交互
+- 禁止 App 层直接 import 本模块
+
+## 仓内部架构
+
+CoreMQTT（连接管理）→ Publish（消息发布 + 心跳）→ ResponseHandler（响应处理）→ Bulk（批量指令上报）。调用方向自上而下。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。依赖 XPVehicleSDK、ReactiveObjC、MMKV、CloudConfig。第三方库引入受独立仓 Podspec 约束。
+
+## 禁止行为
+
+- 禁止 App 层直接调用 MQTTPublisher，必须通过 XPVehicleSDK 的 VehicleConnection 层
+- 禁止降低 QoS 等级（默认 QoS2）
+- 禁止硬编码 Topic 或 Broker 地址
+- 禁止在 MQTT 回调中执行耗时操作
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → 主仓 `.claude/rules/ios-coding.md`
+- 主工程 App 如何调用本 submodule → L2 `CLAUDE.app.md` 的"与 submodule 的边界"
+- 本 submodule 的演进历史与设计决策 → 子仓 ADR 文档

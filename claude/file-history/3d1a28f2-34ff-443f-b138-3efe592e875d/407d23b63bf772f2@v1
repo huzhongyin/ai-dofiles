@@ -1,0 +1,54 @@
+graph TB
+    subgraph "知识产出"
+        SP["spec-proposal<br/>Phase 5.5 分析产物沉淀"]
+        SD["spec-design<br/>Phase 4.5 调用链新认知"]
+        BA["bug-analysis<br/>Phase 5 知识沉淀检查"]
+        PTR["post-task-review<br/>3维检测 新发现/纠错/踩坑"]
+    end
+
+    subgraph "知识存储"
+        KP["knowledge-points/*.kp.md"]
+        PIT["pitfalls/*.md"]
+        MOD["modules/*.md"]
+        EVO["evolution-log.md"]
+    end
+
+    subgraph "知识消费"
+        KR["knowledge-recall<br/>三路触发"]
+        MC["module-context<br/>文档生成"]
+    end
+
+    subgraph "知识治理"
+        KA["knowledge-audit<br/>4维检测"]
+        SQS["spec-quality-score<br/>F1-doc/F1-code"]
+        DL["deps-lint<br/>依赖校验"]
+        DS["deps-sync<br/>漂移检测"]
+    end
+
+    SP --> KP
+    SD --> KP
+    BA --> KP
+    BA --> PIT
+    PTR --> KP
+    PTR --> PIT
+    PTR --> MOD
+
+    KP --> KR
+    PIT --> KR
+    MOD --> KR
+
+    KR --> SP
+    KR --> SD
+    KR --> BA
+    MC --> MOD
+
+    KA --> KP
+    KA --> MOD
+    SQS --> SP
+    SQS --> SD
+
+    EVO --> KA
+
+    style KR fill:#4ecdc4,color:#fff
+    style PTR fill:#ff6b6b,color:#fff
+    style KA fill:#ffd93d,color:#333

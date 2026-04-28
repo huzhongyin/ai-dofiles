@@ -1,0 +1,386 @@
+# Feature-Spec 知识架构规范
+
+> 版本: 1.0
+> 最后更新: 2026-04-22
+> 说明: 定义功能方案书（feature-spec）、共享调用链节点（shared-node）的格式、引用机制、加载策略和同步更新规则
+
+---
+
+## 1. 架构概览
+
+### 1.1 三层知识结构
+
+```
+<module>/.ai-knowledge/
+├── features/                    # 功能方案书（按需加载的入口）
+│   ├── <feature-id>.feature.md  # 每个功能一个文件
+│   └── ...
+├── shared-nodes/                # 共享调用链节点（仅被引用时加载）
+│   ├── <node-id>.node.md        # 每个共享节点一个文件
+│   └── ...
+├── modules/                     # 模块概览（保留，作为功能索引入口）
+│   └── <Module>.md              # 增加 features 列表索引
+└── deps.yml                     # 模块依赖声明（保留）
+```
+
+### 1.2 核心原则
+
+- **按需披露**: 查闭锁不加载解锁，查解锁不加载闭锁
+- **引用驱动**: shared-nodes 只因被 feature-spec 引用才加载，不独立触发
+- **知识缓存**: 调用链中 grep 确认的代码位置、日志关键字沉淀到文档，文件未修改则直接使用
+- **变更感知**: depends_on_files + 锚点签名实现变更检测和缓存失效
+
+### 1.3 功能归属规则
+
+每个 feature-spec 存储在其**主导模块**下。判断标准：
+- 功能的入口和核心决策逻辑在哪个模块 → 该模块为主导模块
+- 跨模块的链路通过 `@ref(module:<id>, node:<node-id>)` 引用
+
+---
+
+## 2. Feature-Spec 模板
+
+文件位置: `<module>/.ai-knowledge/features/<feature-id>.feature.md`
+
+```markdown
+# 功能: <功能名称>
+
+## 元信息
+- feature_id: <唯一标识，如 auto-lock>
+- trigger_keywords: [<功能级关键词，遵循 constitution §6.5>]
+- owner_module: <主导模块 id>
+- related_modules: [<跨模块引用的模块 id 列表>]
+- depends_on_files:
+  - <相对主工程根的文件路径，用于变更检测>
+- last_updated: <日期>
+- code_anchors_verified: <锚点最后验证日期>
+
+## 功能概述
+<一段话描述功能的用户可感知行为>
+
+## 入口
+- 触发起点: <哪个类/方法是功能的触发入口>
+- 代码位置: <文件路径:方法名:行号>
+- 锚点签名: `<代码中可 grep 的唯一特征串>`
+
+## 前提条件
+| 条件 | 检查位置(文件:方法) | 锚点签名 | 日志关键字(Tag + 格式) |
+|------|---------------------|---------|----------------------|
+
+## 激活条件
+- 判断逻辑: <代码位置>
+- 锚点签名: `<特征串>`
+- 日志关键字: <触发时的日志 Tag + 格式>
+- 说明: <什么条件满足时功能从"等待"变为"执行">
+
+## 调用链
+[1] <步骤描述>
+    ├─ 代码: <文件路径:方法名:行号>
+    ├─ 锚点签名: `<特征串>`
+    ├─ 日志: <Tag> <格式字符串>
+    └─ 输出: <传递给下一节点的数据>
+[2] @ref(<node-id>)
+    ├─ 说明: <该共享节点在本功能中的角色>
+    └─ 本功能关注的输入/输出: <数据描述>
+[3] @ref(module:<模块id>, node:<node-id>)
+    ├─ 说明: <跨模块引用说明>
+    └─ 本功能关注的输入/输出: <数据描述>
+[N] <本模块调用链尾部，到达跨模块边界>（遵循 §4.2）
+    ├─ 代码: <文件路径:方法名:行号>
+    ├─ 跨模块入口: <下游模块的入口方法全路径>
+    ├─ 入参: <传给下游的关键参数>
+    ├─ 期望回调: <成功时的回调和行为>
+    ├─ 失败回调: <失败时的回调和行为>
+    └─ @ref(module:<下游模块id>, node:<node-id>) [待创建]
+
+## 状态机
+| 状态 | 含义 | 转入条件 | 转出条件 | 代码位置 | 日志关键字 |
+|------|------|---------|---------|---------|-----------|
+
+## 决策分支点
+| 分支点 | 代码位置 | 锚点签名 | 条件A→结果 | 条件B→结果 | 影响 |
+|--------|---------|---------|-----------|-----------|------|
+
+## 正常执行流
+<正常场景下的完整执行序列，带时序描述>
+
+## 异常状态
+| 异常场景 | 表现 | 根因链路 | 恢复方式 |
+|---------|------|---------|---------|
+
+## 引用节点清单
+- @ref(<node-id>): <一句话简述>
+- @ref(module:<id>, node:<node-id>): <一句话简述>
+```
+
+---
+
+## 3. Shared-Node 模板
+
+文件位置: `<module>/.ai-knowledge/shared-nodes/<node-id>.node.md`
+
+```markdown
+# 节点: <节点名称>
+
+## 元信息
+- node_id: <唯一标识>
+- owner_module: <所属模块 id>
+- referenced_by:
+  - <module-id>/features/<feature-id>
+  - <module-id>/features/<feature-id>
+- depends_on_files:
+  - <文件路径>
+- last_updated: <日期>
+- code_anchors_verified: <锚点最后验证日期>
+
+## 链路描述
+<该节点负责的调用链片段概述>
+
+## 代码位置
+| 步骤 | 文件路径 | 方法名 | 行号 | 锚点签名 |
+|------|---------|--------|------|---------|
+
+## 输入/输出
+- 输入: <数据格式和来源>
+- 输出: <数据格式和去向>
+
+## 日志关键字
+| 场景 | Tag | 格式字符串 |
+|------|-----|-----------|
+
+## 状态转换（如有）
+| 状态 | 含义 | 转换条件 | 代码位置 |
+|------|------|---------|---------|
+
+## 设计决策与教训（仅限代码无法考证的内容）
+<方案选型理由、业务约定、架构权衡等无法从代码推断的知识>
+```
+
+---
+
+## 4. 跨模块边界协议
+
+### 4.1 核心原则
+
+- **调用链必须追到出站边界**：从本模块入口一路追踪到 App 代码的最底层（BLE send / MQTT publish / HTTP request 等），不因模块边界而停止追踪
+- **各管各家**：本模块的 feature-spec 不在下游模块的 `.ai-knowledge/` 下创建任何文件；下游模块的 shared-node 由下游模块自己的 feature-spec 或 module-context 流程创建
+- **详细描述依赖**：在调用链到达模块边界时，必须详细记录跨模块调用的接口信息（方法签名、入参、期望回调、失败回调），使下游模块创建 shared-node 时有明确的对接口
+
+### 4.2 调用链中的跨模块边界写法
+
+在 feature-spec 的调用链尾部，用以下格式描述跨模块依赖：
+
+```markdown
+[N] <本模块最后一步>
+    ├─ 代码: <文件路径:方法名:行号>
+    ├─ 跨模块入口: <下游模块的入口方法全路径>
+    ├─ 入参: <传给下游的关键参数>
+    ├─ 期望回调: <成功时的回调和行为>
+    ├─ 失败回调: <失败时的回调和行为>
+    └─ @ref(module:<下游模块id>, node:<node-id>) [待创建]
+```
+
+### 4.3 变更检测：分层独立
+
+- feature-spec 的 `depends_on_files` 只声明**本模块**内的文件
+- 被引用的 shared-node 各自声明自己的 `depends_on_files`
+- 变更检测各层独立：feature-spec 的锚点失效不影响 shared-node，反之亦然
+- 加载 feature-spec 时级联加载 shared-node，级联验证各自的锚点
+
+### 4.4 不可确认知识的判定
+
+以下情况**不属于**"不可确认"，必须通过 grep 追踪：
+- 跨 submodule 的方法调用
+- 协议/delegate 的实现类
+- Block/闭包回调的赋值和触发
+
+以下情况属于"不可从代码确认"，记录在 shared-node 的「设计决策与教训」：
+- 车端/服务端的响应逻辑
+- 运行时动态注入且无静态注册的路由
+- 业务规则的产品背景
+
+---
+
+## 5. 引用机制
+
+### 5.1 引用语法
+
+| 语法 | 含义 |
+|------|------|
+| `@ref(<node-id>)` | 引用同模块内的 shared-node |
+| `@ref(module:<模块id>, node:<node-id>)` | 跨模块引用 shared-node |
+
+### 5.2 加载规则
+
+- feature-spec 被加载时，解析所有 `@ref()` 引用
+- 被引用的 shared-node **自动级联加载**
+- **未被引用的 shared-node 永远不加载**（不占用上下文）
+- 循环引用: shared-node 之间不允许互相引用（只有 feature-spec → shared-node 单向引用）
+
+---
+
+## 6. Knowledge-Recall 加载改造
+
+### 6.1 两级匹配
+
+```
+Phase 4 (关键词命中):
+  1. 先匹配 module（现有 registry 逻辑不变）
+  2. 在命中 module 中，扫描 features/*.feature.md 的 trigger_keywords
+  3. 命中的 feature-spec 被加载
+  4. 解析 @ref() → 级联加载被引用的 shared-nodes
+  5. 未命中 feature 的 module：仅加载 module-context（modules/*.md）
+```
+
+### 6.2 知识缓存策略
+
+```
+加载 feature-spec 时:
+  1. 读取 depends_on_files 列表
+  2. 检查这些文件是否在本次任务的修改范围内
+     - 未修改 → 直接信任文档中的代码位置和日志关键字
+     - 已修改 → 标记 [⚠️ may be stale]，验证锚点签名
+```
+
+---
+
+## 7. 变更同步机制
+
+### 7.1 锚点签名
+
+每个代码引用点都有一个 `锚点签名`：代码中可被 grep 到的特征字符串。
+
+验证方式: `grep -r "锚点签名" <文件路径>` — 找到则有效，找不到则失效。
+
+### 7.2 depends_on_files
+
+feature-spec 和 shared-node 的元信息中声明依赖的源码文件路径列表。
+
+用途:
+- **post-task-review**: 本次修改的文件是否被某个 feature-spec 引用？若命中则提示更新
+- **knowledge-audit**: 批量验证所有 depends_on_files 的文件修改时间 vs code_anchors_verified
+
+### 7.3 更新触发时机
+
+| 触发 | 检测方式 | 动作 |
+|------|---------|------|
+| **post-task-review** | 修改文件 ∩ depends_on_files | 验证锚点 → 提示更新 |
+| **knowledge-audit** | 全量扫描锚点签名 | 标记失效 → 报告 |
+| **bug-analysis 加载时** | 加载 feature-spec 顺便验证 | 失效锚点标 [⚠️ stale] |
+| **feature-spec 创建时** | 首次 grep 代码 | 沉淀代码位置和日志关键字 |
+
+### 7.4 与工程迭代的集成
+
+```
+开发者修改代码
+  ↓ 完成后执行 post-task-review
+  ↓ 检测: 修改的文件 ∈ 哪些 feature-spec 的 depends_on_files？
+  ↓ 命中: auto-lock.feature.md 依赖 PLXPMultiBleManager.m
+  ↓ 验证锚点签名
+    - `!self.gearValueIsSupportPolling` → ✅ 仍存在
+    - 新增了 timeout 分支 → ⚠️ feature-spec 未覆盖
+  ↓ 提示用户: "auto-lock.feature.md 可能需要更新"
+  ↓ 用户确认 → 更新 feature-spec
+```
+
+---
+
+## 8. 与现有知识体系的关系
+
+### 8.1 保留
+
+| 资产 | 状态 | 说明 |
+|------|------|------|
+| modules/*.md | 保留 | 增加 features 列表索引 |
+| deps.yml | 保留 | 模块依赖声明 |
+| module-registry.md | 保留 | 模块注册表 |
+| constitution.md | 保留 | 项目约束 |
+
+### 8.2 迁移
+
+| 资产 | 迁移目标 |
+|------|---------|
+| knowledge-points/*.kp.md 中的调用链片段 | → shared-nodes/*.node.md |
+| knowledge-points/*.kp.md 中的踩坑记录（可从代码考证的） | → feature-spec 的「异常状态」或 shared-node 的代码位置 |
+| knowledge-points/*.kp.md 中的设计决策教训（代码无法考证的） | → shared-node 的「设计决策与教训」 |
+
+### 8.3 废弃
+
+- knowledge-points 的**关键词独立触发**模式废弃
+- 存量 kp.md 逐步迁移，不再新增
+- 迁移完成后 knowledge-points/ 目录可删除
+
+---
+
+## 9. Module-Context 扩展
+
+modules/*.md 增加 features 索引章节:
+
+```markdown
+## 功能列表
+| feature_id | 功能名称 | trigger_keywords | 状态 |
+|-----------|---------|-----------------|------|
+| auto-lock | 感应闭锁 | [感应闭锁, 自动锁车, 无感闭锁] | ✅ |
+| auto-unlock | 感应解锁 | [感应解锁, 自动解锁, 无感解锁] | 📝 待创建 |
+```
+
+状态:
+- ✅ 已创建完整方案书
+- 📝 待创建
+- ⚠️ 需更新（锚点验证失败）
+
+---
+
+## 10. 知识创建工作流
+
+### 10.1 创建顺序约束
+
+知识资产的创建必须遵循以下自底向上的流水线顺序：
+
+```
+Step 1: module-context 检查
+  ├─ 目标模块的 modules/<Module>.md 是否存在？
+  ├─ 不存在 → 先执行 module-context skill 创建
+  └─ 存在 → 继续
+
+Step 2: 功能识别
+  ├─ module-context 产出的功能列表中，识别待创建的 feature-spec
+  └─ 按优先级逐个创建
+
+Step 3: feature-spec 创建（本模块内部）
+  ├─ 追踪本模块内部的完整调用链
+  ├─ 识别可复用片段 → 创建同模块 shared-node
+  └─ 所有本模块内部链路闭环
+
+Step 4: 跨模块边界标记
+  ├─ 在调用链尾部详细描述跨模块依赖接口（遵循 §4.2）
+  ├─ 标记 @ref(module:X, node:Y) [待创建]
+  └─ 不在下游模块创建任何文件
+
+Step 5: 闭环验证
+  ├─ 验证所有锚点签名
+  ├─ 验证 depends_on_files 完整性
+  └─ 只有代码完全无法确认的边界，才咨询用户补充
+```
+
+### 10.2 跨模块知识的闭环路径
+
+当 feature-spec A 引用了 `@ref(module:B, node:Y) [待创建]`：
+
+```
+模块 B 执行 module-context → 识别功能列表
+  ↓ 模块 B 创建自己的 feature-spec
+  ↓ 创建过程中自然产出 node:Y 作为 shared-node
+  ↓ 模块 A 的 @ref 从 [待创建] 变为可加载
+  ↓ 闭环完成
+```
+
+### 10.3 前置依赖检查规则
+
+开始创建知识资产前，执行前置检查：
+
+| 要创建的资产 | 前置依赖 | 不满足时的动作 |
+|-------------|---------|--------------|
+| feature-spec | module-context | 先创建 module-context |
+| shared-node | 至少 1 个 feature-spec 引用它 | 不创建孤立的 shared-node |
+| 跨模块 @ref | 本模块 feature-spec 调用链已闭环 | 先完成本模块链路 |

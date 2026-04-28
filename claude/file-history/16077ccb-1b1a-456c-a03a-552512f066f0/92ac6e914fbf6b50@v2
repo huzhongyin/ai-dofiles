@@ -1,0 +1,44 @@
+# 节点: DataParser drive 节点输出
+
+## 元信息
+- node_id: dataparser-drive-output
+- owner_module: XPBLEDataProcessor
+- referenced_by:
+  - XPPollingSDK/features/auto-lock
+- depends_on_files:
+  - submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/DataParserManager.cpp
+  - submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/D55DataParser.cpp
+  - submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/D55DataParser.hpp
+  - submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BaseDataParser.cpp
+- last_updated: 2026-04-22
+- code_anchors_verified: 2026-04-22
+
+## 链路描述
+BLE 通道收到车端 CAN 数据后，通过 DataParserManager 入口 → DataParserFactory 选择车型 Parser → 子类 specificityMessage() 路由到具体 parse 方法 → buildDriveMessage() 构建 drive JSON 节点（含 shift_state 字段）。该节点是 PollingSDK 获取 gearValue（档位）的 BLE 通道数据源。
+
+## 代码位置
+| 步骤 | 文件路径 | 方法名 | 行号 | 锚点签名 |
+|------|---------|--------|------|---------|
+| 1 | DataParserManager.cpp | parseBluetoothProtocol | 34 | `parseBluetoothProtocol` |
+| 2 | DataParserManager.cpp | → createDataParser(vehicleTypeCode) | 37 | `createDataParser(vehicleTypeCode)` |
+| 3 | D55DataParser.cpp | specificityMessage | 138 | `D55DataParser::specificityMessage` |
+| 4 | D55DataParser.cpp | case D55CanType_App_Msg1 → parseAppMsg1() | 177-179 | `case D55CanType_App_Msg1` |
+| 5 | D55DataParser.cpp | parseAppMsg1 → buildDriveMessage | 127-131 | `driveMessage.gearValue = canData.gearValue` |
+| 6 | BaseDataParser.cpp | buildDriveMessage | 193-196 | `kAddUInt8ItemToJson(drive, "shift_state"` |
+
+## 输入/输出
+- 输入: BLE 原始字节流（uint8_t* data）+ vehicleTypeCode（如 "DF" 表示 D55/P5）
+- 输出: JSON 字符串，drive 节点格式：`{"type":"vehicleState","vehicleState":{"drive":{"shift_state":<gearValue>}}}`
+
+## 日志关键字
+| 场景 | Tag | 格式字符串 |
+|------|-----|-----------|
+| 解析入口 | CPPBle | `parseBluetoothProtocol vehicleTypeCode:%s data:%s, dataSize:%d` |
+| 路由分发 | CPPBle | `D55DataParser::specificityMessage: type--%d` |
+
+## 状态转换（如有）
+无状态机。每次 BLE 数据到达时同步执行解析，无异步状态。
+
+## 设计决策与教训（仅限代码无法考证的内容）
+- **D55 路由 Bug 教训**：`specificityMessage()` 中 CAN type → parse 方法的映射是手写 switch-case，无编译期保障。曾因 `D55CanType_App_Msg1` 错误调用 `parseVehSysState()` 而非 `parseAppMsg1()`，导致 BLE 通道永远不输出 `drive.shift_state`，配合 MQTT 断连形成双通道故障放大，最终导致 Polling 永久暂停。
+- **各车型 Parser 的 specificityMessage 路由表需要逐一审查**，新增 CAN type 时必须同步更新路由。

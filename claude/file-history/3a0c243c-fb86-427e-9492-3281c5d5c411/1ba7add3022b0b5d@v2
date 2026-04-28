@@ -1,0 +1,20 @@
+# PLXPPollingManager 数据字段来源踩坑
+
+> 涉及模块: XPPollingSDK / sourceFile / Polling / PLXPPollingManager.mm
+
+---
+
+## 坑1: beforeDisconnectDriverSeatOccupied 读取的是 MQTT 字段而非 BLE 字段
+
+- **现象**: BLE 推送 `polling.driverSeatOccupied=0`（人已下车），但 `revealHttpLock` 仍判断"主驾有人"
+- **根因**: `vehicleStateChanged:` 方法中，`beforeDisconnectDriverSeatOccupied` 赋值来自 `fullVehicleStateDict[@"seat"][@"driver_seat_state"]`（MQTT instant 字段），而非 BLE 通道的 `polling.driverSeatOccupied`
+- **影响**: 当 MQTT 断连后该字段停留在旧值，即使 BLE 推送了正确的下车状态也无法更新
+- **代码位置**: `PLXPPollingManager.mm` line 149-152
+- **发现日期**: 2026-03-23
+
+## 坑2: gearValueIsSupportPolling 仅由 VehicleStateNotiObject 通知触发
+
+- **现象**: 车辆已切P档但 Polling 仍然暂停
+- **根因**: `judgePollingIsPaused` 检查 `gearValueIsSupportPolling`，该值通过 `PLXPMultiBleManager.vehicleStateChanged:` 更新，依赖 `diffVehicleDict[@"drive"][@"shift_state"]` 触发。当 BLE 不输出 drive.shift_state（DataParser Bug）且 MQTT 断连时，该值无法恢复
+- **影响链**: BLE 无 shift_state + MQTT 断连 → gearValueIsSupportPolling 永远为 NO → Polling 永久暂停
+- **代码位置**: `PLXPMultiBleManager.m` line 391-418

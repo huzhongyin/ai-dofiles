@@ -1,0 +1,78 @@
+# BLE V3 RT 鉴权协议（RtAuth/RtNotification）
+
+## 元信息
+- 触发关键词: ["RtAuth", "RtNotification", "0x0B", "0x0C", "generateRtAuthRequestData", "明文传输", "RT小程序", "rtAuthResult", "rtNotification", "handleRtAuthContent", "BLEKeyV3MessageTypeRtAuth"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+V3 协议新增两种消息类型，专用于 RobotTaxi (RT) 小程序蓝牙鉴权和车端通知：
+
+### 消息定义
+
+| msgId | 名称 | 方向 | 说明 |
+|-------|------|------|------|
+| 0x0B | RtAuth | 双向 | RT 鉴权请求（App→车）/ 鉴权结果（车→App）|
+| 0x0C | RtNotification | 车→App | 车端状态通知（如 Polling 解锁结果）|
+
+### 核心特性：明文传输
+
+**与普通 Auth0/Auth1 的关键区别**: RtAuth/RtNotification 是**明文传输**，不使用 sessionKey/authKey 加密。
+
+原因：RT 鉴权是独立于普通蓝牙钥匙鉴权的流程，鉴权完成前没有建立加密通道。
+
+**代码位置**（解密 switch）: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3DecodeMessage.cpp`
+```cpp
+case BLEKeyV3MessageTypeRtAuth:
+case BLEKeyV3MessageTypeRtNotification:
+{
+    memcpy(decodeData, message->messageData, decodeDataSize); // 明文直接拷贝
+}
+```
+
+### 编码（App→车端）
+
+**请求 API**: `+[XPBleKeyV3DataProcessor generateRtAuthRequestData:deviceModel:]`
+- 输入: certificate (NSData) + deviceModel (NSString)
+- TLV 编码: 外层 tag=0x7F54 → 内层 [certificate(type=0x01) + deviceModel(type=0x02)]
+- C++ 实现: `createBleKeyV3RtAuthRequestWithInput()` in `BLEKeyV3EncodeMessage.cpp`
+
+### 解码（车端→App）
+
+**RtAuth 响应**: tag=0x7F6F → type=0x10(result) + type=0x11(errorCode)
+**RtNotification**: type=0xD0 → pollingResult
+
+### tag/type 冲突与 msgId 路由
+
+**核心约束**: 必须在进入通用 TLV 解析 `handleXPBleKeyV3Content` 之前，通过 msgId 拦截路由到专用 handler。
+
+原因：
+1. tag=0x7F6F 与 RKE 响应共用（RKE 也用 0x7F6F）
+2. type=0xD0 与 CommonCarState 共用（车态也用 0xD0）
+
+**正确做法**:
+```cpp
+// 在 handleBleKeyV3Message 中，进入通用解析前拦截
+if (message->msgId == BLEKeyV3MessageTypeRtAuth) {
+    handleRtAuthContent(data, size, output);  // 专用 handler
+    return;
+}
+```
+
+**禁止做法**: 不要在通用 `handleXPBleKeyV3Content` 的 switch 中增加 RtAuth/RtNotification 的 case — 会与现有 tag/type 冲突。
+
+### Swift 层数据模型
+
+- 事件类型枚举: `BLECppParserCanEventType.rtAuthResult` / `.rtNotification`
+- CanEvent 属性: `rtAuthResult`, `rtAuthErrorCode`, `rtPollingResult`
+- Delegate: `BLEKeyV3DataParserResultDelegate.didReceiveRtAuthResult(result:errorCode:)` / `.didReceiveRtNotification(pollingResult:)`
+- Notification: `VehicleNotification.rtAuthResultNotification` / `.rtNotification`
+
+**代码位置**:
+- 枚举/结构体: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3Message.hpp`
+- 编码: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3EncodeMessage.cpp`
+- 解码: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/BLEKeyV3DecodeMessage.cpp`
+- OC 桥接: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/XPBleKeyV3DataProcessor.h/.mm`
+- Swift 模型: `submodule/XPVehicleSDK/.../BLEDataParser/BleCanMessage.swift`
+- Swift 路由: `submodule/XPVehicleSDK/.../BLEDataParser/BLEDataParser+cpp.swift`

@@ -1,0 +1,79 @@
+---
+name: module-context
+description: 为指定模块生成结构化 Context 文档，包含模块职责、核心 API、依赖关系和使用示例。当用户提到模块文档、Context文档、生成文档、模块分析、"这个模块是干什么的"、"怎么用这个模块"、"帮我了解下某某模块"时使用此 skill。
+---
+
+## 输入
+- $ARGUMENTS: 模块路径或模块名称（如 "Charge" 或 "XiaoPengQiChe/Modules/Charge"）
+
+## 输出
+- 格式: Markdown 文档
+- 位置: 根据模块所属层级存放到对应的 `.ai-knowledge/modules/` 目录:
+  - Submodule 模块 → `submodule/<name>/.ai-knowledge/modules/<模块名>.md`
+  - LocalPod 模块 → `LocalPods/<name>/.ai-knowledge/modules/<模块名>.md`
+  - 主工程模块 → `XiaoPengQiChe/.ai-knowledge/modules/<模块名>.md`（L2 级）
+
+## 执行步骤
+
+### Phase 1: 模块分析
+1. 定位模块目录，读取所有源文件（.swift, .m, .h）
+2. 分析模块的核心类和公开 API
+3. 识别模块的依赖关系（import/include 分析）
+4. 提取关键方法的参数说明
+5. 如果是 OC/Swift 混编模块，标注桥接方式
+
+### Phase 2: 知识关联检查
+6. 扫描对应层级的 `.ai-knowledge/knowledge-points/` 中是否已有与该模块相关的知识点
+7. 扫描对应层级的 `.ai-knowledge/pitfalls/` 中是否已有与该模块相关的踩坑记录
+8. 在文档中标注关联的知识资产
+
+### Phase 3: 生成文档
+9. 按以下模板生成文档:
+
+```markdown
+# 模块名: [ModuleName]
+
+## 模块职责
+[一段话描述该模块的核心职责]
+
+## 语言构成
+- Swift 文件数: X
+- OC 文件数: Y
+- 混编说明: [如有]
+
+## 核心 API
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+
+## 参数说明
+- `param1`: [类型] — [含义]
+
+## 依赖关系
+- **上游依赖**: [该模块依赖谁]
+- **下游被依赖**: [谁依赖该模块]
+
+## OC/Swift 互操作
+- Swift 入口: [文件路径]
+- OC 桥接: [文件路径]
+
+## 常见用法
+[代码片段示例]
+
+## 已知限制/陷阱
+- [坑1]
+
+## 关联知识资产
+- 知识点: [列出关联的 .kp.md 文件]
+- 踩坑记录: [列出关联的 pitfalls 文件]
+```
+
+### Phase 4: 保存并更新索引
+10. 将生成的文档保存到模块所属层级的 `.ai-knowledge/modules/` 目录（参见输出位置规则）
+11. **更新 `.ai-knowledge/index.md`**: 在模块文档清单中新增条目（如果是新模块文档）
+12. **更新 `.ai-knowledge/module-registry.md`**: 确认该模块已在 registry 中注册
+13. 在 `.ai-knowledge/evolution-log.md` 追加记录
+
+## 约束
+- 核心 API 表格中的文件路径必须通过 grep/glob 验证
+- **生成新模块文档后必须更新 index.md**
+- 关联知识资产部分必须实际扫描知识库，不可凭记忆填写

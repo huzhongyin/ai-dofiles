@@ -1,0 +1,171 @@
+//
+//  XPCarKeyHelp.m
+//  XiaoPengQiChe
+//
+//  Created by Xpeng on 2024/12/20.
+//  Copyright © 2024 xiaopeng.com. All rights reserved.
+//
+
+#import "XPCarKeyHelp.h"
+#import "CTMediator+CarState.h"
+#import "MyCarInfo.h"
+
+#import "NSString+IsEmpty.h"
+#import "XPAPIRequestManager+BLEKey.h"
+#import "XPBLEKeyCard.h"
+
+@interface XPCarKeyHelp ()
+
+@property (nonatomic, strong) id<XPCarKeyPassInteraction> carKeyPassInteraction;
+@property (nonatomic, strong) id<XPCarKeyServiceProtocol> carkeyService;
+@end
+
+@implementation XPCarKeyHelp
+
++ (instancetype)shared {
+    static XPCarKeyHelp *__instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        __instance = [[XPCarKeyHelp alloc] init];
+    });
+    
+    return __instance;
+}
+
+- (instancetype)init {
+    if (self = [super init]) {
+        _carKeyPassInteraction = [XPVehicleExt createCarKeyPassFlow];
+        _carkeyService = [[CarkeyService alloc] init];
+    }
+    return self;
+}
+
+
+- (XPCarKeyPairType)supportCarKeyPairType {
+    XPCarKeyPairType pairType = [self.carKeyPassInteraction supportCarKeyType];
+    DLogTagInfo(kBLECarKeyTag, @"supportCarKeyPairType, %d", pairType);
+    return pairType;
+}
+
+////是否有当前车辆的Carkey
+- (BOOL)localCarKeyIsExist {
+    if (![self localCarKeyId]) {
+        DLogTagInfo(kBLECarKeyTag, @"本地无Carkey");
+        return false;
+    }
+    DLogTagInfo(kBLECarKeyTag, @"本地有Carkey");
+    return true;
+}
+
+- (BOOL)localCarKeyIsVaild {
+    bool isVaild = [self.carKeyPassInteraction localKeyIsAvailable];
+    DLogTagInfo(kBLECarKeyTag, @"localWalletKeyIsVaild, %d", isVaild);
+    return isVaild;
+}
+
+- (NSString *)localCarKeyId {
+    NSString *keyId = [self.carKeyPassInteraction getLocalKeyId];
+    DLogTagInfo(kBLECarKeyTag, @"本地Carkey的keyId%@", keyId);
+    return keyId;
+}
+
+- (BOOL)localCarKeyIsSuspended {
+    NSDictionary *keyInfo = [self localCarKeyInfo];
+    DLogTagInfo(kBLECarKeyTag, @"keyInfo:%@", keyInfo);
+    XPBLEKeyCardStatus status = [keyInfo[XPCarKeyInfoConstants.kCarKeyStateKey] intValue];
+    if (status == XPBLEKeyCardStatusReportLost) {
+        DLogTagInfo(kBLECarKeyTag, @"本地Carkey停用");
+        return YES;
+    } else {
+        DLogTagInfo(kBLECarKeyTag, @"本地Carkey没停用%ld", status);
+        return NO;
+    }
+}
+
+//获取carkey的信息
+- (NSDictionary *)localCarKeyInfo {
+    NSString *keyId = [self localCarKeyId];
+    if (!keyId) {
+        return nil;
+    }
+    return [self.carKeyPassInteraction getLocalKeyInfo];
+}
+
+- (BOOL)hardwareIsSupportCarKey {
+    if (![self.carKeyPassInteraction currentCarIsSupportCarKey]) {
+        DLogTagInfo(kBLECarKeyTag, @"车机不支持");
+        return false;
+    }
+    return true;
+}
+
+
+//跳去钱包钥匙的一堆方法
+- (void)openCarKeyPass {
+    DLogTagInfo(kBLECarKeyTag, @"打开钱包");
+    [self.carKeyPassInteraction openCarKeyPass];
+}
+
+- (void)requestCarkeyIsBindToUserWithKeyId:(NSString *)keyId Vin:(NSString *)vin complete:(void (^)(XPCarKeyBindType bindType))complete {
+    if (keyId == nil || vin == nil || keyId.length == 0 || vin.length == 0) {
+        self.bindType = XPCarKeyBindTypeNotBinded;
+        if (complete) {
+            complete(self.bindType);
+        }
+    }else {
+        @weakify(self);
+        [[[XPAPIRequestManager sharedManager] getLocalWalletKeyPhoneNumber:[XPCarKeyHelp.shared localCarKeyId] withVin:CTMediator.vin] subscribeNext:^(Response * _Nullable x) {
+            @strongify(self);
+            NSDictionary *data = x.data;
+            if ([data.allKeys containsObject:@"uid"]) {
+                NSNumber *uid = [data valueForKey:@"uid"];
+                if (uid.intValue > 0) {
+                    //绑定过用户
+                    DLogTagInfo(kBLECarKeyTag, @"绑定过用户");
+                    self.bindType = XPCarKeyBindTypeBinded;
+                } else {
+                    DLogTagInfo(kBLECarKeyTag, @"没绑定过用户");
+                    self.bindType = XPCarKeyBindTypeNotBinded;
+                }
+            }else {
+                self.bindType = XPCarKeyBindTypeNotBinded;
+            }
+            if (complete) {
+                complete(self.bindType);
+            }
+        }];
+    }
+}
+
+- (void)startCarKeyPairWithDelegate:(id<XPCarKeyPassEventDelegate>)delegate complete:(void (^)(enum XPCarKeyPassEventError error, UIViewController *pairController))complete {
+    [self.carKeyPassInteraction startCarKeyPairWithAutoMakerId:XPVehicleSDK.currentAbilityConfig.autoMakerIdentifier profileTemplateId:XPVehicleSDK.currentAbilityConfig.nfcTemplateIdentifier brandName:XPVehicleSDK.currentAbilityConfig.brandName delegate:delegate result:complete];
+}
+
+- (void)startCarKeyShareWithDelegate:(id<XPCarKeyPassEventDelegate>)delegate complete:(void (^)(enum XPCarKeyPassEventError, UIViewController * _Nonnull))complete {
+    [self.carKeyPassInteraction startCarKeyShareWithIsPromptToShareUrl:true delegate:delegate result:complete];
+}
+
+#pragma mark - service
+- (void)bindCarkeyToUserWithKeyId:(NSString *)keyId vin:(NSString *)vin success:(void (^)(void))success failed:(void (^)(XPVehicleError * _Nonnull))failed {
+    [self.carkeyService bindCarKeyToUserWithKeyId:keyId vin:vin success:success failed:failed];
+}
+
+//上报钥匙能力到云端
+- (void)uploadCarKeyCapbilitiesWithResult:(void (^)(BOOL, XPVehicleError * _Nonnull))result {
+    NSString * vin = XPVehicleSDK.shared.vehicleManager.currentVehicleData.vin;
+    XPCarKeyPairType type = [XPCarKeyHelp.shared supportCarKeyPairType];
+    NSInteger isUwb = (type == XPCarKeyPairTypeBleAndNfc) ? 1 : 0;
+    NSString *keyId = [self localCarKeyId];
+    DLogTagInfo(kBLECarKeyTag, @"upload car key capability keyId:%@ supportUWB:%d", keyId, isUwb);
+    CarKeyCapabilityRequestParam *param = [[CarKeyCapabilityRequestParam alloc] initWithUwb:isUwb];
+    [self.carkeyService uploadCarkeyCapablityWithKeyId:keyId vin:vin keyCapability:param success:^{
+        DLogTagInfo(kBLECarKeyTag, @"upload car key capability success");
+        result ? result(YES, nil) : nil;
+    } failed:^(XPVehicleError * _Nonnull error) {
+        DLogTagError(kBLECarKeyTag, @"upload car key capability failed: %@", error.msg);
+        result ? result(NO, error) : nil;
+    }];
+}
+
+
+@end

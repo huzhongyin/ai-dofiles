@@ -1,0 +1,4 @@
+#!/bin/bash
+# Quick Feishu send - usage: feishu-send "message"
+source ~/.hermes/hermes-agent/venv/bin/activate
+python3 ~/.hermes/scripts/feishu_send.py "$@"

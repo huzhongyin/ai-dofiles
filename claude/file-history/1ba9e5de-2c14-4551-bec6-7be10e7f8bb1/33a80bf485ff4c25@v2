@@ -1,0 +1,41 @@
+# XPIntentsExtension 宪法
+
+> 本文件是 XPIntentsExtension 的**稳定规范**，描述模块边界、核心约束与对外契约。
+
+## 1. 模块定位
+
+Siri Intents Extension。核心职责：
+- 为 Widget 提供 Intent 数据解析
+- 支持 Siri 快捷指令的车辆信息查询
+- XPWidgetVehicleInfo 数据模型共享
+
+**明确不属于**：车控指令执行、UI 展示。
+
+## 2. 架构约束
+
+IntentHandler 入口模式。IntentHandler.swift 处理 Intent 请求，从 App Group 读取数据返回。
+
+## 3. 语言策略
+
+Swift（主）+ OC（XPWidgetVehicleInfo.h/.m 数据模型共享）。通过 Bridging-Header 桥接。
+
+## 4. 依赖边界
+
+**允许**：App Group 共享数据、Intents.framework。
+**禁止**：UIApplication、主工程 App 代码直接引用。
+
+## 5. 禁止事项
+
+- 禁止在 Extension 中执行车控指令
+- 禁止使用 UIApplication.shared
+- 禁止在 Intent 处理中执行耗时操作（系统超时限制）
+
+## 6. 与其他模块的接口契约
+
+- IntentHandler 为唯一入口
+- 数据共享：XPWidgetVehicleInfo（OC 模型，Widget/Intents 共用）
+- Entitlements: XPIntentsExtension.entitlements
+
+---
+
+> 变更本文件请同步更新 `.ai-knowledge/deps.yml` 与 module-registry。

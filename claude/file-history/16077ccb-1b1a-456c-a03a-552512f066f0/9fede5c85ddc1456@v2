@@ -1,0 +1,57 @@
+# 节点: Polling 指令下发到车端
+
+## 元信息
+- node_id: polling-command-dispatch
+- owner_module: XPVehicleSDK
+- referenced_by:
+  - XPPollingSDK/features/auto-lock
+- depends_on_files:
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/Xiaopeng/XiaopengVehicle.swift
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleControlRequest/VehicleControlRequestManager.swift
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Factory/VehicleCmdRequestFactory.swift
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Factory/XiaopengCmdFactory.swift
+  - submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/VehicleControlRequest/Xiaopeng/PollingRequest.swift
+- last_updated: 2026-04-22
+- code_anchors_verified: 2026-04-22
+
+## 链路描述
+PollingSDK 通过 `XPVehicleSDK.shared.vehicleManager.currentVehicle sendCommand:XPVehicleCommandPollingLock` 发起闭锁指令。VehicleSDK 接收后通过工厂模式创建 `PollingLock` 请求对象，该对象内部实现 BLE+HTTP 双发策略：BLE 已连接时同时发送 BLE 指令和 HTTP 请求（双发，谁先成功算成功）；BLE 未连接时直接走 HTTP 4G 兜底。
+
+## 代码位置
+| 步骤 | 文件路径 | 方法名 | 行号 | 锚点签名 |
+|------|---------|--------|------|---------|
+| 1 | XiaopengVehicle.swift | sendCommand → sendCommandResponse | 541-558 | `requestManager.sendCommand(vehicleCommunication: self` |
+| 2 | VehicleControlRequestManager.swift | sendCommand → _sendCommand | 24-44 | `cmdFactory.createRequest(vehicleCommunication:` |
+| 3 | VehicleCmdRequestFactory.swift | createRequest → NSClassFromString | 35-79 | `NSClassFromString("XPVehicleSDK." + matchedClassName!)` |
+| 4 | XiaopengCmdFactory.swift | registerRequest(.PollingLock, "PollingLock") | 99 | `registerRequest(command: .PollingLock, className: "PollingLock"` |
+| 5 | PollingRequest.swift | PollingLock.send | 30-69 | `class PollingLock : XiaopengBaseControlRequest` |
+| 6a | PollingRequest.swift | BLE 已连接 → lockDoorWithDuoChannel（BLE+HTTP 双发） | 155 | `lockDoorWithDuoChannel(bleSendData:` |
+| 6b | PollingRequest.swift | BLE 未连接 → send4GRevertLock（HTTP 兜底） | 71 | `send4GRevertLock(vin:` |
+| 7 | PollingRequest.swift | sendHTTPData → VehicleHttpRequestManager.controlVehicle | 105-118 | `VehicleHttpRequestManager.controlVehicle(params:` |
+| 8 | PollingRequest.swift | checkResult → getVehicleCommandRet（轮询结果） | 121-139 | `VehicleHttpRequestManager.getVehicleCommandRet(msgId:` |
+
+## 输入/输出
+- 输入: `VehicleCommand.PollingLock` + vehicleTypeCode
+- 输出:
+  - 成功: `VehicleSuccessResponseCallback`（PollingSDK 收到后调用 `pollingLockResultWithIsSuccess:YES`）
+  - 失败: `VehicleFailedCallback<VehicleError>`（含 channel 标识 BLE/TCP）
+
+## 日志关键字
+| 场景 | Tag | 格式字符串 |
+|------|-----|-----------|
+| 指令入口 | XP车控 | `sendVehicleCmd: PollingLock ...` |
+| BLE 未连接走 4G | — | `蓝牙未连接 执行普通闭锁` |
+| 双发开始 | — | `polling 双发闭锁开始` |
+| 双发 BLE 成功 | — | `polling 双发闭锁 蓝牙闭锁成功` |
+| 双发 HTTP 成功 | — | `polling 双发闭锁 http 闭锁成功` |
+| 指令成功 | XP车控 | `sendVehicleCmd: PollingLock 成功` |
+| 指令失败 | XP车控 | `sendVehicleCmd: PollingLock 失败:` |
+| HTTP 结果轮询 | — | `轮询闭锁成功` / `轮询闭锁失败` / `轮询闭锁未完成，继续轮询` |
+
+## 状态转换（如有）
+无独立状态机。PollingLock 是一次性请求，完成后释放。HTTP 结果轮询最多 4 次（每次间隔 1 秒）。
+
+## 设计决策与教训（仅限代码无法考证的内容）
+- **双发策略**：BLE 已连接时同时发送 BLE 和 HTTP 两路，取先到的成功回调。这是为了提升闭锁成功率（BLE 快但可能不稳定，HTTP 慢但更可靠）。
+- **4G 兜底**：BLE 未连接或获取不到报文时，直接走 HTTP controlVehicle 接口。
+- **SUPPORT_4G_LOCK_DIFFSCENES 能力开关**：决定 4G 兜底使用 `DOOR_LOCK` 还是 `POLLING_LOCK_DOUBLE` 指令码，新车型使用后者。

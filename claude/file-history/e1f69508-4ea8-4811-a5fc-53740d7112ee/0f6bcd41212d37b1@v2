@@ -1,0 +1,21 @@
+# SDK 2.0 开放车型白名单
+
+## 元信息
+- 触发关键词: ["isOpenedVehicleTypeCode", "SDK开放车型", "白名单", "createVehicle", "多车车控"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+国内版有 SDK 2.0 开放车型白名单机制（`isOpenedVehicleTypeCode`）：
+
+- **国内**: 只有白名单车型才能使用 SDK 车控功能
+- **海外**: 全部车型开放
+
+**影响范围**:
+1. `createVehicle(vin:)` — 只有开放车型才能创建独立车控实例
+2. `BleKeyCard.isValid()` — 对开放车型的钥匙有效性走不同的判断逻辑（`digitalKeyManager?.digitalKey(keyCardType: .SAFE)`）
+
+**注意**: Mona 车型（DM）不支持通过 `createVehicle` 创建独立实例，这与白名单无关。
+
+**代码位置**: `submodule/XPVehicleSDK/Core/VehicleManager.swift`

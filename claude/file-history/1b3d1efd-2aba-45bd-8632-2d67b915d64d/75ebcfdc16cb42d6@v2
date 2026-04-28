@@ -1,0 +1,138 @@
+# 模块名: BaseVehicle
+
+## 模块职责
+基础车辆协议，定义了车控 SDK 中"一辆车"的完整能力接口。通过协议组合模式（`BaseVehicle = VehiclePresenter + VehiclePresenterExt + VehicleCommunication`）将车辆的展示能力、扩展能力和通信能力统一抽象。不同平台/架构的车型（XiaopengVehicle、MonaVehicle）分别实现该协议，实现差异化车控逻辑。
+
+## 语言构成
+- Swift 文件数: 协议定义 ~5（BaseVehicle.swift + VehiclePresenter.swift + VehiclePresenterExt.swift + VehicleCommunication.swift 等）+ 实现类 ~168（XiaopengVehicle/MonaVehicle 及其大量功能扩展文件，分布在 Presenter/ 目录下）
+- OC 文件数: 0
+- 混编说明: 纯 Swift 实现，关键协议通过 @objc 暴露给 OC 层
+
+## 协议组合架构
+```
+BaseVehicle (核心协议，组合以下三个子协议)
+├── VehiclePresenter (展示层能力)
+│   ├── 车辆状态事件（vehicleStateChangedEvent 等 10+ 事件）
+│   ├── 连接状态（bleConnectState / mqttConnectState）
+│   ├── 车控指令发送（sendControlCommand）
+│   ├── 车态查询（requestVehicleState）
+│   ├── 功能管理器（digitalKeyManager / otaManager / autoDriveManager / scheduleManager）
+│   └── 位置计算（carDistanceFromDevice / carDirectionFromDevice）
+├── VehiclePresenterExt (扩展能力)
+│   ├── RSSI 信号观察（addRssiObserver / removeRssiObserver）
+│   ├── 蓝牙连接状态查询（bleConnectState(name:)）
+│   └── Polling 代理（pollingDelegateCaller）
+└── VehicleCommunication (通信能力)
+    ├── 基本信息（vin / uid / vehiclePreference / vehicleState）
+    ├── 连接实例（tcpConnection / bleConnection）
+    ├── 缓存管理（cacheManager）
+    └── 在线状态（setVehicleOnline）
+```
+
+## 核心 API
+
+### BaseVehicle（协议）
+| 方法 | 用途 | 说明 |
+|------|------|------|
+| `startService()` | 启动车辆服务（连接 BLE + MQTT） | 创建车控实例后调用 |
+| `stopService()` | 停止车辆服务 | 断开所有连接 |
+| `leaveVehicle()` | 切车时离开当前车辆 | 停止服务 + 注销 iBeacon |
+| `updateVehicleInfo(vehicle:vehiclePreference:)` | 更新车辆信息 | 切车或信息变更时调用 |
+| `requestSentinelVideoList(success:failed:)` | 请求哨兵视频列表 | — |
+| `requestOTAState(success:failed:)` | 请求 OTA 升级状态 | 仅 Mona 车型使用 |
+
+### VehiclePresenter（展示层协议，关键方法）
+| 方法/属性 | 用途 |
+|---------|------|
+| `vehicleState: VehicleState` | 当前车辆状态数据 |
+| `digitVehicleState: DigitVehicleState` | 数字车态数据 |
+| `bleConnectState: BLEConnectionState` | 蓝牙连接状态 |
+| `mqttConnectState: MQTTConnectionState` | MQTT 连接状态 |
+| `isOnline: Bool` | 车辆是否在线 |
+| `vehiclePreference: VehiclePreference` | 车辆配置信息 |
+| `connect(channel:)` | 手动连接车辆（.Auto 自动双通道） |
+| `disconnect(channel:)` | 手动断开车辆 |
+| `requestVehicleState(success:failed:)` | 网络通道请求车态 |
+| `sendLocationToCar(poi:success:failed:)` | 发送地址到车 |
+| `digitalKeyManager` | 数字钥匙管理器 |
+| `otaManager` | OTA 管理器 |
+| `autoDriveManager` | 自动驾驶管理器 |
+| `scheduleManager` | 车辆预约管理器 |
+
+### 事件系统（VehicleEvent，观察者模式）
+| 事件 | 值类型 | 用途 |
+|------|--------|------|
+| `vehicleStateChangedEvent` | VehicleStateNotiObject | 车辆状态变更 |
+| `digitVehicleStateChangedEvent` | DigitVehicleStateNotiObject | 数字车态变更 |
+| `bleConnectStateChangedEvent` | BLEConnectionState | 蓝牙连接状态变更 |
+| `mqttConnectStateChangedEvent` | MQTTConnectionState | MQTT 连接状态变更 |
+| `onlineStateChangedEvent` | Bool | 车辆在线状态变更 |
+| `digitalKeyChangedEvent` | DigitalKeyChangeType | 数字钥匙变更（Load/Create/Remove） |
+| `vehicleAbilityConfigChangedEvent` | Bool | OCM 配置化变更 |
+| `pollingFuncEventChangedEvent` | PollingFunctionEventModel | Polling 功能事件 |
+| `otaStateChangedEvent` | OTAStateModel | OTA 状态变更（仅 Mona） |
+
+## 实现类
+
+### XiaopengVehicle（小鹏车型实现）
+- 实现协议: `BaseVehicle + VehicleCommunication + VehiclePresenter + VehicleConnectionDelegate + DigitalKeyManagerDelegate`
+- 日志 Tag: `"XP车控"`
+- 支持: BLE 连接 + TCP/MQTT 连接双通道
+- 持有: `XiaopengBLEConnection` + `XiaopengTCPConnection` + `DigitalKeyManager` + `RssiManager`
+- 车控请求: 通过 `VehicleControlRequestManager` 管理
+
+### MonaVehicle（Mona 车型实现）
+- 实现协议: 同 XiaopengVehicle
+- 日志 Tag: `"Mona车控"`
+- 差异: 使用 `VehicleControlRequestManager(isMona: true)` 标识 Mona 请求
+- 特殊: 持有 `CarService?`（Mona SDK 虚拟实例）
+- 维修模式: 有 `repairMode` 状态记录
+
+## 依赖关系
+- **上游依赖**:
+  - `VehicleConnection`（BLEConnection / TCPConnection）— 通信层
+  - `XPCarAbilityConfig` — 车型能力配置
+  - `XPBLEDataProcessor` — 蓝牙数据编解码
+  - `MQTTPublisher` — MQTT 通信
+- **下游被依赖**:
+  - `VehicleManager` — 持有 `vehicleInstance: BaseVehicle?`，管理生命周期
+  - App 层所有车控业务 — 通过 `VehiclePresenter` 协议访问车辆能力
+
+## 常见用法
+
+### 监听车辆状态变更
+```swift
+let presenter = XPVehicleSDK.currentVehicle()
+
+// 监听车态变化
+presenter?.vehicleStateChangedEvent.subscribe(self) { notiObj in
+    let diffState = notiObj.diff
+    let fullState = notiObj.state
+    // 处理状态变更
+}
+
+// 监听蓝牙连接状态
+presenter?.bleConnectStateChangedEvent.subscribe(self) { state in
+    switch state {
+    case .Available: // 蓝牙已连接
+    case .NotConnected: // 蓝牙已断开
+    default: break
+    }
+}
+```
+
+### 发送车控指令
+```swift
+presenter?.sendControlCommand(command: .unlock, extParams: nil, success: { response in
+    // 解锁成功
+}, failed: { error in
+    // 解锁失败
+})
+```
+
+## 已知限制/陷阱
+- `XiaopengVehicle` 和 `MonaVehicle` 的构造函数有耗时操作，必须在子线程创建，切车时 VehicleManager 在 `switchVehicleQueue` 上创建
+- 事件系统（`VehicleEvent`）是自定义的观察者模式，不是 NotificationCenter 也不是 Combine，使用 `subscribe/unsubscribe` 管理
+- Mona 车型的 OTA 状态需要主动拉取（`requestOTAState`），不像小鹏车型走数字车态推送
+- `VehicleCommunication.vehicleState` 是只读属性，状态更新通过内部的 `VehicleStateModel` 驱动
+- 一个 `BaseVehicle` 实例同时持有 BLE + TCP 两路连接，需注意两路状态独立管理

@@ -1,0 +1,30 @@
+# XPVehicleSDK 门面模式
+
+## 元信息
+- 触发关键词: ["XPVehicleSDK", "currentVehicle", "门面模式", "SDK入口", "车控入口"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`XPVehicleSDK` 是对外门面类（Facade），隐藏内部实现层级：
+
+```
+XPVehicleSDK (对外静态方法)
+    ↓ 内部持有
+VehicleManager (管理车辆列表和切车)
+    ↓ 内部持有
+BaseVehicle (vehicleInstance，当前车控实例)
+    ↓ 实现为
+XiaopengVehicle / MonaVehicle
+```
+
+**App 层标准访问方式**:
+```swift
+let presenter = XPVehicleSDK.currentVehicle()  // → VehiclePresenter?
+presenter?.sendControlCommand(command: .unlock, ...)
+```
+
+**不要直接操作 VehicleManager 或 BaseVehicle**，除非你确切知道自己在做什么。
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK.swift`

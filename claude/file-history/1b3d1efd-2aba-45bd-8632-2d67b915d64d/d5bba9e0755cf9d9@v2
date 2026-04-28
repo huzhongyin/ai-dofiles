@@ -1,0 +1,96 @@
+# XPMotors iOS — 业务术语 → 代码位置映射表
+
+> 最后更新: 2026-04-08
+> 说明: 帮助 AI 快速定位"业务概念"对应的"代码位置"，提升代码修改准确率
+
+---
+
+## 车控核心域
+
+| 业务术语 | 代码位置 | 语言 | 入口类/文件 | 说明 |
+|---------|---------|------|------------|------|
+| 蓝牙数据解析 | `submodule/XPBLEDataProcessor/` | C++/OC | `XPBLEDataProcessor.h` | 蓝牙包解析与组装，跨平台 C++ 核心 |
+| MQTT 连接 | `submodule/XPVehicleSDK/.../Utilities/MQTT/` | Swift | `MQTTPublisher.swift` | MQTT 底层连接管理（单例） |
+| MQTT 业务封装 | `submodule/XPVehicleSDK/.../Core/MQTT/` | Swift | `MQTTHandler.swift` | 消息发送/回调/超时/重连 |
+| MQTT 服务管理 | `submodule/XPVehicleSDK/.../Function/MqttService/` | Swift | `MqttServiceManager.swift` | MQTT 生命周期（登录/退出） |
+| 车型能力配置 | `submodule/XPVehicleSDK/.../Core/XPCarAbilityConfig/` | OC | `XPCarAbilityConfigManager.h` | 差异化能力开关（100+ 属性） |
+| 各车型配置 | `submodule/XPVehicleSDK/.../Function/CarAbilityConfig/` | OC | `XP<型号>CarAbilityConfig.h` | 各车型配置子类（15+ 车型） |
+| 车辆连接协议 | `submodule/XPVehicleSDK/.../Core/VehicleConnection/` | Swift | `VehicleConnection.swift` | BLE/TCP/NFC 三路连接抽象 |
+| 蓝牙连接 | `submodule/XPVehicleSDK/.../Core/VehicleConnection/BLEConnection/` | Swift | `XiaopengBLEConnection.swift` | 蓝牙扫描/连接/心跳/数据收发 |
+| TCP 连接 | `submodule/XPVehicleSDK/.../Core/VehicleConnection/TCPConnection/` | Swift | `XiaopengTCPConnection.swift` | 通过 MQTT 的远程车控通道 |
+| 基础车辆协议 | `submodule/XPVehicleSDK/.../Function/Presenter/` | Swift | `BaseVehicle.swift` | 车辆能力的完整接口定义 |
+| 小鹏车控实现 | `submodule/XPVehicleSDK/.../Function/Presenter/Xiaopeng/` | Swift | `XiaopengVehicle.swift` | 小鹏品牌车型车控实现 |
+| Mona 车控实现 | `submodule/XPVehicleSDK/.../Function/Presenter/Mona/` | Swift | `MonaVehicle.swift` | Mona 品牌车型车控实现 |
+| 车辆管理器 | `submodule/XPVehicleSDK/.../Function/VehicleManager/` | Swift | `VehicleManager.swift` | 车辆列表/切车/生命周期管理 |
+| 车控指令 | `submodule/XPVehicleSDK/.../Function/VehicleControlRequest/` | Swift | `VehicleControlRequestManager.swift` | 车控指令发送管理 |
+| 车辆状态模型 | `submodule/XPVehicleSDK/.../Core/VehicleStateModel/` | Swift | `XiaopengVehicleStateModel.swift` | 车态数据结构定义 |
+| 车辆状态 | `submodule/XPVehicleSDK/.../Core/VehicleState/` | Swift | — | 车辆状态管理 |
+
+## 蓝牙钥匙域
+
+| 业务术语 | 代码位置 | 语言 | 入口类/文件 | 说明 |
+|---------|---------|------|------------|------|
+| 蓝牙钥匙 | `XiaoPengQiChe/Modules/BLEKey/` | Swift/OC | — | 蓝牙钥匙业务模块 |
+| 数字钥匙管理 | `submodule/XPVehicleSDK/.../Function/DigitalKey/` | Swift | `DigitalKeyManager.swift` | 钥匙创建/删除/管理 |
+| RSSI 信号管理 | `submodule/XPVehicleSDK/.../Function/RssiManager/` | Swift | `RssiManager.swift` | 蓝牙信号强度管理 |
+| Polling (无感进入) | `submodule/XPVehicleSDK/.../Function/Polling/` | Swift | — | 蓝牙无感解锁/上锁 |
+| 自标定 | `submodule/XPVehicleSDK/.../Function/SelfCalibration/` | Swift | `SelfCalibration.swift` | 蓝牙距离自标定 |
+
+## 泊车域
+
+| 业务术语 | 代码位置 | 语言 | 入口类/文件 | 说明 |
+|---------|---------|------|------------|------|
+| 远程泊车 | `XiaoPengQiChe/Modules/RemoteParking/` | Swift/OC | — | 远程泊车业务 UI |
+| 自动泊车 | `XiaoPengQiChe/Modules/AutoParking/` | Swift/OC | — | 自动泊车业务 UI |
+| 泊车管理器 | `submodule/XPVehicleSDK/.../Function/ParkingManager/` | Swift | `AutoDriveManager.swift` | 泊车逻辑管理 |
+| 智能出库 | `XiaoPengQiChe/Modules/SmartParkOut/` | Swift/OC | — | 智能出库业务 |
+| 离车泊入 | `XiaoPengQiChe/Modules/LeavePark/` | Swift/OC | — | 离车泊入业务 |
+
+## 充电域
+
+| 业务术语 | 代码位置 | 语言 | 入口类/文件 | 说明 |
+|---------|---------|------|------------|------|
+| 充电 | `XiaoPengQiChe/Modules/Charge/` | Swift/OC | — | 充电管理业务模块 |
+| 充电桩 | `XiaoPengQiChe/Modules/ChargeStation/` | Swift/OC | — | 充电桩查找/导航 |
+| 私桩 | `XiaoPengQiChe/Modules/PrivatePile/` | Swift/OC | — | 私人充电桩管理 |
+| 新私桩 | `XiaoPengQiChe/Modules/NewPrivatePile/` | Swift/OC | — | 新版私桩管理 |
+
+## 服务层
+
+| 业务术语 | 代码位置 | 语言 | 入口类/文件 | 说明 |
+|---------|---------|------|------------|------|
+| 路由导航 | `XiaoPengQiChe/Services/Router/` | Swift/OC | — | 页面路由和跳转 |
+| 蓝牙通信 | `XiaoPengQiChe/Services/Bluetooth/` | Swift/OC | — | App 层蓝牙服务 |
+| 埋点统计 | `XiaoPengQiChe/Services/Statistics/` | Swift/OC | — | 数据埋点上报 |
+| JSBridge | `XiaoPengQiChe/Services/JSBridge/` | Swift/OC | — | H5/RN 桥接 |
+| 登录桥接 | `XiaoPengQiChe/Services/LoginBridge/` | Swift/OC | — | 登录/退出登录桥接 |
+| 支付服务 | `XiaoPengQiChe/Services/Pay/` | Swift/OC | — | 支付流程 |
+| LiveActivity | `XiaoPengQiChe/Services/LiveActivity/` | Swift | — | 灵动岛/实时活动 |
+
+## 组件层（LocalPods）
+
+| 业务术语 | 代码位置 | 语言 | 说明 |
+|---------|---------|------|------|
+| 基础公共 | `LocalPods/XPBase_Common/` | Swift/OC | 通用工具/扩展/基类 |
+| UI 组件 | `LocalPods/XPBase_UI/` | Swift/OC | 公共 UI 组件 |
+| 路由组件 | `LocalPods/XPBase_Router/` | Swift/OC | 路由框架 |
+| 主题组件 | `LocalPods/XPBase_Theme/` | Swift/OC | 主题/皮肤管理 |
+| WebView | `LocalPods/XPBase_WebView/` | Swift/OC | WebView 封装 |
+| RN 基础 | `LocalPods/XPBase_RN/` | Swift/OC | React Native 基础 |
+| 车业务组件 | `LocalPods/XPBusiness_Car/` | Swift/OC | 车相关业务组件 |
+| 充电业务组件 | `LocalPods/XPBusiness_Charge/` | Swift/OC | 充电相关业务组件 |
+| 用户中台 | `LocalPods/XPCenter_User/` | Swift/OC | 用户信息管理 |
+| 消息中台 | `LocalPods/XPCenter_Message/` | Swift/OC | 消息推送管理 |
+| 工具集 | `LocalPods/XPKits/` | Swift/OC | 通用工具集合 |
+
+## 子模块（submodule）
+
+| 业务术语 | 代码位置 | 语言 | 说明 |
+|---------|---------|------|------|
+| 车端 SDK | `submodule/XPVehicleSDK/` | Swift | 车控核心 SDK |
+| 车控核心 | `submodule/XPCarControlCore/` | Swift/OC | 车控核心逻辑 |
+| 蓝牙数据处理 | `submodule/XPBLEDataProcessor/` | C++/OC | BLE 数据编解码 |
+| MQTT 库 | `submodule/XPMQTTLibrary/` | Swift | MQTT 通信库 |
+| 轮询 SDK | `submodule/XPPollingSDK/` | OC/C++ | 蓝牙 Polling 功能 |
+| 车端扩展 | `submodule/XPVehicleExt/` | Swift/OC | BLEKey/Wifi/Xcombo 等扩展 |
+| 车端业务 | `submodule/XPCarBusiCH/` | Swift/OC | 车端业务层 |

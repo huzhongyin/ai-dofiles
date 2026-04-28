@@ -1,0 +1,128 @@
+# 模块名: XPBLEDataProcessor
+
+## 模块职责
+蓝牙数据解析与组装库，负责 App 与车端之间蓝牙通信的底层数据协议处理。核心功能包括：将车端蓝牙包解析为 JSON 结构化数据（车门/车窗/充电口/泊车等状态），以及将 App 的车控指令（解锁/锁车/开尾箱等）组装为蓝牙协议数据包。支持多车型（小鹏 D22/D55/E28/E38/F30 + Mona）和多协议版本（V1/V2/V3）。跨平台共享 C++ 核心实现，iOS 通过 OC 桥接层(.mm)调用。
+
+## 语言构成
+- C++ 文件数: ~64（cross-platform/ 核心解析/组装逻辑，含 .cpp 和 .h 头文件）
+- OC .h/.m 文件数: ~10（iOS/ 平台桥接层）
+- OC/C++ 混编(.mm): 2（XPBleKeyV3DataProcessor.mm, MonaBleDataProcessor.mm）
+- 混编说明: iOS 层通过 .mm 文件桥接 C++ 核心代码，对外暴露纯 OC 接口
+
+## 核心 API
+
+### XPBLEDataProcessor（基础蓝牙数据处理器）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+parseMessageWithVehicleCode:bleData:` | OC | 解析蓝牙包为 JSON 字符串 | `[XPBLEDataProcessor parseMessageWithVehicleCode:@"D55" bleData:rawData]` |
+| `+generateBleData:controlId:vehicleTypeCode:msgType:controlType:` | OC | 生成蓝牙发送数据包 | `[XPBLEDataProcessor generateBleData:payload controlId:0x01 vehicleTypeCode:@"E28" msgType:BLEKeyMessageTypeControl controlType:BLEKeyMsgControlHeaderMessageType_Default]` |
+| `+generateAuthData:random2:macAddress:` | OC | 生成鉴权数据包 | `[XPBLEDataProcessor generateAuthData:rand1 random2:rand2 macAddress:mac]` |
+| `+addAuthFrameHeader:isDoublesided:` | OC | 为鉴权数据添加帧头 | `[XPBLEDataProcessor addAuthFrameHeader:authData isDoublesided:YES]` |
+| `+createTboxMessageWith:keyString:controlId:packageSize:` | OC | 生成 TBox 消息包 | `[XPBLEDataProcessor createTboxMessageWith:BLEBoxCommandUnlock keyString:key controlId:1 packageSize:20]` |
+| `+createParkingHeartbeatMessageWith:count:` | OC | 生成泊车心跳消息 | `[XPBLEDataProcessor createParkingHeartbeatMessageWith:BLEParkingCommandSummonForward count:1]` |
+
+### XPBleKeyV3DataProcessor（V3 协议处理器，支持加密）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+parseBleKeyV3MessageWithVehicleCode:bleData:sessionKey:authKey:isEncrypted:` | OC | V3 加密蓝牙包解析 | — |
+| `+generateAuth0DataIndictor:uid:hexKeyId:rand0:...` | OC | 生成 Auth0 鉴权请求 | — |
+| `+generateSessionKey:hexKeyId:rand0:rand1:` | OC | 生成会话密钥 | — |
+| `+generateRkeControlRequestData:controlId:controlData:sessionKey:hmacKey:` | OC | 生成 RKE 车控请求数据 | — |
+| `+generatePollingCustomeData:...` | OC | 生成 Polling 自定义数据 | — |
+| `+generateRtAuthRequestData:deviceModel:` | OC | 生成 RT 鉴权请求数据（明文） | `[XPBleKeyV3DataProcessor generateRtAuthRequestData:certData deviceModel:@"iPhone"]` |
+
+### MonaBleDataProcessor（Mona 车型专用处理器）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+parseBleKeyMessageWithBleData:sessionKey:authKey:r0:` | OC | Mona 蓝牙包解析 | — |
+| `+generateAuth1MessageWithUid:vin:r0:cipher1:cipher2:` | OC | Mona Auth1 鉴权消息 | — |
+| `+generateVehilceControlMessageWithCmd:sessionKey:counter:` | OC | Mona 车控指令 | — |
+
+## 参数说明
+- `vehicleCode`: (NSString) — 车型编码，如 "D55", "E28", "F30", "Mona"
+- `bleData`: (NSData) — 原始蓝牙字节数据
+- `controlId`: (uint8_t) — 车控指令序号，用于匹配请求/响应
+- `msgType`: (BLEKeyMessageType) — BLE 消息类型（Control=0xEF, Data=0xED, DataNoVerify=0xEC）
+- `controlType`: (BLEKeyMsgControlHeaderMessageType) — 车控消息子类型（Auth/Wakeup/Parking）
+- `sessionKey`: (NSData) — 会话加密密钥（V3 协议加密通信用）
+- `authKey`: (NSData) — 鉴权密钥
+- `hmacKey`: (NSData) — HMAC 签名密钥（V3 协议完整性校验用）
+
+## 关键枚举
+- `BLEBoxCommand`: 车控指令集（解锁0x01/锁车0x02/开尾箱0x04/开充电口0x05等共40+指令）
+- `BLEKeyMessageType`: BLE 消息类型（Control/Data/DataNoVerify/Resp）
+- `BLEParkingCommand`: 泊车指令（前进召唤/后退召唤/泊入/泊出/暂停/继续/停止）
+
+## 关键数据结构（C++，车端状态）
+- `DoorMessage`: 车门状态（锁/开/关/临停/滑门/剪刀门等19个字段）
+- `WindowMessage`: 车窗位置（四个车窗）
+- `ChargePortMessage`: 充电口状态（快充/慢充/枪锁）
+- `ParkingMessage`: 泊车状态（离车泊出/迎宾泊出/泊入/避障等20+字段）
+- `RkeControlMessage`: 远程控制结果
+- `Auth0ResponseMessage`: 鉴权响应（rand01, rand1）
+- `RtAuthResultMessage`: RT 鉴权结果（authResult, errorCode）— 明文传输
+- `RtNotificationMessage`: RT 通知（pollingResult）— 明文传输
+
+## 依赖关系
+- **上游依赖**: OpenSSL（加密算法）、cJSON（JSON处理）
+- **下游被依赖**: XPVehicleSDK（通过 BLE 连接层调用本库进行数据编解码）
+- **iOS 平台桥接**: 通过 XPDataProxyManager 注入日志代理
+
+## 跨平台架构
+```
+cross-platform/          ← C++ 核心（共享：iOS/Android/Harmony/小程序）
+├── BLEDataParser/       ← 解析层：车端 → App
+│   ├── DataParserManager    ← 管理器入口
+│   ├── DataParserFactory    ← 工厂模式，按车型创建解析器
+│   ├── D22/D55/E28/E38/F30DataParser  ← 各车型解析器
+│   ├── MonaDataParser       ← Mona 车型解析器
+│   └── BleKeyV3*            ← V3 加密协议相关
+├── BLEDataMaker/        ← 组装层：App → 车端
+│   ├── BleSendData          ← 小鹏车型数据组装
+│   ├── MonaBleSendData      ← Mona 车型数据组装
+│   └── BLERescueKeyData     ← 应急钥匙数据
+└── tools/               ← 工具（加密/编码/日志）
+
+iOS/XPDataProcessor/     ← iOS OC 桥接层
+├── XPBLEDataProcessor       ← 基础协议桥接
+├── XPBleKeyV3DataProcessor  ← V3 协议桥接(.mm)
+├── MonaBleDataProcessor     ← Mona 协议桥接(.mm)
+└── Proxy/                   ← 日志代理
+```
+
+## 常见用法
+
+### 解析车端蓝牙数据
+```objc
+// 收到蓝牙原始数据后解析
+NSString *jsonStr = [XPBLEDataProcessor parseMessageWithVehicleCode:@"E28" bleData:receivedData];
+// jsonStr 包含 DoorMessage/WindowMessage/ParkingMessage 等结构化 JSON
+
+// V3 加密协议解析
+NSString *jsonStr = [XPBleKeyV3DataProcessor parseBleKeyV3MessageWithVehicleCode:@"F30"
+                                                                         bleData:encData
+                                                                      sessionKey:sKey
+                                                                         authKey:aKey
+                                                                     isEncrypted:YES];
+```
+
+### 组装车控指令
+```objc
+// 生成解锁指令
+XPBLEData *bleData = [XPBLEDataProcessor generateBleData:payload
+                                               controlId:controlId
+                                         vehicleTypeCode:@"E28"
+                                                 msgType:BLEKeyMessageTypeControl
+                                             controlType:BLEKeyMsgControlHeaderMessageType_Default];
+// bleData.data → 发送给车端 BLE
+// bleData.tboxData → 发送给 TBox（如有）
+```
+
+## 已知限制/陷阱
+- 各车型的解析器差异较大（D22 vs E28 vs Mona），修改一个车型的解析逻辑时需确认不影响其他车型
+- V3 协议涉及 sessionKey/hmacKey 两套密钥，鉴权流程分 Auth0 → Auth1 两步，顺序不能乱
+- `XPBLEData` 返回的 `.data` 和 `.tboxData` 是两路数据，分别走 BLE 和 TBox 通道，不可混淆
+- C++ 层结构体使用 `__attribute__((packed))` 紧凑排列，手动修改字段顺序会导致协议不兼容
+- Mona 车型使用独立的鉴权流程和数据格式（MonaBleDataProcessor），不走 XPBLEDataProcessor
+- V3 新增 msgId 时注意 tag/type 与现有消息可能冲突，需通过 msgId 前置路由到专用 handler（参见踩坑记录 坑6）
+- RtAuth/RtNotification (msgId=0x0B/0x0C) 是明文传输，不经过 sessionKey/authKey 加密

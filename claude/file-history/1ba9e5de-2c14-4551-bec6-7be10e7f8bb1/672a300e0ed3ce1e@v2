@@ -1,0 +1,39 @@
+# XPBusiness_Car — LocalPod 规范
+
+## 模块定位
+
+车相关业务 UI 与业务逻辑层，负责车控界面展示、车辆状态呈现、车辆业务功能的用户交互（远程控车 UI、车辆设置页面等）。不包含底层车控 SDK 实现。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPBusiness_Car/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+Swift 为主（占位文件 ReplaceMe.swift 表明新代码用 Swift），通过 VehiclePresenter 对外 API 调用车控能力，不直接依赖底层 BLE/MQTT 通信。
+
+## Podspec 依赖约束
+
+依赖 XPBase_Common、XPBase_UI、XPBase_Theme。通过 VehicleBridge/VehiclePresenter 间接依赖 XPVehicleSDK。私有源 `gitlab.x-peng.com`，语义化版本。
+
+## 命名前缀与 API 稳定性
+
+Swift 类无前缀，业务组件命名 `XPBusiness_Car` 前缀约定。公开 API 为车控 UI 页面入口和交互回调。共版设计，通过配置区分国内/国际差异。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止直接调用 BLEConnection.send() 或 MQTTHandler.publish()（必须通过 VehiclePresenter）
+- 禁止在 UI 层直接发起网络请求（走 ViewModel → Service）
+- 禁止硬编码车型差异（通过配置抹平）
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

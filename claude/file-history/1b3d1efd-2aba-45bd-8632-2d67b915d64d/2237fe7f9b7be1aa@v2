@@ -1,0 +1,17 @@
+# BLE 数据双通道输出
+
+## 元信息
+- 触发关键词: ["XPBLEData", "tboxData", "双通道", "BLE通道", "TBox通道", "蓝牙发送数据"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+`XPBLEDataProcessor.generateBleData` 返回的 `XPBLEData` 对象包含两路数据：
+
+1. **`.data`** — 直接通过 BLE 蓝牙通道发送给车端
+2. **`.tboxData`** — 通过 TBox（TCP/MQTT）通道发送给车端
+
+**核心规则**: 两路数据**不可混淆**，各走各的通道。并非所有指令都有 tboxData。
+
+**代码位置**: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/XPBLEDataProcessor.h`

@@ -1,0 +1,39 @@
+# XPPushServiceExtension 宪法
+
+> 本文件是 XPPushServiceExtension 的**稳定规范**，描述模块边界、核心约束与对外契约。
+
+## 1. 模块定位
+
+推送通知 Service Extension。核心职责：
+- 拦截远程推送通知，在展示前修改内容（富文本、图片、本地化）
+- 推送数据预处理和解密
+
+**明确不属于**：推送注册、Token 管理、消息中心 UI。
+
+## 2. 架构约束
+
+UNNotificationServiceExtension 子类模式。NotificationService 为入口，在 didReceive(_:withContentHandler:) 中处理通知内容。
+
+## 3. 语言策略
+
+Swift（NotificationServiceExtension.swift）+ OC（NotificationService.h/.m）混编。通过 Bridging-Header 桥接。
+
+## 4. 依赖边界
+
+**允许**：UserNotifications、App Group 共享数据。
+**禁止**：UIApplication、主工程 App 代码。
+
+## 5. 禁止事项
+
+- 禁止使用 UIApplication.shared
+- 禁止在 30 秒超时内未调用 contentHandler（系统会强制展示原始通知）
+- 禁止在 Extension 中执行复杂业务逻辑
+
+## 6. 与其他模块的接口契约
+
+- 入口：NotificationService（UNNotificationServiceExtension 子类）
+- Entitlements: XPPushServiceExtension.entitlements
+
+---
+
+> 变更本文件请同步更新 `.ai-knowledge/deps.yml` 与 module-registry。

@@ -1,0 +1,26 @@
+# BaseVehicle 协议组合模式
+
+## 元信息
+- 触发关键词: ["BaseVehicle", "VehiclePresenter", "VehicleCommunication", "VehiclePresenterExt", "协议组合", "车辆协议"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`BaseVehicle` 通过协议组合模式定义"一辆车"的完整能力：
+
+```
+BaseVehicle = VehiclePresenter + VehiclePresenterExt + VehicleCommunication
+```
+
+| 子协议 | 职责 | 关键 API |
+|--------|------|----------|
+| VehiclePresenter | 展示层能力 | vehicleState / sendControlCommand / connect / disconnect / events |
+| VehiclePresenterExt | 扩展能力 | RSSI 观察 / Polling 代理 |
+| VehicleCommunication | 通信能力 | vin / uid / tcpConnection / bleConnection / cacheManager |
+
+**App 层访问入口**: 通过 `XPVehicleSDK.currentVehicle()` 获取 `VehiclePresenter` 协议，不直接操作 `BaseVehicle`。
+
+**实现类**: `XiaopengVehicle`（小鹏系）、`MonaVehicle`（Mona 系）
+
+**代码位置**: `submodule/XPVehicleSDK/Core/Vehicle/`

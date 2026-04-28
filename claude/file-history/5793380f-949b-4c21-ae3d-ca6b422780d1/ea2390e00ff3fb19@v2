@@ -1,0 +1,205 @@
+功能模块：auto-lock（自动闭锁 / Polling Lock）
+所属平台：iOS
+最后更新：2026-03-31 10:00
+版本号：V3.0
+分析起点：PLXPPollingFirstPollingHandler.mm:predictLock（BLE 位置达到迎宾圈触发闭锁预测）
+实际使用子类：PLXPPollingFirstPollingHandler（当 isBleLocationVersionV1 = YES 时使用）
+配置依据：[PLVehicleConfigTool isBleLocationVersionV1]，初始化位于 PLXPPollingManager.mm:initBlePollingWithKeySettingData:170，由服务端下发的 vehiclePreference / abilityConfig.carTypeCode 决定版本
+
+---
+
+## 完整调用链路径
+
+### 上游链（触发点 → predictLock 入口）
+
+```
+[BLE 硬件事件]
+  ↓ RSSI 数据上报
+[PLXPBleLocationManager.mm] → 调用定位结果回调
+  ↓
+[PLXPPollingManager.mm:syncBleLocationResult::254]
+  → 日志："蓝牙未鉴权成功，不进行Polling权限预测"（BLE未鉴权时拦截）
+  ↓ 调用 [self.pollingHandler handleLocationResult:locationResult]
+[PLXPPollingHandler.mm:handleLocationResult::106]
+  ↓ 调用 [self _handleLocationResult:locationResult]
+[PLXPPollingFirstPollingHandler.mm:_handleLocationResult::117]
+  条件：distanceLevel >= PLBLEKeyDistanceLevelWelcomeCircle
+  ↓ 满足时调用 [self predictLock]
+[PLXPPollingFirstPollingHandler.mm:predictLock:149]   ← 入口方法
+```
+
+### 下游链（predictLock 入口 → 最终执行点）
+
+```
+[PLXPPollingFirstPollingHandler.mm:predictLock:149]
+  ↓ 调用 [super predictLock]
+[PLXPPollingHandler.mm:predictLock:158]
+  → 日志："<PA>predict result: lock, extension: ..."（首次进入，doorLockResult 从非 lock 变为 lock）
+  ↓ 返回 PLXPPollingFirstPollingHandler.mm:predictLock:151
+  条件检查：operateNativeUnlockInLockRange
+    → YES: 日志 "PLogic，操作了主动解锁，不闭锁" → 流程中断（无命令发送）
+    → NO: 继续
+  ↓ 调用 [self.delegate pollingLockIfNeed:self]
+[PLXPPollingManager.mm:pollingLockIfNeed:950]
+  ← 多条件门控检查（见激活条件 & 执行条件章节）
+  → 返回 YES → 继续
+  → 返回 NO  → 流程中断（各拦截日志见下方）
+  ↓ 调用 [self.delegate sendPollingLockCommand:self]
+[PLXPPollingManager.mm:sendPollingLockCommand:870]
+  条件：bleConnectState == XPBLEConnectionStateAvailable（主蓝牙已鉴权）
+    → YES: 日志 "<PA>主蓝牙连接-鉴权成功，发送闭锁指令"
+         → sendPollingBussinessCommand:XPPollingBussinessPollingLock
+    → NO:  日志 "<PA>主蓝牙连接-鉴权失败，发送4G上锁"
+         → sendPollingBussinessCommand:XPPollingBussiness4GRevertLock → lockIfNeedHttps
+  ↓ [PLXPPollingManager.mm:sendPollingBussinessCommand:455]
+    case XPPollingBussinessPollingLock:
+    → 日志 "<PA>发送Polling上锁指令"
+    ↓ 调用 [self sendLockCommand]
+[PLXPPollingManager.mm:sendLockCommand:588]
+  → 检查 isNetworkReachable（无网络时日志 "无网络，不发送双通道HTTPS上锁指令"，仍继续发 BLE）
+  ↓ [PLXPCommandTool sendCommand:XPVehicleCommandPollingLock success:^{...} failed:^{...}]
+    成功回调:
+      → 日志 "<PA>发送双通道HTTP上锁指令成功"
+      → postAutoLockNotificationWithLockSuccess:YES（通知上层）
+      → 播放闭锁声音/震动
+      → 日志 "<PA>发送闭锁指令成功，声音" / "<PA>发送闭锁指令成功，震动"
+      → [PLProxyManager pollingLockResultWithIsSuccess:YES]
+      → [XPPollingProxyBridge pollingLockResultWithIsSuccess:YES] → Toast "车门已上锁"  ← 最终执行点
+    失败回调（TCP 通道）:
+      → 日志 "<PA>发送双通道HTTP上锁指令失败"
+      → postAutoLockNotificationWithLockSuccess:NO
+      → [PLProxyManager pollingLockResultWithIsSuccess:NO]
+      → [XPPollingProxyBridge pollingLockResultWithIsSuccess:NO] → Toast "上锁失败"  ← 失败执行点
+
+4G 兜底路径（lockIfNeedHttps）:
+  ↓ [PLXPCommandTool sendCommand:XPVehicleCommandPollingLock]
+    成功:
+      → 日志 "<PA>发送HTTPS上锁指令成功"
+      → pollingLockResultWithIsSuccess:YES → Toast "车门已上锁"
+    失败:
+      → 日志 "<PA>发送HTTPS上锁指令失败"
+```
+
+---
+
+## 前提条件（进入入口前必须满足，不满足则根本不会触发 predictLock）
+
+| 条件 | 代码位置 | 不满足时的表现 |
+|------|---------|-------------|
+| Polling 已初始化（initBlePolling 调用完成） | PLXPPollingManager.mm:initBlePollingWithKeySettingData:165 | pollingHandler 为 nil，syncBleLocationResult 无效 |
+| BLE 已鉴权成功（bleConnectState == Available） | PLXPPollingManager.mm:syncBleLocationResult:268 | 日志 "蓝牙未鉴权成功，不进行Polling权限预测"，静默返回 |
+| Polling 未暂停（isPaused == NO） | PLXPPollingManager.mm:sendPollingBussinessCommand:441 | 日志 "polling服务处于暂停状态，不执行任何polling指令" |
+| distanceLevel 非 InitCircle | PLXPPollingFirstPollingHandler.mm:_handleLocationResult:118 | 静默返回，不调用 predictLock |
+
+---
+
+## 激活条件（触发 predictLock 的条件）
+
+| 条件 | 代码位置 | 说明 |
+|------|---------|------|
+| `distanceLevel >= PLBLEKeyDistanceLevelWelcomeCircle` | PLXPPollingFirstPollingHandler.mm:_handleLocationResult:137 | 手机进入迎宾圈及以外时触发闭锁预测 |
+
+---
+
+## 执行条件与分支（激活后的判断，影响是否发出命令）
+
+| 条件 | 代码位置 | true 分支 | false 分支 | 有无日志 |
+|------|---------|----------|-----------|---------|
+| operateNativeUnlockInLockRange | PLXPPollingFirstPollingHandler.mm:predictLock:151 | 日志"操作了主动解锁，不闭锁"，return | 继续 | ✅ |
+| pollingRunMode 含 Lock | PLXPPollingManager.mm:pollingLockIfNeed:951 | 继续 | 日志"启用的mode1,不做闭锁" | ✅ |
+| isDoorOpen == NO | PLXPPollingManager.mm:pollingLockIfNeed:955 | 继续 | 日志"车辆是开门状态，不执行polling闭锁" | ✅ |
+| lockOperateTime == 0 | PLXPPollingManager.mm:pollingLockIfNeed:959 | 继续 | 日志"想闭锁，但是没有出6秒的限制，返回" | ✅ |
+| doorState != Locked && doorState != Default | PLXPPollingManager.mm:pollingLockIfNeed:964 | 继续 | **静默返回（无日志）⚠️** | ❌ |
+| pollingLockTryCount < 3 | PLXPPollingManager.mm:pollingLockIfNeed:968 | 继续 | 日志"想闭锁，但是超过3次，返回" | ✅ |
+| 未超过上次闭锁间隔 | PLXPPollingManager.mm:pollingLockIfNeed:973 | 继续 | 日志"想闭锁，但是没有出上一次闭锁间隔限制，返回" | ✅ |
+
+---
+
+## 正常执行流（从激活到最终指令发送）
+
+```
+1. PLXPPollingFirstPollingHandler:_handleLocationResult → distanceLevel >= WelcomeCircle
+2. predictLock → super predictLock → 日志 "<PA>predict result: lock"
+3. pollingLockIfNeed: → 所有门控通过，返回 YES
+4. sendPollingLockCommand: → BLE 已鉴权 → 日志 "<PA>主蓝牙连接-鉴权成功，发送闭锁指令"
+5. sendPollingBussinessCommand:Lock → 日志 "<PA>发送Polling上锁指令"
+6. sendLockCommand → PLXPCommandTool sendCommand:XVehicleCommandPollingLock（双通道BLE+HTTP）
+7. 成功回调 → 日志 "<PA>发送双通道HTTP上锁指令成功"
+8. pollingLockResultWithIsSuccess:YES → Toast "车门已上锁"  ← 正常流终点
+```
+
+---
+
+## 异常/拦截流
+
+| 拦截点 | 触发条件 | 日志 | 是否有恢复 |
+|--------|---------|------|---------|
+| BLE 未鉴权 | syncBleLocationResult | "蓝牙未鉴权成功，不进行Polling权限预测" | 等待 BLE 鉴权成功 |
+| 主动解锁了 | operateNativeUnlockInLockRange=YES | "PLogic，操作了主动解锁，不闭锁" | 离开闭锁圈后 Flag 重置 |
+| 未开闭锁模式 | pollingRunMode 无 Lock | "启用的mode1,不做闭锁" | 需用户开启设置 |
+| 车门开着 | isDoorOpen=YES | "车辆是开门状态，不执行polling闭锁" | 关门后恢复 |
+| 操作冷却中 | lockOperateTime > 0 | "想闭锁，但是没有出6秒的限制，返回" | 计时器到期自动恢复 |
+| 车门已锁或状态未知 | doorState=Locked/Default | **无日志（静默失败）** | — |
+| 重试超限 | pollingLockTryCount >= 3 | "想闭锁，但是超过3次，返回" | 车辆解锁事件后 resetAllPollingCommandLimit 重置 |
+| 发送失败 | PLXPCommandTool 网络错误 | "<PA>发送双通道HTTP上锁指令失败" | 无自动重试 |
+
+---
+
+## 日志关键字映射（严格OR逻辑）
+
+### 入口标识
+- `<PA>predict result: lock` → [PLXPPollingHandler.mm:predictLock:153]
+- `<PA>开始Polling初始化` → [PLXPPollingManager.mm:initBlePollingWithKeySettingData:196]
+
+### 状态转换标识
+- `设置distanceLevel为` → [PLXPPollingHandler.mm:setDistanceLevel:277]
+- `<PA>主蓝牙连接-鉴权成功，发送闭锁指令` → [PLXPPollingManager.mm:sendPollingLockCommand:878]
+- `<PA>主蓝牙连接-鉴权失败，发送4G上锁` → [PLXPPollingManager.mm:sendPollingLockCommand:881]
+
+### 异常标识
+- `蓝牙未鉴权成功，不进行Polling权限预测` → [PLXPPollingManager.mm:syncBleLocationResult:269]
+- `PLogic，操作了主动解锁，不闭锁` → [PLXPPollingFirstPollingHandler.mm:predictLock:152]
+- `启用的mode1,不做闭锁` → [PLXPPollingManager.mm:pollingLockIfNeed:952]
+- `车辆是开门状态，不执行polling闭锁` → [PLXPPollingManager.mm:pollingLockIfNeed:957]
+- `想闭锁，但是没有出6秒的限制` → [PLXPPollingManager.mm:pollingLockIfNeed:960]
+- `想闭锁，但是超过3次，返回` → [PLXPPollingManager.mm:pollingLockIfNeed:969]
+- `想闭锁，但是没有出上一次闭锁间隔限制` → [PLXPPollingManager.mm:pollingLockIfNeed:975]
+- `<PA>发送双通道HTTP上锁指令失败` → [PLXPPollingManager.mm:sendLockCommand:627]
+- `<PA>发送HTTPS上锁指令失败` → [PLXPPollingManager.mm:lockIfNeedHttps:431]
+
+### 退出标识（成功）
+- `<PA>发送Polling上锁指令` → [PLXPPollingManager.mm:sendPollingBussinessCommand:458]
+- `<PA>发送双通道HTTP上锁指令成功` → [PLXPPollingManager.mm:sendLockCommand:599]
+- `<PA>发送闭锁指令成功，声音` → [PLXPPollingManager.mm:sendLockCommand:616]
+- `<PA>发送闭锁指令成功，震动` → [PLXPPollingManager.mm:sendLockCommand:620]
+- `<PA>发送HTTPS上锁指令成功` → [PLXPPollingManager.mm:lockIfNeedHttps:406]
+
+---
+
+## 状态机
+
+```
+PLBLEKeyDistanceLevel 枚举（从近到远）：
+  InCar(0) < OneMeterCircle < UnlockCircle < EnableCircle < BuffCircle < LockCircle < WelcomeCircle < ConnectCircle < InitCircle
+
+PLPollingRunMode:
+  None(0) → 解锁闭锁都不开
+  UnLock(1) → 只开解锁
+  Lock(2) → 只开闭锁
+  LockAndUnlock(3) → 解锁闭锁都开
+
+doorLockResult 状态转换：
+  None → Unlock(进解锁圈) → None(车解锁事件) → Lock(进迎宾圈)
+  预测为 Lock 后才触发 pollingLockIfNeed 检查
+```
+
+---
+
+## 静默失败风险点
+
+1. **doorState == Locked 或 Default 时静默返回**（PLXPPollingManager.mm:pollingLockIfNeed:964-967）
+   - 风险：车辆状态已知已锁 或 状态未知时，不发闭锁指令但无任何日志输出，无法从日志判断是否触发
+   - 建议：增加 `DLogTagInfo(kBLEKeyPollingTag, @"<PA>车门已锁或状态未知，不闭锁，doorState:%d", doorState)`
+
+2. **BLE未连接时 revealHttpLock 多重门控静默**（PLXPPollingManager.mm:revealHttpLock:362-399）
+   - 临停状态、车门已锁、主驾有人等均有日志，但 `isCanRevealHttpLock` 失败时日志重复（行390 和 386 打印同一条日志）

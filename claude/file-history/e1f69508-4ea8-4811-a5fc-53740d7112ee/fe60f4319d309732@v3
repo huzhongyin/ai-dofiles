@@ -1,0 +1,24 @@
+# VehicleState 只读与更新机制
+
+## 元信息
+- 触发关键词: ["VehicleState", "vehicleState", "车态数据", "状态更新", "VehicleStateModel", "diffState"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`VehicleCommunication.vehicleState` 是**只读属性**，业务层无法直接修改车辆状态。
+
+**状态更新路径**:
+1. BLE/MQTT 通道接收到车端状态数据
+2. 内部 `VehicleStateModel` 解析并计算 diff
+3. 触发 `vehicleStateChanged(diffState:connectionType:)` 回调
+4. `vehicleStateChangedEvent.send(VehicleStateNotiObject)` 通知业务层
+
+**VehicleStateNotiObject 结构**:
+- `.state` — 完整状态
+- `.diff` — 本次变更的差异部分
+
+**核心规则**: 业务层只能读取状态和监听变更，不能直接 set 状态值。
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleState/`（状态模型）+ `Core/VehicleStateModel/`（diff 计算）

@@ -1,0 +1,164 @@
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-138-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-139-
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-140-- (void)_handleLocationResult:(NSDictionary *_Nullable)locationResult {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-141-    NSAssert(NO, @"子类实现");
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-142-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-143-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-144-- (void)predictUnlock {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-145-    if (self.doorLockResult != PLPredictResultUnlock) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-146-        NSString *result = [NSString stringWithFormat:@"<PA>predict result: unlock, extension: %@", self.locationResultStr ? self.locationResultStr : @"nil"];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-147-        DLogTagInfo(kBLEKeyPollingTag, result);
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-148-        self.doorLockResult = PLPredictResultUnlock;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-149-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-150-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-151-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-152-- (void)predictLock {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm:153:    if (self.doorLockResult != PLPredictResultLock) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-154-        NSString *result = [NSString stringWithFormat:@"<PA>predict result: lock, extension: %@", self.locationResultStr ? self.locationResultStr : @"nil"];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-155-        DLogTagInfo(kBLEKeyPollingTag, result);
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm:156:        self.doorLockResult = PLPredictResultLock;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-157-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-158-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-159-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-160-- (void)predictInCar {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-161-    if (self.inCarResult != PLPredictResultInCar) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-162-        NSString *result = [NSString stringWithFormat:@"<PA>predict result: inCar, extension: %@", self.locationResultStr ? self.locationResultStr : @"nil"];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-163-        DLogTagInfo(kBLEKeyPollingTag, result);
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-164-        self.inCarResult = PLPredictResultInCar;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-165-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-166-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-167-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-168-- (void)predictPollingUnlockEnable {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-169-    if (self.enableUnlockResult != PLPredictResultEnableUnlock) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-170-        NSString *result = [NSString stringWithFormat:@"<PA>predict result: enable unlock, extension: %@", self.locationResultStr ? self.locationResultStr : @"nil"];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.mm-171-        DLogTagInfo(kBLEKeyPollingTag, result);
+--
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-143-                }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-144-            }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-145-        }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-146-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-147-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-148-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-149-- (void)predictLock {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-150-    [super predictLock];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-151-    if(self.operateNativeUnlockInLockRange){
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-152-        DLogTagInfo(kBLEKeyPollingTag, @"PLogic，操作了主动解锁，不闭锁");
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-153-        return;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-154-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-155-    
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-156-    if ([self.delegate respondsToSelector:@selector(pollingLockIfNeed:)]) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-157-        if ([self.delegate pollingLockIfNeed:self]) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm:158:            if ([self.delegate respondsToSelector:@selector(sendPollingLockCommand:)]) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm:159:                [self.delegate sendPollingLockCommand:self];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-160-            }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-161-        }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-162-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-163-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-164-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-165-- (void)predictUnlock {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-166-    [super predictUnlock];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-167-    if (self.operateNativeLockInUnlockRange) {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-168-        DLogTagInfo(kBLEKeyPollingTag, @"自动解锁条件 不满足，PLogic，操作了主动上锁，不解锁");
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-169-        return;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-170-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-171-    if (self.isWatchLocked) {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-172-        DLogTagInfo(kBLEKeyPollingTag, @"自动解锁条件 不满足，被手表上锁，不解锁");
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-173-        return;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingFirstPollingHandler.mm-174-    }
+--
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-11-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-12-#ifndef XPPollingSDK_Test_Mode
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-13-#import "MMKV+CarValue.h"
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-14-#endif  //XPPollingSDK_Test_Mode
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-15-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-16-#import "PLXPBleLocationDefined.h"
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-17-@class PLXPPollingHandler;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-18-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-19-#define CERT_MESSAGE_LEFT_COUNT 50
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-20-#define PL_INVAILD_DISTANCE -1
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-21-
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-22-typedef enum : NSUInteger {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-23-    PLPredictResultNone = 0,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-24-    PLPredictResultInCar = 1,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-25-    PLPredictResultUnlock = 2,
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h:26:    PLPredictResultLock = 3,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-27-    PLPredictResultEnableUnlock = 4,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-28-    PLPredictResultDisableUnLock = 5,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-29-    PLPredictResultTrunkEnable = 6,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-30-    PLPredictResultTrunkDisable = 7,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-31-    PLPredictResultChargeEnable = 8,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-32-    PLPredictResultChargeDisable = 9,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-33-    PLPredictResultRevertLockEnable = 10,
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-34-    PLPredictResultRevertLockDisable = 11
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-35-} PLPredictResult;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-36-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-37-@protocol PLXPPollingHandlerProtocol <NSObject>
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-38-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-39-@required
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-40-- (void)handleLocationExtension:(NSDictionary *_Nullable)locationExtension;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-41-- (void)_handleLocationResult:(NSDictionary *_Nullable)locationResult;
+--
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-59-- (void)pollingUnlockDisableCommandDidSuccess;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-60-- (void)pollingTrunkEnableCommandDidSuccess;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-61-- (void)pollingTrunkDisableCommandDidSuccess;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-62-- (void)pollingChargePortEnableCommandDidSuccess;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-63-- (void)pollingChargePortDisableCommandDidSuccess;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-64-- (void)pollingLockCommandDidSuccess;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-65-- (void)predictPollingUnlockEnable;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-66-- (void)predictPollingUnlockDisable;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-67-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-68-@end
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-69-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-70-@protocol PLXPPollingHandlerDelegate <NSObject>
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-71-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-72-@required
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-73-- (void)sendPollingUnlockCommand:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h:74:- (void)sendPollingLockCommand:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-75-- (void)sendTrunckNeedOpenCommand:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-76-- (void)sendTrunckNeedNotOpenCommand:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-77-- (NSInteger)certMessageCount:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-78-- (BOOL)pollingUnlockIfNeed:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-79-- (BOOL)pollingLockIfNeed:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-80-- (BOOL)pollingTrunkEnableIfNeed:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-81-- (BOOL)pollingTrunkDisableIfNeed:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-82-- (void)resetAllPollingCommandLimit:(PLXPPollingHandler *_Nonnull)pollingHandler;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-83-
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-84-- (void)sendChargPortEnableCommand:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-85-- (void)sendChargPortDisableCommand:(PLXPPollingHandler *_Nonnull)pollingHandler;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-86-
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-87-- (BOOL)pollingChargPortEnableIfNeed:(PLXPPollingHandler *_Nonnull)pollingHandler;
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-88-- (BOOL)pollingChargPortDisableIfNeed:(PLXPPollingHandler *_Nonnull)pollingHandler;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingHandler.h-89-
+--
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-781-                if ([self.delegate respondsToSelector:@selector(sendPollingUnlockCommand:)]) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-782-                    [self.delegate sendPollingUnlockCommand:self];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-783-                }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-784-            }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-785-        }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-786-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-787-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-788-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-789-- (void)predictLock {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-790-    [super predictLock];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-791-    if (self.operateNativeUnlockInLockRange || self.observeDoorOpen || self.operatePollingUnlockAtRemoteFlag) {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-792-        DLogTagInfo(kBLEKeyPollingTag, @"PLogic，解锁圈外操作了主动解锁，或未开过车门,或Polling解锁未靠近过,不再执行任何解闭锁，等待车端自动操作，除非状态重置，operateNativeUnlockInLockRange=%d,observeDoorOpen=%d,operatePollingUnlockAtRemoteFlag=%d",self.operateNativeUnlockInLockRange,self.observeDoorOpen,self.operatePollingUnlockAtRemoteFlag);
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-793-    } else {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-794-        if ([self.delegate respondsToSelector:@selector(pollingLockIfNeed:)]) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-795-            if ([self.delegate pollingLockIfNeed:self]) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm:796:                if ([self.delegate respondsToSelector:@selector(sendPollingLockCommand:)]) {
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm:797:                    [self.delegate sendPollingLockCommand:self];
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-798-                }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-799-            }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-800-        }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-801-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-802-}
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-803-
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-804-- (void)predictInCar {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-805-    [super predictInCar];
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-806-    if (![self pollingLockSourceDecisionPollingIsCanExcute:PLPollingCmdTypePollingInCar]) {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-807-        return;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-808-    }
+submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-809-    if (![self watchEventDecisionPollingIsCanExcute:PLPollingCmdTypePollingInCar]) {
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-810-        return;
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-811-    }
+/Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/Predict/PLXPPollingSecondPollingHandler.mm-812-    if (![self pollingEnablePauseAndResumeDecisionPollingIsCanExcute]) {

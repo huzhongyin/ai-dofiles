@@ -1,0 +1,2 @@
+{"type":"queue-operation","operation":"enqueue","timestamp":"2026-04-20T13:23:00.807Z","sessionId":"525f7f76-8c65-48f9-85c5-92e5c26d7f1d","content":"生成 proposal"}
+{"type":"queue-operation","operation":"dequeue","timestamp":"2026-04-20T13:23:13.176Z","sessionId":"525f7f76-8c65-48f9-85c5-92e5c26d7f1d"}

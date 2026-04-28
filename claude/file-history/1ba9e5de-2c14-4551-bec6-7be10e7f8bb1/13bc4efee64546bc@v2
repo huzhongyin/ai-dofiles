@@ -1,0 +1,63 @@
+---
+name: deps-sync
+description: 从 Podfile.lock 自动检测依赖漂移，对比 deps.yml 声明与实际依赖的差异
+---
+
+## 触发条件
+
+当任务涉及以下关键词时激活: "依赖同步", "deps sync", "依赖漂移", "deps drift", "检查依赖一致性"。
+
+## 执行步骤
+
+### Phase 1: 运行漂移检测
+
+1. 执行 `bash scripts/deps-sync-check.sh`
+2. 分析输出，分类漂移类型：
+   - **幽灵依赖** (⚠️): deps.yml 声明了但 Podfile.lock 中不存在的依赖
+   - **遗漏依赖** (❌): Podfile.lock 有但 deps.yml 未声明的内部模块依赖
+
+### Phase 2: 分析漂移原因
+
+3. 对每个幽灵依赖，判断原因：
+   - **App 层特殊性**: App target 不是 pod，其依赖在 Podfile 中声明而非 podspec — 这类幽灵属于已知限制，不需修复
+   - **Pod 名 ≠ Module ID**: 检查 module-registry 的 `pod_name` 字段是否缺失映射
+   - **源码级依赖**: 依赖通过 `import` 引入但未在 podspec 声明（通过中间层传递）
+   - **真正的过期声明**: deps.yml 中声明了已移除的依赖
+
+4. 对每个遗漏依赖，判断是否需要补充：
+   - 若为直接依赖（podspec 中 `s.dependency` 声明）→ 应该补充到 deps.yml
+   - 若为传递依赖（通过其他 pod 间接引入）→ 可选择不补充，但需注意
+
+### Phase 3: 建议修复
+
+5. 输出结构化修复建议：
+   ```
+   [deps-sync] 漂移报告：
+   
+   需要修复：
+   - [模块A] 添加依赖 XYZ: reason 待填
+   - [模块B] 移除过期依赖 ABC
+   
+   已知限制（无需修复）：
+   - [XiaoPengQiChe] App 层依赖通过 Podfile 管理，非 podspec
+   
+   建议操作：
+   - 是否自动更新 deps.yml？（仅添加 id，reason 需人工填写）
+   ```
+
+6. 若用户确认，自动更新对应 deps.yml 的 `depends_on` 列表
+
+### Phase 4: Pod 名映射维护
+
+7. 若发现新的 Pod 名 ≠ Module ID 不匹配，建议在 module-registry 添加 `pod_name` 字段
+
+## 依赖脚本
+
+- `scripts/parse-podfile-lock.rb` — 解析 Podfile.lock 为 JSON
+- `scripts/deps-sync-check.sh` — 运行漂移检测（内部调用 parse-podfile-lock.rb）
+
+## 局限性
+
+- App 层 (XiaoPengQiChe) 不是一个 pod，其依赖关系无法从 Podfile.lock 精确提取
+- 源码级 `import` 依赖可能不在 podspec 中声明，导致假阴性
+- `reason` 和 `critical_constraints` 字段无法自动生成，需人工补充

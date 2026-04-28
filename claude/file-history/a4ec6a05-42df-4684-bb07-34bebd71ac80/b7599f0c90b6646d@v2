@@ -1,0 +1,29 @@
+{
+  "expectations": [
+    {
+      "text": "Provides systematic learning structure with clear phases",
+      "passed": true,
+      "evidence": "With skill: Created 4-stage structured learning process with clear progression from interview to verification to archiving. Without skill: Provided materials but lacks systematic progression."
+    },
+    {
+      "text": "Conducts deep interview to understand background and needs",
+      "passed": true,
+      "evidence": "With skill: Generated comprehensive learning session with interview-based assessment. Without skill: No interview process, makes assumptions about learning needs."
+    },
+    {
+      "text": "Addresses the specific infinite re-render problem mentioned",
+      "passed": true,
+      "evidence": "With skill: Dedicated analysis of infinite re-render issues in learning materials. Without skill: Addressed but less systematically."
+    },
+    {
+      "text": "Includes verification/testing mechanism for learning",
+      "passed": true,
+      "evidence": "With skill: Three-role verification process with specific validation exercises. Without skill: Practice exercises but no structured verification."
+    },
+    {
+      "text": "Creates reusable knowledge assets/skill templates",
+      "passed": true,
+      "evidence": "With skill: Generated skill template specifically for React Hooks knowledge. Without skill: No reusable templates or assets."
+    }
+  ]
+}

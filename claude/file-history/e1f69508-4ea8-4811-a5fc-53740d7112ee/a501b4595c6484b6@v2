@@ -1,0 +1,103 @@
+# 技术方案: [需求名称]
+
+> 阶段: Design (How)
+> 基于: proposal.md (已审批)
+> 创建日期: YYYY-MM-DD
+> 状态: Draft / Review / Approved
+
+---
+
+## 方案概述
+[一段话总结技术方案的核心思路]
+
+## 调用链路
+
+### 主流程
+```
+[入口] → [中间层] → [底层]
+示例:
+ViewController → ViewModel → VehiclePresenter.sendControlCommand()
+    → VehicleControlRequestManager → BLEConnection/TCPConnection
+    → XPBLEDataProcessor/MQTTHandler → 车端
+```
+
+### 回调/状态流
+```
+[底层] → [中间层] → [入口]
+示例:
+车端 → BLEDataParser → VehicleConnection.vehicleStateChanged()
+    → BaseVehicle → vehicleStateChangedEvent.send()
+    → ViewModel → UI 更新
+```
+
+## 数据模型变更
+
+### 新增模型
+```swift
+// 示例
+struct XxxModel {
+    let field1: String
+    let field2: Int
+}
+```
+
+### 修改模型
+| 模型 | 变更字段 | 类型 | 说明 |
+|------|---------|------|------|
+| [ModelName] | [fieldName] | [Type] | [变更说明] |
+
+## API 接口变更
+
+### 新增接口
+| 接口 | 方法 | 路径 | 说明 |
+|------|------|------|------|
+| [名称] | POST/GET | [path] | [说明] |
+
+### 修改接口
+[描述接口变更]
+
+## 状态管理
+
+### 状态流转
+```
+[初始状态] → [事件/操作] → [目标状态]
+```
+
+### 持久化方案
+- [ ] MMKV（轻量键值）
+- [ ] GRDB（结构化数据）
+- [ ] UserDefaults
+- [ ] 不需要持久化
+
+## 车型适配
+| 车型 | 是否支持 | 差异说明 |
+|------|---------|---------|
+| 小鹏系 | ✅ | [说明] |
+| Mona | ✅/❌ | [说明] |
+
+## 多通道适配
+| 操作 | BLE 通道 | TCP/MQTT 通道 | 说明 |
+|------|---------|-------------|------|
+| [操作名] | ✅/❌ | ✅/❌ | [说明] |
+
+## Constitution 检查
+> 对照 constitution.md 逐项确认
+
+- [ ] 不跨层调用
+- [ ] submodule 边界正确
+- [ ] 语言策略正确（新建 Swift / 存量 OC）
+- [ ] 指令下发链路完整
+- [ ] 状态回调链路完整
+- [ ] 不影响其他车型
+- [ ] 共版设计（配置抹平差异）
+
+## 风险评估与应对
+| 风险 | 应对策略 | 验证方式 |
+|------|---------|---------|
+| [风险] | [策略] | [如何验证] |
+
+## 疑问点解答
+> 从 proposal.md 的疑问点中继承已确认的答案
+
+- Q1 → [确认的答案]
+- Q2 → [确认的答案]

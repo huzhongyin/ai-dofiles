@@ -1,0 +1,3 @@
+{"type":"queue-operation","operation":"enqueue","timestamp":"2026-04-20T13:23:02.238Z","sessionId":"6e5ba1e8-5b87-4f15-80cd-57ec5a1fd074","content":"帮我写具体的实现方案"}
+{"type":"queue-operation","operation":"dequeue","timestamp":"2026-04-20T13:23:16.512Z","sessionId":"6e5ba1e8-5b87-4f15-80cd-57ec5a1fd074"}
+{"type":"file-history-snapshot","messageId":"e24aef18-0d83-4455-8597-b67b79d75ee5","snapshot":{"messageId":"e24aef18-0d83-4455-8597-b67b79d75ee5","trackedFileBackups":{},"timestamp":"2026-04-20T13:23:17.619Z"},"isSnapshotUpdate":false}

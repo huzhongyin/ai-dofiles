@@ -1,0 +1,99 @@
+---
+name: module-context
+description: 为指定模块生成结构化 Context 文档，包含模块职责、核心 API、依赖关系和使用示例。当用户提到模块文档、Context文档、生成文档、模块分析、"这个模块是干什么的"、"怎么用这个模块"、"帮我了解下某某模块"时使用此 skill。
+---
+
+## 输入
+- $ARGUMENTS: 模块路径或模块名称（如 "Charge" 或 "XiaoPengQiChe/Modules/Charge"）
+
+## 输出
+- 格式: Markdown 文档
+- 位置: 根据模块所属层级存放到对应的 `.ai-knowledge/modules/` 目录:
+  - Submodule 模块 → `submodule/<name>/.ai-knowledge/modules/<模块名>.md`
+  - LocalPod 模块 → `LocalPods/<name>/.ai-knowledge/modules/<模块名>.md`
+  - 主工程模块 → `XiaoPengQiChe/.ai-knowledge/modules/<模块名>.md`（L2 级）
+
+## 执行步骤
+
+### Phase 1: 模块分析
+1. 定位模块目录，读取所有源文件（.swift, .m, .h）
+2. 分析模块的核心类和公开 API
+3. 识别模块的依赖关系（import/include 分析）
+4. 提取关键方法的参数说明
+5. 如果是 OC/Swift 混编模块，标注桥接方式
+
+### Phase 2: 功能识别与 Features 索引
+6. 从模块的核心类和公开 API 中识别该模块承载的**独立功能点**:
+   - 分析对外入口方法、协议实现、事件回调，识别可独立描述的功能
+   - 每个功能点应对应用户可感知的一个完整行为（如"感应闭锁"、"感应解锁"、"OTA 升级"）
+   - 不将内部实现细节拆分为功能（如"RSSI 滤波"不是功能，它是"蓝牙定位"功能的实现步骤）
+7. 为每个功能点生成 trigger_keywords（遵循 constitution §6.5，职责语义词，禁止实现细节）
+8. 检查 `<module>/.ai-knowledge/features/` 目录中已有的 feature-spec 文件
+9. 生成 features 索引表（标注已有/待创建状态）
+
+### Phase 2.5: 知识关联检查
+10. 扫描对应层级的 `.ai-knowledge/shared-nodes/` 中是否已有与该模块相关的共享节点
+11. 扫描对应层级的 `.ai-knowledge/features/` 中已有的功能方案书
+12. 扫描对应层级的 `.claude/rules/` 中是否已有与该模块相关的规范约束
+13. 在文档中标注关联的知识资产
+
+### Phase 3: 生成文档
+14. 按以下模板生成文档:
+
+```markdown
+# 模块名: [ModuleName]
+
+## 模块职责
+[一段话描述该模块的核心职责]
+
+## 语言构成
+- Swift 文件数: X
+- OC 文件数: Y
+- 混编说明: [如有]
+
+## 核心 API
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+
+## 参数说明
+- `param1`: [类型] — [含义]
+
+## 依赖关系
+- **上游依赖**: [该模块依赖谁]
+- **下游被依赖**: [谁依赖该模块]
+
+## OC/Swift 互操作
+- Swift 入口: [文件路径]
+- OC 桥接: [文件路径]
+
+## 常见用法
+[代码片段示例]
+
+## 已知限制/陷阱
+- [坑1]
+
+## 功能列表
+| feature_id | 功能名称 | trigger_keywords | 状态 |
+|-----------|---------|-----------------|------|
+| <id> | <名称> | [<关键词>] | ✅ 已创建 / 📝 待创建 |
+
+## 关联知识资产
+- 功能方案书: [列出已有的 .feature.md 文件]
+- 共享节点: [列出已有的 .node.md 文件]
+- 规范约束: [列出关联的 rules 文件]
+```
+
+### Phase 4: 保存并更新索引
+15. 将生成的文档保存到模块所属层级的 `.ai-knowledge/modules/` 目录（参见输出位置规则）
+16. 创建 `<module>/.ai-knowledge/features/` 和 `<module>/.ai-knowledge/shared-nodes/` 目录（如不存在）
+17. **更新 `.ai-knowledge/index.md`**: 在模块文档清单中新增条目（如果是新模块文档）
+18. **更新 `.ai-knowledge/module-registry.md`**: 确认该模块已在 registry 中注册
+19. 在 `.ai-knowledge/evolution-log.md` 追加记录
+
+## 约束
+- 核心 API 表格中的文件路径必须通过 grep/glob 验证
+- **生成新模块文档后必须更新 index.md**
+- 关联知识资产部分必须实际扫描知识库，不可凭记忆填写
+- **功能列表必须从代码分析得出**，不可凭猜测；功能 trigger_keywords 遵循 constitution §6.5
+- **功能识别粒度**: 用户可感知的独立行为（如"感应闭锁"），而非实现细节（如"RSSI 滤波"）
+- 功能方案书的详细模板参见 `.ai-knowledge/specs/feature-spec-standard.md`

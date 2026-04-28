@@ -1,0 +1,837 @@
+//
+//  XPMultiBleManager.m
+//  XPCarControlCore
+//
+//  Created by huzy2 on 2023/4/18.
+//
+
+#import "XPMultiBleManager.h"
+#import <CTMediator+CarState.h>
+#import <XPAppBiz/CTMediator+Login.h>
+#import <XPCategory/NSString+IsEmpty.h>
+#import "XPBLEInfoManager.h"
+#import "DNotification.h"
+#import "XPBleLocationAndPollingOtaManager.h"
+#import "XPCSecondPollingDataHandler.h"
+#import "XPBLEKeyManagerDefined.h"
+#import "PollingEffectDefined.h"
+#import "XPBLEKeyDefined.h"
+#import "XPAutoParkingDefined.h"
+#import "XPBLEDataHanderManager.h"
+#import "SystemConfig.h"
+#import "PollingEffectDataManager.h"
+#import "MMKV+CarValue.h"
+#import "PrivacyPermission.h"
+#import "XPMultiBleEventTool.h"
+#import "XPMultiBleLocationResultTool.h"
+#import "XPBLEKeyManager.h"
+#import "XPDigitalKeyManageViewModel.h"
+#import "XPUtility.h"
+#import "XPCarLocalConfig.h"
+
+#import "XPBLEKeyCard.h"
+#import "XPBLEHandlerManager.h"
+#import "XPCSelfConfigPollingManager.h"
+#import <XPPollingSDK/XPPollingSDK.h>
+#import "XPCarKeyHelp.h"
+@import XPVehicleSDK;
+
+@interface XPMultiBleManager ()
+
+@property (nonatomic, copy) NSString *currentVin;
+@property (nonatomic, copy) NSString *currentBleHardWare;
+@property (nonatomic, assign) BOOL currentCarIsPollingStart;
+@property (nonatomic, assign) BOOL currentCarIsBleLocationStart;
+
+@property (nonatomic, assign) BOOL isPollingCalibration;
+@property (nonatomic, assign) BOOL isInParkingController;
+@property (nonatomic, assign) BOOL isInParkingProcess;
+@property (nonatomic, assign) BOOL isAutoParking;
+@property (nonatomic, assign) BOOL isSleepMode;
+@property (nonatomic, assign) BOOL gearValueIsSupportLocation;
+@property (nonatomic, assign) BOOL gearValueIsSupportPolling;
+
+@property (nonatomic, assign) BOOL mobileParkingNeedLocation;
+@property (nonatomic, assign) BOOL pollingAndLocationIsBind;
+@property (nonatomic, assign) BOOL drivingNeedLocation;
+
+@property (nonatomic, strong) RACDisposable *carStateIsRemedyDisposable;
+@property (nonatomic, strong) RACDisposable *certKeyUpdateDisposable;
+@property (nonatomic, strong) RACDisposable *bleAddressUpdateDisposable;
+@property (nonatomic, strong) RACDisposable *bleHardWareDisposable;
+
+@property (nonatomic, strong) RACDisposable *pollingCalibrationDisposable;
+@property (nonatomic, strong) RACDisposable *createBleKeySuccessDisposable;
+@property (nonatomic, strong) RACDisposable *deleteBleKeySuccessDisposable;
+@property (nonatomic, strong) RACDisposable *isMobileParkingDisposable;
+@property (nonatomic, strong) RACDisposable *isAutoParkingDisposable;
+@property (nonatomic, strong) RACDisposable *isGearPDisposable;
+@property (nonatomic, strong) RACDisposable *isSleepModeDisposable;
+
+@property (nonatomic, strong) RACDisposable *doorLockStateDisposable;
+
+@property (nonatomic, weak) id<XPBleLocationLifeManageProtocol> bleLocationLifeManager;
+@property (nonatomic, weak) id<XPBlePollingLifeManageProtocol> blePollingLifeManager;
+
+@property (nonatomic, strong) XPMultiBleEventTool *bleEventTool;
+@property (nonatomic, strong) XPMultiBleLocationResultTool *bleLocationTool;
+
+@end
+
+@implementation XPMultiBleManager
+{
+    PollingRunMode _pollingRunMode;
+}
+
++ (XPMultiBleManager *)sharedManager {
+    static id sharedManager = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedManager = [[self alloc] init];
+    });
+    
+    return sharedManager;
+}
+
+- (instancetype)init {
+    if (self = [super init]) {
+        _bleEventTool = [[XPMultiBleEventTool alloc]init];
+        _bleLocationTool = [[XPMultiBleLocationResultTool alloc]init];
+    }
+    return self;
+}
+
+- (void)start {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        @weakify(self);
+        [[CTMediator.defaultCarSwitchedSignal.deliverOnMainThread takeUntil:self.rac_willDeallocSignal] subscribeNext:^(id  _Nullable x) {
+            @strongify(self)
+            NSString *vin = [CTMediator defaultCarVin];
+            if ([CTMediator isLogin]) {
+                if ([NSString isEmptyWithString:vin]) {
+                    [self switchDiffCar:vin];
+                } else {
+                    PollingEffectDataManager.sharedManager.keySettingTool = [[XPKeySettingSyncTool alloc]initWithVin:vin uid:CTMediator.uid deviceModel:[XPUtility deviceModelName] delegate:PollingEffectDataManager.sharedManager];
+                    PollingEffectDataManager.sharedManager.keySettingTool.remoteDataDelegate = self;
+                    if (CTMediator.isPollingFirst || CTMediator.isPollingSecond) {
+                        if (!self.currentVin) {
+                            DLogTagInfo(kBLEKeyPollingTag, @"<PA> 第一次获取vin，初始化polling与定位资源");
+                            [self switchDiffCar:vin];
+                        } else {
+                            if (![self.currentVin isEqualToString:vin]) {
+                                DLogTagInfo(kBLEKeyPollingTag, @"<PA> vin不相同，重新初始化polling与定位资源");
+                                [self switchDiffCar:vin];
+                            } else {
+                                DLogTagInfo(kBLEKeyPollingTag, @"<PA> vin相同，不初始化polling资源");
+                            }
+                        }
+                    } else {
+                        [self switchDiffCar:nil];
+                    }
+                }
+            } else {
+                [self switchDiffCar:nil];
+            }
+        }];
+        
+        [[[[NSNotificationCenter defaultCenter] rac_addObserverForName:LogInOutNotification object:nil] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNotification * _Nullable x) {
+            @strongify(self);
+            if (!CTMediator.isLogin) {
+                [self switchDiffCar:nil];
+            } else {
+                [self switchDiffCar:self.currentVin];
+            }
+        }];
+
+        // 预热权限缓存，避免首次同步查询触发主线程 IPC
+        [[PrivacyPermission sharedInstance] warmUpPermissionCache];
+
+    });
+}
+
+#pragma mark - Permission
++ (BOOL)checkIfPermissionGranted{
+    return [self checkIfLocationPermissionGranted] && [self checkIfAccuracyLocationPermissionGranted] && [self checkIfBackgroundPermissionGranted];
+}
+
++ (BOOL)checkIfLocationPermissionGranted{
+    PrivacyPermissionAuthorizationStatus locationAuthorizationStatus = [[PrivacyPermission sharedInstance] authorizationStatus:PrivacyPermissionTypeLocation];
+    if(locationAuthorizationStatus != PrivacyPermissionAuthorizationStatusLocationAlways) {
+        return NO;
+    }
+    return YES;
+}
+
++ (BOOL)checkIfAccuracyLocationPermissionGranted{
+    PrivacyPermissionAuthorizationStatus accuracyAuthorizationStatus = [[PrivacyPermission sharedInstance] authorizationStatus:PrivacyPermissionTypeAccuracy];
+    if(accuracyAuthorizationStatus != PrivacyPermissionAuthorizationStatusAuthorized){
+        return NO;
+    }
+    return YES;
+}
+
++ (BOOL)checkIfBackgroundPermissionGranted{
+    PrivacyPermissionAuthorizationStatus backgroundAuthorizationStatus = [[PrivacyPermission sharedInstance] authorizationStatus:PrivacyPermissionTypeBackgroundRefresh];
+    if(backgroundAuthorizationStatus == PrivacyPermissionAuthorizationStatusDenied){
+        return NO;
+    }
+    return YES;
+}
+
+#pragma mark — pollingRunModeSetting
+- (PollingRunMode)getPollingSettingFromMMKV {
+    if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        BOOL lock = [PollingEffectDataManager.sharedManager.keySettingTool getWalletKeyLockWithDefaultValue:kWalletKeyDefaultLock];
+        BOOL unLock = [PollingEffectDataManager.sharedManager.keySettingTool getWalletKeyUnlockWithDefaultValue:kWalletKeyDefaultUnLock];
+        return [XPCSecondPollingDataHandler modeWithPollingUnlock:@(unLock) pollingLock:@(lock)];
+    }else {
+        BOOL lock = [PollingEffectDataManager.sharedManager.keySettingTool getPollingLockWithDefaultValue:kPrivateKeyDefaultLock];
+        BOOL unLock = [PollingEffectDataManager.sharedManager.keySettingTool getPollingUnlockWithDefaultValue:kPrivateKeyDefaultUnLock];
+        return [XPCSecondPollingDataHandler modeWithPollingUnlock:@(unLock) pollingLock:@(lock)];
+    }
+}
+
+- (void)switchPollingOff {
+    [self configPollingRunMode:PollingRunModeNone];
+    if ([CTMediator isSDK2ndCar]) {
+        [XPPollingSDK configPollingMode:self.pollingRunMode];
+    }
+}
+
+- (void)switchPollingUnlock:(BOOL)on {
+    if (on) {
+        if (self.pollingRunMode == PollingRunModeNone){
+            [self configPollingRunMode:PollingRunModeUnLock];
+        } else if (self.pollingRunMode == PollingRunModeLock) {
+            [self configPollingRunMode:PollingRunModeLockAndUnlock];
+        }
+    } else {
+        if (self.pollingRunMode == PollingRunModeUnLock) {
+            [self configPollingRunMode:PollingRunModeNone];
+        } else if (self.pollingRunMode == PollingRunModeLockAndUnlock) {
+            if (CTMediator.isPollingSecond) {
+                [self configPollingRunMode:PollingRunModeLock];
+            } else {
+                [self configPollingRunMode:PollingRunModeNone];
+            }
+        }
+    }
+    if ([CTMediator isSDK2ndCar]) {
+        [XPPollingSDK configPollingMode:self.pollingRunMode];
+    }
+}
+
+- (void)switchPollingUnLockAndLock:(BOOL)on{
+    if (on) {
+        [self configPollingRunMode:PollingRunModeLockAndUnlock];
+    } else {
+        [self configPollingRunMode:PollingRunModeNone];
+    }
+    if ([CTMediator isSDK2ndCar]) {
+        [XPPollingSDK configPollingMode:self.pollingRunMode];
+    }
+}
+
+- (void)switchPollingLock:(BOOL)on {
+    if (on) {
+        if (self.pollingRunMode == PollingRunModeNone){
+            if (CTMediator.isPollingSecond) {
+                [self configPollingRunMode:PollingRunModeLock];
+            }
+        } else if (self.pollingRunMode == PollingRunModeUnLock) {
+            [self configPollingRunMode:PollingRunModeLockAndUnlock];
+        }
+    } else {
+        if (self.pollingRunMode == PollingRunModeLock) {
+            [self configPollingRunMode:PollingRunModeNone];
+        } else if (self.pollingRunMode == PollingRunModeLockAndUnlock) {
+            [self configPollingRunMode:PollingRunModeUnLock];
+        }
+    }
+    if ([CTMediator isSDK2ndCar]) {
+        [XPPollingSDK configPollingMode:self.pollingRunMode];
+    }
+}
+
+- (BOOL)getCurrentKeyUnlock {
+    if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        return [PollingEffectDataManager.sharedManager.keySettingTool getWalletKeyUnlockWithDefaultValue:kWalletKeyDefaultUnLock];
+    }else {
+        return [PollingEffectDataManager.sharedManager.keySettingTool getPollingUnlockWithDefaultValue:kPrivateKeyDefaultUnLock];
+    }
+}
+
+- (BOOL)getCurrentKeyLock {
+    if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        return [PollingEffectDataManager.sharedManager.keySettingTool getWalletKeyLockWithDefaultValue:kWalletKeyDefaultLock];
+    }else {
+        return [PollingEffectDataManager.sharedManager.keySettingTool getPollingLockWithDefaultValue:kPrivateKeyDefaultLock];
+    }
+}
+
+- (BOOL)getCurrentKeyPollingEnable {
+    if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        return [PollingEffectDataManager.sharedManager.keySettingTool getWalletKeyPEWithDefaultValue:ENABLE_PE];
+    }else {
+        return [PollingEffectDataManager.sharedManager.keySettingTool getPollingEnableSwitchWithDefaultValue:ENABLE_PE];
+    }
+}
+
+- (void)setCurrentKeyPollingEnable:(BOOL)on {
+    if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        [[PollingEffectDataManager sharedManager].keySettingTool setWalletKeyPollingEnable:@(on)];
+    }else {
+        [[PollingEffectDataManager sharedManager].keySettingTool switchPollingEnableSwitch:on];
+    }
+}
+
+- (void)configPollingRunMode:(PollingRunMode)pollingRunMode {
+    NSString *keyWithVin = [XPCSecondPollingDataHandler appendVinToKey];
+    DLogTagInfo(kBLEKeyPollingTag, @"Polling设置 mode: %d keyWithVin:%@", pollingRunMode, keyWithVin);
+    if(pollingRunMode == PollingRunModeNone){
+        if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+            [PollingEffectDataManager.sharedManager.keySettingTool setWalletKeyLock:@(NO)];
+            [PollingEffectDataManager.sharedManager.keySettingTool setWalletKeyUnlock:@(NO)];
+        }else {
+            [PollingEffectDataManager.sharedManager.keySettingTool setPollingLock:@(NO)];
+            [PollingEffectDataManager.sharedManager.keySettingTool setPollingUnlock:@(NO)];
+        }
+    } else {
+        BOOL lock = (pollingRunMode == PollingRunModeLock || pollingRunMode == PollingRunModeLockAndUnlock);
+        BOOL unlock = (pollingRunMode == PollingRunModeUnLock || pollingRunMode == PollingRunModeLockAndUnlock);
+        if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+            [PollingEffectDataManager.sharedManager.keySettingTool setWalletKeyLock:@(lock)];
+            [PollingEffectDataManager.sharedManager.keySettingTool setWalletKeyUnlock:@(unlock)];
+        }else {
+            [PollingEffectDataManager.sharedManager.keySettingTool setPollingLock:@(lock)];
+            [PollingEffectDataManager.sharedManager.keySettingTool setPollingUnlock:@(unlock)];
+        }
+    }
+}
+
+- (PollingRunMode)pollingRunMode {
+    if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        BOOL lock = [PollingEffectDataManager.sharedManager.keySettingTool getWalletKeyLockWithDefaultValue:kWalletKeyDefaultLock];
+        BOOL unlock = [PollingEffectDataManager.sharedManager.keySettingTool getWalletKeyUnlockWithDefaultValue:kWalletKeyDefaultUnLock];
+        return [XPCSecondPollingDataHandler modeWithPollingUnlock:@(unlock) pollingLock:@(lock)];
+    }else {
+        BOOL lock = [PollingEffectDataManager.sharedManager.keySettingTool getPollingLockWithDefaultValue:kPrivateKeyDefaultLock];
+        BOOL unlock = [PollingEffectDataManager.sharedManager.keySettingTool getPollingUnlockWithDefaultValue:kPrivateKeyDefaultUnLock];
+        return [XPCSecondPollingDataHandler modeWithPollingUnlock:@(unlock) pollingLock:@(lock)];
+    }
+}
+
+#pragma mark — private
+- (void)reset {
+    self.isPollingCalibration = NO;
+    self.isInParkingController = NO;
+    self.isAutoParking = NO;
+    self.isInParkingProcess = NO;
+    self.isSleepMode = NO;
+    self.gearValueIsSupportPolling = YES;
+    self.gearValueIsSupportLocation = YES;
+    self.carStateIsRemedy = YES;
+    [self.carStateIsRemedyDisposable dispose];
+    self.carStateIsRemedyDisposable = nil;
+    [self.certKeyUpdateDisposable dispose];
+    self.certKeyUpdateDisposable = nil;
+    [self.bleAddressUpdateDisposable dispose];
+    self.bleAddressUpdateDisposable = nil;
+    [self.bleHardWareDisposable dispose];
+    self.bleHardWareDisposable = nil;
+    [self.pollingCalibrationDisposable dispose];
+    self.pollingCalibrationDisposable = nil;
+    [self.createBleKeySuccessDisposable dispose];
+    self.createBleKeySuccessDisposable = nil;
+    [self.deleteBleKeySuccessDisposable dispose];
+    self.deleteBleKeySuccessDisposable = nil;
+    [self.isMobileParkingDisposable dispose];
+    self.isMobileParkingDisposable = nil;
+    [self.isAutoParkingDisposable dispose];
+    self.isAutoParkingDisposable = nil;
+    [self.isGearPDisposable dispose];
+    self.isGearPDisposable = nil;
+    [self.isSleepModeDisposable dispose];
+    self.isSleepModeDisposable = nil;
+    [self.bleEventTool resetBleEventObserver];
+    [self.bleLocationTool resetBleLocationResultObserver];
+}
+
+- (void)startPollingSDK {
+
+    if ([CTMediator isSDK2ndCar]) {
+        [self configV3Manager];
+        DLogTagInfo(kMultiBleOptTag, @"触发Polling，禁止旧polling");
+        return;
+    }
+    DLogTagInfo(kMultiBleOptTag, @"即将启动PollingSDK");
+    [self configV3Manager];
+    if (self.currentCarIsPollingStart) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>已经初始化过pollingSDK");
+        return;
+    }
+    
+    if(![XPBLEKeyManager.instance isSafeKeyOrCertKeyExisted]) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>用户不存在钥匙，初始化polling失败，返回");
+        return;
+    }
+    
+    if (self.pollingRunMode == PollingRunModeNone) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>self.pollingRunMode == PollingRunModeNone，返回");
+        return;
+    }
+    
+    NSString *mainBleMacAddress = [XPBLEKeyManager getCurrentBleMacAddress];
+    if(mainBleMacAddress.length <= 0) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>主蓝牙为空，初始化polling失败，返回");
+        return;
+    }
+    
+    if(!(CTMediator.isPollingFirst || CTMediator.isPollingSecond)) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>不是多蓝牙车型，没有polling功能");
+        return;
+    }
+    if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion != BleKeyProtocolVesionV3) {
+        self.blePollingLifeManager = [XPPollingManager sharedManager];
+        PollingEffectDataManager.sharedManager.blePollingUpdateDataManager = [XPPollingManager sharedManager];
+        [self.bleEventTool addBleCarEventManager:[XPPollingManager sharedManager]];
+        [self.bleEventTool addBleConnectEventManager:[XPPollingManager sharedManager]];
+        [self.bleLocationTool addBleLocationResultManager:[XPPollingManager sharedManager]];
+        if ([self.blePollingLifeManager respondsToSelector:@selector(initBlePolling:unlockDistance:isWelcome:isConverient:isRemedy:isPollingLockSoundOn:)]) {
+            [self.blePollingLifeManager initBlePolling:self.pollingRunMode unlockDistance:[PollingEffectDataManager.sharedManager.keySettingTool getUnlockDistance] isWelcome:[PollingEffectDataManager.sharedManager.keySettingTool getWelcomeMode] isConverient:[PollingEffectDataManager.sharedManager.keySettingTool getBleAutoSensitivity] isRemedy:self.carStateIsRemedy isPollingLockSoundOn:[PollingEffectDataManager.sharedManager.keySettingTool getLockSound]];
+        }
+    }
+    [self.bleEventTool syncCachedEvent];
+    [self judgePollingIsPaused];
+    self.currentCarIsPollingStart = YES;
+}
+
+- (void)configV3Manager{
+    if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+        PollingEffectDataManager.sharedManager.blePollingUpdateDataManager = [XPBLEHandlerManager manager];
+    }
+}
+
+- (void)endPollingSDK {
+    DLogTagInfo(kMultiBleOptTag, @"结束PollingSDK");
+    if (self.currentCarIsPollingStart) {
+        if ([self.blePollingLifeManager respondsToSelector:@selector(deinitBlePolling:)]) {
+            [self.blePollingLifeManager deinitBlePolling:self.pollingRunMode];
+        }
+        self.blePollingLifeManager = nil;
+        PollingEffectDataManager.sharedManager.blePollingUpdateDataManager = nil;
+        [self.bleEventTool removeCarBleEventManager:[XPPollingManager sharedManager]];
+        [self.bleEventTool removeBleConnectEventManager:[XPPollingManager sharedManager]];
+        [self.bleLocationTool removeBleLocationResultManager:[XPPollingManager sharedManager]];
+        
+        self.currentCarIsPollingStart = NO;
+    }
+}
+
+- (void)startBleLocationSDK {
+    if ([CTMediator isSDK2ndCar]) {
+        DLogTagInfo(kMultiBleOptTag, @"触发定位SDK，禁止旧定位逻辑");
+        return;
+    }
+    DLogTagInfo(kMultiBleOptTag, @"即将启动定位SDK");
+    if (self.currentCarIsBleLocationStart) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>已经初始化过定位SDK");
+        return;
+    }
+    if(![XPBLEKeyManager.instance isSafeKeyOrCertKeyExisted]) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>用户不存在钥匙，初始化定位SDK失败，返回");
+        return;
+    }
+    
+    NSString *mainBleMacAddress = [XPBLEKeyManager getCurrentBleMacAddress];
+    if(mainBleMacAddress.length <= 0) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>主蓝牙为空，初始化定位SDK失败，返回");
+        return;
+    }
+    
+    if(XPVehicleSDK.currentAbilityConfig.pollingLocationVersion == BleLocationVersionNotSupport && XPVehicleSDK.currentAbilityConfig.parkingLocationVersion == BleLocationVersionNotSupport) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>不是多蓝牙车型，没有定位功能");
+        return;
+    }
+    if (self.currentBleHardWare.length <= 0) {
+        DLogTagInfo(kMultiBleOptTag, @"<PA>多蓝牙硬件版本号位空，返回");
+        return;
+    }
+    
+    self.bleLocationLifeManager = [XPBleLocationManager sharedManager];
+    PollingEffectDataManager.sharedManager.bleLocationUpdateDataManager = [XPBleLocationManager sharedManager];
+    [self.bleEventTool addBleCarEventManager:[XPBleLocationManager sharedManager]];
+    [self.bleEventTool addBleConnectEventManager:[XPBleLocationManager sharedManager]];
+    if ([self.bleLocationLifeManager respondsToSelector:@selector(initBleLocation:bleHardWare:thresholdData:customeUnlockDistance:)]) {
+        if (self.isInParkingController && self.mobileParkingNeedLocation) {
+            [self.bleLocationLifeManager initBleLocation:XPVehicleSDK.currentAbilityConfig.parkingLocationVersion bleHardWare:self.currentBleHardWare thresholdData:[[PollingEffectDataManager sharedManager] getPollingThreshold:XPVehicleSDK.currentAbilityConfig.parkingLocationVersion] customeUnlockDistance:[PollingEffectDataManager.sharedManager.keySettingTool getUnlockDistance]];
+        } else {
+            [self.bleLocationLifeManager initBleLocation:XPVehicleSDK.currentAbilityConfig.pollingLocationVersion bleHardWare:self.currentBleHardWare thresholdData:[[PollingEffectDataManager sharedManager] getPollingThreshold:XPVehicleSDK.currentAbilityConfig.pollingLocationVersion] customeUnlockDistance:[PollingEffectDataManager.sharedManager.keySettingTool getUnlockDistance]];
+        }
+    }
+    [self judgeBleLocationIsPaused];
+    self.currentCarIsBleLocationStart = YES;
+}
+
+- (void)endBleLocationSDK {
+    DLogTagInfo(kMultiBleOptTag, @"结束定位SDK");
+    if (self.currentCarIsBleLocationStart) {
+        if ([self.bleLocationLifeManager respondsToSelector:@selector(deinitBleLocation)]) {
+            [self.bleLocationLifeManager deinitBleLocation];
+        }
+        self.bleLocationLifeManager = nil;
+        PollingEffectDataManager.sharedManager.bleLocationUpdateDataManager = nil;
+        [self.bleEventTool removeCarBleEventManager:[XPBleLocationManager sharedManager]];
+        [self.bleEventTool removeBleConnectEventManager:[XPBleLocationManager sharedManager]];
+        self.currentCarIsBleLocationStart = NO;
+    }
+}
+
+- (void)addObserver {
+    @weakify(self)
+    self.certKeyUpdateDisposable = [[[[NSNotificationCenter defaultCenter] rac_addObserverForName:XP_CERTKEY_UPDATE_COMPLETE object:nil] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        [self startBleLocationSDK];
+        [self startPollingSDK];
+    }];
+    
+    self.bleAddressUpdateDisposable = [[[[NSNotificationCenter defaultCenter] rac_addObserverForName:XP_BLE_ADDRESS_UPDATE_COMPLETE object:nil] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        [self startBleLocationSDK];
+        [self startPollingSDK];
+    }];
+    
+    self.deleteBleKeySuccessDisposable = [[[[NSNotificationCenter defaultCenter] rac_addObserverForName:XPDeletingBleKeyNotification object:nil] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        [self endPollingSDK];
+        [self endBleLocationSDK];
+    }];
+    
+    
+    self.createBleKeySuccessDisposable = [[[[NSNotificationCenter defaultCenter] rac_addObserverForName:XPCreatingBleKeyNotification object:nil] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        [self startBleLocationSDK];
+        [self startPollingSDK];
+    }];
+    
+    self.bleHardWareDisposable = [[RACObserve(XPBLEInfoManager.manager, bleHardWare) distinctUntilChanged] subscribeNext:^(id  _Nullable x) {
+        DLogTagInfo(kPollingSelfDefinedTag, @"监测到整车BLE版本变化:%@",x);
+        @strongify(self);
+        if (x && [x length] > 0){
+            if ([NSString isEmptyWithString:x]) {
+                self.currentBleHardWare = x;
+                [self endPollingSDK];
+                [self endBleLocationSDK];
+                [self startBleLocationSDK];
+                [self startPollingSDK];
+            } else {
+                if (![self.currentBleHardWare isEqualToString:x]) {
+                    self.currentBleHardWare = x;
+                    [self endPollingSDK];
+                    [self endBleLocationSDK];
+                    [self startBleLocationSDK];
+                    [self startPollingSDK];
+                }
+            }
+        } else {
+            self.currentBleHardWare = nil;
+            [self endPollingSDK];
+            [self endBleLocationSDK];
+        }
+    }];
+    
+    self.pollingCalibrationDisposable = [[[[NSNotificationCenter defaultCenter] rac_addObserverForName:kNotificationNamePollingIsCalibration object:nil] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        BOOL isCalibration = [x.object boolValue];
+        DLogTagInfo(kMultiBleOptTag, @"Polling是否校准中:%d",isCalibration);
+        self.isPollingCalibration = isCalibration;
+        [self judgePollingIsPaused];
+        [self judgeBleLocationIsPaused];
+    }];
+    
+    self.isMobileParkingDisposable = [[[[NSNotificationCenter defaultCenter] rac_addObserverForName:XPMobileParkingNotification object:nil] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        int parkingValue = [x.object intValue];
+        if (parkingValue == 0) {
+            self.isInParkingController = NO;
+            self.isInParkingProcess = NO;
+        } else if (parkingValue == 1) {
+            self.isInParkingController = YES;
+            self.isInParkingProcess = YES;
+        } else {
+            self.isInParkingProcess = NO;
+        }
+        [self judgePollingIsPaused];
+        [self judgeBleLocationIsPaused];
+        if (self.mobileParkingNeedLocation) {
+            [self resetLocationParking];
+        }
+    }];
+    
+    self.isAutoParkingDisposable = [XPBLEDataHanderManager.instance.appBleAutoParkingSubject.deliverOnMainThread subscribeNext:^(NSDictionary * _Nullable x) {
+        @strongify(self)
+        if ([x.allKeys containsObject:PARKING_STATE_KEY]) {
+            XPAppAutoParkingState parkingState = (XPAppAutoParkingState)[x[PARKING_STATE_KEY] unsignedIntValue];
+            if (parkingState != XPAppAutoParkingStateQuit && parkingState != XPAppAutoParkingStateChecking && parkingState != XPAppAutoParkingStateNotAvariable) {
+                DLogTagInfo(kBLEKeyPredictTag, @"车辆正在自动泊车，不执行polling");
+                self.isAutoParking = YES;
+                [self judgePollingIsPaused];
+                [self judgeBleLocationIsPaused];
+            } else {
+                self.isAutoParking = NO;
+                [self judgeBleLocationIsPaused];
+                [self judgePollingIsPaused];
+            }
+        }
+    }];
+    
+    self.isGearPDisposable = [RACObserve(XPBleKeyCarStates.instance, gearValue).distinctUntilChanged subscribeNext:^(id  _Nullable x) {
+        @strongify(self);
+        XPBLEKeyCarGearValue gearValue = (XPBLEKeyCarGearValue)[x intValue];
+        if (gearValue == XPBLEKeyCarGearValueP || gearValue == XPBLEKeyCarGearValueInvaild) {
+            DLogTagInfo(kBLEKeyPredictTag, @"车辆是P档，可以执行predict");
+            self.gearValueIsSupportPolling = YES;
+            self.gearValueIsSupportLocation = YES;
+            [self judgeBleLocationIsPaused];
+            [self judgePollingIsPaused];
+        } else if (gearValue == XPBLEKeyCarGearValueN) {
+            DLogTagInfo(kBLEKeyPredictTag, @"车辆是N档，可以执行predict,但不支持Polling");
+            self.gearValueIsSupportPolling = NO;
+            self.gearValueIsSupportLocation = YES;
+            [self judgeBleLocationIsPaused];
+            [self judgePollingIsPaused];
+        } else {
+            if (self.carStateIsRemedy && gearValue == XPBLEKeyCarGearValueNotAvailable) {
+                self.gearValueIsSupportPolling = YES;
+                self.gearValueIsSupportLocation = YES;
+                [self judgeBleLocationIsPaused];
+                [self judgePollingIsPaused];
+            } else {
+                DLogTagInfo(kBLEKeyPredictTag, @"车辆不是P档或N档，同时不执行predict与Polling");
+                self.gearValueIsSupportPolling = NO;
+                self.gearValueIsSupportLocation = NO;
+                [self judgePollingIsPaused];
+                [self judgeBleLocationIsPaused];
+            }
+        }
+    }];
+    
+    self.carStateIsRemedyDisposable = [[[[NSNotificationCenter defaultCenter] rac_addObserverForName:RefreshSystemConfigSuccessNotificaiton object:nil] takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        self.carStateIsRemedy = [[[SystemConfig.currentConfig.pollingIsRemedy valueForKey:[CTMediator getVehicleModel]] valueForKey:@"isRemedy"] boolValue];
+    }];
+    
+    self.isSleepModeDisposable = [RACObserve(XPBleKeyCarStates.instance, sleepModeState) subscribeNext:^(id  _Nullable x) {
+        @strongify(self);
+        XPBLECarSleepModeState sleepState = (XPBLECarSleepModeState)[x intValue];
+        if (XPBLECarSleepModeStateActiveNotAvailable != sleepState) {
+            self.isSleepMode = (XPBLECarSleepModeStateActive == sleepState);
+            [self judgePollingIsPaused];
+        }
+    }];
+    
+    [self.bleEventTool startBleEventObserver];
+    [self.bleLocationTool startBleLocationResultObserver];
+}
+
+- (void)switchDiffCar:(NSString *)vin {
+    [self reset];
+    [self endPollingSDK];
+    [self endBleLocationSDK];
+    [[XPBLEInfoManager manager] end];
+    self.currentVin = vin;
+    if (![NSString isEmptyWithString:vin]) {
+//        NSDictionary *dict = @{
+//            @"unlockDistance": @(5),
+//            @"enableUnlockDistance": @(3),
+//            @"lockDistance": @(9),
+//            @"distanceEditBar": @(true),
+//            @"startDistance": @(2),
+//            @"lockHoldOnSecond": @(0.1)
+//        };
+//        [PollingEffectDataManager.sharedManager.keySettingTool storeDynamicConfig: dict];
+        XPDigitalKeyManageViewModel *viewModel = [XPBLEKeyManager.instance viewModelWithVin:vin];
+        self.carStateIsRemedy = [[[SystemConfig.currentConfig.pollingIsRemedy valueForKey:[CTMediator getVehicleModel]] valueForKey:@"isRemedy"] boolValue];
+        NSString *carType = [CTMediator getVehicleModel];
+        NSDictionary * bleHardInfoMap = [[SystemConfig currentConfig].bleHardVersionMap valueForKey:[CTMediator getVehicleModel]];
+        [[XPBLEInfoManager manager] start:bleHardInfoMap];
+        self.pollingRunMode = [self getPollingSettingFromMMKV];
+        [self addObserver];
+        [self startBleLocationSDK];
+        [self startPollingSDK];
+    }
+}
+
+- (void)judgePollingIsPaused {
+    if (self.isPollingCalibration || self.isInParkingProcess || self.isAutoParking || !self.gearValueIsSupportPolling || self.isSleepMode) {
+        DLogTagInfo(kMultiBleOptTag, @"polling服务要暂停:isPollingCalibration:%d,isInParkingProcess:%d,isAutoParking:%d,gearValueIsSupportPolling:%d,isSleepMode:%d",self.isPollingCalibration,self.isInParkingProcess,self.isAutoParking,self.gearValueIsSupportPolling,self.isSleepMode);
+        if ([self.blePollingLifeManager respondsToSelector:@selector(pauseBlePolling)]) {
+            [self.blePollingLifeManager pauseBlePolling];
+        }
+        return;
+    }
+    DLogTagInfo(kMultiBleOptTag, @"polling服务要恢复");
+    if ([self.blePollingLifeManager respondsToSelector:@selector(remuseBlePolling)]) {
+        [self.blePollingLifeManager remuseBlePolling];
+    }
+}
+
+- (void)judgeBleLocationIsPaused {
+    if (self.pollingRunMode == PollingRunModeNone && self.pollingAndLocationIsBind) {
+        DLogTagInfo(kMultiBleOptTag, @"predict服务要暂停,pollingRunMode:%d,pollingAndLocationIsBind:%d",self.pollingRunMode,self.pollingAndLocationIsBind);
+        if ([self.bleLocationLifeManager respondsToSelector:@selector(pauseBleLocation)]) {
+            [self.bleLocationLifeManager pauseBleLocation];
+        }
+        return;
+    }
+    if (!self.gearValueIsSupportLocation) {
+        if (!self.drivingNeedLocation && !self.isInParkingController && !self.isPollingCalibration) {
+            DLogTagInfo(kMultiBleOptTag, @"predict服务要暂停,gearValueIsSupportLocation:%d",self.gearValueIsSupportLocation);
+            if ([self.bleLocationLifeManager respondsToSelector:@selector(pauseBleLocation)]) {
+                [self.bleLocationLifeManager pauseBleLocation];
+            }
+            return;
+        }
+    }
+    DLogTagInfo(kMultiBleOptTag, @"predict服务要恢复");
+    if ([self.bleLocationLifeManager respondsToSelector:@selector(remuseBleLocation)]) {
+        [self.bleLocationLifeManager remuseBleLocation];
+    }
+}
+
+- (void)resetLocationParking {
+    [self endBleLocationSDK];
+    [self startBleLocationSDK];
+}
+
+#pragma mark — lazyload
+- (void)setCarStateIsRemedy:(BOOL)carStateIsRemedy {
+    _carStateIsRemedy = carStateIsRemedy;
+}
+
+- (void)setPollingRunMode:(PollingRunMode)pollingRunMode {
+    _pollingRunMode = pollingRunMode;
+    if ([XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager respondsToSelector:@selector(pollingStateChangeWithPollingMode:)]) {
+        [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager pollingStateChangeWithPollingMode:pollingRunMode];
+    }
+}
+
+- (BOOL)mobileParkingNeedLocation {
+    if ([XPCarLocalConfig boolForKey:@"mobileParkingNeedLocation"]) {
+        return YES;
+    } else {
+        return NO;
+    }
+}
+
+- (BOOL)pollingAndLocationIsBind {
+    if (CTMediator.isD22) {
+        return YES;
+    } else {
+        return NO;
+    }
+}
+
+- (BOOL)drivingNeedLocation {
+    if (CTMediator.isD22) {
+        return YES;
+    } else {
+        return NO;
+    }
+}
+
+-(void)switchIsDriverMode:(BOOL)on {
+    [self syncPollingRunMode:on];
+    [PollingEffectDataManager.sharedManager.keySettingTool switchIsDriverMode:on];
+}
+
+-(BOOL)getIsDriverMode {
+    if (![self supportPassengerMode]) {
+        DLogTagInfo(kBLEKeySettingTag, @"不支持乘客模式，默认是主驾");
+        return YES; // 不支持乘客模式，默认是主驾
+    }
+    MyCarInfo *carInfo = CTMediator.defaultCarInfo;
+
+    // 剔除车型
+    if ([carInfo isMona]) {
+        return YES;
+    }
+    // 剔除钥匙类型
+    if ([carInfo isE28] || XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+        return YES;
+    }
+    return [PollingEffectDataManager.sharedManager.keySettingTool getIsDriverMode];
+}
+
+// 如果设置了乘客模式，同步修改PollingRunMode
+- (void)syncPollingRunMode:(BOOL)on {
+    if (on) {
+        // 恢复polling的原始值
+        [self configPollingRunMode:[XPCSecondPollingDataHandler getPreviousPollingMode]];
+    } else {
+        // 保存polling的上一次的值
+        [self saveOldPollingMode];
+        [self configPollingRunMode:PollingRunModeNone];
+    }
+}
+
+- (void)saveOldPollingMode {
+    [XPCSecondPollingDataHandler savePreviousPollingMode:self.pollingRunMode];
+}
+
+- (BOOL)supportPassengerMode {
+    static BOOL enabled = NO;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        id obj = [CloudConfig configForKeyPath:@"carcontrol.digitalKey.supportPassengerMode"];
+        if ([obj isKindOfClass:NSNumber.class]) {
+            enabled = ((NSNumber *)obj).boolValue;
+        }
+    });
+    return enabled;
+}
+
+@end
+
+@interface XPMultiBleManager (XPMultiBleManager) <XPKeySettingFetchRemoteDataDelegate>
+
+@end
+
+@implementation XPMultiBleManager (XPMultiBleManager)
+- (void)keySettingTool:(XPKeySettingSyncTool *)keySettingTool didFetchRemoteData:(XPKeySettingDataV2Model *)model {
+    DLogTagInfo(kBLEKeySettingTag, @"polling setting remote lock:%@,unlock:%@,enablePE:%@", model.pollingLock, model.pollingUnlock, model.enablePE);
+    if ([model isKindOfClass:[XPKeySettingDataV2Model class]]) {
+        // 本地未修改，而且获取到远端的值是False，同步修改PollingRunMode
+        if (![keySettingTool localIsDriverModeIsModify] &&
+            model.isDriverMode == NO &&
+            self.pollingRunMode != PollingRunModeNone) {
+            [self syncPollingRunMode:NO];
+        }
+    }
+}
+
+- (void)keySettingTool:(XPKeySettingSyncTool *)keySettingTool updatePollingMode:(PollingRunMode)mode {
+    if (CTMediator.isSDK2ndCar && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        return;
+    }
+    DLogTagInfo(kBLEKeyPollingTag, @"Polling设置 mode polling: %d", mode);
+    self.pollingRunMode = mode;
+    if(mode == PollingRunModeNone){
+        [self endPollingSDK];
+    } else {
+        [self endPollingSDK];
+        [self startPollingSDK];
+        [self judgeBleLocationIsPaused];
+    }
+}
+
+- (void)keySettingTool:(XPKeySettingSyncTool *)keySettingTool updateWalletMode:(PollingRunMode)mode {
+    if (!CTMediator.isSDK2ndCar || [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager vaildBleKeyCategory] != XPDigitalKeyCategoryPHONE_UWB_KEY) {
+        return;
+    }
+    DLogTagInfo(kBLEKeyPollingTag, @"Polling设置 mode wallet: %d", mode);
+    self.pollingRunMode = mode;
+}
+
+@end

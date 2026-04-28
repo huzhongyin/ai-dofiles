@@ -1,0 +1,21 @@
+# BleKeyCard 钥匙有效性判断
+
+## 元信息
+- 触发关键词: ["BleKeyCard", "isValid", "钥匙有效性", "钥匙状态", "BleKeyCardStatus", "数字钥匙"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`BleKeyCard.isValid()` 的判断逻辑并非简单的状态检查，有特殊分支：
+
+1. **标准路径**: 检查 `BleKeyCardStatus` 是否为有效状态（正常/待激活等）
+2. **SDK 2nd car 特殊路径**: 如果当前车是 `isOpenedVehicleTypeCode`（SDK 开放车型），则改用 `digitalKeyManager?.digitalKey(keyCardType: .SAFE)` 判断有效性
+
+**BleKeyCardStatus 枚举**（16 种）: 正常/待激活/挂失/锁定/注销/过期等
+
+**BleKeyCardType 枚举**（16 种）: BLE/NFC/CCC/ICCOA/ICCE 多协议支持
+
+**注意**: 修改 isValid() 逻辑时必须考虑两条路径的一致性。
+
+**代码位置**: `submodule/XPVehicleExt/XPVehicleExt/BLEKey/BleKeyCard.swift`

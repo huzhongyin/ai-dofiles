@@ -1,0 +1,39 @@
+# XPWidget — Target 规范
+
+## 模块定位
+
+iOS 主屏幕 Widget Extension。提供车辆信息小组件、车控快捷操作小组件、锁屏小组件和灵动岛 Live Activity。
+
+## 本层加载时机
+
+knowledge-recall 路径命中对应 target 目录时加载。
+
+## 语言与架构规范
+
+Swift + SwiftUI（WidgetKit 强制）。OC 通过 Bridging-Header 桥接。WidgetKit Timeline Provider 模式。
+
+## 运行环境约束
+
+内存 ≤ 30MB。不可使用 UIApplication.shared。不可发起长耗时网络请求。Timeline 刷新由系统调度。
+
+## Extension 生命周期
+
+系统按 Timeline 调度唤醒。数据通过 App Group UserDefaults(suiteName:) 与宿主 App 共享。Intent 配置通过 XPWidget.intentdefinition。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止使用 UIApplication.shared
+- 禁止在 Timeline Provider 中阻塞
+- 禁止直接 import 主工程代码
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言语法细节 → `.claude/rules/ios-coding.md`
+- 主工程 App 架构规则 → L2 `CLAUDE.app.md`
+- **target 内部实现细节下沉到 `.claude/targets/<target>/rules/`**

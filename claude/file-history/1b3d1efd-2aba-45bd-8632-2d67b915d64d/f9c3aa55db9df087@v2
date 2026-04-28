@@ -1,0 +1,20 @@
+# 后台保活依赖 iBeacon
+
+## 元信息
+- 触发关键词: ["iBeacon", "后台保活", "KeepAlive", "PLiBeaconDevicePullAlive", "App后台运行"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+Polling 无感解锁/闭锁需要 App 在后台持续运行。保活机制依赖 iBeacon：
+
+- **实现类**: `PLiBeaconDevicePullAlive`（位于 Polling/KeepAlive/VirtualTest/）
+- **原理**: 使用 iBeacon 虚拟设备维持 App 后台运行（iOS 允许 iBeacon 相关应用后台运行）
+- **配合**: `PLXPGCDTimer`（GCD 定时器）维持心跳
+
+**注意**: 
+- 此机制依赖 iOS 系统行为，系统策略变更可能影响保活效果
+- 保活与 VehicleManager 的 `leaveVehicle()` 有关联 — 离车时会注销 iBeacon
+
+**代码位置**: `submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/KeepAlive/`

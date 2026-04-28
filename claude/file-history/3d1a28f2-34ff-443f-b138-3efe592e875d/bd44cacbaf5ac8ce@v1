@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant U as 用户
+    participant SCS as spec-coding-scaffold
+    participant FS as 文件系统
+    participant REG as module-registry.md
+
+    U->>SCS: --level submodule --path submodule/XPPollingSDK --name XPPollingSDK
+
+    Note over SCS: Phase 1 参数校验
+    SCS->>REG: 检查 id 是否已注册
+    SCS->>FS: 检查 path 目录存在
+
+    Note over SCS: Phase 2 目标目录探测
+    SCS->>FS: 扫描源文件扩展名
+    SCS-->>SCS: 推断语言组合 OC+C++
+    SCS->>FS: 解析 podspec s.dependency
+    SCS->>FS: 扫描 import 语句
+    SCS-->>SCS: 检测 touches_vehicle_sdk
+
+    Note over SCS: Phase 3 生成骨架 6个文件
+    SCS->>FS: .claude/CLAUDE.md
+    SCS->>FS: .claude/rules/.gitkeep
+    SCS->>FS: .ai-knowledge/specs/constitution.md
+    SCS->>FS: .ai-knowledge/modules/.gitkeep
+    SCS->>FS: .ai-knowledge/pitfalls/.gitkeep
+    SCS->>FS: .ai-knowledge/deps.yml
+
+    Note over SCS: Phase 4 注册
+    SCS->>REG: 在 scaffold 标记区 append YAML block
+
+    Note over SCS: Phase 5 待精修清单
+    SCS-->>U: constitution TODO / deps TODO / keywords 默认值
+    SCS-->>U: 子仓需单独 commit

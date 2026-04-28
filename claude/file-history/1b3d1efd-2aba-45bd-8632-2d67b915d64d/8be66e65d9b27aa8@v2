@@ -1,0 +1,148 @@
+# 模块名: XPNetwork
+
+## 模块职责
+HTTP 网络请求统一封装层，是项目中所有服务端 API 调用的底层基础设施。核心功能包括：HTTP 请求发送（GET/POST/PUT/DELETE/文件上传）、请求加密（TEE 加密/后量子 OQS 加密/爱迪德 Irdeto 加密）、Token 自动刷新、请求响应统一解析、SSL 证书校验、风控拦截处理（滑块/短信验证码）、APM 网络性能采集、Cronet（QUIC 协议）支持、以及日志白名单管理。
+
+## 语言构成
+- OC 文件数: ~16（.m）+ ~18（.h）
+- Swift 文件数: 0
+- C++ 文件数: 0
+- 混编说明: **纯 OC 模块**，通过 CocoaPods 远程引入（非本地源码）。依赖 AFNetworking 作为底层 HTTP 引擎。
+
+## 核心 API
+
+### XPAPI / XPAPIRequest（链式 API 调用 — 新版推荐）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `XPAPI.request` | OC | 获取请求构建器 | `XPAPI.request` |
+| `.domain(domain)` | OC | 设置请求域名 | `.domain(@"https://api.xiaopeng.com")` |
+| `.path(path)` | OC | 设置请求路径 | `.path(@"/v1/vehicle/state")` |
+| `.method(method)` | OC | 设置请求方法 | `.method(XPAPIRequestMethodPOST)` |
+| `.payload(params)` | OC | 设置请求体参数 | `.payload(@{@"vin": vin})` |
+| `.query(params)` | OC | 设置 URL 查询参数 | `.query(@{@"page": @"1"})` |
+| `.headers(headers)` | OC | 设置请求头（不参与签名） | `.headers(@{@"Custom": @"value"})` |
+| `.encryption(type)` | OC | 设置加密方式 | `.encryption(XPAPIEncryptionTee)` |
+| `.needToken(YES)` | OC | 是否携带 Token | `.needToken(YES)` |
+| `.subscribe(completion)` | OC | 设置回调并发起请求 | `.subscribe(^(Response *resp) {...})` |
+| `.subscribeDisperse(success, failure)` | OC | 设置成功/失败分离回调 | 见下方常见用法 |
+| `.cancel()` | OC | 取消当前请求 | `request.cancel()` |
+
+### XPAPIRequestManager（统一请求管理器 — 旧版，仍在使用）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+sharedManager` | OC | 获取单例 | `[XPAPIRequestManager sharedManager]` |
+| `-requestWithRequestModel:progressBlock:` | OC | 发起请求（返回 RACSignal） | 见下方常见用法 |
+
+### AsyncHttpClient（底层异步 HTTP 客户端）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+sharedClient` | OC | 获取共享单例 | `[AsyncHttpClient sharedClient]` |
+| `+client` | OC | 创建新实例 | `[AsyncHttpClient client]` |
+| `-requestWithRequestModel:resultBlock:progressBlock:` | OC | 底层请求入口 | 通常由上层封装调用 |
+| `-setDisableCronet:` | OC | 禁用 Cronet/QUIC | `[client setDisableCronet:YES]` |
+
+### RefreshTokenHelper（Token 自动刷新）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+shareInstance` | OC | 获取单例 | `[RefreshTokenHelper shareInstance]` |
+| `-refreshTokenWithComplete:` | OC | 刷新 Token | `[helper refreshTokenWithComplete:^(BOOL ok) {...}]` |
+| `.isCanRreshToken` | OC | 是否允许刷新（10 秒防重复） | `helper.isCanRreshToken` |
+
+## 参数说明
+- `HttpRequestType`: 枚举 — POST/GET/DELETE/PUT/MultipartPost
+- `HttpRequestEncryptionType`: 枚举 — None/Irdeto(爱迪德)/Tee/OQS(后量子)/Other
+- `XPAPIRequestMethod`: 枚举 — POST/GET/Delete/Put/MultipartPost
+- `XPAPIEncryption`: 枚举 — None/Tee(=2)
+- `XPAPISSLPinningMode`: 枚举 — None/PublicKey/Certificate
+- `Response.isSuccess`: BOOL — 业务层是否成功
+- `Response.code`: NSInteger — 服务端返回的业务码
+- `Response.data`: id — 服务端返回的数据
+- `Response.httpStatusCode`: NSInteger — HTTP 状态码
+
+## 关键协议
+- `XPAPIRequestManagerParams`: 提供域名配置（default/dragon/das/cloudTech/charge 等 9 个域名）、登录状态、UID、Token、加密方式
+- `AsyncHttpClientParams`: 提供默认域名
+- `ResponseParams`: 提供解密能力（是否需要解密、解密后的字典）
+- `RefreshTokenHelperDelegate`: Token 刷新流程回调（刷新 URL/Path/是否需要刷新/刷新结果）
+
+## 依赖关系
+- **上游依赖**:
+  - `AFNetworking` — 底层 HTTP 引擎
+  - `YYModel` — Response JSON 解析
+  - `ReactiveObjC` — XPAPIRequestManager 返回 RACSignal
+  - Cronet（可选）— QUIC 协议支持
+- **下游被依赖**:
+  - `XPCarControlCore` — 车控 HTTP 请求
+  - `XPVehicleSDK` — VehicleHttpRequestManager 底层依赖
+  - `XPAppBiz` — 业务层 API 调用
+  - 主 App 所有 HTTP 请求场景
+
+## 架构层次
+```
+业务模块 / SDK
+    ↓ 调用
+XPAPI.request（链式 API，新版推荐）
+    或
+XPAPIRequestManager（RACSignal 方式，旧版）
+    ↓ 封装
+AsyncHttpClient（异步 HTTP 客户端）
+    ↓ 管理
+HttpSessionManager（AFHTTPSessionManager 子类）
+    ↓ 使用
+AFNetworking / Cronet
+```
+
+## 常见用法
+
+### 链式 API 调用（新版推荐）
+```objc
+XPAPI.request
+    .path(@"/v1/vehicle/state")
+    .method(XPAPIRequestMethodPOST)
+    .payload(@{@"vin": @"LVXXX"})
+    .encryption(XPAPIEncryptionTee)
+    .needToken(YES)
+    .subscribeDisperse(^(id data, Response *response) {
+        // 成功处理
+    }, ^(NSInteger httpCode, NSError *error, Response *response) {
+        // 失败处理
+    });
+```
+
+### RACSignal 方式（旧版）
+```objc
+HttpRequestModel *model = [HttpRequestModel requestModelWithPath:@"/v1/vehicle/state"
+                                                      pathParams:nil
+                                                      bodyParams:@{@"vin": vin}
+                                                     requestType:HttpRequestTypePost
+                                                     accessToken:token
+                                                    refreshToken:refreshToken
+                                                         isLogin:YES
+                                                             uid:uid
+                                                   defaultDomain:domain
+                                                  encryptionType:HttpRequestEncryptionTypeTee];
+[[XPAPIRequestManager sharedManager] requestWithRequestModel:model progressBlock:nil]
+    .subscribeNext(^(Response *response) {
+        if (response.isSuccess) {
+            // 处理 response.data
+        }
+    });
+```
+
+## 关键机制
+- **请求加密**: 支持 TEE 加密（默认）、爱迪德 Irdeto 加密、后量子 OQS 加密三种方式，通过 `HttpRequestEncryptionType` 或 `XPAPIEncryption` 配置
+- **Token 自动刷新**: `RefreshTokenHelper` 在 Token 过期时自动刷新，10 秒内防重复刷新
+- **风控拦截**: 自动处理服务端风控码（滑块验证 12040101/短信验证 12040102/账号冻结 12040103/请求拒绝 12040104 等）
+- **SSL 证书校验**: 默认使用 `AFSSLPinningModeCertificate` 证书绑定模式
+- **Cronet/QUIC**: 可选启用 Cronet 引擎支持 QUIC 协议，通过 `setDisableCronet:` 控制
+- **APM 性能采集**: `XPNetworkTimingCollector` 收集网络请求性能数据
+- **日志白名单**: `HttpClientHandler` 管理日志打印白名单，只输出指定 URL 的请求日志
+
+## 已知限制/陷阱
+- **禁止直接使用 URLSession/AFNetworking** — 所有 HTTP 请求必须通过本模块封装
+- 两套 API 风格并存（链式 `XPAPI.request` vs RACSignal `XPAPIRequestManager`），新代码推荐链式
+- `HttpRequestModel` 的 `init` 被 `NS_UNAVAILABLE` 标记，必须使用工厂方法创建
+- `Response.message` 是**非原始数据**（在提示信息后追加了 code），原始消息用 `messageOriginal`
+- Token 刷新有 10 秒冷却期（`RefreshTokenHelperRefreshDuration`），短时间内多次请求可能导致 401
+- `allowInvalidCertificates` 和 `pinningMode` 属性已废弃，需通过 `XPNetwork.box` 配置
+- 远程 Pod，源码不在项目 submodule 中，修改需单独发版

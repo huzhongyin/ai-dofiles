@@ -1,0 +1,248 @@
+//
+//  BLEKeyV3DecodeMessage.h
+//  AFNetworking
+//
+//  Created by huzy2 on 2024/8/22.
+//
+
+#include <stdio.h>
+#include <cstdint>
+
+static const int BleKeyV3CanMessageMaxCount = 10;
+
+typedef enum BleKeyV3DecodeV3CanMessageResult: uint8_t {
+    BleKeyV3DecodeV3CanMessageSuccess     = 0x0,
+    BleKeyV3DecodeV3CanMessageDataIsNull,
+    BleKeyV3DecodeV3CanMessageAuthKeyIsNull,
+    BleKeyV3DecodeV3CanMessageSessionKeyIsNull,
+    BleKeyV3DecodeV3CanMessageNotExpectedData
+}BleKeyV3DecodeV3CanMessageResult;
+
+typedef enum BleKeyV3OutputMessageType: uint8_t {
+    BleKeyV3OutputMessageTypeAuth0Response = 0x01,      //auth0
+    BleKeyV3OutputMessageTypeCommonStatus,              //通用类status
+    BleKeyV3OutputMessageTypeCommonErrorCode,           //通用类errorCode
+    BleKeyV3OutputMessageTypeCommonErrorReason,         //通用类reason
+    BleKeyV3OutputMessageTypeRkeResponse,               //rkeResponse
+    BleKeyV3OutputMessageTypeCommonCarState,            //D0
+    BleKeyV3OutputMessageTypeChargeState,               //D1
+    BleKeyV3OutputMessageTypeParkingState,              //D2
+    BleKeyV3OutputMessageTypeNumeric,                   //D3
+    BleKeyV3OutputMessageTypeSelfCalibration,           //D4
+    BleKeyV3OutputMessageTypeRssiCollect,               //D6
+    BleKeyV3OutputMessageTypeParkingControlState,       //D8
+    BleKeyV3OutputMessageTypePollingFuncState,          //D9
+    BleKeyV3OutputMessageTypeRtAuthResponse,            //RT鉴权响应
+    BleKeyV3OutputMessageTypeRtNotificationPolling,     //RT Polling解锁结果
+    BleKeyV3OutputMessageTypeUnknown = 0xFF
+}BleKeyV3OutputMessageType;
+
+//base
+typedef struct BleKeyV3NumericBaseMessage {
+    uint8_t len;
+    uint64_t value;
+}__attribute__((packed)) BleKeyV3NumericBaseMessage;
+
+typedef struct BleKeyV3ByteBaseMessage {
+    uint8_t len;
+    uint8_t *value;
+}__attribute__((packed)) BleKeyV3ByteBaseMessage;
+
+typedef struct BleKeyV3CanMessageParams {
+    uint8_t isEncrypted;
+    BleKeyV3ByteBaseMessage canMessage;
+    BleKeyV3ByteBaseMessage authKeyMessage;
+    struct {
+        int len;
+        uint8_t *value;
+    }sessionKeyMessage;
+}__attribute__((packed)) BleKeyV3CanMessageParams;
+
+typedef struct BleKeyV3OutputMessage {
+    BleKeyV3OutputMessageType messageType;
+    BleKeyV3ByteBaseMessage messageData;
+}__attribute__((packed)) BleKeyV3OutputMessage;
+
+typedef struct BleKeyV3OutputMessageParams {
+    BleKeyV3DecodeV3CanMessageResult result = BleKeyV3DecodeV3CanMessageSuccess;
+    int outputSize = 0;
+    int capacity = 0;
+    BleKeyV3OutputMessage *outputMessages = NULL;
+}__attribute__((packed)) BleKeyV3OutputMessageParams;
+
+//车态全量D0
+#define SUB_EXT_DOOR_STATE_INDEX 64
+#define SUPER_LOCK_STATE 73
+#define TRAILER_HOOK_SYSTEM_STATE 87
+#define TRAILER_HOOK_STATE 75
+
+typedef struct BleKeyV3CarStateD0 {
+    uint8_t leftFrontDoorState;
+    uint8_t rightFrontDoorState;
+    uint8_t leftBackDoorState;
+    uint8_t rightBackDoorState;
+    uint8_t bonnetAjarState;
+    uint8_t trunckState;
+    uint8_t trunckActionState;
+    uint8_t leftSlideState;
+    uint8_t leftSlideOpenDegree;
+    uint8_t rightSlideState;
+    uint8_t rightSlideOpenDegree;
+    uint8_t empennageState;
+    uint8_t empennageOpenDegree;
+    uint8_t lockState;
+    uint8_t tempeoryLockState;
+    uint8_t chargePortLockState;
+    uint8_t leftFrontWindowDegree;
+    uint8_t rightFrontWindowDegree;
+    uint8_t leftBackWindowDegree;
+    uint8_t rightBackWindowDegree;
+    uint8_t leftTurnSignalState;
+    uint8_t rightTurnSignalState;
+    uint8_t lightSoundState;
+    uint8_t driverSeatOccupied;
+    uint8_t psngerSeatOccupied;
+    uint8_t secondLeftSeatOccupied;
+    uint8_t secondMiddleSeatOccupied;
+    uint8_t secondRightSeatOccupied;
+    uint8_t thirdLeftSeatOccupied;
+    uint8_t thirdMiddleSeatOccupied;
+    uint8_t thirdRightSeatOccupied;
+    uint8_t driverSeatBeltState;
+    uint8_t psngrSeatBeltState;
+    uint8_t secondLeftSeatBeltState;
+    uint8_t secondMiddleSeatBeltState;
+    uint8_t secondRightSeatBeltState;
+    uint8_t thirdLeftSeatBeltState;
+    uint8_t thirdMiddleSeatBeltState;
+    uint8_t thirdRightSeatBeltState;
+    uint8_t reverse1[24];
+    uint8_t mainExtDoorState;
+    uint8_t subExtDoorState;
+    uint8_t reverse2[SUPER_LOCK_STATE - SUB_EXT_DOOR_STATE_INDEX -1];
+    uint8_t superLockState;
+    uint8_t trailerHookMachineState;
+    uint8_t trailerHookState;
+    uint8_t reverse3[TRAILER_HOOK_SYSTEM_STATE - TRAILER_HOOK_STATE - 1];
+    uint8_t trailerHookSystemState;
+    uint8_t leftFrontElecDoorState;
+    uint8_t leftBackElecDoorState;
+    uint8_t rightFrontElecDoorState;
+    uint8_t rightBackElecDoorState;
+    uint8_t reverse4[4];
+    uint8_t wireControlModeState;
+}__attribute__((packed)) BleKeyV3CarStateD0;
+
+//充电类状态D1
+typedef struct BleKeyV3CarStateD1 {
+    uint8_t chargePortState;
+    uint8_t chargePortAction;
+    uint8_t powerBatteryState;
+    uint8_t chargeGunLockState;
+    uint8_t chargePortInsertState;
+    uint8_t reserveChargeState;
+}__attribute__((packed)) BleKeyV3CarStateD1;
+
+//泊车类状态D2
+typedef struct BleKeyV3CarStateD2 {
+    uint8_t parkingExceptionReason;
+    uint8_t parkingDegree;
+    uint8_t parkingAnimation;
+    uint8_t parkingGearVaule;
+    uint8_t parkingSpeed;
+    uint8_t parkingState;
+    uint8_t parkingActiveModeState;
+    uint8_t parkingLeaveParkingState;
+    uint8_t parkingWelcomeState;
+    uint8_t parkingOutDirection;
+    uint8_t parkingOutCurrentDirection;
+    uint8_t parkingChooseDirectionIsAvailable;
+    uint8_t parkingOutRecommedDiretion;
+    uint8_t parkingOutState;
+    uint8_t parkingInState;
+    uint8_t parkingCollisionStatus; // 15当前直线召唤避障状态
+    uint8_t smartPKOutTips; // 16智慧出库蓝牙交互提示
+
+    uint8_t reverse1[39];
+
+    uint8_t parkingRSLAreaLevel;  // 右侧面前区域水平
+    uint8_t parkingRSRAreaLevel;  // 右侧侧面区域水平
+    uint8_t parkingROLAreaLevel;   // 右侧后面区域水平
+    uint8_t parkingRCLAreaLevel;   // 右侧车道区域水平
+    uint8_t parkingRCRAreaLevel;   // 右侧车道区域水平
+    uint8_t parkingRORAreaLevel;   // 右侧后面区域水平
+    uint8_t parkingFSLAreaLevel;   // 左侧面前区域水平
+    uint8_t parkingFSRAreaLevel;   // 左侧侧面区域水平
+    uint8_t parkingFOLAreaLevel;   // 左侧后面区域水平
+    uint8_t parkingFCLAreaLevel;   // 左侧车道区域水平
+    uint8_t parkingFCRAreaLevel;   // 右侧车道区域水平
+    uint8_t parkingFORAreaLevel;   // 右侧车道区域水平
+
+}__attribute__((packed)) BleKeyV3CarStateD2;
+
+//数量类D3
+typedef struct BleKeyV3CarStateD3 {
+    uint32_t totalDistances;
+    uint8_t vcuMileage;
+    uint16_t totalBatteryLife;
+    uint16_t carSpeed;
+    uint8_t carSpeedState;
+}__attribute__((packed)) BleKeyV3CarStateD3;
+
+//自标定结果类D4
+typedef struct BleKeyV3CarStateD4 {
+    uint8_t result;
+    BleKeyV3ByteBaseMessage resultData;
+    uint8_t direction;
+    uint8_t distance;
+    uint32_t uid;
+    BleKeyV3ByteBaseMessage deviceModel;
+}__attribute__((packed)) BleKeyV3CarStateD4;
+
+//标定结果类D6
+typedef struct BleKeyV3CarStateD6 {
+    uint8_t result;
+    uint8_t direction;
+    uint8_t distance;
+    uint32_t uid;
+    BleKeyV3ByteBaseMessage deviceModel;
+}__attribute__((packed)) BleKeyV3CarStateD6;
+
+typedef struct BleKeyV3CarStateD8 {
+    uint8_t result;
+}__attribute__((packed)) BleKeyV3CarStateD8;
+
+typedef struct BleKeyV3CarStateD9 {
+    uint8_t pollingUnlockState;
+}__attribute__((packed)) BleKeyV3CarStateD9;
+
+// RT鉴权响应
+typedef struct BleKeyV3RtAuthResponse {
+    BleKeyV3NumericBaseMessage authResult;
+    BleKeyV3NumericBaseMessage errorCode;
+}__attribute__((packed)) BleKeyV3RtAuthResponse;
+
+// RT Polling解锁结果
+typedef struct BleKeyV3RtNotificationPolling {
+    uint8_t pollingResult;
+}__attribute__((packed)) BleKeyV3RtNotificationPolling;
+
+
+//rkeResponse类
+typedef struct BleKeyV3RkeResponse {
+    BleKeyV3NumericBaseMessage rkeId;
+    BleKeyV3NumericBaseMessage status;
+    BleKeyV3NumericBaseMessage errorCode;
+    BleKeyV3ByteBaseMessage errorReason;
+}__attribute__((packed)) BleKeyV3RkeResponse;
+
+// auth0Response
+typedef struct BleKeyV3Auth0Response {
+    BleKeyV3NumericBaseMessage rand01;
+    BleKeyV3NumericBaseMessage rand1;
+}__attribute__((packed)) BleKeyV3Auth0Response;
+
+void decodeBleKeyV3CanMessage(BleKeyV3CanMessageParams *v3CanMessageParams,BleKeyV3OutputMessageParams *outputMessageParams);
+
+void freeBleV3OutputMessages(BleKeyV3OutputMessageParams *outputMessageParams);
+

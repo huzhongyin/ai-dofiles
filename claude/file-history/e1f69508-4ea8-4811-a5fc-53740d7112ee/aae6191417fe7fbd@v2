@@ -1,0 +1,180 @@
+# AI-Engineering 变更日志
+
+> 记录工程化 AI-Coding 建设过程的所有关键里程碑和产物
+
+---
+
+## 2026-04-08
+
+## 2026-04-08
+
+### L4: Spec 驱动开发 — 基础设施搭建
+
+#### 项目宪法
+- **创建** `.ai-knowledge/specs/constitution.md` — 项目最高优先级约束文档
+  - 6 大约束域：架构分层（禁止跨层调用/submodule 边界）、语言策略（存量 OC 保持/新建 Swift/底层 C++）、车控安全（指令完整性/切车安全/BLE 协议/Mona 隔离）、共版设计（配置驱动差异化）、代码质量（命名/依赖/测试）、知识库维护
+  - 所有 Spec 生成 Skill 必须首先加载此文件
+
+#### Spec 模板（3 个）
+- **创建** `.ai-knowledge/specs/template-proposal.md` — 变更提案模板（Why/What 阶段）
+  - 覆盖：需求概述、变更背景、影响范围（模块/车型/通道）、核心功能点、技术要点、疑问点（Q&A）、风险评估、关联知识、预估工作量
+- **创建** `.ai-knowledge/specs/template-design.md` — 技术方案模板（How 阶段）
+  - 覆盖：调用链路（正向+反向）、数据模型变更、API 接口变更、状态管理、车型适配、多通道适配、Constitution 检查清单、风险评估
+- **创建** `.ai-knowledge/specs/template-tasks.md` — 任务清单模板（Execute 阶段）
+  - 覆盖：前置条件（知识加载/环境准备）、分 Phase 实施步骤（文件级粒度）、验证步骤（编译/功能/回归/质量）、提交计划（submodule 顺序）、知识沉淀
+
+#### Skill 创建与升级（3 个）
+- **升级** `.claude/skills/spec-proposal/SKILL.md` — 从基础版升级为 6 阶段完整流程
+  - 新增：Constitution 加载（Phase 1）、知识召回（Phase 2，复用 knowledge-recall 逻辑）、影响分析（Phase 3）、疑问点识别（Phase 4）
+  - 约束：疑问点必须显性输出、知识召回上限控制、必须等用户确认后才进 design 阶段
+- **创建** `.claude/skills/spec-design/SKILL.md` — 技术方案生成 Skill（5 阶段）
+  - 流程：加载上下文→调用链分析（正向+反向追踪）→方案设计→Constitution 逐项检查→用户确认
+  - 约束：调用链必须追踪到具体文件和方法名、多通道场景 BLE/TCP 分别处理、车型差异必须明确
+- **创建** `.claude/skills/spec-tasks/SKILL.md` — 任务清单生成 Skill（5 阶段）
+  - 流程：加载上下文→任务拆解→约束注入（submodule/OC-Swift/车型/BLE）→生成 Tasks→输出+TodoWrite
+  - 约束：每个 Task 精确到文件路径、明确验证方式、submodule 提交顺序、知识沉淀作为最后 Phase
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — Spec 模板段落从"待创建"更新为完整索引（宪法+3 模板+3 Skill）
+
+#### L4 状态
+- 项目宪法: constitution.md ✅
+- Spec 模板: 3/3 ✅（proposal + design + tasks）
+- Spec Skills: 3/3 ✅（proposal 升级 + design 新建 + tasks 新建）
+- 三阶段渐进式设计: proposal(Why) → design(How) → tasks(Execute) ✅
+- 下一步: 使用真实需求进行 Spec 驱动开发实战验证
+
+---
+
+### L3: 领域知识体系构建 — 首批知识沉淀
+
+#### 知识点（39 条，6 个域）
+- **BLE 蓝牙通信域**（7 条）: 协议版本选择、数据双通道、packed 结构体、车型解析器隔离、消息类型、V3 鉴权流程、Mona 独立协议
+- **MQTT 远程通信域**（4 条）: 连接状态判定、消息 ID 匹配、单例切车、自动重连重发
+- **车控架构域**（6 条）: 双通道架构、切车流程、协议组合、事件系统、SDK 门面、连接基类 fatalError
+- **车型差异化域**（5 条）: 四层覆盖、编码映射、小鹏 vs Mona、SDK 白名单、属性增长管理
+- **Polling 无感进入域**（6 条）: 9 级距离模型、三代算法、Proxy 模式、指令码差异、OTA 版本化、多天线聚合
+- **工程规范 + 业务扩展域**（11 条）: OC/Swift 互操作、submodule 管理、Combine、GRDB、拼写容忍、BleKeyCard、日历同步、文件传输、iBeacon 保活、Extension 模式、VehicleState 只读
+
+#### 踩坑记录（6 个文件，25 条）
+- **创建** `.ai-knowledge/pitfalls/ble-communication.md` — 蓝牙通信踩坑（5 条）
+- **创建** `.ai-knowledge/pitfalls/mqtt-communication.md` — MQTT 通信踩坑（4 条）
+- **创建** `.ai-knowledge/pitfalls/vehicle-lifecycle.md` — 切车与生命周期踩坑（4 条）
+- **创建** `.ai-knowledge/pitfalls/polling-proximity.md` — Polling 无感进入踩坑（4 条）
+- **创建** `.ai-knowledge/pitfalls/oc-swift-interop.md` — OC/Swift 互操作踩坑（4 条）
+- **创建** `.ai-knowledge/pitfalls/car-ability-config.md` — 车型配置踩坑（4 条）
+
+#### Skill 增强
+- **更新** `.claude/skills/knowledge-recall/SKILL.md` — 新增踩坑记录匹配、模块文档关联、三阶段召回流程
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — 完整知识点索引表（39 条分域索引）+ 踩坑记录索引表（6 文件索引）
+
+#### L3 状态
+- 知识点: 39/30（超额完成 ✅）
+- 踩坑记录: 6 文件 25 条（✅）
+- Skill 增强: knowledge-recall 升级为三阶段召回（✅）
+
+#### 质量审查
+- **触发关键词**: 224 个唯一关键词，覆盖 14/15 常见场景，无过度重复
+- **内容准确性**: 抽查 5 个高优知识点，方法名/逻辑全部准确。修正 5 处代码路径
+- **召回测试**: 5 个典型任务场景测试 → 5/5 精准命中，无漏召无误召
+
+#### 知识沉淀 SOP
+- **创建** `.ai-knowledge/knowledge-sedimentation-sop.md` — 6 步标准操作（回顾→提炼→分类→打标→存储→索引）+ 质量检查清单
+
+#### L3 状态
+- 知识点: 39 条（高14/中23/低2），超额完成 30+ 目标 ✅
+- 踩坑记录: 6 文件 25 条 ✅
+- Skill 增强: knowledge-recall 三阶段召回 ✅
+- SOP 文档: 已创建 ✅
+- 召回效果: 5/5 精准 ✅
+- 下一步: 持续积累 + 扩展 L2 模块文档
+
+---
+
+## 2026-04-08
+
+### L2: AI 友好型工程改造 — 第二批模块文档
+
+#### 模块 Context 文档（2 个扩展模块）
+- **创建** `.ai-knowledge/modules/XPVehicleExt.md` — 车端扩展模块（Swift，BLEKey/Xcombo/AI日历/行程/WiFi/文件传输等横切面功能）
+- **创建** `.ai-knowledge/modules/XPPollingSDK.md` — 蓝牙无感进入/闭锁 SDK（OC/C++ 混编，Predict 算法/BLELocation/多蓝牙件）
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — 新增 2 个模块文档索引
+
+#### L2 状态
+- 累计完成 8 个核心模块文档（6 车控域 + 2 扩展域）
+- 下一步：继续扩展 App 层业务模块文档
+
+---
+
+## 2026-04-08
+
+### L2: AI 友好型工程改造 — 首批产物落地
+
+#### 模块 Context 文档（6 个核心模块）
+- **创建** `.ai-knowledge/modules/XPBLEDataProcessor.md` — 蓝牙数据解析与组装库（C++/OC，跨平台）
+- **创建** `.ai-knowledge/modules/MQTTPublisher.md` — MQTT 远程连接与消息收发层（Swift）
+- **创建** `.ai-knowledge/modules/XPCarAbilityConfig.md` — 差异化能力配置层（OC，100+ 属性，15+ 车型子类）
+- **创建** `.ai-knowledge/modules/VehicleConnection.md` — 车辆连接层协议（BLE/TCP/NFC 三路抽象）
+- **创建** `.ai-knowledge/modules/BaseVehicle.md` — 基础车辆协议（含 XiaopengVehicle/MonaVehicle 实现）
+- **创建** `.ai-knowledge/modules/VehicleManager.md` — 车辆管理器（切车/列表/生命周期管理）
+
+#### iOS 特化 Rules
+- **创建** `.claude/rules/ios-architecture.md` — 架构规则（MVVM、模块化、网络请求、数据持久化、条件编译）
+- **创建** `.claude/rules/ios-coding.md` — 编码规则（Swift/OC 命名规范、安全编码、日志、错误处理、互操作）
+- **创建** `.claude/rules/ios-vehicle-sdk.md` — 车控 SDK 规则（指令流程、切车安全、车型差异化、蓝牙/MQTT 安全）
+
+#### 业务术语映射表
+- **创建** `.ai-knowledge/term-mapping.md` — 7 大业务域、55+ 术语 → 代码位置映射（车控核心/蓝牙钥匙/泊车/充电/服务层/组件层/子模块）
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — 索引导航，覆盖 6 个模块文档 + 术语映射表
+
+#### L2 状态
+- 首批核心产物完成，重点覆盖 XPVehicleSDK 车控域
+- 下一步：扩展更多模块文档（App 层业务模块）、完善知识点（L3 阶段）
+
+---
+
+### 阶段: 路径规划
+- **创建** `roadmap.md` — 五层进阶路径完整规划文档 (v1.0)
+- **方法论**: 费曼学习法四阶段 × 七方法论源综合
+- **关键决策**:
+  - Agent 部署模式: 本地 CLI 协作模式
+  - 知识库形态: 渐进式（本地 → RAG）
+  - Spec 框架: OpenSpec 为主 + SpecKit 借鉴
+  - 主力工具: Claude Code，Copilot 降级为补全工具
+- **参考源**: Anthropic 官方文档、搜狗 Kuikly、淘系 Spec 平台、OpenSpec、BMAD Method
+- **下一步**: 进入费曼学习法第三阶段（三重角色验证），逐层验证理解后开始 L1 落地
+
+### 费曼学习法完成
+- **创建** `feynman-learning-report.md` — 费曼学习法完整报告（四阶段）
+- **阶段一 (意图深挖)**: 4 轮访谈，确认团队画像和关键决策
+- **阶段二 (知识传授)**: 五层路径详细方案 + 七参考源综合
+- **阶段三 (三重验证)**: 
+  - 初学者验证: 2/2 通过 (CLAUDE.md 本质、跨 Agent 根因)
+  - 专家挑战: 2/2 通过 (文档腐烂、跨工具复用)
+  - 实战搭档: 1/1 通过 (存量迭代需求处理流程)
+- **阶段四 (知识归档)**: 生成学习报告 + 复习检查清单
+- **下一步**: 开始 L1 层产物落地
+
+### L1 工具链基建 — 产物落地
+- **项目探索**: Swift 1006 / OC .m 2577 / .h 3439，OC 为主体（~85%）
+- **语言策略确认**: 功能模块层渐进迁移 Swift（共版设计），底层迁 C++，UI 层 OC 暂不迁
+- **创建** `CLAUDE.md` — 项目级配置（语言策略、架构分层、组件化架构、编码规范、命名规范、工作流、安全约束）
+- **创建 7 个标准化 Skills**:
+  - `module-context` — 模块 Context 文档生成
+  - `knowledge-recall` — 知识点自动匹配加载
+  - `oc-to-swift` — OC 代码迁移到 Swift
+  - `new-swift-module` — 创建新 Swift 模块
+  - `code-review-ios` — iOS 代码审查
+  - `bug-analysis` — Bug 分析定位
+  - `spec-proposal` — 变更提案生成
+- **创建** `.claude/settings.json` — Hooks 配置（Swift @objc 提醒）
+- **创建** `team-guide.md` — 团队 Claude Code 使用规范
+- **创建** `L1-tool-chain/checklist.md` — L1 完成度检查清单
+- **创建** `.ai-knowledge/` — 知识库初始目录结构 + index.md 索引
+- **L1 状态**: 核心产物完成，待团队试用反馈后迭代优化

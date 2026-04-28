@@ -1,0 +1,306 @@
+# 04 — Spec 驱动开发实战教程
+
+> 目标: 掌握 Spec 驱动开发全流程，从"即兴编码"过渡到"规范化开发"
+> 阅读时间: 40 分钟
+
+---
+
+## 一、什么是 Spec 驱动开发？
+
+### 编码范式演进
+
+```
+阶段一: 手写代码                → 人写全部代码
+阶段二: AI 辅助编码（Copilot）  → 人写大部分 + AI 补全
+阶段三: Vibe Coding            → 自然语言描述 + AI 即兴生成
+阶段四: 范式编程（Spec 驱动）   → 人写 Spec + AI 执行 ← 我们的目标
+```
+
+**核心思想**: 代码是 Spec 的自动渲染产物。人负责"做什么"和"怎么做"的决策，AI 负责执行。
+
+### 三阶段工作流
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  阶段 1: proposal.md (Why & What)                                │
+│  "为什么要做？做什么？"                                            │
+│  → 需求概述 → 影响分析 → 疑问点 → 知识关联                         │
+│                                                                  │
+│  阶段 2: design.md (How)                                         │
+│  "怎么做？"                                                       │
+│  → 调用链追踪 → 数据模型 → 宪法检查 → 冲突风险标注                  │
+│                                                                  │
+│  阶段 3: tasks.md (Execute)                                      │
+│  "具体改哪些文件？"                                                │
+│  → 文件级 Task → 约束注入 → 验证步骤 → 提交计划                    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 二、项目宪法（Constitution）
+
+所有 Spec 生成必须遵守项目宪法。它是整个 Spec 体系的最高优先级约束。
+
+| # | 约束域 | 关键规则 |
+|---|--------|---------|
+| 1 | 架构分层 | 禁止跨层调用；submodule 边界严格 |
+| 2 | 语言策略 | 存量 OC 保持不变；新建 Swift；底层 C++ |
+| 3 | 车控安全 | 指令下发链路完整；切车要等 event 回调 |
+| 4 | 共版设计 | 通过配置区分差异，不硬编码 |
+| 5 | 代码质量 | 命名规范、依赖管理 |
+| 6 | 知识库维护 | 任务完成后执行沉淀 SOP |
+
+> 文件位置: `.ai-knowledge/specs/constitution.md`
+
+---
+
+## 三、详细流程教学
+
+### 3.1 Phase 1: 生成变更提案（proposal）
+
+**触发方式**:
+```
+新需求：BLE 3.0 蓝牙解析协议新增 RtAuth (msgID=11) 和 RtNotification (msgID=12) 
+消息类型，支持 RT 小程序蓝牙鉴权和车端状态通知
+帮我生成提案
+```
+
+**Claude 自动执行**:
+1. 加载 constitution.md（宪法约束）
+2. 从需求描述提取关键词，召回知识点
+3. grep/glob 搜索影响代码
+4. 识别疑问点（AI 无法自行决策的点）
+5. 生成 proposal.md
+
+**你需要做的**:
+- 确认 Claude 列出的疑问点，选择 A/B 方案
+
+**疑问点机制（关键设计）**:
+
+Claude 不会在假设基础上继续，而是显性输出所有不确定的点：
+
+```markdown
+## 疑问点
+
+### Q1: RtAuth 请求数据是否加密传输？
+- 背景: 现有 V3 鉴权（Auth0/Auth1）使用 sessionKey + hmacKey 加密
+- 方案 A: 使用已有加密链路（复用 sessionKey）
+- 方案 B: 明文传输（RT 有独立的安全机制）
+- 建议: 需确认
+
+### Q2: RtNotification 是双向还是单向？
+- 方案 A: 双向（App ↔ 车端）
+- 方案 B: 单向（车端 → App）
+```
+
+> **为什么重要**: 疑问点机制将"生成后返工"前置为"生成前对齐"，大幅减少方案偏差
+
+**输出**: `.ai-knowledge/specs/[需求名]/proposal.md`
+
+---
+
+### 3.2 Phase 2: 生成技术方案（design）
+
+**触发方式**:
+```
+proposal 已确认，帮我生成技术方案
+```
+
+**Claude 自动执行**:
+1. 加载 proposal.md + constitution.md + 知识点
+2. grep/glob 追踪调用链路（正向 + 反向）
+3. 标注 submodule 边界和车型分支点
+4. 标注冲突风险节点（Phase 2.5 新增）
+5. 逐项执行 Constitution 检查
+6. 生成 design.md
+
+**调用链追踪（核心能力）**:
+
+```
+正向（指令下发）:
+App → spec-proposal → VehiclePresenter → VehicleControlRequestManager 
+→ BLEConnection → XPBleKeyV3DataProcessor → C++ BleKeyV3EncodeMessage
+
+反向（状态回调）:
+C++ BleKeyV3DecodeMessage → XPBleKeyV3DataProcessor → BLEKeyV3Parser 
+→ XiaopengBLEConnection → VehicleNotification → App
+```
+
+**冲突风险标注（Phase 2.5）**:
+
+```markdown
+### 冲突风险节点
+
+#### tag=0x7F6F 复用冲突
+- 冲突来源: RKE response 和 RtAuth response 使用相同 tag
+- 推荐方案 A: 在 handleBleKeyV3Message 中通过 msgId 前置路由到专用 handler
+  → 理由: 更安全，避免进入通用 TLV 解析时误判
+- 备选方案 B: 复用通用 handleXPBleKeyV3Content，内部通过 msgId 区分输出
+```
+
+> **为什么重要**: 标注推荐/备选方案，让实施者直接选择最优路径
+
+**Constitution 检查清单**:
+```markdown
+## Constitution 合规检查
+- [x] 不跨层调用 — C++ → OC → Swift 每层独立封装
+- [x] submodule 边界正确 — XPBLEDataProcessor 和 XPVehicleSDK 分别修改
+- [x] 语言策略正确 — C++ 底层解析 + OC 桥接 + Swift SDK 层
+- [x] 指令下发链路完整 — encode 函数已定义
+- [x] 状态回调链路完整 — decode → delegate → notification 全链路
+- [x] 不影响其他车型 — 新 msgId 独立处理
+- [x] 共版设计 — 无国内/国际差异
+```
+
+**输出**: `.ai-knowledge/specs/[需求名]/design.md`
+
+---
+
+### 3.3 Phase 3: 生成任务清单（tasks）
+
+**触发方式**:
+```
+design 已确认，帮我生成任务清单
+```
+
+**Claude 自动执行**:
+1. 将 design 的调用链拆解为有序 Task
+2. 每个 Task 精确到文件路径
+3. 注入约束（submodule/OC-Swift/车型/BLE 协议）
+4. 隐含依赖检测（Phase 2.5 新增）
+5. 生成提交计划
+
+**Task 示例**:
+
+```markdown
+### Phase 1: C++ 核心层（XPBLEDataProcessor submodule）
+
+#### Task 1.1: 新增 msgId 枚举值
+- 文件: `cross-platform/BLEDataParser/BLEKeyV3Message.hpp`
+- 变更类型: 修改
+- 操作: 在 `BLEKeyV3MessageType` 枚举中新增:
+  - `BLEKeyV3MessageTypeRtAuth = 0x0B`
+  - `BLEKeyV3MessageTypeRtNotification = 0x0C`
+- 约束: ⚠️ packed 结构体，不影响其他枚举值
+- 验证: 编译通过 + 其他 msgId 处理不受影响
+```
+
+**隐含依赖检测（Phase 2.5）**:
+
+```markdown
+> 自动检测结果:
+> - BLEKeyV3DataParserResultDelegate 新增 2 个方法
+>   → 发现实现类: XiaopengBLEConnection+CanEvent.swift
+>   → 生成 Task 6.3: 实现 delegate 方法
+> - delegate 实现中使用 NotificationCenter.default.post
+>   → 需要新增通知名: rtAuthResultNotification, rtNotification
+>   → 生成 Task 6.4: 在 VehicleNotification.swift 新增通知名
+```
+
+> **为什么重要**: 自动发现隐含依赖，避免遗漏文件
+
+**提交计划**:
+```markdown
+## 提交顺序
+
+1. XPBLEDataProcessor submodule（C++ + OC）
+   → 独立仓库提交 + push + tag
+2. XPVehicleSDK submodule（Swift）
+   → 独立仓库提交 + push + tag
+3. 主仓库 XPMotors_IOS
+   → 更新 submodule 引用 + pod install
+```
+
+**输出**: `.ai-knowledge/specs/[需求名]/tasks.md`
+
+---
+
+### 3.4 Phase 4: 实施
+
+```
+开始实施 tasks.md
+```
+
+Claude 使用 TodoWrite 跟踪进度，逐个 Task 执行。
+
+---
+
+### 3.5 Phase 5: 知识沉淀
+
+```
+任务完成，帮我做知识沉淀
+```
+
+触发 `post-task-review` Skill，自动检测并沉淀新知识。
+
+---
+
+## 四、实战案例复盘: BLE V3 RT Protocol
+
+### 需求概述
+BLE V3 协议新增 RtAuth (msgID=0x0B) 和 RtNotification (msgID=0x0C)，支持 RT 小程序蓝牙鉴权和车端状态通知。
+
+### 全流程数据
+
+| 阶段 | 关键产出 | 时间 |
+|------|---------|------|
+| proposal | 影响 7 个模块 + 4 个疑问点 + 5 条知识关联 | ~15 min |
+| design | 正向+反向调用链 + 7 项宪法检查 + 冲突风险标注 | ~20 min |
+| tasks | 15 个 Task × 6 Phase + 3 步提交计划 | ~10 min |
+| 实施 | 13 文件修改 × 3 层架构 × 2 submodule | ~60 min |
+| 沉淀 | +1 知识点 / +1 踩坑 / 2 更新 | ~15 min |
+| **总计** | | **~2h** |
+| **传统预估** | | **2 天** |
+
+### 质量评分
+
+| 维度 | 分数 | 等级 |
+|------|------|------|
+| F1-doc 完整性 | 25/25 | A |
+| F1-doc 调用链准确性 | 24/25 | A |
+| F1-doc 知识关联 | 23/25 | A |
+| F1-doc Constitution | 25/25 | A |
+| **F1-doc 总分** | **97/100** | **A** |
+| F1-code 采纳度 | 高 | A |
+| F1-code 额外修改 | 无 | A |
+| F1-code 偏差 | 小（正向） | A |
+| **F1-code 总分** | **95** | **A** |
+
+### 经验总结
+
+1. **疑问点机制**: 4 个 Q&A 一次确认，0 次方案调整
+2. **冲突风险标注**: design 识别了 tag/type 冲突，实施时选择了更安全的独立 handler（正向偏差）
+3. **隐含依赖检测**: 发现 4 个 tasks.md 未独立列出但实际需要的文件（delegate 实现类 + 通知名 + 头文件 + 声明）
+4. **知识飞轮**: 评分卡的 3 条改进建议 → 优化了 spec-tasks 和 spec-design Skill → 下次 Spec 自动规避
+
+---
+
+## 五、Spec 文件位置参考
+
+| 文件 | 路径 |
+|------|------|
+| 项目宪法 | `.ai-knowledge/specs/constitution.md` |
+| proposal 模板 | `.ai-knowledge/specs/template-proposal.md` |
+| design 模板 | `.ai-knowledge/specs/template-design.md` |
+| tasks 模板 | `.ai-knowledge/specs/template-tasks.md` |
+| BLE V3 案例 proposal | `.ai-knowledge/specs/ble-v3-rt-protocol/proposal.md` |
+| BLE V3 案例 design | `.ai-knowledge/specs/ble-v3-rt-protocol/design.md` |
+| BLE V3 案例 tasks | `.ai-knowledge/specs/ble-v3-rt-protocol/tasks.md` |
+| BLE V3 评分卡 | `.ai-knowledge/quality-scores/score-ble-v3-rt-protocol-2026-04-08.md` |
+
+---
+
+## 六、常见问题
+
+**Q: proposal 阶段可以跳过吗？**
+A: 不建议。proposal 的疑问点机制是减少返工的关键。即使需求很清楚，proposal 也能帮你确认影响范围和知识关联。
+
+**Q: design 的调用链必须追踪到文件级吗？**
+A: 是的。这是 Constitution 的要求。抽象层级的调用链无法准确定位修改文件。
+
+**Q: tasks 可以手动调整吗？**
+A: 可以。tasks.md 是起点，实施中可以根据实际情况调整 Task 顺序或拆分/合并。
+
+**Q: 一个需求的 Spec 流程大概需要多长时间？**
+A: 基于首个案例：proposal ~15min + design ~20min + tasks ~10min ≈ 45 分钟。复杂需求可能需要 1-2 小时。

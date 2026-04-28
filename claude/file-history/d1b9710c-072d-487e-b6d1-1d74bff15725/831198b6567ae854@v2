@@ -1,0 +1,109 @@
+# 模块名: MQTTPublisher
+
+## 模块职责
+MQTT 远程连接与消息收发层，负责 App 与云端/车端之间的 MQTT 长连接通信。核心功能包括：建立 TLS/SSL 加密 MQTT 连接、消息发布/订阅、连接状态管理、断线重连与消息重发、以及连接质量埋点上报。由 `MQTTPublisher`（底层连接）和 `MQTTHandler`（业务封装）两层组成，`MqttServiceManager` 负责生命周期管理。
+
+## 语言构成
+- Swift 文件数: 5+（MQTTPublisher.swift, MQTTHandler.swift, MqttServiceManager.swift 等）
+- OC 文件数: 0
+- 混编说明: 纯 Swift 实现，通过 `@objc` 注解暴露给 OC 层调用
+
+## 核心 API
+
+### MQTTPublisher（底层 MQTT 连接管理，单例）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `MQTTPublisher.sharedInstance` | Swift | 获取单例 | `MQTTPublisher.sharedInstance` |
+| `setupMqtt() -> Bool` | Swift | 初始化 MQTT 客户端（读取 mqttInfo 配置） | `MQTTPublisher.sharedInstance.setupMqtt()` |
+| `connect(timeout:) -> Bool` | Swift | 发起连接 | `MQTTPublisher.sharedInstance.connect(timeout: 5)` |
+| `disconnect()` | Swift | 断开连接 | `MQTTPublisher.sharedInstance.disconnect()` |
+| `publish(message:topic:)` | Swift | 发布消息到指定 topic（QoS2） | `publisher.publish(message: jsonStr, topic: topic)` |
+| `addDelegate(delegate:)` | Swift | 添加多播代理 | `publisher.addDelegate(delegate: self)` |
+| `removeDelegate(delegate:)` | Swift | 移除代理 | `publisher.removeDelegate(delegate: self)` |
+
+### MQTTHandler（业务层 MQTT 封装）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `init(publishTopic:subscribTopics:delegateQueue:)` | Swift | 创建 Handler 实例 | `MQTTHandler(publishTopic: topic, subscribTopics: [sub])` |
+| `publish(message:messageId:timeOutTime:needReconnect:callback:)` | Swift | 发布消息（支持超时回调和断线重连重发） | 见下方常见用法 |
+| `publish(mqttParams:needReconnect:callback:)` | Swift | 通过 MQTTParams 发布消息 | `handler.publish(mqttParams: params, callback: callback)` |
+| `connect(timeout:)` | Swift | 连接 | `handler.connect(timeout: 5)` |
+| `disconnect()` | Swift | 断开连接 | `handler.disconnect()` |
+
+### MqttServiceManager（MQTT 服务生命周期管理，单例）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `MqttServiceManager.shared` | Swift | 获取单例 | `MqttServiceManager.shared` |
+| `startService(uid:)` | Swift | 启动 MQTT 服务（登录后调用） | `MqttServiceManager.shared.startService(uid: userId)` |
+| `stopService()` | Swift | 停止 MQTT 服务（退出登录调用） | `MqttServiceManager.shared.stopService()` |
+
+## 参数说明
+- `mqttInfo`: (MQTTPublisherInfoProtocol) — MQTT 连接配置信息协议，提供 clientID/serverUrl/证书路径/账号密码/订阅 topic
+- `state`: (MQTTPublisherConnectionState) — 连接状态：disconnected(0)/connecting(1)/connected(2)
+- `messageId`: (String) — 消息唯一 ID，用于匹配请求/响应回调（对应服务端 msg_ref 字段）
+- `timeOutTime`: (TimeInterval) — 消息超时时间，默认 15s
+- `needReconnect`: (Bool) — 断线后是否自动重连并重发，默认 true
+
+## 关键协议
+- `MQTTPublisherDelegate`: 连接状态变更、消息收发、订阅结果等事件回调
+- `MQTTPublisherInfoProtocol`: MQTT 连接配置信息协议（clientID/serverUrl/证书/账号密码/订阅 topics）
+- `MQTTHandlerDelegate`: 业务层代理（连接状态/订阅 topic 消息/全量消息）
+
+## 依赖关系
+- **上游依赖**: CocoaMQTT（第三方 MQTT 客户端库）、MMKV（账号信息缓存）、Network（网络状态监控）
+- **下游被依赖**: 
+  - `VehicleConnection`（TCP 连接层）— 通过 MQTTHandler 收发车控指令
+  - `MqttServiceManager` — 管理 MQTT 生命周期
+  - `XPVehicleSDK` — 通过 `XPVehicleSDK.currentVehicle()` 获取车型信息用于埋点
+
+## 架构层次
+```
+MqttServiceManager (生命周期管理)
+    ↓ 持有
+MQTTPublisher (单例，底层连接)
+    ↓ 被封装
+MQTTHandler (业务层，支持回调/超时/重连重发)
+    ↓ 使用 CocoaMQTT
+CocoaMQTT (第三方库)
+```
+
+## 常见用法
+
+### 通过 MQTTHandler 发送车控指令
+```swift
+let handler = MQTTHandler(publishTopic: publishTopic, subscribTopics: [subscribeTopic])
+handler.delegate = self
+
+// 发送消息并等待回调
+handler.publish(message: jsonString, messageId: "msg_001", timeOutTime: 15) { response, error in
+    if let error = error {
+        // 超时或断线错误
+        print("Error: \(error)")
+        return
+    }
+    // response 是服务端返回的 JSON 字典
+    print("Response: \(response)")
+}
+```
+
+### 通过 MQTTParams 发送
+```swift
+let params = MQTTParams(messageBody: jsonStr, messageId: msgId, timeOutTime: 15)
+handler.publish(mqttParams: params, needReconnect: true) { response, error in
+    // 处理结果
+}
+```
+
+## 关键机制
+- **多播代理（MulticastDelegate）**: MQTTPublisher 支持多个监听者同时接收消息
+- **自动重连重发**: MQTTHandler 的 `needReconnect=true` 时，断线后自动连接并重发待发消息
+- **连接状态定义**: 只有 MQTT 连接成功 + Topic 订阅成功 才算 `connected`
+- **TLS/SSL 双向认证**: 支持客户端证书（P12）和服务端证书校验
+
+## 已知限制/陷阱
+- `MQTTPublisher` 是全局单例，不同车型共用同一个连接，切车时需先 `disconnect` 再重新 `startService`
+- `state == .connected` 需要同时满足 MQTT 连接成功 + Topic 订阅成功，仅 TCP 连上还是 `connecting`
+- 消息回调匹配依赖 `msg_ref`/`msgRef`/`msgId` 字段（不同 topic 字段名不同），新增 topic 需确认字段
+- `MqttServiceManager` 在 uid=0 时会自动断开连接，需注意退出登录流程
+- 订阅失败会自动 1 秒重试，但没有最大重试次数限制
+- 埋点统计在 `MQTTPublisher+Statistics.swift` 中，修改连接流程时需同步更新埋点逻辑

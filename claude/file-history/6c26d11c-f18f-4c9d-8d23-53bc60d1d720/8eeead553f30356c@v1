@@ -1,0 +1,83 @@
+//
+//  PrivacyPermission.h
+//  XiaoPengQiChe
+//
+//  Created by huzy2 on 2020/12/24.
+//  Copyright © 2020 xiaopeng.com. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+typedef NS_ENUM(NSUInteger,PrivacyPermissionType) {
+    PrivacyPermissionTypePhoto = 0,//相册
+    PrivacyPermissionTypeCamera,//相机
+    PrivacyPermissionTypeMicrophone,//麦克风
+    PrivacyPermissionTypeLocation,//定位
+    PrivacyPermissionTypeAccuracy,//定位精度
+    PrivacyPermissionTypeBluetooth,//蓝牙
+    PrivacyPermissionTypeEvent,//日历事件
+    PrivacyPermissionTypeContact,//通讯录
+    PrivacyPermissionTypeBackgroundRefresh,//后台刷新
+};
+
+typedef NS_ENUM(NSUInteger,PrivacyPermissionAuthorizationStatus) {
+    PrivacyPermissionAuthorizationStatusAuthorized = 0,
+    PrivacyPermissionAuthorizationStatusDenied,
+    PrivacyPermissionAuthorizationStatusNotDetermined,
+    PrivacyPermissionAuthorizationStatusRestricted,
+    PrivacyPermissionAuthorizationStatusLocationAlways,
+    PrivacyPermissionAuthorizationStatusLocationWhenInUse,
+    PrivacyPermissionAuthorizationStatusUnkonwn,
+};
+
+@interface PrivacyPermission : NSObject
+
++ (instancetype)sharedInstance;
+
+/**
+ 获取权限状态：在子线程异步读取，在主线程回调
+ 
+ @param type 获取权限枚举类型
+ @return 权限状态
+ */
+
+- (void)authorizationStatusWithType:(PrivacyPermissionType)type
+                                                         completion:(void(^)(PrivacyPermissionAuthorizationStatus status))completion;
+
+/**
+ 获取权限状态：在当前线程读取回调，只适合子线程
+ 
+ @param type 获取权限枚举类型
+ @return 权限状态
+ */
+- (PrivacyPermissionAuthorizationStatus)authorizationStatus:(PrivacyPermissionType)type;
+
+/**
+ 获取权限函数(自动弹框显示)
+ 
+ @param type 权限类型
+ @param completion 是否获权 权限状态
+ */
+- (void)accessPrivacyPermission:(PrivacyPermissionType)type completion:(void(^)(BOOL granted,PrivacyPermissionAuthorizationStatus status))completion;
+
+/**
+ 获取授权函数
+ 
+ @param type 权限类型
+ @param autoShowAlert 是否自动显示alert提示
+ @param completion 是否获权 权限状态
+ */
+- (void)accessPrivacyPermission:(PrivacyPermissionType)type autoShowAlert:(BOOL)autoShowAlert completion:(void(^)(BOOL granted,PrivacyPermissionAuthorizationStatus status))completion;
+
+/**
+ 显示统一的提示
+ 
+ @param type 权限类型
+ */
+- (void)displayReEnableAlert:(PrivacyPermissionType)type Cancel:(void (^)(void))cancelBlock;
+
+@end
+
+NS_ASSUME_NONNULL_END

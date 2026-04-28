@@ -1,0 +1,225 @@
+import Foundation
+import Combine
+import MMKV
+
+@objc(VehicleCDUAccountLoginStateType)
+public enum CDUAccountLoginStateType: Int {
+    case noCommand
+    case noCodeData //大屏无登录记录
+    case loginSuccess //大屏有登录记录
+    case loginFail //账号切换成功
+}
+
+extension XiaopengBLEConnection: BLEDataParserResultDelegate {
+    func didReceiveAuth0Response(rand01: UInt32?, rand1: UInt32) {
+        Log.i(tag: "canEvent", "receive auth0 response, rand01:\(rand01), rand1:\(rand1)")
+        self.bleHandler?.bleAuthFlow?.receiveAuthStep1Data(rand01 ?? 0, rand1)
+
+    }
+    
+    func didReceiveAuthResult(authResult: Int, failedReason: Int?) {
+        Log.i(tag: "canEvent", "receive auth result, authResult:\(authResult), failedReason:\(failedReason)")
+        self.bleHandler?.bleAuthFlow?.receiveAuthResult(authResult, failedReason ?? 0)
+    }
+    
+    func didReceiveCanEventParking(parkingMsg: CanEvent) {
+        Log.i("BLE蓝牙车控 收到didReceiveCanEventParkingState parkingState: \(String(describing: parkingMsg.parkingState)) parkingExpType: \(String(describing: parkingMsg.parkingExpType)) parkingAnimation: \(String(describing: parkingMsg.parkingAnimation)) parkingState: \(String(describing: parkingMsg.parkingState)) parkingProcess: \(String(describing: parkingMsg.parkingProcess))")
+        
+        Log.i("BLE蓝牙车控 收到didReceiveCanEventParkingState leaveParkState: \(String(describing: parkingMsg.leaveParkState)) welcomeParkOutState: \(String(describing: parkingMsg.welcomeParkOutState)) parkOutAvailableDirection: \(String(describing: parkingMsg.parkOutAvailableDirection)) parkOutCurrentDirection: \(String(describing: parkingMsg.parkOutCurrentDirection)) parkOutDirectionIfOk: \(String(describing: parkingMsg.parkOutDirectionIfOk)) parkOutRecommendDirection: \(String(describing: parkingMsg.parkOutRecommendDirection)) parkOutState: \(String(describing: parkingMsg.parkOutState)) parkInState: \(String(describing: parkingMsg.parkInState))")
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: VehicleNotification.ParkStateChanged,
+                                            object: nil,
+                                            userInfo: ["parkInfo": ParkStateChangedNotiObject(parkState: parkingMsg.parkingState,
+                                                                                              speed: parkingMsg.speed,
+                                                                                              gear: parkingMsg.gearValue,
+                                                                                              animation: parkingMsg.parkingAnimation,
+                                                                                              progress: parkingMsg.parkingProcess,
+                                                                                              failCode: parkingMsg.parkingExpType,
+                                                                                              leaveParkState: parkingMsg.leaveParkState,
+                                                                                              welcomeParkOutState: parkingMsg.welcomeParkOutState,
+                                                                                              parkOutAvailableDirection: parkingMsg.parkOutAvailableDirection,
+                                                                                              parkOutCurrentDirection: parkingMsg.parkOutCurrentDirection,
+                                                                                              parkOutDirectionIfOk: parkingMsg.parkOutDirectionIfOk,
+                                                                                              parkOutRecommendDirection: parkingMsg.parkOutRecommendDirection,
+                                                                                              parkOutState: parkingMsg.parkOutState,
+                                                                                              parkInState: parkingMsg.parkInState)])
+        }
+    }
+    
+    func didReceiveCanEventParkingCollision(parkingCollisionMsg: CanEvent) {
+        Log.i("BLE蓝牙车控 收到泊车碰撞状态 parkingCollisionStatus: \(String(describing: parkingCollisionMsg.parkingCollisionStatus))")
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: VehicleNotification.ParkCollisionStateChanged, object: nil, userInfo: ["parkingCollisionMsg": parkingCollisionMsg])
+        }
+    }
+    
+    func didReceiveVehicleState(state: VehicleState) {
+        Log.i("蓝牙 XP车控 收到车态变化 车态增量数据: ", state.toDictionary())
+        DispatchQueue.main.async {
+            self.delegate?.vehicleStateChanged(diffState: state, connectionType: .BLE)
+            self._recieveBleVehicleStateSubject.send(state)
+        }
+    }
+}
+
+
+extension XiaopengBLEConnection: BLEKeyV1DataParserResultDelegate, BLECduAccountLoginDelegate {
+    
+    // 指令执行异常错误码
+    func didReceiveEventExceptionHandle(errorCode: Int) {
+        Log.i("BLE蓝牙车控 收到指令执行异常错误码 errorCode: \(String(describing: errorCode))")
+        _recieveE28BleExceptionSubject.send(errorCode)
+        GlobalError.onVehicleError(error: VehicleError.fromBleError(code: errorCode))
+    }
+    
+    // 大屏联登反馈
+    func didReceiveCanEventCDUAccountLoginState(signalValue: Int) {
+        Log.i("BLE蓝牙车控 收到大屏联登反馈 signalValue: \(String(describing: signalValue))")
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: VehicleNotification.BleCDUAccountLoginState, object: nil, userInfo: ["state": NSNumber(value: signalValue)])
+        }
+    }
+}
+
+extension XiaopengBLEConnection: BLEKeyV2DataParserResultDelegate {
+    func didReceiveCanMessage(canMessage: XPCanMessage) {
+        Log.i("BLE did receive can message with type: \(String(format:"%04X", canMessage.type)) payload: \(String(format:"%016X", canMessage.swappedPayload))")
+    }
+    
+    func didReceiveRssiData(rssiDataArr: [Any], deviceUUid: String) {
+        if rssiLogTag {
+            Log.i("BLE蓝牙车控 收到rssiDataArr: \(String(describing: rssiDataArr))，当次连接不再log")
+            rssiLogTag = false
+        }
+        rssiDataArr.forEach { dict in
+            var rssiDict = [String: Any]()
+            rssiDict["bleMessageRssiValue"] = dict
+            rssiDict["peripheralUUID"] = deviceUUid
+            NotificationCenter.default.post(name: VehicleNotification.BleDidReadRssi, object: nil, userInfo: ["rssiInfo": BleDidReadRssiNotiObject(macAddress: nil, name: nil, rssi: nil, error: nil, RssiDict: rssiDict)])
+        }
+        
+    }
+    
+    // 定位请求信号
+    func didReceiveCanEventStartRequestBleLocation(signalValue: Int) {
+        Log.i("[定位请求信号]", "BLE蓝牙车控 收到定位请求信号 signalValue: \(String(describing: signalValue))")
+        // 为0不处理
+        if signalValue <= 0 {
+            return
+        }
+        
+        guard let presenter = self.presenter as? XiaopengVehicle else {
+            return
+        }
+        
+        // 定位检查
+        var inoutCar = presenter.pollingDelegateCaller?.bleKeyIsInCar() ?? .default
+        
+        Log.i("[定位请求信号]", "BLE蓝牙车控 判断 是否在车内 inoutCar: \(String(describing: inoutCar))")
+        
+        guard inoutCar != .default else {
+            return
+        }
+        
+        // 发送车内车外指令
+        var cmd = BleBoxCommand.bleKeyOutCar
+        
+        if inoutCar == .inCar {
+            // 构造车内指令发送
+            cmd = BleBoxCommand.bleKeyInCar
+        }
+        // 发送定位指令，发送成功即可
+        bleSendDataBuilder?.buildControlCommandData(cmd: cmd, skipBioAuth: true, timeout: 5, delayTime: 0.01)
+            .flatMap {[weak self] data in
+                guard let self = self else {
+                    return Fail<AnyObject?, VehicleError>(error: VehicleError(code: .EnvironmentError, desc: "未知错误", channel: .BLE)).eraseToAnyPublisher()
+                }
+                return self.sendBleData(data)
+            }
+            .sink { complete in
+                switch complete {
+                case .failure(let error):
+                    Log.e("[定位请求信号]", "BLE蓝牙车控 发送定位请求信号失败：" + error.description)
+                case .finished: break
+                }
+            } receiveValue: { data in
+                Log.i("[定位请求信号]", "BLE蓝牙车控 发送定位请求信号成功")
+            }
+            .store(in: &cancellables)
+        
+    }
+    
+    // IBCM请求断开蓝牙连接，7秒内不能重连
+    func didReceiveCanEventRequestDisconnect() {
+        Log.i("BLE蓝牙车控 收到IBCM请求断开蓝牙连接")
+        bleSwitcheCheck.disconnect(waitTime: 7)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: VehicleNotification.kReceiveIBCMRequestDisconnectBle, object: nil)
+        }
+    }
+    
+    func didReceiveCanEventDoubleAuthResult(frameIndex: Int, frameCount: Int, data: UInt64) {
+        Log.i(tag: "canEvent", "receive double auth result, frameIndex:\(frameIndex), frameCount:\(frameCount), data:\(data)")
+        if let doubleAuth = self.bleHandler?.bleAuthFlow as? BleDoubleAuthProtocol {
+            doubleAuth.receiveDoubleAuthResult(frameIndex, frameCount: frameCount, data: data)
+        }
+    }
+}
+
+extension XiaopengBLEConnection: BLECarControlDelegate {
+    // 蓝牙车控指令结果返回，result - 200 为执行成功
+    func didReceiveCanEventCarControlResult(controlId: Int, result: Int) {
+        Log.i("BLE蓝牙车控 收到车控结果 controlId: \(String(describing: controlId)) result: \(String(describing: result))")
+        _recieveBleDataSubject.send((controlId, TBoxCanControlState(rawValue: result)))
+    }
+}
+
+extension XiaopengBLEConnection: BLEKeyV3DataParserResultDelegate {
+    
+    func didReceiveSelfCalirationResult(reseult: Int, resultLen: Int, resultData: String?, direction: Int, distance: Int, deviceModel: String) {
+        Log.i(tag: "canEvent", "receive self calibration result, result:\(reseult), resultLen:\(resultLen), resultData:\(resultData)")
+        var selfCalibrationResult:[String:Any] = [:]
+        selfCalibrationResult["result"] = reseult
+        selfCalibrationResult["resultLen"] = resultLen
+        selfCalibrationResult["resultData"] = resultData
+        selfCalibrationResult["direction"] = direction
+        selfCalibrationResult["distance"] = distance
+        selfCalibrationResult["deviceModel"] = deviceModel
+        
+        DispatchQueue.main.async {
+            self.recieveSelfCalibrationSubject.send(selfCalibrationResult)
+        }
+    }
+    
+    func didReceiveRssiCollectResult(reseult: Int, direction: Int, distance: Int, deviceModel: String) {
+        Log.i(tag: "canEvent", "receive rssi collect result:\(reseult)")
+        var rssiCollectResult:[String:Any] = [:]
+        rssiCollectResult["result"] = reseult
+        rssiCollectResult["direction"] = direction
+        rssiCollectResult["distance"] = distance
+        rssiCollectResult["deviceModel"] = deviceModel
+        self.recieveRssiCollectSubject.send(rssiCollectResult)
+    }
+    
+    func didReceiveParkingControlState(result: Int) {
+        Log.i(tag: "canEvent", "handle parking control state: \(result)")
+        
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: VehicleNotification.ParkControlStateChanged,
+                                            object: nil,
+                                            userInfo: ["result": result])
+        }
+    }
+    
+    func didReceiveTboxRunStateEvent(result: Int) {
+        Log.i(tag: "canEvent", "didReceiveTboxRunStateEvent: \(result)")
+        if self.presenter?.vehiclePreference.extInfo?.supportedCapabilities(RemoteCapabilities.SUPPORT_BLE_RESCUE_KEY) == true {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: VehicleNotification.tboxRunStateNotification,
+                                                object: nil,
+                                                userInfo: ["result": result])
+            }
+        }
+    }
+    
+}

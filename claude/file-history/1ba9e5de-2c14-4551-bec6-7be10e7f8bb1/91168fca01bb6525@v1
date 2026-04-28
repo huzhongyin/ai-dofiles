@@ -1,0 +1,7 @@
+# deps.yml — XPBase_Theme 模块依赖声明
+# 格式定义见 .claude/skills/spec-coding-scaffold/templates/deps.schema.yml
+
+module: XPBase_Theme
+
+# TODO: 按 .podspec / import 关系补全 depends_on
+depends_on: []

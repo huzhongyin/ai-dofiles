@@ -1,0 +1,27 @@
+# submodule 独立仓库管理
+
+## 元信息
+- 触发关键词: ["submodule", "独立仓库", "子模块提交", "XPVehicleSDK仓库", "git submodule"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+`submodule/` 下的代码有**独立 git 仓库**，修改需单独提交：
+
+| submodule | 内容 |
+|-----------|------|
+| XPVehicleSDK | 车端 SDK（VehicleManager/BaseVehicle/Connection） |
+| XPCarControlCore | 车控核心（XPCarAbilityConfig） |
+| XPBLEDataProcessor | 蓝牙数据处理（C++/OC） |
+| XPMQTTLibrary | MQTT 通信 |
+| XPPollingSDK | 轮询 SDK（OC/C++ 混编） |
+| XPVehicleExt | 车端扩展 |
+| XPCarBusiCH | 车端业务 |
+
+**提交流程**:
+1. 在 submodule 目录内提交代码
+2. 回到主仓库，提交 submodule 指针更新
+3. 不要在主仓库直接修改 submodule 内的文件然后一起提交
+
+**代码位置**: 项目根目录 `.gitmodules`

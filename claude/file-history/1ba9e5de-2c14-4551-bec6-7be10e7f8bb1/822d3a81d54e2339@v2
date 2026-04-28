@@ -1,0 +1,39 @@
+# XPBase_RN — LocalPod 规范
+
+## 模块定位
+
+React Native 混合开发 iOS 端容器层，提供 RN 页面统一容器（XPReactNativeViewController）、Native↔RN 双向通信（RNNotification/RNAgent）、CodePush 热更新管理、RN 容器内原生 UI 组件（Loading/Error/Player）及刷新控件（xrn-box RefreshControl）。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPBase_RN/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+纯 Objective-C（所有 .h/.m 文件）。与 React Native 的桥接通过 RCTBridgeModule 协议实现。新增原生组件维持 OC 以保持 RN 桥接一致性。
+
+## Podspec 依赖约束
+
+依赖 React-Core/React-RCTText（RN 基础框架）、CodePush（热更新）、XPBase_Common、XPBase_UI。私有源 `gitlab.x-peng.com`，语义化版本。含 xrn-box subspec（RN 端原生刷新控件）。
+
+## 命名前缀与 API 稳定性
+
+OC 类 `XP`/`XRN` 前缀（XPReactNativeViewController/XRNLoadingView 等）。公开 API（XPReactNativeViewController 初始化、RNNotification 事件名）需保持稳定。RN 模块名与 JS 端约定一致，不可随意更改。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止在 RN 容器层引入业务逻辑（业务由 RN JS 端或上层 Module 承载）
+- 禁止修改 RCTBridgeModule 注册名（影响 RN JS 端调用）
+- 禁止绕过 RNNotification/RNAgent 直接与 RN JS 通信
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

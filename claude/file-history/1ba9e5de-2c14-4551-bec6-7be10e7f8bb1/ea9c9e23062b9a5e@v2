@@ -1,0 +1,39 @@
+# XPBase_UI — LocalPod 规范
+
+## 模块定位
+
+基础 UI 组件库，提供控制器基类（XPViewController/XPNavigationController/XPTabBarController）、20+ 通用视图组件（Toast/PromptView/MJRefreshCustom/XPMaskView/XPSegment 等）、OC 层主题管理（XPTheme 单例）及 UI 工具集。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPBase_UI/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+OC 为主（XPViewController/XPTheme/大部分 Views 和 Controllers），新独立组件可用 Swift。OC 类名 `XP` 前缀。`XPTheme` 为 OC 单例，Swift 通过 `XPTheme.mainBgColor()` 调用。
+
+## Podspec 依赖约束
+
+依赖 XPBase_Common（基础工具）、XPCategory（OC 分类扩展）。被上层业务模块广泛依赖。私有源 `gitlab.x-peng.com`，语义化版本。按功能域划分子目录（Controllers/Views/Theme/Macros/Tools）。
+
+## 命名前缀与 API 稳定性
+
+OC 类 `XP` 前缀（XPViewController/XPMaskView 等）。公开 API（基类、通用组件）需保持稳定。Breaking Change 需同步所有继承/使用方。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止在基础 UI 组件中引入业务逻辑
+- 禁止直接依赖上层业务 Pod
+- 禁止修改 XPViewController 基类的生命周期方法签名（影响全量 VC）
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

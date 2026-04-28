@@ -1,0 +1,56 @@
+# deps-sync 实施计划 — Podfile.lock 解析 + 依赖漂移检测
+
+## Context
+
+deps.yml 目前手动维护，容易与实际 Podfile/podspec 依赖漂移。基于可行性分析（`docs/superpowers/specs/2026-04-17-deps-dynamic-resolution-analysis.md`），实现半自动化方案：从 Podfile.lock 解析依赖图，与现有 deps.yml 对比报告漂移。
+
+## 产物
+
+1. `scripts/parse-podfile-lock.rb` — 解析 Podfile.lock 输出结构化依赖图（JSON）
+2. `scripts/deps-sync-check.sh` — 依赖漂移检测脚本（对比 Podfile.lock 实际依赖 vs deps.yml 声明）
+3. `.ai-knowledge/module-registry.md` — 添加 `pod_name` 字段
+4. `.claude/skills/deps-sync/SKILL.md` — deps-sync skill
+
+## Tasks
+
+### Task 1: module-registry 添加 pod_name 字段
+- 为所有 Pod 名 ≠ Module ID 的模块添加 `pod_name`
+- 关键映射: XPBLEDataProcessor → XPDataProcessor, XPMQTTLibrary → CocoaMQTT(私有fork)
+- 文件: `.ai-knowledge/module-registry.md`
+
+### Task 2: Podfile.lock 解析脚本
+- 输入: `Podfile.lock`
+- 输出: JSON `{ "pods": { "<name>": { "version": "...", "deps": [...], "path": "..." } } }`
+- 解析 PODS / EXTERNAL SOURCES / DEPENDENCIES 三个段
+- 用 Ruby 解析（Podfile.lock 是 Ruby 生态，macOS 自带 Ruby）
+- 文件: `scripts/parse-podfile-lock.rb`
+
+### Task 3: 依赖漂移检测脚本
+- 读取 parse-podfile-lock.rb 输出 + module-registry（pod_name 映射）+ 各模块 deps.yml
+- 检测:
+  - deps.yml 声明了但 Podfile.lock 中不存在的依赖（幽灵依赖）
+  - Podfile.lock 有但 deps.yml 未声明的内部模块依赖（遗漏依赖）
+  - 第三方库版本变化（信息性）
+- 输出: 人类可读的漂移报告
+- 文件: `scripts/deps-sync-check.sh`
+
+### Task 4: deps-sync skill
+- 触发条件: "依赖同步", "deps sync", "依赖漂移检测"
+- 执行步骤: 调用解析脚本 → 对比 → 报告 → 建议修复
+- 文件: `.claude/skills/deps-sync/SKILL.md`
+
+### Task 5: 验证 + 提交
+- 运行 deps-sync-check.sh 确认输出合理
+- 运行 spec-architecture-lint.sh 确认不破坏现有检查
+- git commit
+
+## 关键文件
+- `Podfile.lock` — 数据源
+- `.ai-knowledge/module-registry.md` — Pod 名映射
+- `submodule/*/. ai-knowledge/deps.yml` — 对比目标
+- `LocalPods/*/.ai-knowledge/deps.yml` — 对比目标
+
+## 验证
+- `ruby scripts/parse-podfile-lock.rb` 输出有效 JSON
+- `bash scripts/deps-sync-check.sh` 输出漂移报告（预期会发现一些未声明依赖）
+- `bash scripts/spec-architecture-lint.sh` 全部通过

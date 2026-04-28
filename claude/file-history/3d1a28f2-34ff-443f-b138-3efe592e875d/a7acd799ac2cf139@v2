@@ -1,0 +1,8 @@
+# 蓝牙安全
+
+- 蓝牙鉴权流程分 Auth0 → Auth1 两步，不可乱序
+- V3 协议涉及 sessionKey + hmacKey 两套密钥
+- BLE 数据解析/组装必须通过 XPBLEDataProcessor，禁止手动拼接字节流
+- 蓝牙连接依赖系统权限（`BLESysState`），操作前需检查权限状态
+- BLE packed struct 字段顺序必须与车端协议文档一致，字段偏移错位会导致整条指令解析失败
+- 修改 BLEDataProcessor 的 parser 时需评估对所有车型的影响，不同车型可能共用同一个 parser 但字段含义不同

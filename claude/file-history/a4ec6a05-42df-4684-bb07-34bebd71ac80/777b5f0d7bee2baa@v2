@@ -1,0 +1,32 @@
+{
+  "eval_id": 2,
+  "eval_name": "docker-learning",
+  "prompt": "帮我学习 Docker 容器化技术。我是后端工程师，有 Java 开发经验，但对容器技术完全没接触过。公司要求我们把现有的 Spring Boot 应用容器化部署，我需要从零开始学习 Docker 的概念、原理和实践应用。",
+  "assertions": [
+    {
+      "text": "Follows structured interview process to assess baseline knowledge",
+      "passed": null,
+      "evidence": ""
+    },
+    {
+      "text": "Builds knowledge progressively from concepts to implementation",
+      "passed": null,
+      "evidence": ""
+    },
+    {
+      "text": "Provides hands-on Spring Boot containerization examples",
+      "passed": null,
+      "evidence": ""
+    },
+    {
+      "text": "Includes verification through multiple role perspectives",
+      "passed": null,
+      "evidence": ""
+    },
+    {
+      "text": "Creates archival learning documents and templates",
+      "passed": null,
+      "evidence": ""
+    }
+  ]
+}

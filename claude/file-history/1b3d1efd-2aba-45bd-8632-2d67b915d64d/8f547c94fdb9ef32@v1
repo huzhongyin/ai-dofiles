@@ -1,0 +1,167 @@
+//
+//  BleCanMessage.swift
+//  XPVehicleSDK
+//
+//  Created by xp on 2024/4/10.
+//
+
+import Foundation
+
+enum BLECppParserDataType: String, Codable {
+    case vehicleState = "vehicleState"
+    case canEvent = "canEvent"
+    case other = "OTHER"
+    
+    init(rawValue: String) {
+        switch rawValue {
+        case "vehicleState":
+            self = .vehicleState
+        case "canEvent":
+            self = .canEvent
+        default:
+            // 如果没有匹配的值，返回一个默认值
+            self = .other
+        }
+    }
+}
+
+enum BLECppParserCanEventType: String, Codable {
+    case carControlResult = "carControlResult"
+    case exceptionHandle = "exceptionHandle"
+    case CDUAccountLoginState = "CDUAccountLoginState"
+    case requestDisconnect = "requestDisconnect"
+    case startRequestBleLocation = "startRequestBleLocation"
+    case parking = "parking"
+    case parkingCollision = "parkingCollision"
+    case authResult = "authResult"
+    case authRandom = "authRandom"
+    case doublesidedAuth = "doublesidedAuth"
+    case selfCalibration = "selfCalirationData"
+    case rssiCollect = "rssiCollectData"
+    case parkingControl = "parkingControl"
+    case commonResponse = "commonResponse"
+    case tboxRunState = "tboxRunState"
+    case other = "other"
+    
+    init(rawValue: String) {
+        switch rawValue {
+        case "carControlResult":
+            self = .carControlResult
+        case "exceptionHandle":
+            self = .exceptionHandle
+        case "CDUAccountLoginState":
+            self = .CDUAccountLoginState
+        case "requestDisconnect":
+            self = .requestDisconnect
+        case "startRequestBleLocation":
+            self = .startRequestBleLocation
+        case "parking":
+            self = .parking
+        case "authResult":
+            self = .authResult
+        case "authRandom":
+            self = .authRandom
+        case "doublesidedAuth":
+            self = .doublesidedAuth
+        case "selfCalirationData":
+            self = .selfCalibration
+        case "rssiCollectData":
+            self = .rssiCollect
+        case "parkingControl":
+            self = .parkingControl
+        case "commonResponse":
+            self = .commonResponse
+        case "parkingCollision":
+            self = .parkingCollision
+        case "tboxRunState":
+            self = .tboxRunState
+        default:
+            // 如果没有匹配的值，返回一个默认值
+            self = .other
+        }
+    }
+}
+
+class CanEvent: NSObject, Codable {
+    var eventType: BLECppParserCanEventType?
+    
+    var rand01: UInt32?
+    var rand1: UInt32?
+    
+    // carControlResult
+    var controlId: Int?
+    var controlState: Int?
+    
+    // exceptionHandle
+    var errorCode: Int?
+    
+    // CDUAccountLoginState
+    // RequestDisconnect
+    // StartRequestBleLocation
+    var signalValue: Int?
+    
+    // Parking
+    var parkingState: Int?
+    var parkingExpType: Int?
+    var gearValue: Int?
+    var parkingAnimation: Int?
+    var speed: Int?
+    var parkingProcess: Int?
+    var leaveParkState: Int? // 离车泊入可用状态
+    var welcomeParkOutState: Int? // 迎宾出库可用状态
+    var parkOutAvailableDirection: Int? // 泊车可用方向
+    var parkOutCurrentDirection: Int? // 当前车辆泊出方向
+    var parkOutDirectionIfOk: Int? // 当前选定的泊出方向是否可用
+    var parkOutRecommendDirection: Int? // 推荐泊出方向
+    var parkOutState: Int? // 迎宾出库状态
+    var parkInState: Int? // 离车泊入状态
+    
+    // parkingCollision
+    var parkingCollisionStatus: Int8? // 当前直线召唤避障状态
+    var parkingRSLAreaLevel: Int8? // 右侧面前区域水平
+    var parkingRSRAreaLevel: Int8? // 右侧侧面区域水平
+    var parkingROLAreaLevel: Int8? // 右侧后面区域水平
+    var parkingRCLAreaLevel: Int8? // 右侧车道区域水平
+    var parkingRCRAreaLevel: Int8? // 右侧车道区域水平
+    var parkingRORAreaLevel: Int8? // 右侧后面区域水平
+    var parkingFSLAreaLevel: Int8? // 左侧面前区域水平
+    var parkingFSRAreaLevel: Int8? // 左侧侧面区域水平
+    var parkingFOLAreaLevel: Int8? // 左侧后面区域水平
+    var parkingFCLAreaLevel: Int8? // 左侧车道区域水平
+    var parkingFCRAreaLevel: Int8? // 右侧车道区域水平
+    var parkingFORAreaLevel: Int8? // 右侧后面区域水平
+    
+    // authResult
+    var authState: Int?
+    var failedReason: Int?
+    
+    // doublesidedAuth
+    var frameIndex: Int?
+    var frameCount: Int?
+//    var failedReason: Int?
+    var data: UInt64?
+    
+    var result: Int?
+    var resultLen: Int?
+    var resultData: String?
+    var direction: Int?
+    var distance: Int?
+    var uid: Int?
+    var deviceModel:String?
+    
+    var commonStatus: Int?
+    var commonErrorCode: Int?
+    var commonErrorReason: String?
+    
+    var parkingControlState: Int?
+    
+    var status: Int? 
+}
+
+class BleCanMessage: NSObject, Codable {
+    
+    var type: BLECppParserDataType?
+    
+    var vehicleState: VehicleState?
+    var canEvent: CanEvent?
+}

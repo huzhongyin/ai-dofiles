@@ -1,0 +1,22 @@
+# 车型配置 100+ 属性增长管理
+
+## 元信息
+- 触发关键词: ["isSupportBleKey", "isSupportCarControl", "能力开关", "配置属性", "新增属性", "BOOL属性"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`XPCarAbilityConfig` 目前已有 100+ 属性且持续增长。
+
+**属性分类**:
+- 能力开关: `isSupportXxx`（BOOL）— 如 isSupportBleKey / isSupportPollingV3
+- 版本枚举: `xxxVersion`（枚举）— 如 bleKeyVersion / pollingLocationVersion
+- UI 资源: `xxxImageName / xxxImagePostfix`（NSString）— 各车型特化图片
+
+**新增属性规范**:
+1. 在 `XPBaseCarAbilityConfig` 基类的 `baseCarAbilityConfigDictionary` 中设置默认值
+2. 在相关车型子类的 `getCarAbilityConfigDictionary` 中覆盖
+3. OC 实现 → **新增属性需确保 Swift 侧可正常访问**（通过 Bridging-Header）
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/XPCarAbilityConfig/XPCarAbilityConfig.h`

@@ -1,0 +1,3 @@
+{"type":"queue-operation","operation":"enqueue","timestamp":"2026-04-20T13:26:33.620Z","sessionId":"243f07e5-2957-4123-a9ec-a0698a814103","content":"帮我生成 spec 方案书"}
+{"type":"queue-operation","operation":"dequeue","timestamp":"2026-04-20T13:26:35.690Z","sessionId":"243f07e5-2957-4123-a9ec-a0698a814103"}
+{"type":"file-history-snapshot","messageId":"1be69ef7-6f6f-4113-8f0d-d941d3e3365b","snapshot":{"messageId":"1be69ef7-6f6f-4113-8f0d-d941d3e3365b","trackedFileBackups":{},"timestamp":"2026-04-20T13:26:35.783Z"},"isSnapshotUpdate":false}

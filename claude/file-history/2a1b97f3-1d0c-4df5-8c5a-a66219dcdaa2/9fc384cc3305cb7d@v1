@@ -1,0 +1,121 @@
+# XPMotors iOS 团队 — Claude Code 使用规范
+
+> 版本: v1.0 | 更新日期: 2026-04-08
+
+---
+
+## 一、工具定位
+
+| 工具 | 定位 | 使用场景 |
+|---|---|---|
+| **Claude Code** | 主力 Agent | 功能开发、Bug 修复、代码审查、重构、文档生成 |
+| **Copilot** | 行内补全 | 打字时的代码补全提示，不用于复杂任务 |
+
+## 二、CLAUDE.md 规范
+
+### 文件层级
+```
+~/.claude/CLAUDE.md                    → 个人全局配置（不提交 Git）
+项目根目录/CLAUDE.md                   → 项目级配置（提交 Git，团队共享）
+项目根目录/CLAUDE.local.md             → 个人项目配置（加入 .gitignore）
+```
+
+### 维护原则
+1. **精简**: 对每一行问——"删掉它 Claude 会犯错吗？" 如果不会，删掉
+2. **可验证**: 添加规则后观察 Claude 行为是否改变
+3. **定期审视**: 每月检查一次，删除过时或无效的规则
+
+## 三、Skills 使用规范
+
+### 查看可用 Skills
+在 Claude Code 中输入 `/` 可以看到所有可用的自定义命令。
+
+### 当前可用 Skills
+
+| Skill 名称 | 触发方式 | 用途 |
+|---|---|---|
+| `module-context` | `/module-context <模块名>` | 为模块生成 Context 文档 |
+| `knowledge-recall` | 自动触发 | 匹配加载知识点 |
+| `oc-to-swift` | `/oc-to-swift <文件>` | OC 代码迁移到 Swift |
+| `new-swift-module` | `/new-swift-module <模块名>` | 创建新 Swift 模块 |
+| `code-review-ios` | `/code-review-ios <路径>` | iOS 代码审查 |
+| `bug-analysis` | `/bug-analysis <描述>` | Bug 分析定位 |
+| `spec-proposal` | `/spec-proposal <需求>` | 生成变更提案 |
+
+### 创建新 Skill 规范
+所有新 Skill 必须包含:
+- `name` 和 `description` 元信息
+- `触发条件`（含触发关键词列表）
+- `输入` 和 `输出` 的明确定义
+- `约束` 条件
+- `执行步骤`（编号列表）
+
+参考模板: `.claude/skills/module-context/SKILL.md`
+
+## 四、知识库使用规范
+
+### 目录结构
+```
+.ai-knowledge/
+├── modules/              # 模块 Context 文档
+├── knowledge-points/     # 知识点（.kp.md）
+├── pitfalls/             # 踩坑记录
+├── specs/                # Spec 模板
+└── index.md              # 索引导航
+```
+
+### 知识沉淀 SOP
+每次需求开发完成后，执行以下操作:
+1. **回顾**: 有哪些新发现？哪些决策是关键的？
+2. **提炼**: 抽象为知识点或踩坑记录
+3. **存储**: 写入 `.ai-knowledge/` 对应目录
+4. **索引**: 更新 `index.md`
+
+### 知识点格式
+```markdown
+## 元信息
+- 触发关键词: ["关键词1", "关键词2"]
+- 分类: [工程规范/业务逻辑/踩坑记录]
+- 优先级: [高/中/低]
+
+## 内容
+[具体知识内容]
+```
+
+## 五、工作流最佳实践
+
+### 开始任务前
+1. 确保 CLAUDE.md 是最新的
+2. 如果涉及不熟悉的模块，先用 `/module-context` 生成文档
+
+### 开发过程中
+1. 使用 Plan Mode 先探索再实现（Explore → Plan → Implement）
+2. 频繁使用 `/clear` 清理上下文，尤其在切换不相关任务时
+3. 修改存量 OC 代码保持 OC 风格，新建模块用 Swift
+4. 修改车控相关代码后，务必验证调用链完整性
+
+### 任务完成后
+1. 使用 `/code-review-ios` 自审
+2. 执行知识沉淀 SOP
+3. 如有新的踩坑经验，补充到 `.ai-knowledge/pitfalls/`
+
+## 六、上下文管理
+
+### 避免上下文污染
+- 不相关任务之间使用 `/clear`
+- 复杂探索性任务使用 SubAgent（不污染主会话）
+- 单次会话不要混合多个不相关的修改
+
+### CLAUDE.md 常见错误
+| 错误 | 正确做法 |
+|---|---|
+| 写入 Claude 能从代码推断的内容 | 只写无法推断的约束和规则 |
+| 规则太多太详细 | 精简，每条规则都要有实际效果 |
+| 写了但不检查效果 | 观察 Claude 行为验证规则有效性 |
+| 从不更新 | 每月审视一次 |
+
+## 七、安全注意事项
+
+1. 不要在 CLAUDE.md 或知识库中写入密钥、Token 等敏感信息
+2. 车控相关代码修改需要额外的人工审查
+3. submodule 中的代码有独立仓库，修改需注意版本管理

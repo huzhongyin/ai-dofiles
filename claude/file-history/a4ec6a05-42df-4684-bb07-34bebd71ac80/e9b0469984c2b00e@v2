@@ -1,0 +1,49 @@
+{
+  "skill_name": "feynman-learning-verification",
+  "iteration": 1,
+  "configurations": [
+    {
+      "name": "with_skill",
+      "pass_rate": 0.90,
+      "time_seconds_mean": 162.1,
+      "time_seconds_stddev": 110.3,
+      "tokens_mean": 108862.5,
+      "tokens_stddev": 16269.5,
+      "eval_count": 2
+    },
+    {
+      "name": "without_skill",
+      "pass_rate": 0.60,
+      "time_seconds_mean": 235.6,
+      "time_seconds_stddev": 28.9,
+      "tokens_mean": 102587.0,
+      "tokens_stddev": 3052.0,
+      "eval_count": 2
+    }
+  ],
+  "deltas": {
+    "pass_rate": "+0.30",
+    "time_seconds": "-73.5 (faster)",
+    "tokens": "+6275.5 (more tokens)"
+  },
+  "eval_results": [
+    {
+      "eval_name": "react-hooks-learning",
+      "with_skill_pass_rate": 1.0,
+      "without_skill_pass_rate": 0.6,
+      "with_skill_time": 272.4,
+      "without_skill_time": 264.4,
+      "with_skill_tokens": 125132,
+      "without_skill_tokens": 105639
+    },
+    {
+      "eval_name": "docker-learning",
+      "with_skill_pass_rate": 0.8,
+      "without_skill_pass_rate": 0.6,
+      "with_skill_time": 51.8,
+      "without_skill_time": 206.7,
+      "with_skill_tokens": 92593,
+      "without_skill_tokens": 99535
+    }
+  ]
+}

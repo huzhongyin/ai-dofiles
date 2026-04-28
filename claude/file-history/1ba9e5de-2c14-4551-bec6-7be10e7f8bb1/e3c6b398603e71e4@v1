@@ -1,0 +1,47 @@
+# XPVehicleSDK — Submodule 规范
+
+> ⚠️ 本仓库为独立 git 仓，本文件与同目录 `.ai-knowledge/` 需在子仓单独提交
+
+## 模块定位
+
+XPeng/Mona 车控 SDK。提供车控指令下发、状态回调、BLE/MQTT 双通道连接、车型切换。App 层通过 VehiclePresenter 协议访问。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `submodule/XPVehicleSDK/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+语言组合：Swift（主） + Objective-C / Objective-C++（桥接与存量）。
+- Swift 文件：478
+- Objective-C 头文件（.h）：36
+- Objective-C 实现文件（.m）：29
+
+详见 `rules/*.md`（车控流程、切车安全、车型差异化、蓝牙安全、MQTT 安全、事件订阅、日志 Tag）。
+
+## 对外 API 边界
+
+仅通过 XPVehicleSDK.currentVehicle() 门面 + VehiclePresenter 协议暴露。禁止 App 层直接 import VehicleConnection / XPBLEDataProcessor / MQTTPublisher。
+
+## 仓内部架构
+
+TODO: 占位 — 内部分层（Connection / Manager / Parser / Handler 等）；内部模块间依赖方向；内部私有 API 的封装边界。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`（submodule 通常依赖较少，但需注意对第三方库的引入受独立仓 Podspec 约束）。
+
+## 禁止行为
+
+- 禁止 App 层绕过 VehiclePresenter 直接调用 BLEConnection.send() 或 MQTTHandler.publish()
+- 禁止手拼 BLE 字节流，必须通过 XPBLEDataProcessor
+- 禁止乱序执行蓝牙鉴权 Auth0 / Auth1
+- 详见 `rules/*.md`
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → 主仓 `.claude/rules/ios-coding.md`
+- 主工程 App 如何调用本 submodule → L2 `CLAUDE.app.md` 的"与 submodule 的边界"
+- 本 submodule 的演进历史与设计决策 → 子仓 ADR 文档

@@ -1,0 +1,23 @@
+# AI 日历同步机制
+
+## 元信息
+- 触发关键词: ["AiCalendar", "日历同步", "AiCalendarSyncManager", "EventKit", "MD5比对"]
+- 分类: 业务逻辑
+- 优先级: 低
+- 最后更新: 2026-04-08
+
+## 内容
+AI 日历同步（`AiCalendarSyncManager`）采用 Combine 驱动的异步流：
+
+**同步流程**:
+1. 读取系统日历（EventKit `eventStore.calendars(for:)`）
+2. 日历事件转 JSON
+3. JSON 序列化（使用 `.sortedKeys` 保证顺序稳定）
+4. 计算 MD5 与云端比较
+5. MD5 不一致 → ZIP 压缩 → 上传 OSS
+
+**已知问题**: `eventStore.calendars(for:)` 首次调用可能返回空数组，代码内已做 1 秒延迟重试。
+
+**开关持久化**: MMKV 存储日历同步开关状态
+
+**代码位置**: `submodule/XPVehicleExt/XPVehicleExt/AiCalendar/`

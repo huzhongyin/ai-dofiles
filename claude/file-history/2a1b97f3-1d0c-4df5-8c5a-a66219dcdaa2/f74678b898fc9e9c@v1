@@ -1,0 +1,52 @@
+# L1 工具链基建 — 完成度检查清单
+
+> 状态: 进行中 | 开始日期: 2026-04-08
+
+---
+
+## 产物清单
+
+### CLAUDE.md 体系
+- [x] 项目级 CLAUDE.md（架构分层、语言策略、编码规范、模块地图、命名规范、工作流、重要约束）
+- [ ] CLAUDE.local.md 模板（个人偏好配置示例）
+- [ ] 子目录 CLAUDE.md（按需创建，如 VehicleBridge/CLAUDE.md）
+
+### Skills（已创建 7 个）
+- [x] `module-context` — 模块 Context 文档生成
+- [x] `knowledge-recall` — 知识点自动匹配和加载
+- [x] `oc-to-swift` — OC 代码迁移到 Swift
+- [x] `new-swift-module` — 创建新 Swift 功能模块
+- [x] `code-review-ios` — iOS 代码审查
+- [x] `bug-analysis` — Bug 分析定位
+- [x] `spec-proposal` — 变更提案生成
+- [ ] 更多 Skills 按需补充
+
+### Hooks
+- [x] PostToolUse: Swift 文件编辑后 @objc 标注提醒
+- [ ] 更多 Hooks 按实际使用反馈补充
+
+### 团队规范
+- [x] 团队 Claude Code 使用规范文档（team-guide.md）
+- [x] Copilot 使用边界说明（包含在 team-guide.md 中）
+
+### 知识库初始结构
+- [x] `.ai-knowledge/modules/` 目录创建
+- [x] `.ai-knowledge/knowledge-points/` 目录创建
+- [x] `.ai-knowledge/pitfalls/` 目录创建
+- [x] `.ai-knowledge/specs/` 目录创建
+- [ ] `index.md` 索引文件创建
+
+### 工程化文档
+- [x] `roadmap.md` — 五层进阶路径
+- [x] `feynman-learning-report.md` — 费曼学习报告
+- [x] `changelog.md` — 变更日志
+- [x] L1 checklist（本文件）
+
+---
+
+## 待完善项（后续迭代）
+
+1. CLAUDE.md 根据实际使用反馈持续调优
+2. Hooks 根据实际使用中的重复性操作补充
+3. Skills 根据团队高频需求持续补充
+4. 首批知识点创建（进入 L2/L3 层时完成）

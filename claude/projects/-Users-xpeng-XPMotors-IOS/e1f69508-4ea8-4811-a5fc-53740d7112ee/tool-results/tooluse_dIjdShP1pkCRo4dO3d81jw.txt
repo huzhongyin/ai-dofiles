@@ -1,0 +1,252 @@
+/Users/xpeng/XPMotors_IOS/.claude/skills/spec-design/SKILL.md-49-
+.claude/skills/spec-design/SKILL.md-50-8c. **修改策略标注**: 对调用链中的每个修改点，标注修改策略:
+.claude/skills/spec-design/SKILL.md-51-   - **替换实现**: 保留方法名，修改内部逻辑（如 `passIsAvailable()` → 改内部判断）
+.claude/skills/spec-design/SKILL.md:52:   - **替换 API**: 将调用方改为使用其他已有方法（如 `localCarKeyIsVaild` → 改为调用 `localCarKeyIsExist`）
+.claude/skills/spec-design/SKILL.md-53-   - **删除方法**: 方法不再需要，从协议/类中移除
+.claude/skills/spec-design/SKILL.md-54-   - **新增方法**: 新增方法供调用方使用
+/Users/xpeng/XPMotors_IOS/.claude/skills/spec-design/SKILL.md-55-   - 标注修改策略有助于实施者评估是否有更优路径
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/knowledge-points/carkey-vehicle-support.kp.md-1-# Apple CarKey 车型支持条件
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/knowledge-points/carkey-vehicle-support.kp.md-2-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/knowledge-points/carkey-vehicle-support.kp.md-3-## 元信息
+.ai-knowledge/knowledge-points/carkey-vehicle-support.kp.md:4:- 触发关键词: ["CarKey", "carkey", "CCC钥匙", "钱包钥匙", "CCC_DK_THIRD", "DK3_OPEN", "CarKeyPassAccesser", "CarKeyConditionCheck", "PHONE_UWB_KEY", "Mona CarKey", "vaildBleKeyCategory", "localKeyIsAvailable", "localCarKeyIsVaild", "CarKey冻结", "CarKey挂失"]
+.ai-knowledge/knowledge-points/carkey-vehicle-support.kp.md-5-- 分类: 业务逻辑
+.ai-knowledge/knowledge-points/carkey-vehicle-support.kp.md-6-- 优先级: 高
+.ai-knowledge/knowledge-points/carkey-vehicle-support.kp.md-7-- 最后更新: 2026-04-09
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-36-|------|------|------|
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-37-| 任务完成度 | 75% | 9/12 完成（3 个验证 Task 需 Xcode 环境，跳过） |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-38-| 采纳程度 | 低 | 核心逻辑正确，但未发现已有的 `localCarKeyIsExist` 方法 |
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:39:| 额外修改 | 有 | 应使用 `localCarKeyIsExist` 替换 `localCarKeyIsVaild`，并删除 `localKeyIsAvailable()` |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-40-| 偏差程度 | 小 | 核心修改方向一致，问题在于 API 选择不够最优 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-41-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-42-### 偏差分析
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-43-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:44:**核心问题**: `XPCarKeyHelp` 中已经存在 `localCarKeyIsExist` 方法（语义为"CarKey 是否存在"），方案应该直接使用此已有 API 替代 `localCarKeyIsVaild`，而不是修改 `localCarKeyIsVaild` 的内部实现（从"状态正常"改为"存在"）。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-45-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-46-**影响**:
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:47:- 方案修改了 `localKeyIsAvailable()` 内部实现来改变 `localCarKeyIsVaild` 的语义 → 不够直接
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:48:- 更优方案: 将所有 `localCarKeyIsVaild` 调用点替换为 `localCarKeyIsExist`，然后删除 `localCarKeyIsVaild` 和 `localKeyIsAvailable()` → 更清爽
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-49-- 根因: design 阶段未搜索 `XPCarKeyHelp` 的全部方法列表，遗漏了已有的 `localCarKeyIsExist`
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-50-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-51-### 未发现 API 的根因分析
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:52:1. design 阶段 grep 搜索的关键词是 `passIsAvailable`、`localCarKeyIsVaild`、`localKeyIsAvailable` — 面向"修改对象"搜索
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-53-2. 未执行"面向目标类的全量方法扫描" — 即对 `XPCarKeyHelp` 做 `grep` 列出所有方法，检查是否有语义匹配的已有 API
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-54-3. 这是 spec-design 调用链分析的一个盲点: **只追踪修改路径上的节点，未检查目标类的全量能力**
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-55-
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-65-## 改进建议
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-66-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-67-### S1: spec-design 应对"修改目标类"执行全量方法扫描
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:68:- **问题**: 修改 `localCarKeyIsVaild` 的内部实现时，未检查 `XPCarKeyHelp` 是否已有语义匹配的方法（`localCarKeyIsExist`）
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-69-- **改进**: spec-design Skill 在 Phase 2 调用链分析中，当修改涉及"改变某方法的语义"时，应对目标类做 `grep` 全量方法列表，检查是否已有语义匹配的替代 API
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-70-- **涉及 Skill**: `spec-design`
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-71-- **预期效果**: 避免"修改已有方法语义"而非"使用已有替代方法"的次优选择
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-108-| S3 | spec-design | 调用链标注"推荐方案 A + 备选方案 B" | ✅ 已实施（Phase 2.5 冲突风险标注） |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-109-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-110-## 待沉淀知识
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:111:- ⚠️ **`XPCarKeyHelp` 全量 API 文档**: `localCarKeyIsExist` / `localCarKeyIsVaild` / `localKeyIsAvailable` 三者的区别和推荐使用方式，当前知识库未覆盖
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-112-- ⚠️ **spec-design "全量方法扫描"模式**: 当修改涉及改变方法语义时，应先检查目标类是否有更合适的已有 API — 这是一个通用方法论，可沉淀为踩坑记录
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-113-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-114-## 趋势分析
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-38-| XPVehicleSDK/CarKey | `submodule/XPVehicleSDK/.../CarKeyPassAccesser.swift` | 修改 | 从 `CarKeyPassAccessProtocol` 协议中移除 `passIsAvailable()` 方法声明；实现保留为 internal/private |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-39-| XPVehicleExt/CarKey | `submodule/XPVehicleExt/.../CarKeyPassInteractionFlow.swift` | 修改 | `localKeyIsAvailable()` 改为使用 `getCurrentCarKeyId() != nil` 判断 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-40-| XPVehicleExt/CarKey | `submodule/XPVehicleExt/.../CarKeyPassInteraction.swift` | 审查 | `localKeyIsAvailable()` 语义变化后，确认协议定义是否需要补充说明 |
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:41:| XPCarControlCore/BLEKey | `submodule/XPCarControlCore/.../XPCarKeyHelp.m` | 审查 | `localCarKeyIsVaild` 调用了 `localKeyIsAvailable`，语义变化后需确认 UI 侧逻辑是否正确 |
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:42:| 主工程/DigitalKey3 | `XiaoPengQiChe/Modules/Home/DigitalKey3/` | 审查 | `XPKeyThreeManageViewController.m` 和 `XPKeyManageBleHeaderCell.m` 中使用 `localCarKeyIsVaild` 的 UI 逻辑 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-43-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-44-### `passIsAvailable()` 调用链全景
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-45-
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-57-            → passIsAvailable() == .None
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-58-            → 改为: getCurrentCarKeyId() != nil
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-59-            │
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:60:            └── XPCarKeyHelp.localCarKeyIsVaild (OC 调用 Swift)
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-61-                  │
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-62-                  ├── XPKeyManageBleHeaderCell (UI: 蓝牙连接状态展示)
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:63:                  │     行387: localCarKeyIsVaild && !hasBindedCarkey → "请绑定帐号"
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:64:                  │     行429: localCarKeyIsVaild → 数字钥匙3.0分支
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-65-                  │
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-66-                  └── XPKeyThreeManageViewController (UI: 钥匙管理)
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:67:                        行205: localCarKeyIsVaild && !isBLECardValid → "静默激活"
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:68:                        行631: localCarKeyIsVaild → 查找本地CarKey卡片
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:69:                        行1370: localCarKeyIsVaild → 判断是否有BLE钥匙
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-70-```
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-71-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-72-### 语义变化影响分析
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-74-| 调用方 | 当前语义 | 变更后语义 | 影响评估 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-75-|--------|---------|-----------|---------|
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-76-| `vaildBleKeyCategory()` | CarKey 状态正常才选 CarKey 通道 | CarKey 存在就选 CarKey 通道 | ✅ **修复核心问题** — 冻结时不回退私有钥匙 |
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:77:| `localKeyIsAvailable()` → `localCarKeyIsVaild` | CarKey 状态正常才视为"有效" | CarKey 存在就视为"有效" | ⚠️ **需审查** — UI 层可能需要区分"存在但冻结"和"存在且正常" |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-78-| `XPKeyManageBleHeaderCell` 行387 | CarKey 正常+未绑定 → 提示绑定 | CarKey 存在+未绑定 → 提示绑定 | ✅ 合理 — CarKey 冻结时也应提示绑定 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-79-| `XPKeyManageBleHeaderCell` 行429 | CarKey 正常 → 进入3.0分支 | CarKey 存在 → 进入3.0分支 | ✅ 合理 — CarKey 存在就应走3.0分支 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-80-| `XPKeyThreeManageViewController` 行205 | CarKey 正常+无私有钥匙 → 静默激活 | CarKey 存在+无私有钥匙 → 静默激活 | ⚠️ **需审查** — 冻结时是否也应触发静默激活？ |
+--
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-190-修改方案: 改为 `self.carKeyPassFlowAccesser?.getCurrentCarKeyId() != nil`，语义从"CarKey 状态正常"变为"本地存在 CarKey"。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-191-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-192-#### 关联审查点
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:193:- `XPCarKeyHelp.localCarKeyIsVaild` → 调用 `localKeyIsAvailable`，语义随之变化
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:194:- `XPKeyManageBleHeaderCell` → 使用 `localCarKeyIsVaild` 展示 UI，需确认冻结场景下 UI 文案是否合适
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-195-- `XPKeyThreeManageViewController` 行205 → 冻结时是否应触发"静默激活"
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-196-- `XPKeyThreeManageViewController` 行1370 → 冻结时 UWB/NFC 可用性判断
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-197-
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-215-    2. 从 `CarKeyPassAccessProtocol` 移除 `passIsAvailable()` 方法声明
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-216-    3. `CarKeyPassAccesser` 中 `passIsAvailable()` 改为 internal/private
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-217-    4. `CarKeyPassInteractionFlow.localKeyIsAvailable()` 改用 `getCurrentCarKeyId() != nil`
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md:218:    5. 检验 `XPCarKeyHelp.localCarKeyIsVaild` 及其 UI 调用方的逻辑正确性
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-219-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-220-## 风险评估
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md-221-| 风险 | 影响 | 概率 | 应对策略 |
+--
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-60-│  文件: submodule/XPVehicleExt/.../CarKeyPassInteraction.swift L30
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-61-│  协议: localKeyIsAvailable() -> Bool（保持，语义变为"CarKey 存在"）
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-62-│
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:63:└→ ✅ XPCarKeyHelp.localCarKeyIsVaild  (OC getter)
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-64-   文件: submodule/XPCarControlCore/.../XPCarKeyHelp.m L60-64
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-65-   实现: return [self.carKeyPassInteraction localKeyIsAvailable]
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-66-   │
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-67-   ├→ ✅ XPKeyManageBleHeaderCell
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-68-   │  文件: XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:69:   │  L361: vaildBleKeyCategory (直接调用，非 localCarKeyIsVaild)
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:70:   │  L387: localCarKeyIsVaild && !hasBindedCarkey → "请绑定帐号"
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:71:   │  L429: localCarKeyIsVaild → 进入数字钥匙3.0分支
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-72-   │
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-73-   └→ ✅ XPKeyThreeManageViewController
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-74-      文件: XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:75:      L205: localCarKeyIsVaild && !isBLECardValid → "静默激活"  ← ⚠️ 需确认
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:76:      L631: localCarKeyIsVaild → 查找本地 CarKey 卡片
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:77:      L1370: localCarKeyIsVaild → UWB/NFC 判断  ← ⚠️ 需确认
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-78-      L1372,1980,1999: vaildBleKeyCategory 直接调用
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-79-      L122,207,271,372,378: getCurrentCarKeyId (via XPCarKeyFunctionTool)
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-80-```
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-182-| `CarKeyPassAccessProtocol` | 移除 `passIsAvailable()` 方法声明 | 上层不再通过协议访问状态检查 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-183-| `CarKeyPassAccesser` | `passIsAvailable()` 从 `public` 改为 `internal` | 仅供内部使用（如异常上报） |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-184-| `vaildBleKeyCategory()` 返回值语义 | CarKey 冻结时返回 `.PHONE_UWB_KEY`（原返回 fallback） | 核心行为变更 |
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:185:| `localKeyIsAvailable()` 返回值语义 | "CarKey 存在"（原为"CarKey 状态正常"） | 影响 `localCarKeyIsVaild` 的所有消费者 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-186-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-187-## API 接口变更
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-188-
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-288-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-289-### 风险 2: `XPKeyThreeManageViewController` 行 205 "静默激活"逻辑
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-290-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:291:**冲突来源**: `localCarKeyIsVaild && !isBLECardValid → 静默激活`。语义变化后，CarKey 冻结时 `localCarKeyIsVaild = true`。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-292-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:293:**当前行为**: CarKey 冻结时 `localCarKeyIsVaild = false` → 不触发静默激活
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:294:**新行为**: CarKey 冻结时 `localCarKeyIsVaild = true` → 可能触发静默激活 ← ⚠️
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-295-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-296-**推荐方案 A**: 不需要额外处理。
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-297-- 理由: `isBLECardValid` 是另一个独立判断，`!isBLECardValid` 检查的是私有 BLE 钥匙是否有效。冻结场景下如果用户有私有 BLE 钥匙则 `isBLECardValid = true`（不触发），如果没有私有钥匙则"静默激活"CCC CarKey 卡——冻结状态下激活操作应该被系统拒绝（CarKey 框架控制）。
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-301-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-302-### 风险 3: `XPKeyThreeManageViewController` 行 1370 UWB/NFC 判断
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-303-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:304:**冲突来源**: `localCarKeyIsVaild → UWB/NFC 能力判断`。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-305-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:306:**当前行为**: CarKey 冻结时 `localCarKeyIsVaild = false` → 跳过 UWB/NFC 判断
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:307:**新行为**: CarKey 冻结时 `localCarKeyIsVaild = true` → 进入 UWB/NFC 判断逻辑
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-308-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-309-**推荐方案 A**: 保持新行为。
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-310-- 理由: UWB/NFC 能力判断是展示性信息，冻结时展示"设备支持 UWB"不会产生副作用。用户看到 CarKey 信息有助于理解当前状态。
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-408-| CarKey 解冻后连接恢复延迟 | 低 | 依赖 `getLocalPasses()` 回前台刷新 + CarKeyNeedRefesh 通知 | 解冻 CarKey → 确认自动恢复连接 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-409-| Polling 路由变化（冻结时走 Wallet 配置） | 低 | 冻结时 Session 未连接，Polling 数据不可用是预期 | 冻结期间确认无异常崩溃/错误弹窗 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-410-| 移除 `passIsAvailable()` 协议方法编译失败 | 低 | grep 已确认 3 处调用均在同一 submodule 内部，可控 | 编译验证 |
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:411:| `localCarKeyIsVaild` 语义变化影响 UI | 中 | 冻结风险 2/3 分析结论: 影响可控 | 冻结状态下测试钥匙管理 UI |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-412-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-413-## 疑问点解答
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-414-
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-425-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-426-### D1: CarKey 冻结时"静默激活"逻辑 — ✅ 已确认: 方案 A
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-427-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:428:`XPKeyThreeManageViewController` L205: `localCarKeyIsVaild && !isBLECardValid → 静默激活`
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-429-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-430-**决策**: 不做额外处理。冻结状态下系统 CarKey 框架会拒绝激活操作，不会产生副作用。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-431-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-432-### D2: CarKey 冻结时 UWB/NFC 展示信息 — ✅ 已确认: 方案 A
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-433-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md:434:`XPKeyThreeManageViewController` L1370: `localCarKeyIsVaild → UWB/NFC 判断`
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-435-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md-436-**决策**: 保持展示。UWB/NFC 是硬件能力，与 CarKey 冻结状态无关，展示不会误导用户。
+--
+.ai-knowledge/evolution-log.md-318-- 隐含依赖发现:
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/evolution-log.md-319-  - `passIsAvailable()` 通过协议类型调用 → 修改有编译依赖顺序
+.ai-knowledge/evolution-log.md-320-  - 推荐合并策略: XPVehicleSDK 1次提交 → XPVehicleExt 1次提交 → 主仓库指针更新
+.ai-knowledge/evolution-log.md:321:- 搜索覆盖度: 14 个关键词 × 5 个目录，命中 27+ 处 vaildBleKeyCategory + 2 处 passIsAvailable + 6 处 localCarKeyIsVaild
+.ai-knowledge/evolution-log.md-322-- 报告路径: `.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md`
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/evolution-log.md-323-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/evolution-log.md-324-### 2026-04-09 — post-task-review (carkey-freeze-private-key-strategy)
+--
+.ai-knowledge/evolution-log.md-326-- 涉及模块: XPVehicleSDK/DigitalKey, XPVehicleSDK/CarKey, XPVehicleExt/CarKey
+.ai-knowledge/evolution-log.md-327-- 沉淀结果:
+.ai-knowledge/evolution-log.md-328-  - 修正知识点: 1 条 — `carkey-vehicle-support.kp.md`
+.ai-knowledge/evolution-log.md:329:    - 新增触发关键词: vaildBleKeyCategory, localKeyIsAvailable, localCarKeyIsVaild, CarKey冻结, CarKey挂失
+.ai-knowledge/evolution-log.md-330-    - 新增内容: 钥匙类型决策核心规则（不区分状态）、消费者分布表、完整状态映射表（含 default 兜底）、刷新回调链路
+.ai-knowledge/evolution-log.md-331-    - 新增关联: Spec 案例、CarKeyPassManager、CarKeyPassInteractionFlow
+.ai-knowledge/evolution-log.md-332-  - 新增知识点: 0 条
+--
+.ai-knowledge/evolution-log.md-342-  - 自证率 0 分: Q2/Q3/Q4 属于业务决策（合理询问），但指标反映可进一步分解为技术子问题
+.ai-knowledge/evolution-log.md-343-- F1-code: C (65)
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/evolution-log.md-344-  - 任务完成度 75% (9/12), 采纳程度低, 有额外修改, 偏差小
+.ai-knowledge/evolution-log.md:345:  - 核心问题: 未发现 XPCarKeyHelp 中已有 `localCarKeyIsExist` 方法，应直接替换而非修改 `localCarKeyIsVaild` 内部实现
+.ai-knowledge/evolution-log.md-346-  - 根因: spec-design 调用链分析只追踪修改路径上的节点，未对目标类做全量方法扫描
+.ai-knowledge/evolution-log.md-347-- 效率提升: ~87.5%（2h vs 预估 2.5 天）
+.ai-knowledge/evolution-log.md-348-- 改进建议:
+--
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-122-- **约束**:
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-123-  - `carKeyPassFlowAccesser` 类型为 `CarKeyPassAccessProtocol?`
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-124-  - `getCurrentCarKeyId()` 在协议中已声明（L16），修改后编译正确
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md:125:  - **语义变化**: "CarKey 状态正常" → "CarKey 存在"，影响下游 `XPCarKeyHelp.localCarKeyIsVaild` 所有消费者
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-126-  - **必须与 Task 1.2 同步** — 协议移除 `passIsAvailable()` 后此处必须已修改
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-127-- **验证**:
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-128-  - ✅ 文件路径已验证存在
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-133-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-134-### Phase 3: 语义影响审查（无代码修改）
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-135-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md:136:> 以下调用点因 `localCarKeyIsVaild` / `vaildBleKeyCategory()` 语义变化，行为会变化。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-137-> design.md 已完成审查，结论如下。不需要代码修改。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-138-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-139-#### Task 3.1: 审查 XPMultiBleManager 10 处 Polling 路由
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-152-
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-153-#### Task 3.3: 审查 XPKeyManageBleHeaderCell UI 展示
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-154-- **文件**: `XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m`
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md:155:- **行号**: L361 (vaildBleKeyCategory), L387 (localCarKeyIsVaild), L429 (localCarKeyIsVaild)
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-156-- **变更**: 仅审查，无需修改
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-157-- **审查结论**: ✅ L387 合理（冻结时也应提示绑定帐号），L429 合理（冻结时走 3.0 分支）
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-158-- **状态**: [ ] 未开始
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-280-| 维度 | 覆盖范围 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-281-|------|---------|
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-282-| **搜索目录** | `submodule/XPVehicleSDK/` + `submodule/XPVehicleExt/` + `submodule/XPCarControlCore/` + `XiaoPengQiChe/` + `LocalPods/` |
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md:283:| **搜索关键词** | `passIsAvailable`、`vaildBleKeyCategory`、`getCurrentCarKeyId`、`localCarKeyIsVaild`、`localKeyIsAvailable`、`CarKeyPassAccessProtocol`、`XPCarKeyPassAccessProtocol`、`localPassDidRefresh`、`CarKeyNeedRefesh`、`DigitalKeyStateChanged`、`CarKeyPassClear`、`didLoadKeys`、`didLoadKey`、`controlBleHandlerLife` |
+.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md:284:| **命中统计** | `passIsAvailable` 2 处调用 / `vaildBleKeyCategory` 27+ 处调用 across 11 files / `localCarKeyIsVaild` 6 处调用 / `CarKeyPassAccessProtocol` 0 处 OC 引用 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md-285-| **已知局限** | `XPCarKeyFunctionTool` 源码未在仓库中找到（可能在编译后的 Pod 中），其内部实现的 `getCurrentCarKeyId` 调用路径未覆盖。但该工具类仅在主工程 UI 层使用（XPKeyThreeManageViewController），不影响核心连接决策逻辑。 |
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-384-        [self refreshBleDisConnectStatus];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-385-        return;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-386-    }
+XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m:387:    if ([XPCarKeyHelp.shared localCarKeyIsVaild] && ![self hasBindedCarkey]) {
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-388-        DLogTagInfo(kBLEKeyTag, @"钱包钥匙生效但是没绑定");
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-389-        self.bleDes.text = @"请绑定帐号解锁将自动登录";
+XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-390-        [self.turnOnButton setTitle:@"立即绑定" forState:UIControlStateNormal];
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-426-        
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-427-    }else if(XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3){
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-428-        DLogTagInfo(kBLEKeyTag, @"数字钥匙3.0");
+XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m:429:        if (XPCarKeyHelp.shared.localCarKeyIsVaild) {
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-430-            if (![self hasBindedCarkey]) {
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-431-                DLogTagInfo(kBLEKeyTag, @"钱包钥匙生效但是没绑定");
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m-432-                self.bleDes.text = @"请绑定帐号解锁将自动登录";
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-202-
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-203-- (void)createKey{
+
+[Showing results with pagination = limit: 250]

@@ -1,0 +1,32 @@
+{
+  "eval_id": 1,
+  "eval_name": "react-hooks-learning",
+  "prompt": "我想深入学习 React Hooks，特别是 useEffect 的工作原理和最佳实践。我是一个有2年前端经验的开发者，但对 Hooks 的底层机制不太理解，经常在使用 useEffect 时遇到无限重渲染的问题。希望能够系统性地掌握这个知识点，用于我正在开发的企业级 React 应用项目中。",
+  "assertions": [
+    {
+      "text": "Provides systematic learning structure with clear phases",
+      "passed": null,
+      "evidence": ""
+    },
+    {
+      "text": "Conducts deep interview to understand background and needs",
+      "passed": null,
+      "evidence": ""
+    },
+    {
+      "text": "Addresses the specific infinite re-render problem mentioned",
+      "passed": null,
+      "evidence": ""
+    },
+    {
+      "text": "Includes verification/testing mechanism for learning",
+      "passed": null,
+      "evidence": ""
+    },
+    {
+      "text": "Creates reusable knowledge assets/skill templates",
+      "passed": null,
+      "evidence": ""
+    }
+  ]
+}

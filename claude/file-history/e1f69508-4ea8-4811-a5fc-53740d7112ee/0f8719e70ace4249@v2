@@ -1,0 +1,94 @@
+# 模块名: XPCarBusiCH
+
+## 模块职责
+车控业务国内版（CH = China）适配层，是 XPCarControlCore 的国内版壳模块。主要承载国内版特有的资源文件（图片/JSON/Lottie 动画/国际化字符串/视频）和未来的国内版差异化业务逻辑。当前代码极少，核心业务逻辑仍在 XPCarControlCore 中，本模块主要提供资源 Bundle 和编译入口。
+
+## 语言构成
+- OC 文件数: 2（.m）+ 3（.h）
+- Swift 文件数: 0
+- C++ 文件数: 0
+- 混编说明: **纯 OC 模块**，代码量极少，主要是资源容器
+
+## 核心 API
+
+### XPBusiDemo（占位类）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `XPBusiDemo` | OC | 空实现的占位类，无实际业务逻辑 | — |
+
+### XPCarHomePageViewController（未启用）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `XPCarHomePageViewController` | OC | 车控首页 VC，**目前未使用**，仍使用 `JRCarOwnerHomeViewController` | — |
+
+**注意**: `XPCarHomePageViewController` 已在 podspec 中通过 `exclude_files` 排除，不参与编译。
+
+## 参数说明
+无特有参数，业务参数继承自 XPCarControlCore。
+
+## 关键协议
+无特有协议。
+
+## 依赖关系
+- **上游依赖**:
+  - `XPCarControlCore` — 车控核心业务层（主要依赖）
+  - `XPAppBiz` — App 业务组件
+  - `XPCarControlUtils` — 车控工具集（资源加载/国际化/图片 Bundle 等）
+  - `ReactiveObjC` — 响应式编程
+  - `lottie-ios` — Lottie 动画
+  - `XPBucket/BaseTool` — 基础工具
+- **下游被依赖**:
+  - `XiaoPengQiChe`（主 App 国内版）— 通过 Pod 引入
+
+## 架构层次
+```
+XiaoPengQiChe (主 App 国内版)
+    ↓ Pod 引入
+XPCarBusiCH (国内版资源壳)
+    ├── XPCarControl.bundle/   — 国内版资源 Bundle
+    │   ├── Images/            — 图片资源
+    │   ├── Jsons/             — JSON 配置
+    │   ├── Lottie/            — Lottie 动画文件
+    │   │   └── CarHome/       — 车控首页动画
+    │   ├── Strings/           — 国际化字符串（zh-Hans）
+    │   └── Video/             — 视频资源
+    ├── Assets/                — xcassets 资源
+    └── Sources/               — 源码（极少）
+    ↓ 依赖
+XPCarControlCore (车控核心业务层)
+    ↓
+XPVehicleSDK / XPMQTTLibrary (底层 SDK)
+```
+
+## 资源 Bundle 说明
+
+模块提供 `XPCarControl.bundle` 和 `XPCarControl.plist` 两个资源包：
+
+| 资源目录 | 内容 | 用途 |
+|---------|------|------|
+| `Images/` | 车控 UI 图片 | 国内版特有图片资源 |
+| `Jsons/` | JSON 配置文件 | 车控业务配置（车型能力等） |
+| `Lottie/CarHome/` | Lottie 动画 JSON | 车控首页动画效果 |
+| `Strings/zh-Hans.lproj/` | 国际化字符串 | 中文本地化文本 |
+| `Video/` | 视频文件 | 车控引导/教程视频 |
+
+## 常见用法
+
+### 加载 Bundle 内资源
+```objc
+// 通过 XPCarControlUtils 提供的分类方法加载
+UIImage *image = [UIImage sdk_imageNamed:@"img_name"];
+LOTAnimationView *anim = [LOTAnimationView sdk_animationNamed:@"anim.json" inDirectory:@"Lottie/CarHome"];
+```
+
+## 关键机制
+- **共版化设计**: XPCarBusiCH 是国内版的资源壳，国际版对应模块为独立仓库（命名可能为 XPCarBusiINTL 或类似），通过切换 Pod 依赖实现国内/国际版资源差异化
+- **资源隔离**: 通过 `resource_bundles` 将 xcassets 打包为独立 Bundle，避免与主 App 资源命名冲突
+- **PCH 预编译**: 通过 `XPPrefixHeader.pch` 全局引入 ReactiveObjC、日志、Toast、XPCarControlCore 等常用头文件
+
+## 已知限制/陷阱
+- 模块代码量极少，**实际业务逻辑在 XPCarControlCore 中**，修改车控业务不应修改此模块
+- `XPCarHomePageViewController` 已被 podspec 排除，是遗留代码，注释标明"目前未使用"
+- `XPBusiDemo` 是空占位类，仅用于验证编译链路
+- 资源文件（Images/Jsons/Lottie/Video）可能较大，修改时注意 Bundle 体积
+- `Strings/zh-Hans.lproj/XPLocalization.strings` 是国内版本地化文件，新增文案需同步更新

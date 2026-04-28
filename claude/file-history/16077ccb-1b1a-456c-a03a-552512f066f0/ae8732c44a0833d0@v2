@@ -1,0 +1,458 @@
+# 知识库进化日志
+
+> 说明: 记录所有自进化动作（知识沉淀/审计/评测），供回溯分析和飞轮效果评估
+> 创建日期: 2026-04-08
+> 维护方式: 由 post-task-review / knowledge-audit / spec-quality-score Skill 自动追加
+
+---
+
+## 事件类型说明
+
+| 类型 | 触发方式 | 记录内容 |
+|------|---------|---------|
+| `knowledge-recall` | knowledge-recall Skill 执行时 | 输入关键词 → 命中知识点列表 |
+| `post-task-review` | 任务完成后触发 | 沉淀决策（新增/修正/补充/无需） |
+| `knowledge-audit` | 手动触发审计 | 新鲜度/覆盖度/召回效果摘要 |
+| `spec-quality-score` | Spec 完成后评测 | F1-doc/F1-code/效率评分 |
+
+---
+
+## 2026-04-22
+
+### post-task-review — pitfalls 系统消除改造
+- 触发: 消除 pitfalls/ 中间态存储，全面迁移到归因分流机制
+- 涉及模块: 全局（10 Skills + 4 submodule + 主仓根级 + targets + LocalPods）
+- 沉淀结果:
+  - 新增知识点: 0 条（16 个知识点已在迁移过程中创建）
+  - 修正知识点: 0 条
+  - 规范补充: 1 条 — constitution.md §6.4 问题归因原则
+  - Skill 改进: 0 条（10 个 Skills 已在任务中完成改造）
+- 影响文件: `.ai-knowledge/specs/constitution.md`（追加 §6.4）
+
+## 2026-04-08
+
+### 00:00 — 系统初始化
+- 触发: L5 自进化机制搭建
+- 产出: 创建进化日志基础设施
+- 说明: 
+  - 创建 3 个自进化 Skill（post-task-review / knowledge-audit / spec-quality-score）
+  - 创建目录 `.ai-knowledge/audit-reports/` 和 `.ai-knowledge/quality-scores/`
+  - 知识库当前规模: 39 知识点 + 25 踩坑记录 + 8 模块文档
+  - 待首次 knowledge-recall 记录开始积累召回数据
+
+### 01:00 — knowledge-audit（首次全量审计）
+- 触发: 用户手动请求
+- 审计范围: 全量（39 知识点 + 8 模块文档 + 6 踩坑文件）
+- 知识点状态: 健康 30 / 关注 3 / 过期 6
+- 路径失效详情:
+  - VehicleManager.swift 路径错误（3 知识点）: `Core/` → `VehicleControl/Function/VehicleManager/`
+  - VehicleConnection.swift 路径错误（1 知识点）: `Core/Connection/` → `VehicleControl/Core/VehicleConnection/`
+  - BLEDataProcessor cross 目录名（1 知识点）: `cross/` → `cross-platform/`
+  - MqttServiceManager 模块归属（1 知识点）: XPMQTTLibrary → XPVehicleSDK
+  - MQTTPublisher.m 路径少一层（1 知识点）
+  - MQTTHandler.swift 库归属错误（2 知识点）: MQTTLibrary 中不存在，仅在 VehicleSDK 中
+- 覆盖度: 车控域完整覆盖，发现 5 个 App 层盲区（IM/LittleP3/HotPatch/UnityCarControl/NewCarOwnerHome）
+- 召回数据: 尚未积累
+- 健康度评分: B+ (82/100)
+- 修复执行: 待用户确认
+- 报告路径: `.ai-knowledge/audit-reports/audit-2026-04-08.md`
+
+### 01:30 — post-task-review（审计修复执行）
+- 触发: 审计发现 P0 路径问题，用户确认修复
+- 涉及模块: XPVehicleSDK, XPMQTTLibrary
+- 沉淀结果:
+  - 修正知识点: 14 处路径修正（涉及 14 个知识点文件）
+    - VehicleManager.swift 路径: 3 处 (`vehicle-switch-flow`, `config-sdk-opened-vehicles`, `config-vehicle-type-codes`)
+    - VehicleConnection.swift 路径: 1 处 (`vehicle-connection-fatalerror`)
+    - MqttServiceManager 模块归属: 1 处 (`mqtt-singleton-switch-vehicle`) — XPMQTTLibrary → XPVehicleSDK
+    - MQTTPublisher.m 路径: 1 处 (`mqtt-connected-state`) — 补全中间层
+    - MQTTHandler.swift 归属: 2 处 (`mqtt-message-id-matching`, `mqtt-auto-reconnect`) — MQTTLibrary → VehicleSDK
+    - Core/ 简写路径: 6 处 (`vehicle-protocol-composition`, `vehicle-event-system`, `vehicle-state-readonly`, `vehicle-dual-channel`, `config-xiaopeng-vs-mona`, `combine-published-usage`)
+  - 系统性根因: XPVehicleSDK 内部结构为 `XPVehicleSDK/VehicleControl/{Core|Function}/`，文档编写时误用 `Core/` 简写
+- 影响文件: 14 个 `.kp.md` 文件路径更新
+- 修复后预估健康度: A- (90+/100)
+
+### 02:00 — post-task-review（模块文档修复）
+- 触发: 审计报告 P1 模块文档路径差异修复
+- 涉及模块: MQTTPublisher.md
+- 沉淀结果:
+  - 修正模块文档: 1 处重大事实纠正
+    - MQTTPublisher.md: 原描述"纯 Swift 实现"→ 修正为"OC(XPMQTTLibrary) + Swift(XPVehicleSDK) 双 submodule 协作"
+    - 补充了底层 OC 文件（MQTTPublisher.h/.m）的实际位置
+    - 明确了 MQTTHandler/MqttServiceManager 在 XPVehicleSDK 而非 XPMQTTLibrary
+  - VehicleConnection.md 和 VehicleManager.md 无需修改（文档使用类名描述，无硬编码路径）
+- 影响文件: `modules/MQTTPublisher.md`
+- 发现: **MQTTPublisher 的架构比文档描述更复杂** — 底层连接(OC/XPMQTTLibrary) 和业务封装(Swift/XPVehicleSDK) 分属两个 submodule
+
+### 03:00 — post-task-review（新增模块文档 — 覆盖度修复）
+- 触发: 审计发现 submodule 盲区，用户选择补充 XPCarControlCore + XPCarBusiCH
+- 涉及模块: XPCarControlCore, XPCarBusiCH
+- 沉淀结果:
+  - 新增模块文档: 2 篇
+    - `modules/XPCarControlCore.md`: 车控业务核心层（纯 OC，241 .m + 263 .h）
+      - 核心 API: CarControlManager（远程车控指令）、XPBLEKeyManager（数字钥匙）、CarPermissionManager（车辆权限）、XPBLEChecker（车旁检测）
+      - 关键发现: 大量使用 ReactiveObjC（RACCommand/RACSignal），体验模式/真实模式双模设计，CTMediator 路由中间件
+      - 依赖: XPVehicleSDK + XPMQTTLibrary + IFAASDK + ReactiveObjC 等 12 个依赖
+    - `modules/XPCarBusiCH.md`: 车控业务国内版资源壳（纯 OC，极少代码）
+      - 核心发现: 是 XPCarControlCore 的薄壳包装，主要承载国内版资源 Bundle（Images/Jsons/Lottie/Strings/Video）
+      - XPCarHomePageViewController 已在 podspec 中排除（未启用的遗留代码）
+  - 更新索引: index.md 新增 2 条模块文档记录
+- 影响文件: `modules/XPCarControlCore.md`（新建）, `modules/XPCarBusiCH.md`（新建）, `index.md`（更新）
+- 模块文档总数: 8 → 10
+
+### 04:00 — post-task-review（模块文档扩展 — 基础设施层）
+- 触发: 用户选择继续补充模块文档（10→14）
+- 涉及模块: XPNetwork, XPBucket, XPAppBiz, XPCarControlUtils
+- 沉淀结果:
+  - 新增模块文档: 4 篇
+    - `modules/XPNetwork.md`: HTTP 网络请求统一封装层（纯 OC，远程 Pod）
+      - 核心 API: XPAPI.request（链式新版）+ XPAPIRequestManager（RACSignal 旧版）+ AsyncHttpClient + RefreshTokenHelper
+      - 关键发现: 支持 TEE/OQS/Irdeto 三种加密、Cronet/QUIC 可选、风控拦截码体系
+    - `modules/XPBucket.md`: 基础工具箱（纯 OC，远程 Pod）
+      - 5 个子模块：BaseTool/BaseUI/CoreLocation/CoreStatistics/3rd
+      - 关键发现: 多个文件已是转发壳，实际实现迁移到 XPUtility/XPFile 等独立 Pod
+    - `modules/XPAppBiz.md`: App 级业务公共组件（纯 OC，本地 Pod）
+      - CTMediator 路由扩展 20+ 个模块、XPAPIRequestManager 15+ 个业务域分类
+      - 关键发现: BizControl/BizAlert 是待清理壳子
+    - `modules/XPCarControlUtils.md`: 车控 SDK 工具集（纯 OC，远程 Pod）
+      - 宏重定向（imageNamed→sdk_imageNamed）、三层配置体系（plist/OTA/OCM）
+      - 关键发现: XPAppSettings 是 XPOTAConfig 的替代品，支持 ABTest/灰度
+  - 更新索引: index.md 新增 4 条模块文档记录
+- 影响文件: 4 个新建模块文档 + index.md 更新
+- 模块文档总数: 10 → 14
+
+### 05:00 — post-task-review（模块文档最终补充 — 路由框架）
+- 触发: 用户选择补充最后 1 个模块文档达成 15/15 目标
+- 涉及模块: XPBase_Router
+- 沉淀结果:
+  - 新增模块文档: 1 篇
+    - `modules/XPBase_Router.md`: App 路由导航框架（Swift 为主 + OC 旧版，本地 Pod）
+      - 核心 API: RouterHelper（TheRouter 新版路由入口）、XPRouter（OC 旧版路由，渐进废弃）
+      - 关键发现: 正在从 XPRouter(OC) 迁移到 TheRouter(Swift)，通过 RouterCloudConfig 云端开关控制
+      - 模块服务发现: 11 个 ServiceProtocol（IM/User/Mine/AI/Message/Service/RN/Xpeng/Community 等）
+      - 拦截器 + 自定义器链式架构，支持路由白名单
+      - XPRouterURL 100+ 条旧 URL 常量不再新增，新路由定义在 TheRouterURL+*.swift
+  - 跳过 XPCarBusiIntl — 国际版资源壳不存在于当前项目中
+  - 更新索引: index.md 新增 1 条模块文档记录
+- 影响文件: `modules/XPBase_Router.md`（新建）, `index.md`（更新）
+- 模块文档总数: 14 → 15
+
+### 06:00 — knowledge-audit（第二次全量审计）
+- 触发: 用户手动请求
+- 审计范围: 全量（39 知识点 + 15 模块文档 + 6 踩坑文件）
+- 知识点状态: 健康 38 / 关注 1 / 过期 0
+  - 关注项: submodule-management.kp.md 的 .gitmodules 路径微瑕
+- 模块文档状态: 15/15 全部 API 抽样验证通过 🟢
+- 覆盖度:
+  - 车控域: 完整覆盖 🟢
+  - 基础设施层: 完整覆盖 🟢（新增 XPNetwork/XPBucket/XPAppBiz/XPCarControlUtils/XPBase_Router）
+  - App 层热区盲区: XPBusiness_IM(22 次变更) / LittleP3(7 次) / HotPatch(8 次) / UnityCarControl(5 次) / NewCarOwnerHome(5 次)
+- 召回数据: 尚未积累
+- 健康度评分: **A (96/100)**（首次审计 B+ 82 → 修复后 A- 93+ → 本次 A 96）
+- 与首次审计对比: 路径错误 14→0、事实错误 1→0、模块文档 8→15
+- 修复执行: 用户确认无需修复
+- 报告路径: `.ai-knowledge/audit-reports/audit-2026-04-08-v2.md`
+
+### 07:00 — post-task-review（BLE V3 RT Protocol 实施后沉淀）
+- 触发: Spec-driven 需求 ble-v3-rt-protocol 编码实施完成
+- 涉及模块: XPBLEDataProcessor (C++ 核心 + OC 桥接), XPVehicleSDK (Swift SDK)
+- 修改文件: 13 个文件（跨 3 层架构 × 2 个 submodule）
+- 沉淀结果:
+  - 新增知识点: 1 条 — `ble-v3-rt-auth.kp.md`（RT 鉴权明文协议，tag/type 冲突与 msgId 路由解法）
+  - 修正知识点: 1 条 — `ble-auth-v3-flow.kp.md`（补充 RT 鉴权为 V3 第二种鉴权模式）
+  - 新增踩坑: 1 条 — `ble-communication.md` 坑6（V3 新增 msgId 时 tag/type 与现有消息冲突）
+  - 更新模块文档: 1 处 — `XPBLEDataProcessor.md`（补充 generateRtAuthRequestData API + RtAuth/RtNotification 数据结构 + 限制说明）
+- 影响文件:
+  - 新建: `knowledge-points/ble-v3-rt-auth.kp.md`
+  - 修改: `knowledge-points/ble-auth-v3-flow.kp.md`, `pitfalls/ble-communication.md`, `modules/XPBLEDataProcessor.md`, `index.md`
+- 知识库规模更新: 39 → 40 知识点, 25 → 26 踩坑记录
+
+### 08:00 — spec-quality-score（首次 Spec 质量评测）
+- 需求: ble-v3-rt-protocol
+- F1-doc: 97/100 (A)
+  - 完整性 25/25 | 调用链准确性 24/25 | 知识关联 23/25 | Constitution 合规 25/25
+  - 扣分项: 调用链描述"复用通用函数"vs 实际"专用 handler"(-1), 遗漏 submodule-management 知识点(-2)
+- F1-code: A (95)
+  - 任务完成度 100% (15/15), 采纳程度高, 无额外修改, 偏差小
+  - 唯一偏差: RtAuth 解码路径选择了更安全的独立 handler（正向偏差）
+- 效率提升: ~87.5%（2h vs 预估 2 天）
+- 改进建议:
+  - S1: spec-tasks 应自动 grep delegate 实现类并列为 Task
+  - S2: spec-tasks 应检查 NotificationCenter.post 模式同步新增通知名
+  - S3: design.md 对冲突风险节点标注"推荐/备选"方案
+- 评分卡路径: `.ai-knowledge/quality-scores/score-ble-v3-rt-protocol-2026-04-08.md`
+- 说明: 首个 F1-doc/F1-code 基线数据点，后续 Spec 可对比趋势
+
+### 09:00 — Spec Skill 优化（知识飞轮闭环）
+- 触发: spec-quality-score 评分卡改进建议 S1/S2/S3
+- 涉及文件:
+  - `.claude/skills/spec-tasks/SKILL.md` — 新增 Phase 2.5 隐含依赖检测
+  - `.claude/skills/spec-design/SKILL.md` — 新增 Phase 2.5 冲突风险标注
+- 优化内容:
+  - S1 → spec-tasks: 新增 Protocol/Delegate 实现类自动检测（grep `: <ProtocolName>` 找实现类，生成对应 Task）
+  - S2 → spec-tasks: 新增 NotificationCenter.post 同步检测（识别 delegate→Notification 转发模式，生成通知名新增 Task）
+  - S3 → spec-design: 新增冲突风险标注（对 tag/type/枚举值冲突节点，标注推荐方案 A + 备选方案 B）
+- 说明: 这是 L5 自进化飞轮的首次完整闭环 — 实施中发现问题 → 评分卡量化 → 改进建议 → 优化 Skill → 下次 Spec 自动规避
+
+### 10:00 — spec-proposal（CarKey 冻结策略优化）+ 流程改进沉淀
+- 触发: 用户发起新 Spec 需求 — Apple CarKey 冻结场景下私有钥匙连接策略优化
+- 涉及模块: XPVehicleSDK/DigitalKey, XPVehicleSDK/CarKey, XPVehicleExt/CarKey, XPCarControlCore/BLEKey
+- 沉淀结果:
+  - 新增知识点: 1 条 — `carkey-vehicle-support.kp.md`（Apple CarKey 车型支持条件、Mona 不支持的代码依据、状态枚举映射）
+  - 新增踩坑文件: 1 个 — `pitfalls/spec-workflow.md`（4 条 Spec 流程踩坑）
+    - 坑1: 疑问点应先自证后求证，能从代码确认的不应询问用户
+    - 坑2: 自证结论应标注置信度（✅代码确认 vs ⚠️推测）
+    - 坑3: AskUserQuestion 补充选项必须附搜索局限理由
+    - 坑4: Spec 每阶段的分析产物都应沉淀到知识库
+  - proposal 产出: `.ai-knowledge/specs/carkey-freeze-private-key-strategy/proposal.md`
+  - 更新索引: index.md（知识点 40→41, 踩坑 26→30）
+- 影响文件:
+  - 新建: `knowledge-points/carkey-vehicle-support.kp.md`, `pitfalls/spec-workflow.md`
+  - 更新: `index.md`, `evolution-log.md`
+- 知识库规模: 41 知识点, 30 踩坑记录, 15 模块文档
+- 流程改进: 用户反馈 spec-proposal 疑问点机制存在效率问题，已提炼为 4 条通用踩坑供后续 Spec 自动规避
+
+### 11:00 — Spec Skill 优化（spec-proposal 疑问点机制改进）
+- 触发: 用户反馈 spec-proposal 疑问点存在 5 个效率问题（CarKey 冻结策略 proposal 过程中）
+- 涉及文件: `.claude/skills/spec-proposal/SKILL.md`
+- 优化内容:
+  - **Phase 1 增强**: 新增踩坑预加载 — 读取 `pitfalls/spec-workflow.md` 作为流程行为约束
+  - **Phase 4 重构**: 从单一"疑问点识别"拆分为三子阶段
+    - Phase 4.1: 初始疑问点收集（不变）
+    - Phase 4.2: 代码自证（**新增**）— 逐个疑问点尝试通过 grep/调用链/知识库自行回答，标注置信度（✅代码确认 / ⚠️推测）
+    - Phase 4.3: 疑问点整理 — 已自证的标记为"已确认"附代码依据，无法自证的保留为"待确认"
+  - **Phase 5.5 新增**: 分析产物知识沉淀检查 — Spec 每阶段的新发现都应沉淀为知识点
+  - **Phase 6 约束强化**: 
+    - 仅确认 ⚠️ 级疑问点（✅ 级不询问用户）
+    - AskUserQuestion 禁止无依据的兜底选项
+    - 必须告知用户搜索覆盖范围
+  - **约束新增**: 
+    - "先自证后求证"默认策略
+    - 自证结论必须标注置信度
+    - 禁止无依据兜底选项
+- 改进依据: `pitfalls/spec-workflow.md` 坑1-坑4
+- 说明: 这是 L5 飞轮的第二次闭环 — 用户实际使用反馈 → 踩坑沉淀 → Skill 优化 → 下次 Spec 自动规避
+
+### 12:00 — Spec Skill 优化（spec-design + spec-tasks 同步改进）
+- 触发: 继 spec-proposal 优化后，用户要求对 spec-design 和 spec-tasks 执行同步改进
+- 涉及文件:
+  - `.claude/skills/spec-design/SKILL.md`
+  - `.claude/skills/spec-tasks/SKILL.md`
+- spec-design 优化内容:
+  - Phase 1 增强: 新增踩坑预加载（spec-workflow.md）
+  - Phase 2 增强: 调用链每个节点必须标注验证状态（✅代码验证 / ⚠️推测路径）
+  - Phase 4.5 新增: 分析产物知识沉淀检查（调用链分析中发现的新认知）
+  - Phase 5 重构: 区分 ✅ 已验证决策（仅展示）和 ⚠️ 待确认决策（AskUserQuestion）
+  - 约束新增: 验证状态标注、禁止无依据兜底选项、用户确认仅针对 ⚠️ 级
+- spec-tasks 优化内容:
+  - Phase 1 增强: 新增踩坑预加载
+  - Phase 2 增强: 文件路径验证 — 每个 Task 的目标文件必须通过 glob/grep 验证存在性
+  - Phase 2.5 增强: 新增 8c"接口移除影响检测" — 当 Task 涉及从 protocol 移除方法时，grep 搜索全部调用方
+  - Phase 4 增强: 搜索覆盖度声明 — tasks.md 末尾附搜索范围/关键词/命中统计/已知局限
+  - Phase 6 新增: 知识沉淀准备 — 预置 post-task-review 提醒
+  - 约束新增: 路径验证、搜索覆盖度声明、接口移除全调用方覆盖
+- 改进依据: spec-proposal 优化中确立的三个核心原则在 design/tasks 阶段的延伸应用
+  - 先自证后求证 → design 中调用链节点验证状态标注
+  - 置信度标注 → design 中 ✅/⚠️ 分类
+  - 搜索覆盖度声明 → tasks 中搜索范围+命中统计
+- 说明: 三个 Spec Skill（proposal/design/tasks）现在共享统一的质量标准：踩坑预加载、验证状态标注、知识沉淀检查、搜索覆盖度声明
+
+### 13:00 — Skill 全量优化（第二轮）— post-task-review + spec-quality-score + bug-analysis + knowledge-recall + code-review-ios + module-context + knowledge-audit
+- 触发: 用户要求继续优化剩余 Skill
+- 涉及文件:
+  - `.claude/skills/post-task-review/SKILL.md`（上轮已优化）
+  - `.claude/skills/spec-quality-score/SKILL.md`
+  - `.claude/skills/bug-analysis/SKILL.md`
+  - `.claude/skills/knowledge-recall/SKILL.md`
+  - `.claude/skills/code-review-ios/SKILL.md`
+  - `.claude/skills/module-context/SKILL.md`
+  - `.claude/skills/knowledge-audit/SKILL.md`
+- spec-quality-score 优化:
+  - Phase 1 增强: 新增踩坑预加载（spec-workflow.md 作为评分参照基准）
+  - **F1-doc 新增第五维度「自证率」（满分 15 分）**: 衡量 proposal 阶段疑问点通过代码自证的比率
+  - 调用链准确性评分增加"验证状态标注"检查项
+  - 改进建议必须编号（S1/S2/S3），含 Skill 指向，支持闭环跟踪
+  - 评分卡模板新增"改进建议跟踪"表格
+  - 趋势分析新增自证率变化趋势对比和历史改进建议实施状态检查
+- bug-analysis 优化（**重大重构**）:
+  - 从 6 个无编号列表项 → 5 个结构化 Phase（Phase 0-5）
+  - Phase 0 新增: 踩坑预加载
+  - Phase 2 调用链追踪: 增加验证状态标注（✅/⚠️）、调用链可视化
+  - Phase 3 根因分析: 增加"先自证后求证"原则、置信度标注
+  - Phase 5 新增: 知识沉淀检查（新踩坑/新知识点/修正知识点）
+  - 约束新增: 代码验证、先自证后求证、AskUserQuestion 禁止无依据兜底
+- knowledge-recall 优化:
+  - Phase 5 增强: 新增搜索覆盖度声明（搜索范围 + 命中统计）
+  - 未匹配时引导: 建议任务完成后通过 post-task-review 沉淀
+  - 约束新增: 必须声明搜索覆盖度
+- code-review-ios 优化:
+  - Phase 0 新增: 知识预加载（踩坑记录 + 知识点）
+  - Phase 1 增强: 新增"知识库约束检查"项
+  - Phase 3 增强: 新增"踩坑模式匹配"（对照踩坑记录检查代码）
+  - Phase 5 增强: 分级输出带颜色标注（🔴/🟡/🟢），每个问题关联知识资产
+  - 约束新增: 知识库约束作为审查依据、踩坑重蹈标记为严重问题
+- module-context 优化:
+  - Phase 2 新增: 知识关联检查（扫描知识点和踩坑记录）
+  - Phase 4 新增: 保存后自动更新 index.md + evolution-log.md
+  - 文档模板新增"关联知识资产"章节
+  - 约束新增: 必须更新 index.md、关联知识必须实际扫描
+- knowledge-audit 优化:
+  - Phase 0 新增: 踩坑预加载
+  - 审计报告模板新增"综合健康度评分"表格（新鲜度 30% + 覆盖度 30% + 关键词质量 20% + 文档同步 20%）
+  - 进化日志模板新增综合健康度评分记录
+  - 约束新增: 必须计算综合健康度、AskUserQuestion 禁止无依据兜底
+- 改进统一原则:
+  - 所有 Skill 统一适用: 踩坑预加载 → 验证状态标注 → 知识沉淀检查 → 搜索覆盖度声明
+  - 跨 Skill 一致的 AskUserQuestion 约束: 禁止无依据兜底选项
+- Skill 优化完成统计: 10/12 个 Skill 已优化（oc-to-swift 和 new-swift-module 无需改动）
+
+### 2026-04-09 — spec-design (carkey-freeze-private-key-strategy)
+- 需求: Apple CarKey 冻结场景下私有钥匙连接策略优化
+- 产出: design.md（技术方案，状态: Approved）
+- 调用链分析:
+  - 正向 3 条链路: vaildBleKeyCategory 决策链 + localKeyIsAvailable 语义变化链 + 27+ 只读消费者
+  - 反向 2 条链路: CarKey 状态回调传播链 + CarKey Session 异常刷新链
+  - 验证状态: 全部 ✅ 代码验证（1 处 ⚠️ 推测路径: Apple 系统 → CarKeyPassManager 的触发机制）
+- Constitution 检查: 7/7 项全部通过
+- 冲突风险: 3 个风险点全部标注推荐方案 A + 备选方案 B
+- ⚠️ 级决策确认: D1(静默激活)→方案A, D2(UWB/NFC展示)→方案A
+- Skill 优化: spec-design Phase 5 新增"效率原则"——全部✅时直接继续不等待确认
+- 报告路径: `.ai-knowledge/specs/carkey-freeze-private-key-strategy/design.md`
+
+### 2026-04-09 — spec-tasks (carkey-freeze-private-key-strategy)
+- 需求: Apple CarKey 冻结场景下私有钥匙连接策略优化
+- 产出: tasks.md（任务清单）
+- 任务拆解:
+  - Phase 1: 核心逻辑修改（3 个 Task，XPVehicleSDK）
+  - Phase 2: 语义传播修改（1 个 Task，XPVehicleExt）
+  - Phase 3: 语义影响审查（5 个 Task，仅审查无修改）
+  - Phase 4: 编译验证 + 功能验证（3 个 Task）
+- 隐含依赖发现:
+  - `passIsAvailable()` 通过协议类型调用 → 修改有编译依赖顺序
+  - 推荐合并策略: XPVehicleSDK 1次提交 → XPVehicleExt 1次提交 → 主仓库指针更新
+- 搜索覆盖度: 14 个关键词 × 5 个目录，命中 27+ 处 vaildBleKeyCategory + 2 处 passIsAvailable + 6 处 localCarKeyIsVaild
+- 报告路径: `.ai-knowledge/specs/carkey-freeze-private-key-strategy/tasks.md`
+
+### 2026-04-09 — post-task-review (carkey-freeze-private-key-strategy)
+- 触发: CarKey 冻结策略 Spec 实施完成
+- 涉及模块: XPVehicleSDK/DigitalKey, XPVehicleSDK/CarKey, XPVehicleExt/CarKey
+- 沉淀结果:
+  - 修正知识点: 1 条 — `carkey-vehicle-support.kp.md`
+    - 新增触发关键词: vaildBleKeyCategory, localKeyIsAvailable, localCarKeyIsVaild, CarKey冻结, CarKey挂失
+    - 新增内容: 钥匙类型决策核心规则（不区分状态）、消费者分布表、完整状态映射表（含 default 兜底）、刷新回调链路
+    - 新增关联: Spec 案例、CarKeyPassManager、CarKeyPassInteractionFlow
+  - 新增知识点: 0 条
+  - 新增踩坑: 0 条
+- 影响文件: `knowledge-points/carkey-vehicle-support.kp.md`
+
+### 2026-04-09 — spec-quality-score (carkey-freeze-private-key-strategy)
+- 需求: Apple CarKey 冻结场景下私有钥匙连接策略优化
+- F1-doc: 82/100 (B+) — 自证率: 25% (1/4)
+  - 完整性 20/20 | 调用链准确性 25/25 | 知识关联 17/20 | Constitution 20/20 | 自证率 0/15
+  - 调用链准确性满分（32/32 节点全部有效+全部标注验证状态），相比首次评分有进步
+  - 知识关联扣 3 分: 遗漏 carkey-vehicle-support.kp.md 和 ble-mona-independent.kp.md
+  - 自证率 0 分: Q2/Q3/Q4 属于业务决策（合理询问），但指标反映可进一步分解为技术子问题
+- F1-code: C (65)
+  - 任务完成度 75% (9/12), 采纳程度低, 有额外修改, 偏差小
+  - 核心问题: 未发现 XPCarKeyHelp 中已有 `localCarKeyIsExist` 方法，应直接替换而非修改 `localCarKeyIsVaild` 内部实现
+  - 根因: spec-design 调用链分析只追踪修改路径上的节点，未对目标类做全量方法扫描
+- 效率提升: ~87.5%（2h vs 预估 2.5 天）
+- 改进建议:
+  - S1: spec-design 应对修改目标类执行全量方法扫描，检查是否有语义匹配的已有 API
+  - S2: spec-proposal 应将业务决策型疑问分解为技术子问题以提升自证率
+  - S3: spec-design 调用链增加"修改策略"标注（替换实现/替换API/删除方法）
+  - S4: spec-tasks 隐含依赖增加"已有替代 API"检测维度
+- 历史建议闭环: ble-v3-rt-protocol S1(delegate实现类)/S2(Notification同步)/S3(冲突风险标注) 全部已实施 ✅
+- 趋势: F1-doc 97→82（新增自证率维度拉低）, F1-code A→C（特定案例API搜索不足）, 效率持平 87.5%
+- 评分卡路径: `.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md`
+
+### 2026-04-10 — Spec Skill 优化（carkey-freeze 评分卡改进建议 S1-S4）
+- 触发: spec-quality-score 评分卡 carkey-freeze-private-key-strategy 改进建议
+- 涉及文件:
+  - `.claude/skills/spec-design/SKILL.md`
+  - `.claude/skills/spec-proposal/SKILL.md`
+  - `.claude/skills/spec-tasks/SKILL.md`
+- spec-design 优化 (S1+S3):
+  - Phase 2.5 扩展: 新增 8b"修改目标类全量方法扫描"——修改方法语义时，grep 目标类全量方法列表，检查是否有语义匹配的已有替代 API
+  - Phase 2.5 扩展: 新增 8c"修改策略标注"——对每个修改点标注策略（替换实现/替换API/删除方法/新增方法）
+  - 约束新增: 调用链修改点必须标注修改策略 + 方法语义变更必须全量方法扫描
+- spec-proposal 优化 (S2):
+  - Phase 4.2 增强: 对业务决策型疑问分解为"技术子问题（可自证）+ 纯业务决策（需确认）"
+  - 新增全量方法扫描约束: 涉及方法语义变更时必须检查已有替代 API
+  - 约束新增: 业务决策型疑问必须分解
+- spec-tasks 优化 (S4):
+  - Phase 2.5 扩展: 新增 8d"已有替代 API 检测"——方法语义变更类 Task 必须 grep 目标类全量方法列表
+  - 约束新增: 方法语义变更类 Task 必须执行替代 API 检测
+- 改进依据: carkey-freeze F1-code 评分 C(65) 的核心原因——未发现 `localCarKeyIsExist` 已有方法
+- 说明: L5 飞轮第三次完整闭环 — 评分发现 API 搜索盲点 → S1-S4 改进建议 → 3 个 Skill 同步优化 → 下次 Spec 自动执行全量方法扫描
+
+### 2026-04-10 — Spec Skill 优化 S5（API 语义迁移隐式假设审查）
+- 触发: `localCarKeyIsVaild` → `localCarKeyIsExist` 迁移实施中发现遗漏
+- 问题: API 名称替换完成后，`findLocalCarkeyCard` 中硬编码 `status = XPBLEKeyCardStatusNormal` 未同步修改。旧 API `localCarKeyIsVaild` 语义为"有效=正常"，硬编码合理；新 API `localCarKeyIsExist` 语义为"存在"（可能冻结/挂失），硬编码 Normal 导致冻结状态被错误标记
+- 根因: API 迁移只做名称替换，未审查调用点在旧语义下的隐式假设（"有效→正常"）在新语义下是否仍成立
+- 改进: spec-tasks Skill Phase 2.5 新增 8e"语义变更调用点审查"
+  - 当 Task 涉及将"API A"迁移为"语义不同的 API B"时，对每个迁移点检查隐式假设
+  - 常见隐式假设: 硬编码状态值、跳过状态检查、基于旧语义的 fallback
+- 涉及文件: `.claude/skills/spec-tasks/SKILL.md`
+- 说明: L5 飞轮第四次闭环 — 实施阶段发现"名称替换≠语义替换"盲区 → S5 改进建议 → spec-tasks Skill 增加调用点隐式假设审查
+
+## 2026-04-21
+
+### 00:00 — post-task-review（D55DataParser Bug 分析沉淀）
+- 触发: 蓝牙感应闭锁失效 Bug 分析完成（2026-03-23 故障），用户确认沉淀
+- 涉及模块: XPBLEDataProcessor, XPPollingSDK, XPMQTTLibrary
+- 根因: D55DataParser.cpp `D55CanType_App_Msg1` 路由到 `parseVehSysState()` 而非 `parseAppMsg1()`，导致 BLE 通道永远不输出 `drive.shift_state`
+- 沉淀结果:
+  - 新增踩坑: 1 文件 — `submodule/XPBLEDataProcessor/.ai-knowledge/pitfalls/dataparser-message-routing.md`（3 条踩坑: 路由错误 + switch-case 预防 + 双通道放大效应）
+  - 新增知识点: 2 条
+    - `.ai-knowledge/knowledge-points/bug-analysis-log-search-methodology.kp.md`（根级，日志检索方法论: 知识库→代码→日志关键字→grep）
+    - `submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-dual-channel-dependency.kp.md`（Polling 双通道 BLE+MQTT 车态依赖）
+  - Skill 优化: `.claude/skills/bug-analysis/SKILL.md`
+    - 新增 Phase 1.5: 日志关键字确认流程（知识库→代码→日志），禁止猜测
+    - Phase 3 增强: 禁止从"日志无字段"推断"代码不支持"；无法判定时必须咨询用户
+    - 约束新增: 日志关键字代码确认、枚举值代码定义确认、无法判定时 AskUserQuestion
+- 影响文件: 3 个新建 + 1 个 Skill 修改 + index.md 更新 + evolution-log.md 更新
+- 知识库规模: 根级 4→5 知识点, XPPollingSDK +1 知识点, XPBLEDataProcessor 新增踩坑文件
+- 说明: L5 飞轮第五次闭环 — Bug 分析过程中 7 次方法论纠偏 → 沉淀日志检索方法论 + DataParser 踩坑 + 双通道依赖知识 → bug-analysis Skill 优化
+
+### 01:00 — 架构优化（knowledge-recall 粒度控制 + bug-analysis 去领域硬编码 + keywords 职责驱动）
+- 触发: D55 Bug 分析暴露的 4 个架构问题（用户反馈驱动）
+- 涉及文件:
+  - `.claude/skills/knowledge-recall/SKILL.md` — Phase 5 重构（v0.3→v0.4）
+  - `.claude/skills/bug-analysis/SKILL.md` — Phase 2 第7步重构
+  - `.ai-knowledge/module-registry.md` — XPPollingSDK + XPBLEDataProcessor keywords 扩展
+  - `XiaoPengQiChe/.ai-knowledge/deps.yml` — trigger_keywords 同步扩展
+  - `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/D55DataParser.cpp` — Bug 修复
+- knowledge-recall 优化（v0.3 → v0.4）:
+  - **去 depth=2 限制，改为粒度控制**: depth 0 完整加载 / depth 1 锚点+kp / depth>=2 仅锚点
+  - 安全深度上限提高到 5（防环，非业务限制）
+  - 核心理念: 防上下文膨胀的手段从"砍链路深度"改为"砍单节点加载粒度"
+- bug-analysis 优化:
+  - Phase 2 第7步: 从硬编码领域检查列表 → 知识库驱动（knowledge-points 按需加载）
+  - 新增约束: 禁止在 skill 中添加领域特定检查步骤
+  - 核心理念: 通用方法论 skill 不应包含业务细节，业务细节归属模块知识库
+- keywords 优化:
+  - XPPollingSDK: 增加感应解锁/闭锁/autoLock/RSSI定位等 10 个业务语义词
+  - XPBLEDataProcessor: 增加 CAN解析/车态解析/shift_state 等 5 个词
+  - deps.yml trigger_keywords 同步
+- D55DataParser.cpp Bug 修复: line 179 `parseVehSysState()` → `parseAppMsg1()`
+- 设计原则沉淀:
+  1. trigger_keywords 应基于模块职责生成（module-context → keywords）
+  2. module-registry keywords 与 deps.yml trigger_keywords 应统一数据源
+  3. 深度控制 → 粒度控制（防膨胀靠内容精度，不靠链路截断）
+  4. 通用 skill 不含领域细节（关注点分离）
+- 说明: L5 飞轮第六次闭环
+
+### 02:00 — module-context（XPBLEDataProcessor 新增）
+- 触发: keywords 覆盖度验证发现 XPBLEDataProcessor 缺少 module-context 文档
+- 涉及模块: XPBLEDataProcessor
+- 沉淀结果:
+  - 新增模块文档: 1 篇 — `submodule/XPBLEDataProcessor/.ai-knowledge/modules/XPBLEDataProcessor.md`
+    - 纯 C++ 跨平台模块（iOS/Android/Harmony/小程序四端共用）
+    - 两大职责: BLEDataParser（解析 CAN→JSON）+ BLEDataMaker（组装指令→二进制帧）
+    - 7 个车型 Parser: D55/D22/E28/E28a/E38/F30/BleKeyV3（通用新车型）+ Mona + RescueKey
+    - 核心 API: parseBluetoothProtocol / parseBleKeyV3Protocol / createCommandParameters / createBleKeyV3*
+    - vehicleCode→Parser 映射表完整记录
+    - 关联 5 个知识点 + 1 个规范 + 1 个踩坑文件
+  - 更新索引: index.md（15→16 篇）
+- 影响文件: 1 个新建 + index.md 更新 + evolution-log.md 更新

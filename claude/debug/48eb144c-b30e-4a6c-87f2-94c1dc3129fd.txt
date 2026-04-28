@@ -1,0 +1,38 @@
+2026-04-20T13:21:28.446Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:28.447Z [DEBUG] MDM settings load completed in 1554ms
+2026-04-20T13:21:28.547Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:28.547Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:28.756Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:28.756Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:21:28.756Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:28.756Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:29.412Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-20T13:21:29.412Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-20T13:21:29.412Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-20T13:21:29.414Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-20T13:21:30.029Z [DEBUG] Error log sink initialized
+2026-04-20T13:21:30.048Z [ERROR] Failed to save config with lock: Error: Lock file is already being held
+2026-04-20T13:21:30.070Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:30.070Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:30.076Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:30.076Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:21:30.077Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:30.077Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:30.077Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'userSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:21:30.081Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'userSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:21:30.081Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'projectSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:21:30.081Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'projectSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:21:30.082Z [DEBUG] Git remote URL: null
+2026-04-20T13:21:30.082Z [DEBUG] No git remote URL found
+2026-04-20T13:21:30.105Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-04-20T13:21:30.408Z [DEBUG] [claudeai-mcp] Checking gate (cached)...
+2026-04-20T13:21:30.408Z [DEBUG] [claudeai-mcp] Gate returned: false
+2026-04-20T13:21:30.408Z [DEBUG] [claudeai-mcp] Disabled via gate
+2026-04-20T13:21:30.426Z [DEBUG] [ToolSearch:optimistic] mode=tst, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-04-20T13:21:30.448Z [DEBUG] [STARTUP] Running setup()...
+2026-04-20T13:21:30.474Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:30.474Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:30.501Z [DEBUG] Loading skills from: managed=/Library/Application Support/ClaudeCode/.claude/skills, user=/Users/xpeng/.claude/skills, project=[]
+2026-04-20T13:21:30.884Z [DEBUG] Error log sink initialized
+2026-04-20T13:21:31.158Z [DEBUG] [STARTUP] setup() completed in 710ms
+2026-04-20T13:21:31.158Z [DEBUG] [STARTUP] Loading commands and agents...

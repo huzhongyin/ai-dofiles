@@ -1,0 +1,4 @@
+# OC/Swift 互操作规范（XPCarControlCore）
+
+- `XPCarAbilityConfig` 是纯 OC 类，Swift 侧通过 Bridging-Header 访问；修改属性时需确认 Swift 侧可见性不受影响
+- XPCarControlCore 为纯 OC 模块，禁止在此模块内新增 Swift 文件

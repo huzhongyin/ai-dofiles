@@ -1,0 +1,20 @@
+# VehicleConnection 基类 fatalError 规则
+
+## 元信息
+- 触发关键词: ["VehicleConnection", "fatalError", "send方法", "连接基类", "新增连接类型"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`VehicleConnection` 基类的 `send(data:success:failed:)` 方法实现是 `fatalError`（模板方法模式）。
+
+**核心规则**: 所有新增的连接类型子类**必须重写** `send` 方法，否则运行时直接崩溃。
+
+**已有子类**: 
+- `BLEConnection` → `XiaopengBLEConnection`
+- `TCPConnection` → `XiaopengTCPConnection`
+
+**连接类型枚举**: `VehicleConnectionType` — None(0) / BLE(1) / TCP(2) / NFC(3)
+
+**代码位置**: `submodule/XPVehicleSDK/Core/Connection/VehicleConnection.swift`

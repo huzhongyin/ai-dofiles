@@ -1,0 +1,45 @@
+# 车控双通道架构
+
+## 元信息
+- 触发关键词: ["双通道", "BLE和TCP", "蓝牙和MQTT", "连接通道", "VehicleConnectionType", "connectionType", "shift_state", "driver_seat_state", "driverSeatOccupied", "instant", "digital_vehicle", "MQTT断连", "后台断连"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-21
+
+## 内容
+每辆车同时持有 BLE + TCP/MQTT 两路连接通道（`VehicleConnection` 子类）：
+
+| 通道 | 特点 | 实现类 |
+|------|------|--------|
+| BLE | 近场、低延迟、实时性高 | `XiaopengBLEConnection` |
+| TCP/MQTT | 远程、通过云端中转 | `XiaopengTCPConnection` |
+
+**状态更新来源区分**: `vehicleStateChanged(diffState:connectionType:)` 回调中通过 `connectionType` 参数区分状态来自哪个通道。
+
+**核心规则**: 
+- 两路连接状态独立管理
+- 业务层不直接操作连接，通过 `VehiclePresenter.sendControlCommand` 自动选择通道
+- `BaseVehicle` 实例同时持有两路连接
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/VehicleConnection/`（BLEConnection/ + TCPConnection/）
+
+## 各通道数据字段差异
+
+TCP/MQTT 通道的消息解析分两路：
+- **instant**: `parseContentMsg` → `msg_content["instant"]` → Codable 解析为 `VehicleState`（完整车态模型）
+  - 包含: drive(shift_state, speed, angle...), charge, door, seat(driver_seat_state), hvac, window, power, odometer, tpms 等
+- **digital_vehicle**: `parseContentDigitMsg` → `msg_content["digital_vehicle"]` → Codable 解析为 `DigitVehicleState`
+  - 包含: DigitalDrive(p_shift_st, angle, lat, lon), DigitalParking, DigitalCharge, OTA
+  - **注意**: `DigitalDrive` 没有 `shift_state`，只有 `p_shift_st`（P档时间戳）
+
+BLE 通道由 XPBLEDataProcessor 的车型 DataParser 决定字段集合（通常: door, polling, window, charge, parking）。
+
+**关键差异**: 
+- `shift_state`（GearState 枚举）仅在 MQTT instant 的 `drive` 节点中
+- `driverSeatOccupied` 在 BLE 的 `polling` 节点中
+- `driver_seat_state` 在 MQTT instant 的 `seat` 节点中
+- **这两个"主驾是否有人"字段名称不同、来源不同、更新时机不同**
+
+## App进后台时MQTT断连
+
+App进后台时 MQTT 会主动断连（`disconnect()`），直到App回前台才重连。此期间所有 MQTT instant 和 digital_vehicle 推送均不可达。BLE 连接可能仍存活（后台蓝牙权限），因此后台状态下 BLE 可能是唯一可用的数据通道。

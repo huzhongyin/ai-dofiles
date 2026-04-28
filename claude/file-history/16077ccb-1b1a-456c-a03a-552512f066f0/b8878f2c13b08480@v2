@@ -1,0 +1,189 @@
+# 模块名: XPBLEDataProcessor
+
+## 模块职责
+XPBLEDataProcessor（Pod 名: XPDataProcessor）是蓝牙数据编解码的跨平台 C++ 核心库。职责分两大块：
+1. **BLEDataParser（解析）**：将车端 BLE 通道推送的原始字节流（CAN 消息）按车型路由到对应的 DataParser，解析为结构化 JSON 车态数据（drive/door/window/charge/parking/polling/auth 等节点）
+2. **BLEDataMaker（组装）**：将 App 侧的车控指令、鉴权数据、Polling 配置等编码为蓝牙发送的二进制帧（支持 V1/V2/V3 协议、分包、加密）
+
+该模块是**跨平台共用**的，同一份 C++ 代码被 iOS（通过 OC 桥接）、Android（JNI）、HarmonyOS（NAPI）、小程序（Emscripten/WASM）四端共用。
+
+## 语言构成
+- C++ 文件数（.cpp/.hpp/.h/.c）: 71（cross-platform/ 目录）
+- OC 文件数: 0（iOS/ 目录下仅有桥接头文件和 Pods 依赖）
+- Swift 文件数: 0
+- 混编说明: 纯 C++，iOS 端通过 `extern "C"` 函数导出供 OC/Swift 调用，无 OC++ 混编
+
+## 目录结构
+```
+XPBLEDataProcessor/
+├── cross-platform/              # 跨平台 C++ 核心（iOS/Android/Harmony/小程序共用）
+│   ├── BLEDataParser/           # 解析层（车端 → App）
+│   │   ├── DataParserManager.hpp/cpp    # 对外 C 接口入口
+│   │   ├── DataParserFactory.hpp/cpp    # 车型→Parser 工厂（vehicleCode 映射）
+│   │   ├── DataParser.hpp/cpp           # 高层入口（调用 Factory）
+│   │   ├── BaseDataParser.hpp/cpp       # 基类（build*Message 系列方法）
+│   │   ├── D55DataParser.hpp/cpp        # D55/DF 平台（P5）
+│   │   ├── D22DataParser.hpp/cpp        # D22/DG 平台
+│   │   ├── E28DataParser.hpp/cpp        # E28/ED 平台
+│   │   ├── E28aDataParser.hpp/cpp       # E28a/EF 平台
+│   │   ├── E38DataParser.hpp/cpp        # E38/EA 平台（G3i）
+│   │   ├── F30DataParser.hpp/cpp        # F30/FA/HA 平台（G6/G9）
+│   │   ├── MonaDataParser.hpp/cpp       # Mona 平台（独立）
+│   │   ├── BleKeyV3DataParser.hpp/cpp   # V3 协议通用 Parser（FC/EE/FF/FE/EH/GA/FK/FJ/FH/HE/HR/DP/GB/DJ/DS）
+│   │   ├── BLERescueKeyDataParser.hpp/cpp  # 救援钥匙 Parser
+│   │   ├── BLEKeyV3Message.hpp/cpp      # V3 消息结构定义
+│   │   ├── BLEKeyV3DecodeMessage.hpp/cpp   # V3 解码
+│   │   ├── BLEKeyV3EncodeMessage.hpp/cpp   # V3 编码参数定义
+│   │   ├── BLEKeyV3MsgAlgorithm.hpp/cpp    # V3 加密算法（HMAC/AES）
+│   │   ├── ble_key_apdu_parser.hpp/cpp     # APDU 解析
+│   │   └── Ble*Header.h                    # V1/V2/V3 协议头定义（union/packed struct）
+│   ├── BLEDataMaker/            # 组装层（App → 车端）
+│   │   ├── BleSendData.hpp/cpp          # V1/V2 指令组装入口
+│   │   ├── MonaBleSendData.hpp/cpp      # Mona 指令组装
+│   │   ├── BLERescueKeyData.hpp/cpp     # 救援钥匙数据
+│   │   ├── BLEKeyTLV.hpp/cpp            # TLV 编解码
+│   │   └── BleDataMarcos.h              # 指令/消息类型枚举定义
+│   └── tools/                   # 工具库
+│       ├── cJSON.h/c + cJSON_Utils.h/c  # JSON 序列化
+│       ├── md5c.c + hmac-md5.c          # 加密
+│       ├── base64.h/c                   # Base64
+│       ├── ObjcFactory.hpp/cpp          # 反射工厂（字符串→类实例）
+│       ├── MonaBLETools.hpp/cpp         # Mona 工具
+│       ├── DataCovertTool.h/c           # 数据转换
+│       ├── tools.hpp/cpp                # 通用工具
+│       ├── log/log.h/c                  # 日志
+│       └── string/StringUtils.hpp/cpp   # 字符串工具
+├── iOS/                         # iOS 平台桥接
+│   └── XPDataProcessor/         # OC 桥接层（头文件 + Proxy）
+├── Android/                     # Android JNI 桥接
+├── Harmony/                     # HarmonyOS NAPI 桥接
+├── xiaochengxu/                 # 小程序 Emscripten/WASM 桥接
+└── iOS-cpp-demo/                # iOS C++ 独立 Demo
+```
+
+## 核心 API
+
+### 解析层（BLEDataParser）
+
+| 函数/类 | 语言 | 用途 | 说明 |
+|---------|------|------|------|
+| `parseBluetoothProtocol(vehicleTypeCode, data, dataSize)` | C | V1/V2 蓝牙数据解析入口 | extern "C"，返回 JSON 字符串 |
+| `parseBleKeyV3Protocol(vehicleTypeCode, data, dataSize, sessionKey, ..., isEncrypted)` | C | V3 加密蓝牙数据解析入口 | 需传入 sessionKey + authKey |
+| `releaseBluetoothBuffer(buf)` | C | 释放解析结果内存 | 必须配对调用 |
+| `DataParserFactory::createDataParser(vehicleCode)` | C++ | 车型→Parser 工厂 | vehicleCode 映射表在 DataParserFactory.cpp |
+| `BaseDataParser::parse(data, dataSize)` | C++ | 基类解析方法（虚函数） | 子类 override |
+| `BaseDataParser::buildDriveMessage(driveMessage)` | C++ | 构建 drive 节点 JSON | 输出 shift_state 等字段 |
+| `BaseDataParser::buildDoorMessage(doorMessage)` | C++ | 构建 door 节点 JSON | 输出 door_lock 等字段 |
+
+### 组装层（BLEDataMaker）
+
+| 函数 | 语言 | 用途 | 说明 |
+|------|------|------|------|
+| `createCommandParameters(cmd, keyString, controlId, pageSize)` | C | V1/V2 指令组装 | 返回 BleByteMatrix（分包数组） |
+| `createTboxMessageWith(cmd, keyString, controlId, packageSize)` | C | TBox 消息组装 | 含 tboxData 嵌套结构 |
+| `createLoginUidParameters(uid, controlId, packageSize)` | C | 登录 UID 组装 | |
+| `createAuthKey(counter1, counter2, macAddress, dataLen)` | C | 鉴权密钥生成 | HMAC-MD5 |
+| `createAuthFrameData(data, dataLen, isDoublesided)` | C | 鉴权帧组装 | |
+| `createBleKeyV3Auth0RequestWithInput(auth0Params, ...)` | C | V3 Auth0 请求编码 | |
+| `createBleKeyV3Auth1RequestWithInput(auth1Params, ...)` | C | V3 Auth1 请求编码 | |
+| `createBleKeyV3RkeRequestWithInput(rkeParams, ...)` | C | V3 RKE 指令编码 | 车控/查询/通知 |
+| `freeBleByteMatrix(matrix)` | C | 释放组装结果内存 | 必须配对调用 |
+
+## 参数说明
+
+### 车型→Parser 映射表
+| vehicleCode | Parser 类 | 代表车型 |
+|-------------|----------|---------|
+| FA, HA | F30DataParser | G6, G9 |
+| EA | E38DataParser | G3i |
+| DF | D55DataParser | P5 |
+| DG | D22DataParser | |
+| EF | E28aDataParser | |
+| ED | E28DataParser | |
+| FC, EE, FF, FE, EH, GA, FK, FJ, FH, HE, HR, DP, GB, DJ, DS | BleKeyV3DataParser | 新车型统一 V3 |
+
+### 输出 JSON 节点说明
+- `drive` — 档位（shift_state）
+- `door` — 车门锁状态（door_lock_st, trunk_st 等）
+- `window` — 车窗状态
+- `charge` — 充电状态
+- `parking` — 泊车事件/状态
+- `polling` — Polling 相关（tBox4GState 等）
+- `auth0Response` / `authResult` — 鉴权响应
+- `rkeControl` — RKE 车控响应
+- `canEvent` — CAN 事件通知
+
+### 关键枚举
+- `BLEBoxCommand` — 指令类型枚举（解锁/闭锁/后备箱/充电口等），定义在 `BleDataMarcos.h`
+- `BLEKeyMessageType` — 消息类型（RKE/Auth/Parking/Query 等）
+- `BLEKeyV3RKERequestType` — V3 RKE 请求子类型
+- `BLEKeyV3CarStateRKEType` — V3 车态查询类型
+
+## 依赖关系
+- **上游依赖**:
+  - `openssl` — V3 协议加密（AES/HMAC/SHA）
+  - 无其他外部依赖（纯 C++ + cJSON 内嵌）
+- **下游被依赖**:
+  - `XPVehicleSDK` — BLE 数据收发时调用本模块解析/组装
+  - `XPPollingSDK`（间接）— 通过 XPVehicleSDK 获取 BLE 解析后的车态数据
+
+## OC/Swift 互操作
+- 纯 C++ 模块，对外接口通过 `extern "C"` 函数导出
+- iOS 侧通过 `DataParserManager.hpp` 和 `BleSendData.hpp` 中的 C 函数调用
+- 头文件通过 podspec 的 `public_header_files` 暴露给 XPVehicleSDK
+- ⚠️ 跨平台共用代码，**禁止引入任何 iOS 平台 API**（UIKit/Foundation 等）
+
+## 常见用法
+
+### 解析 BLE 数据
+```c
+// V1/V2 协议
+const char* jsonResult = parseBluetoothProtocol("DF", rawData, dataSize);
+// jsonResult 示例: {"type":"vehicleState","vehicleState":{"drive":{"shift_state":4}}}
+// 使用完后释放
+releaseBluetoothBuffer(jsonResult);
+
+// V3 协议（需传入会话密钥）
+const char* jsonResult = parseBleKeyV3Protocol("FC", rawData, dataSize,
+                                                sessionKey, sessionKeySize,
+                                                authKey, authKeySize, 1);
+releaseBluetoothBuffer(jsonResult);
+```
+
+### 组装指令
+```c
+// 创建解锁指令
+struct BleByteMatrix *matrix = createCommandParameters(BLEBoxCommandUnlock, keyString, controlId, 28);
+// matrix->data[i] 是每个蓝牙分包
+// matrix->sizes[i] 是每个分包大小
+// 发送完毕后释放
+freeBleByteMatrix(matrix);
+```
+
+## 已知限制/陷阱
+- **⚠️ switch-case 路由是手动对应关系**：各车型 DataParser 的 `specificityMessage()` 中 CAN type → parse 方法的映射无编译期保障，已发生过 D55 路由错误导致 shift_state 缺失的严重 Bug（详见关联知识点）
+- **⚠️ packed struct 字段顺序必须与车端协议一致**：字段偏移错位会导致整条消息解析错误
+- **跨平台共用**：iOS/Android/Harmony/小程序四端共用同一份 C++ 代码，修改需评估全平台影响
+- **内存管理**：parse 返回的 JSON 字符串和组装返回的 BleByteMatrix 都需要调用对应 free 函数释放
+- **新车型默认走 BleKeyV3DataParser**：DataParserFactory 中未匹配的 vehicleCode 会 fallback 到 V3 Parser
+- **V3 加密需要 sessionKey + hmacKey**：缺少密钥会导致解析失败，鉴权流程必须先完成
+
+## 关联知识资产
+- 知识点:
+  - `submodule/XPBLEDataProcessor/.ai-knowledge/knowledge-points/dataparser-specificity-routing.kp.md` — switch-case 路由验证规则（含 D55 Bug 案例）
+  - `submodule/XPBLEDataProcessor/.ai-knowledge/knowledge-points/dataparser-dual-channel-amplification.kp.md` — 双通道放大效应
+  - `submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/vehicle-dual-channel.kp.md` — BLE/MQTT 双通道车态分布
+  - `submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-data-vs-tboxdata.kp.md` — BLE data vs tboxData 区别
+  - `submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-vehicle-parser-isolation.kp.md` — 车型 Parser 隔离原则
+- 功能方案书: 无（底层库，能力以 shared-node 形式被上层 feature-spec 引用）
+- 共享节点:
+  - `dataparser-drive-output.node.md` — drive 节点解析链路（待创建，被 XPPollingSDK/auto-lock 引用）
+- 规范约束:
+  - `submodule/XPVehicleSDK/.claude/rules/bluetooth-security.md` — BLE 数据必须通过 XPBLEDataProcessor 处理
+
+## 功能列表
+| feature_id | 功能名称 | trigger_keywords | 状态 |
+|-----------|---------|-----------------|------|
+| — | BLE 车态解析 | [蓝牙解析, CAN解析, 车态提取, BLE解析] | 底层能力，以 shared-node 供引用 |
+| — | BLE 指令组装 | [指令组装, BLE组装, 蓝牙编码] | 底层能力，以 shared-node 供引用 |
+| — | BLE 鉴权编解码 | [鉴权编码, Auth0, Auth1, V3鉴权] | 底层能力，以 shared-node 供引用 |

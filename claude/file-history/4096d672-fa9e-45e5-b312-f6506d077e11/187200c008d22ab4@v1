@@ -1,0 +1,110 @@
+//
+//  Use this file to import your target's public headers that you would like to expose to Swift.
+//
+
+#import "XPLaunchTaskMgr.h"
+#import <XPBase_Common/Notification.h>
+#import "XPTabBarCenter.h"
+#import "XPAppGroupStore.h"
+#import "XPRouterUtil.h"
+#import <XPUtility/XPBaseToolMacro.h>
+
+// MARK: - UI
+#import <Masonry/Masonry.h>
+#import "XPViewController.h"
+#import <QMUIKit/QMUILabel.h>
+#import <XPUI_IOS/XPThemeManager.h>
+#import <XPUI_IOS/XPUIHighlightButton.h>
+#import "XPCCarImage2DHandler.h"
+#import "CommonWKWebView.h"
+
+// MARK: - CTMediator
+
+//#import "CTMediator+Login.h"
+#import <XPAppBiz/CTMediator+Login.h>
+
+// MARK: - XPBase_Router
+#import <XPBase_Router/UserInfo.h>
+
+// MARK: - XPAPIRequestManager
+
+#import "XPAPIRequestManager.h"
+#import "XPAPIRequestManager+Message.h"
+#import "XPAPIRequestManager+LiveActivity.h"
+
+// MARK: - Message
+
+#import "MessageNotifcationHandler.h"
+#import "Message.h"
+#import "XPActionMsgContent.h"
+#import "AutoUploadLogManager.h"
+#import "XPRevokeMessageViewModel.h"
+#import "OfflineMessageDispatcher+Completion.h"
+#import "XPIMSessionListMessageView.h"
+
+// MARK: - RAC
+
+#import "ReactiveObjC.h"
+
+// MARK: - Car Control
+
+#import <XPCarControlCore/XPCarControlViewModel.h>
+#import <XPCarControlCore/XPCarStateViewModel.h>
+#import <XPCarControlCore/XPBLEKeyManager.h>
+#import <XPCarControlCore/CTMediator+CarState.h>
+#import <XPCarControlCore/MyCarInfo.h>
+
+#import "XPCarAbilityConfig.h"
+#import "XPWidgetControlMessage.h"
+#import "XPWidgetManager.h"
+#import "XPWidgetStatisticHelper.h"
+#import "XPCarStateLiveActivityModel.h"
+#import "XPCarControlIntentHelper.h"
+#import "XPCarOcmConfigManager.h"
+#import "XPCarOcmSiriFunConfig.h"
+#import "XPShortcutsManager.h"
+#import "XPVehicleSDKDealTool.h"
+
+// MARK: - MQTT
+
+#import "MQTTPublisher.h"
+
+// MARK: - Others
+
+#import "XPBlockDispatcherKit.h"
+#import <XPStatistics/XPStatisticsMgr.h>
+#import "XPEvent.h"
+#import "SystemConfig.h"
+#import "XPApplicationState.h"
+#import "XPToast+SharedApplication.h"
+#import "CTMediator+TabBarCenter.h"
+#import "XPConfigsManager.h"
+#import "CommonWKWebViewController.h"
+#import "UIViewController+Display.h"
+#import "XPNavigationController.h"
+#import "XPReactNativeViewController.h"
+
+#import <BlocksKit/BlocksKit+UIKit.h>
+#import <SDWebImage/UIImageView+WebCache.h>
+#import <NetworkMonitorManager/NetworkMonitorManager.h>
+#import "XPFileTransferManager.h"
+#import "XPAlertViewControllerCommonly.h"
+
+#import <XPJSBridge/JSBridgeBlock.h>
+#import "XPUserProtocolManager.h"
+#import <XPUtility/XPUtility.h>
+#import "XPHvacRunTimeViewModel.h"
+#import "KeyValueStore.h"
+
+#import "XPCoreSessionAppLaunch.h"
+#import "XPBadgeManager.h"
+
+#import "XPVideoCompositionMgr.h"
+#import "XPUnityManager.h"
+#import "QRLoginViewController.h"
+
+#ifdef ENABLE_DOKIT
+#import <DoraemonKit/DoraemonKit.h>
+#endif
+
+#import "UINavigationController+CompletionHandler.h"

@@ -1,0 +1,400 @@
+# AI-Engineering 变更日志
+
+> 记录工程化 AI-Coding 建设过程的所有关键里程碑和产物
+
+---
+
+## 2026-04-20
+
+### 五层分层架构（Tiered Architecture）落地
+
+#### 架构设计
+- **实施** L1-L5 五层规范体系：L1 Project Root → L2 App (XiaoPengQiChe/) → L3 Target → L4 Submodule → L5 LocalPod
+- **创建** `.ai-knowledge/module-registry.md` — 模块注册表，作为所有模块元数据的单一数据源（ID、路径、层级、依赖、触发关键词）
+- **重构** `CLAUDE.md` — 新增五层规范体系说明、规范加载索引、层级加载策略描述
+
+#### 知识分层下沉
+- **清空** `.ai-knowledge/modules/` — 15 个模块文档从根级分发至各 submodule/.ai-knowledge/
+- **分发** 知识点：根级 41→13 条（模块专属 KP 移至对应 submodule）
+- **分发** 踩坑记录：根级 7→2 文件（模块专属踩坑移至对应 submodule）
+
+#### Submodule 脚手架（7 个）
+- **初始化** `submodule/XPBLEDataProcessor/.claude/` + `.ai-knowledge/` — 蓝牙数据解析
+- **初始化** `submodule/XPCarBusiCH/.claude/` + `.ai-knowledge/` — 车控业务国内版
+- **初始化** `submodule/XPCarControlCore/.claude/` + `.ai-knowledge/` — 车控业务核心
+- **初始化** `submodule/XPMQTTLibrary/.claude/` + `.ai-knowledge/` — MQTT 通信
+- **初始化** `submodule/XPPollingSDK/.claude/` + `.ai-knowledge/` — 蓝牙无感进入
+- **初始化** `submodule/XPVehicleExt/.claude/` + `.ai-knowledge/` — 车端扩展功能
+- **初始化** `submodule/XPVehicleSDK/.claude/` + `.ai-knowledge/` — 车辆 SDK
+
+#### LocalPod 脚手架（9 个）
+- **初始化** `LocalPods/XPBase_Common/.claude/` — 基础公共组件
+- **初始化** `LocalPods/XPBase_RN/.claude/` — React Native 桥接
+- **初始化** `LocalPods/XPBase_Router/.claude/` — 路由框架
+- **初始化** `LocalPods/XPBase_Theme/.claude/` — 主题系统
+- **初始化** `LocalPods/XPBase_UI/.claude/` — UI 基础组件
+- **初始化** `LocalPods/XPBase_WebView/.claude/` — WebView 组件
+- **初始化** `LocalPods/XPBusiness_Car/.claude/` — 车控业务组件
+- **初始化** `LocalPods/XPCenter_User/.claude/` — 用户中心
+- **初始化** `LocalPods/XPKits/.claude/` — 工具库
+
+#### 新增 Skills（3 个，总计 15 个）
+- **创建** `.claude/skills/spec-coding-scaffold/SKILL.md` — 五层脚手架模板初始化（按层级生成 .claude/CLAUDE.md + .ai-knowledge/ 结构）
+- **创建** `.claude/skills/deps-sync/SKILL.md` — 依赖关系同步（module-registry.md ↔ 实际代码依赖一致性检查）
+- **创建** `.claude/skills/deps-lint/SKILL.md` — 依赖关系 lint（检测未注册依赖、循环依赖、废弃依赖）
+
+#### 第二个 Spec 案例
+- **完成** CarKey Freeze Private Key Strategy — Spec 三件套完整走通
+- Spec 案例总计: 2/3（BLE V3 RT Protocol + CarKey Freeze）
+
+#### 状态
+- Skills: 12 → 15（+deps-lint, deps-sync, spec-coding-scaffold）
+- 根级知识点: 41 → 13（余下分布在 submodule 级）
+- 根级踩坑: 7 → 2 文件（余下分布在 submodule 级）
+- 根级模块文档: 15 → 0（全部下沉至 submodule/.ai-knowledge/）
+- Submodule 脚手架: 7/7 完成
+- LocalPod 脚手架: 9/11+ 完成
+- Spec 案例: 2/3 完成
+
+---
+
+## 2026-04-09
+
+### 团队培训材料体系
+
+#### 培训文档（8 个文件，1768 行）
+- **创建** `.ai-engineering/training/README.md` — 培训总览 + 导航 + 3 种学习路径（新人/资深/管理者）
+- **创建** `.ai-engineering/training/01-quick-start.md` — 30 分钟快速入门（安装→CLAUDE.md→5 Skill→实操→上下文管理）
+- **创建** `.ai-engineering/training/02-architecture-overview.md` — L1-L5 全量架构体系（分享会用，含数据佐证）
+- **创建** `.ai-engineering/training/03-daily-usage-guide.md` — 日常使用指南（12 Skill 速查表 + 3 Rules 覆盖 + 沉淀/审计流程）
+- **创建** `.ai-engineering/training/04-spec-driven-development.md` — Spec 实战教程（proposal→design→tasks 详解 + BLE V3 案例复盘）
+- **创建** `.ai-engineering/training/05-knowledge-evolution.md` — 知识沉淀与自进化（SOP 6 步 + 飞轮机制 + 审计维度）
+- **创建** `.ai-engineering/training/06-faq.md` — FAQ 手册（30 个问答，6 大类：入门/日常/知识库/Spec/维护/故障）
+- **创建** `.ai-engineering/training/slides-summary.md` — 幻灯片式摘要（6 章 × 3-4 页，团队分享会投影用）
+
+#### 覆盖维度
+- 4 个受众维度: 全量体系 + Spec 实战 + 日常指南 + 快速入门
+- 4 种格式: 培训手册 + 幻灯片 + 分章节教程 + FAQ
+- 3 种学习路径: 新人(1h) → 资深(2h) → 管理者(1h)
+
+---
+
+## 2026-04-08
+
+### L5: 自进化机制 — 首个 Spec 驱动开发完整闭环
+
+#### BLE V3 RT Protocol — 首个 Spec 驱动实施案例
+- **需求**: BLE V3 协议新增 RtAuth (msgID=0x0B) 和 RtNotification (msgID=0x0C) 消息类型，支持 RT 小程序蓝牙鉴权和车端状态通知
+- **Spec 三件套**: proposal.md → design.md → tasks.md 全流程走通
+- **实施规模**: 13 个文件修改，跨 3 层架构（C++ 核心 → OC 桥接 → Swift SDK）× 2 个 submodule（XPBLEDataProcessor + XPVehicleSDK）
+- **关键技术决策**:
+  - tag=0x7F6F 冲突（RKE vs RtAuth）→ msgId 前置路由到专用 handler
+  - type=0xD0 冲突（Polling vs RtNotification）→ 独立 handler 隔离
+  - RT 鉴权为明文传输，不使用 sessionKey/authKey 加密
+
+#### post-task-review（知识沉淀执行）
+- **新增知识点**: `ble-v3-rt-auth.kp.md` — RT 鉴权明文协议、tag/type 冲突与 msgId 路由解法
+- **修正知识点**: `ble-auth-v3-flow.kp.md` — 补充 RT 鉴权为 V3 第二种鉴权模式（单步明文 vs 两步加密）
+- **新增踩坑**: `ble-communication.md` 坑6 — V3 新增 msgId 时 tag/type 与现有消息冲突
+- **更新模块文档**: `XPBLEDataProcessor.md` — 补充 generateRtAuthRequestData API + RtAuth/RtNotification 数据结构
+- 知识库规模: 39→40 知识点, 25→26 踩坑记录
+
+#### spec-quality-score（首次 F1 基线建立）
+- **F1-doc**: 97/100 (A) — 完整性 25 | 调用链 24 | 知识关联 23 | Constitution 25
+- **F1-code**: A (95) — 任务完成度 100% (15/15), 高采纳, 无额外修改, 偏差小
+- **效率提升**: ~87.5%（2h vs 预估 2 天）
+- **偏差分析**: design 描述"复用 handleXPBleKeyV3Content"但实施选择了更安全的独立 handler（正向偏差）
+- **改进建议 3 条**: S1(grep delegate 实现类) / S2(检测 NotificationCenter 模式) / S3(标注推荐/备选方案)
+- 评分卡: `.ai-knowledge/quality-scores/score-ble-v3-rt-protocol-2026-04-08.md`
+
+#### Spec Skills 优化（L5 飞轮首次完整闭环）
+- **spec-tasks SKILL.md** — 新增 Phase 2.5 隐含依赖检测
+  - 6a: Protocol/Delegate 实现类自动检测（grep `: <ProtocolName>`）
+  - 6b: NotificationCenter.post 同步检测（识别 delegate→Notification 转发模式）
+- **spec-design SKILL.md** — 新增 Phase 2.5 冲突风险标注
+  - 对 tag/type/枚举值冲突节点标注推荐方案 A + 备选方案 B
+- **闭环路径**: 实施发现问题 → 评分卡量化 → 改进建议 → 优化 Skill → 下次 Spec 自动规避
+
+#### L5 里程碑状态
+- 首个 Spec 驱动开发案例: ✅ 完成（BLE V3 RT Protocol）
+- 首次 F1 基线: ✅ 建立（F1-doc 97/A, F1-code A/95）
+- 知识飞轮首次完整闭环: ✅ 实施→评分→改进→优化
+- 第二次全量审计健康度: **A (96/100)**（B+ 82 → A- 93+ → A 96）
+
+---
+
+## 2026-04-08
+
+### L5: 自进化机制 — 基础设施搭建
+
+#### 自进化 Skills（3 个）
+- **创建** `.claude/skills/post-task-review/SKILL.md` — 自动知识沉淀 Skill
+  - 5 阶段流程：修改回顾→差异检测（新发现/纠错/补充 3 维度）→沉淀决策→执行沉淀→记录日志
+  - 核心能力：代码路径 grep 验证、知识差异自动检测、AskUserQuestion 确认后沉淀
+  - 触发方式：用户说"沉淀/review/总结"，或 spec-tasks 最后 Phase 提示
+- **创建** `.claude/skills/knowledge-audit/SKILL.md` — 知识健康度审计 Skill
+  - 8 阶段流程：加载索引→新鲜度检测→覆盖度检测→关键词质量→文档同步→审计报告→修复→日志
+  - 4 大审计维度：新鲜度（>90天+路径失效=过期）、覆盖度（git log 热区 vs 知识盲区）、召回频率（冷知识识别）、文档同步（API 抽样验证）
+  - 输出：`.ai-knowledge/audit-reports/audit-YYYY-MM-DD.md` 审计报告
+- **创建** `.claude/skills/spec-quality-score/SKILL.md` — Spec 质量评测 Skill
+  - 7 阶段流程：加载 Spec→F1-doc 评分→F1-code 评分→效率评测→评分卡→趋势分析→日志
+  - F1-doc 4 维度（各 25 分）：完整性、调用链准确性、知识关联、Constitution 合规
+  - F1-code 定性评估：任务完成度 + 代码采纳度 + 偏差程度 → A/B/C/D 等级
+  - 输出：`.ai-knowledge/quality-scores/score-[需求名]-YYYY-MM-DD.md` 评分卡
+
+#### 进化日志基础设施
+- **创建** `.ai-knowledge/evolution-log.md` — 进化动作日志
+  - 记录 4 类事件：knowledge-recall / post-task-review / knowledge-audit / spec-quality-score
+  - 每条记录包含：触发方式、输入上下文、产出结果、影响文件
+- **创建** `.ai-knowledge/audit-reports/` — 审计报告存储目录
+- **创建** `.ai-knowledge/quality-scores/` — Spec 评分卡存储目录
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — 新增 L5 自进化体系段落（3 Skills + 进化日志 + 评测目录）
+
+#### L5 状态
+- 自进化 Skills: 3/3 ✅（post-task-review + knowledge-audit + spec-quality-score）
+- 进化日志: evolution-log.md ✅
+- 评测目录: audit-reports/ + quality-scores/ ✅
+- 知识飞轮闭环: 沉淀(post-task-review) → 审计(knowledge-audit) → 评测(spec-quality-score) → 改进 ✅
+- 下一步: 实战验证（执行首次知识审计 + 真实需求 Spec 驱动 + 质量评分）
+
+### L5: 自进化机制 — 首次审计 + 修复 + 模块文档扩展
+
+#### 首次全量知识审计
+- **执行** knowledge-audit Skill 全量审计（39 知识点 + 8 模块文档）
+  - 健康: 30 / 关注: 3 / 过期: 6
+  - 发现 14 处路径错误（系统性根因: XPVehicleSDK 内部路径 `Core/` 简写）
+  - 发现 1 处模块文档事实错误（MQTTPublisher.md 语言构成描述）
+  - 审计前健康度: B+ (82/100)
+  - 报告: `.ai-knowledge/audit-reports/audit-2026-04-08.md`
+
+#### 修复执行
+- **修正** 14 个 `.kp.md` 文件路径（VehicleManager/VehicleConnection/MQTTHandler/MqttServiceManager 等）
+- **修正** `modules/MQTTPublisher.md` — "纯 Swift 实现"→"OC(XPMQTTLibrary) + Swift(XPVehicleSDK) 双 submodule 协作"
+- 修复后健康度: A- (93+/100)
+
+#### 模块文档扩展（覆盖度修复）
+- **创建** `.ai-knowledge/modules/XPCarControlCore.md` — 车控业务核心层（纯 OC，241 .m + 263 .h）
+  - 核心 API: CarControlManager/XPBLEKeyManager/CarPermissionManager/XPBLEChecker
+  - 12 个依赖，CTMediator 路由中间件，体验模式/真实模式双模设计
+- **创建** `.ai-knowledge/modules/XPCarBusiCH.md` — 车控业务国内版资源壳（纯 OC，极少代码）
+  - 主要承载 XPCarControl.bundle 资源（Images/Jsons/Lottie/Strings/Video）
+
+#### L5 更新状态
+- 知识飞轮首次闭环验证: 审计→发现→修复→扩展 ✅
+- 模块文档总数: 8 → 10
+- 知识库健康度: B+(82) → A-(93+)
+
+### L2: 模块文档扩展 — 基础设施层补充（10→14）
+
+#### 新增模块文档（4 个基础设施层模块）
+- **创建** `.ai-knowledge/modules/XPNetwork.md` — HTTP 网络请求统一封装层（纯 OC，远程 Pod）
+  - 双 API 风格: 链式 `XPAPI.request` 新版 + `XPAPIRequestManager` RACSignal 旧版
+  - 支持 TEE/OQS/Irdeto 三种加密、Cronet/QUIC 可选、风控拦截码体系
+  - RefreshTokenHelper 10 秒冷却、Response.messageOriginal 原始消息
+- **创建** `.ai-knowledge/modules/XPBucket.md` — 基础工具箱（纯 OC，远程 Pod）
+  - 5 个 subspecs: BaseTool/BaseUI/CoreLocation/CoreStatistics/3rd
+  - 关键发现: 多个文件是转发壳（XPBaseToolMacro.h→XPUtility、XPFileUtil.h→XPFile）
+- **创建** `.ai-knowledge/modules/XPAppBiz.md` — App 级业务公共组件（纯 OC，本地 Pod）
+  - CTMediator 路由扩展 20+ 模块、XPAPIRequestManager 15+ 业务域分类
+  - 关键发现: BizControl/BizAlert 是待清理壳子
+- **创建** `.ai-knowledge/modules/XPCarControlUtils.md` — 车控 SDK 工具集（纯 OC，远程 Pod）
+  - 宏重定向: imageNamed→sdk_imageNamed、xpString→sdkString
+  - 三层配置体系: XPCarLocalConfig(plist) → XPOTAConfig(OTA) → XPAppSettings(OCM ABTest/灰度)
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — 新增 4 条模块文档索引
+- **更新** `.ai-knowledge/evolution-log.md` — 新增模块文档扩展记录
+
+#### L2 更新状态
+- 模块文档总数: 10 → 14（目标 15，剩余 1 个名额）
+- 覆盖范围: 车控 SDK 域 8 个 + App 业务/基础设施层 6 个
+
+### L2: 模块文档收官 — 路由框架补充（14→15）
+
+#### 新增模块文档
+- **创建** `.ai-knowledge/modules/XPBase_Router.md` — App 路由导航框架（Swift 为主 + OC 旧版，本地 Pod）
+  - 双路由系统: TheRouter(Swift 新版) + XPRouter(OC 旧版，渐进废弃)
+  - RouterHelper 单例统一入口，云端开关控制新旧路由切换
+  - 11 个 ServiceProtocol（模块间服务发现）、拦截器/自定义器链
+  - XPRouterURL 100+ 条旧路由常量 + TheRouterURL 新路由
+
+#### L2 最终状态
+- 模块文档总数: **15/15 ✅ 目标达成**
+- 覆盖范围: 车控 SDK 域 8 个 + 基础设施层 4 个 + 业务公共层 2 个 + 路由框架 1 个
+
+---
+
+## 2026-04-08
+
+### L4: Spec 驱动开发 — 基础设施搭建
+
+#### 项目宪法
+- **创建** `.ai-knowledge/specs/constitution.md` — 项目最高优先级约束文档
+  - 6 大约束域：架构分层（禁止跨层调用/submodule 边界）、语言策略（存量 OC 保持/新建 Swift/底层 C++）、车控安全（指令完整性/切车安全/BLE 协议/Mona 隔离）、共版设计（配置驱动差异化）、代码质量（命名/依赖/测试）、知识库维护
+  - 所有 Spec 生成 Skill 必须首先加载此文件
+
+#### Spec 模板（3 个）
+- **创建** `.ai-knowledge/specs/template-proposal.md` — 变更提案模板（Why/What 阶段）
+  - 覆盖：需求概述、变更背景、影响范围（模块/车型/通道）、核心功能点、技术要点、疑问点（Q&A）、风险评估、关联知识、预估工作量
+- **创建** `.ai-knowledge/specs/template-design.md` — 技术方案模板（How 阶段）
+  - 覆盖：调用链路（正向+反向）、数据模型变更、API 接口变更、状态管理、车型适配、多通道适配、Constitution 检查清单、风险评估
+- **创建** `.ai-knowledge/specs/template-tasks.md` — 任务清单模板（Execute 阶段）
+  - 覆盖：前置条件（知识加载/环境准备）、分 Phase 实施步骤（文件级粒度）、验证步骤（编译/功能/回归/质量）、提交计划（submodule 顺序）、知识沉淀
+
+#### Skill 创建与升级（3 个）
+- **升级** `.claude/skills/spec-proposal/SKILL.md` — 从基础版升级为 6 阶段完整流程
+  - 新增：Constitution 加载（Phase 1）、知识召回（Phase 2，复用 knowledge-recall 逻辑）、影响分析（Phase 3）、疑问点识别（Phase 4）
+  - 约束：疑问点必须显性输出、知识召回上限控制、必须等用户确认后才进 design 阶段
+- **创建** `.claude/skills/spec-design/SKILL.md` — 技术方案生成 Skill（5 阶段）
+  - 流程：加载上下文→调用链分析（正向+反向追踪）→方案设计→Constitution 逐项检查→用户确认
+  - 约束：调用链必须追踪到具体文件和方法名、多通道场景 BLE/TCP 分别处理、车型差异必须明确
+- **创建** `.claude/skills/spec-tasks/SKILL.md` — 任务清单生成 Skill（5 阶段）
+  - 流程：加载上下文→任务拆解→约束注入（submodule/OC-Swift/车型/BLE）→生成 Tasks→输出+TodoWrite
+  - 约束：每个 Task 精确到文件路径、明确验证方式、submodule 提交顺序、知识沉淀作为最后 Phase
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — Spec 模板段落从"待创建"更新为完整索引（宪法+3 模板+3 Skill）
+
+#### L4 状态
+- 项目宪法: constitution.md ✅
+- Spec 模板: 3/3 ✅（proposal + design + tasks）
+- Spec Skills: 3/3 ✅（proposal 升级 + design 新建 + tasks 新建）
+- 三阶段渐进式设计: proposal(Why) → design(How) → tasks(Execute) ✅
+- 下一步: 使用真实需求进行 Spec 驱动开发实战验证
+
+---
+
+### L3: 领域知识体系构建 — 首批知识沉淀
+
+#### 知识点（39 条，6 个域）
+- **BLE 蓝牙通信域**（7 条）: 协议版本选择、数据双通道、packed 结构体、车型解析器隔离、消息类型、V3 鉴权流程、Mona 独立协议
+- **MQTT 远程通信域**（4 条）: 连接状态判定、消息 ID 匹配、单例切车、自动重连重发
+- **车控架构域**（6 条）: 双通道架构、切车流程、协议组合、事件系统、SDK 门面、连接基类 fatalError
+- **车型差异化域**（5 条）: 四层覆盖、编码映射、小鹏 vs Mona、SDK 白名单、属性增长管理
+- **Polling 无感进入域**（6 条）: 9 级距离模型、三代算法、Proxy 模式、指令码差异、OTA 版本化、多天线聚合
+- **工程规范 + 业务扩展域**（11 条）: OC/Swift 互操作、submodule 管理、Combine、GRDB、拼写容忍、BleKeyCard、日历同步、文件传输、iBeacon 保活、Extension 模式、VehicleState 只读
+
+#### 踩坑记录（6 个文件，25 条）
+- **创建** `.ai-knowledge/pitfalls/ble-communication.md` — 蓝牙通信踩坑（5 条）
+- **创建** `.ai-knowledge/pitfalls/mqtt-communication.md` — MQTT 通信踩坑（4 条）
+- **创建** `.ai-knowledge/pitfalls/vehicle-lifecycle.md` — 切车与生命周期踩坑（4 条）
+- **创建** `.ai-knowledge/pitfalls/polling-proximity.md` — Polling 无感进入踩坑（4 条）
+- **创建** `.ai-knowledge/pitfalls/oc-swift-interop.md` — OC/Swift 互操作踩坑（4 条）
+- **创建** `.ai-knowledge/pitfalls/car-ability-config.md` — 车型配置踩坑（4 条）
+
+#### Skill 增强
+- **更新** `.claude/skills/knowledge-recall/SKILL.md` — 新增踩坑记录匹配、模块文档关联、三阶段召回流程
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — 完整知识点索引表（39 条分域索引）+ 踩坑记录索引表（6 文件索引）
+
+#### L3 状态
+- 知识点: 39/30（超额完成 ✅）
+- 踩坑记录: 6 文件 25 条（✅）
+- Skill 增强: knowledge-recall 升级为三阶段召回（✅）
+
+#### 质量审查
+- **触发关键词**: 224 个唯一关键词，覆盖 14/15 常见场景，无过度重复
+- **内容准确性**: 抽查 5 个高优知识点，方法名/逻辑全部准确。修正 5 处代码路径
+- **召回测试**: 5 个典型任务场景测试 → 5/5 精准命中，无漏召无误召
+
+#### 知识沉淀 SOP
+- **创建** `.ai-knowledge/knowledge-sedimentation-sop.md` — 6 步标准操作（回顾→提炼→分类→打标→存储→索引）+ 质量检查清单
+
+#### L3 状态
+- 知识点: 39 条（高14/中23/低2），超额完成 30+ 目标 ✅
+- 踩坑记录: 6 文件 25 条 ✅
+- Skill 增强: knowledge-recall 三阶段召回 ✅
+- SOP 文档: 已创建 ✅
+- 召回效果: 5/5 精准 ✅
+- 下一步: 持续积累 + 扩展 L2 模块文档
+
+---
+
+## 2026-04-08
+
+### L2: AI 友好型工程改造 — 第二批模块文档
+
+#### 模块 Context 文档（2 个扩展模块）
+- **创建** `.ai-knowledge/modules/XPVehicleExt.md` — 车端扩展模块（Swift，BLEKey/Xcombo/AI日历/行程/WiFi/文件传输等横切面功能）
+- **创建** `.ai-knowledge/modules/XPPollingSDK.md` — 蓝牙无感进入/闭锁 SDK（OC/C++ 混编，Predict 算法/BLELocation/多蓝牙件）
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — 新增 2 个模块文档索引
+
+#### L2 状态
+- 累计完成 8 个核心模块文档（6 车控域 + 2 扩展域）
+- 下一步：继续扩展 App 层业务模块文档
+
+---
+
+## 2026-04-08
+
+### L2: AI 友好型工程改造 — 首批产物落地
+
+#### 模块 Context 文档（6 个核心模块）
+- **创建** `.ai-knowledge/modules/XPBLEDataProcessor.md` — 蓝牙数据解析与组装库（C++/OC，跨平台）
+- **创建** `.ai-knowledge/modules/MQTTPublisher.md` — MQTT 远程连接与消息收发层（Swift）
+- **创建** `.ai-knowledge/modules/XPCarAbilityConfig.md` — 差异化能力配置层（OC，100+ 属性，15+ 车型子类）
+- **创建** `.ai-knowledge/modules/VehicleConnection.md` — 车辆连接层协议（BLE/TCP/NFC 三路抽象）
+- **创建** `.ai-knowledge/modules/BaseVehicle.md` — 基础车辆协议（含 XiaopengVehicle/MonaVehicle 实现）
+- **创建** `.ai-knowledge/modules/VehicleManager.md` — 车辆管理器（切车/列表/生命周期管理）
+
+#### iOS 特化 Rules
+- **创建** `.claude/rules/ios-architecture.md` — 架构规则（MVVM、模块化、网络请求、数据持久化、条件编译）
+- **创建** `.claude/rules/ios-coding.md` — 编码规则（Swift/OC 命名规范、安全编码、日志、错误处理、互操作）
+- **创建** `.claude/rules/ios-vehicle-sdk.md` — 车控 SDK 规则（指令流程、切车安全、车型差异化、蓝牙/MQTT 安全）
+
+#### 业务术语映射表
+- **创建** `.ai-knowledge/term-mapping.md` — 7 大业务域、55+ 术语 → 代码位置映射（车控核心/蓝牙钥匙/泊车/充电/服务层/组件层/子模块）
+
+#### 索引更新
+- **更新** `.ai-knowledge/index.md` — 索引导航，覆盖 6 个模块文档 + 术语映射表
+
+#### L2 状态
+- 首批核心产物完成，重点覆盖 XPVehicleSDK 车控域
+- 下一步：扩展更多模块文档（App 层业务模块）、完善知识点（L3 阶段）
+
+---
+
+### 阶段: 路径规划
+- **创建** `roadmap.md` — 五层进阶路径完整规划文档 (v1.0)
+- **方法论**: 费曼学习法四阶段 × 七方法论源综合
+- **关键决策**:
+  - Agent 部署模式: 本地 CLI 协作模式
+  - 知识库形态: 渐进式（本地 → RAG）
+  - Spec 框架: OpenSpec 为主 + SpecKit 借鉴
+  - 主力工具: Claude Code，Copilot 降级为补全工具
+- **参考源**: Anthropic 官方文档、搜狗 Kuikly、淘系 Spec 平台、OpenSpec、BMAD Method
+- **下一步**: 进入费曼学习法第三阶段（三重角色验证），逐层验证理解后开始 L1 落地
+
+### 费曼学习法完成
+- **创建** `feynman-learning-report.md` — 费曼学习法完整报告（四阶段）
+- **阶段一 (意图深挖)**: 4 轮访谈，确认团队画像和关键决策
+- **阶段二 (知识传授)**: 五层路径详细方案 + 七参考源综合
+- **阶段三 (三重验证)**: 
+  - 初学者验证: 2/2 通过 (CLAUDE.md 本质、跨 Agent 根因)
+  - 专家挑战: 2/2 通过 (文档腐烂、跨工具复用)
+  - 实战搭档: 1/1 通过 (存量迭代需求处理流程)
+- **阶段四 (知识归档)**: 生成学习报告 + 复习检查清单
+- **下一步**: 开始 L1 层产物落地
+
+### L1 工具链基建 — 产物落地
+- **项目探索**: Swift 1006 / OC .m 2577 / .h 3439，OC 为主体（~85%）
+- **语言策略确认**: 功能模块层渐进迁移 Swift（共版设计），底层迁 C++，UI 层 OC 暂不迁
+- **创建** `CLAUDE.md` — 项目级配置（语言策略、架构分层、组件化架构、编码规范、命名规范、工作流、安全约束）
+- **创建 7 个标准化 Skills**:
+  - `module-context` — 模块 Context 文档生成
+  - `knowledge-recall` — 知识点自动匹配加载
+  - `oc-to-swift` — OC 代码迁移到 Swift
+  - `new-swift-module` — 创建新 Swift 模块
+  - `code-review-ios` — iOS 代码审查
+  - `bug-analysis` — Bug 分析定位
+  - `spec-proposal` — 变更提案生成
+- **创建** `.claude/settings.json` — Hooks 配置（Swift @objc 提醒）
+- **创建** `team-guide.md` — 团队 Claude Code 使用规范
+- **创建** `L1-tool-chain/checklist.md` — L1 完成度检查清单
+- **创建** `.ai-knowledge/` — 知识库初始目录结构 + index.md 索引
+- **L1 状态**: 核心产物完成，待团队试用反馈后迭代优化

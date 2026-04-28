@@ -1,0 +1,160 @@
+# 权限配置详细说明
+
+## 目录
+- [角色权限矩阵](#角色权限矩阵)
+- [模块权限配置](#模块权限配置)
+- [临时授权机制](#临时授权机制)
+- [权限检查流程](#权限检查流程)
+- [降级模式策略](#降级模式策略)
+
+---
+
+## 角色权限矩阵
+
+| 角色 | 车控模块 | 业务模块 | 基础模块 | AI辅助范围 | 系统配置 |
+|------|---------|---------|---------|-----------|---------|
+| `senior_architect` | 读写 | 读写 | 读写 | 全模块 | ✅ |
+| `vehicle_team_member` | 读写 | 只读 | 只读 | 车控模块 | ❌ |
+| `business_developer` | ❌ | 读写 | 读写 | 业务/基础 | ❌ |
+| `intern` | ❌ | ❌ | 只读 | 仅基础功能 | ❌ |
+| `external_contractor` | ❌ | 只读 | ❌ | ❌ | ❌ |
+
+---
+
+## 模块权限配置
+
+### permission_level 含义
+
+| 级别 | 说明 | 适用模块 |
+|------|------|---------|
+| `restricted` | 仅指定团队可读写，所有操作审计 | XPVehicleSDK |
+| `team_managed` | 归属团队可读写，其他团队只读 | XPBusiness_* |
+| `public` | 全员可读，有权限者可写 | XPBase_* |
+
+### YAML 配置示例
+
+```yaml
+permission_config:
+  rbac_enabled: true
+  cache_ttl_seconds: 300    # 权限缓存5分钟
+  audit_enabled: true       # 开启审计日志
+
+  roles:
+    senior_architect:
+      description: "高级架构师"
+      permissions:
+        - "vehicle_sdk:read"
+        - "vehicle_sdk:write"
+        - "business_modules:read"
+        - "business_modules:write"
+        - "base_modules:read"
+        - "base_modules:write"
+        - "ai_assist:all_modules"
+        - "admin:system_config"
+
+    vehicle_team_member:
+      description: "车控团队成员"
+      permissions:
+        - "vehicle_sdk:read"
+        - "vehicle_sdk:write"
+        - "ai_assist:vehicle_modules"
+        - "base_modules:read"
+
+    business_developer:
+      description: "业务开发人员"
+      permissions:
+        - "business_modules:read"
+        - "business_modules:write"
+        - "base_modules:read"
+        - "base_modules:write"
+        - "ai_assist:business_modules"
+
+  module_permissions:
+    XPVehicleSDK:
+      permission_level: "restricted"
+      owners: ["vehicle-team", "senior-architect"]
+      ai_restrictions:
+        - "require_human_review_for_core_apis"
+        - "audit_all_ai_generated_changes"
+
+    "XPBusiness_*":          # 通配符匹配所有业务模块
+      permission_level: "team_managed"
+      owners: ["business-team"]
+
+    "XPBase_*":              # 通配符匹配所有基础模块
+      permission_level: "public"
+      owners: ["platform-team"]
+```
+
+---
+
+## 临时授权机制
+
+用于紧急情况（跨团队协作、生产问题修复）临时提升权限：
+
+```python
+from scripts.permission_checker import PermissionChecker
+from scripts.models.permission_model import TemporaryGrant, ActionType
+from datetime import datetime, timedelta
+
+checker = PermissionChecker()
+
+# 创建临时授权（最长24小时，需架构师审批）
+grant = TemporaryGrant(
+    user_id="developer_001",
+    module="XPVehicleSDK",
+    action=ActionType.WRITE,
+    expires_at=datetime.now() + timedelta(hours=4),
+    granted_by="senior_architect_001",
+    reason="生产环境紧急修复 #BUG-6922535"
+)
+checker.add_temporary_grant(grant)
+```
+
+**约束条件**：
+- 最长有效期：24小时
+- 需要高级架构师批准
+- 所有操作记录到审计日志
+- 到期自动失效
+
+---
+
+## 权限检查流程
+
+```
+check_permission(request)
+    ↓
+1. 缓存命中？→ 直接返回缓存结果（TTL: 5分钟）
+    ↓ (未命中)
+2. 系统健康？→ 否 → 降级模式（只允许只读）
+    ↓ (健康)
+3. 临时授权存在？→ 是 → 允许，记录审计
+    ↓ (无临时授权)
+4. 检查角色权限（RBAC）
+    ↓
+5. AI_ASSIST 操作？→ 额外检查AI限制规则
+    ↓
+6. 缓存结果 + 记录审计日志
+    ↓
+返回 PermissionResponse(allowed, restrictions, warning)
+```
+
+---
+
+## 降级模式策略
+
+当权限系统不可用时（数据库/缓存故障）：
+
+| 操作类型 | 降级策略 | 说明 |
+|---------|---------|------|
+| `READ` | **允许** + 记录警告 | 保障开发不中断 |
+| `WRITE` | **拒绝** | 防止未授权修改 |
+| `AI_ASSIST` | **拒绝** | 防止未授权AI操作 |
+
+```python
+# 触发降级模式（测试用）
+checker._system_healthy = False
+
+# 实际生产中由健康检查自动触发
+# 检查数据库连接、缓存可用性等
+```

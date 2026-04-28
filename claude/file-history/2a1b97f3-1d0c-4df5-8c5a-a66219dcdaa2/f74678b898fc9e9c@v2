@@ -1,0 +1,77 @@
+# L1 工具链基建 — 完成度检查清单
+
+> 状态: ✅ 完成 | 开始日期: 2026-04-08 | 更新日期: 2026-04-20
+
+---
+
+## 产物清单
+
+### CLAUDE.md 体系
+- [x] 项目级 CLAUDE.md（五层规范体系、架构分层、语言策略、编码规范、模块地图、命名规范、工作流、重要约束）
+- [x] `.claude/rules/project-common.md` — 通用编码方针、命名规范、依赖管理、工作流
+- [ ] CLAUDE.local.md 模板（个人偏好配置示例）
+- [x] 子目录 CLAUDE.md — 7 个 submodule + 9 个 LocalPod 已通过 spec-coding-scaffold 初始化
+
+### Skills（已创建 15 个）
+
+#### 基础工具（7 个，L1 阶段）
+- [x] `module-context` — 模块 Context 文档生成
+- [x] `knowledge-recall` — 知识点自动匹配和加载（三阶段召回）
+- [x] `oc-to-swift` — OC 代码迁移到 Swift
+- [x] `new-swift-module` — 创建新 Swift 功能模块
+- [x] `code-review-ios` — iOS 代码审查
+- [x] `bug-analysis` — Bug 分析定位
+- [x] `spec-proposal` — 变更提案生成（6 阶段完整流程）
+
+#### Spec 驱动（2 个，L4 阶段）
+- [x] `spec-design` — 技术方案生成（含冲突风险标注）
+- [x] `spec-tasks` — 任务清单生成（含隐含依赖检测 Phase 2.5）
+
+#### 自进化（3 个，L5 阶段）
+- [x] `post-task-review` — 任务完成后知识沉淀
+- [x] `knowledge-audit` — 知识健康度审计（4 维度 8 阶段）
+- [x] `spec-quality-score` — Spec 质量评测（F1-doc + F1-code）
+
+#### 五层架构（3 个，tiered architecture 阶段）
+- [x] `spec-coding-scaffold` — 五层脚手架模板初始化
+- [x] `deps-sync` — 依赖关系同步检查
+- [x] `deps-lint` — 依赖关系 lint
+
+### Hooks
+- [x] PostToolUse: Swift 文件编辑后 @objc 标注提醒
+- [ ] 更多 Hooks 按实际使用反馈补充
+
+### 团队规范
+- [x] 团队 Claude Code 使用规范文档（team-guide.md）
+- [x] Copilot 使用边界说明（包含在 team-guide.md 中）
+- [x] 团队培训材料体系 — 8 文件/1768 行
+
+### 知识库结构（五层分布式）
+- [x] 根级 `.ai-knowledge/` — 通用知识（13 KP + 2 pitfall 文件 + specs + term-mapping）
+- [x] `.ai-knowledge/module-registry.md` — 模块注册表（单一数据源）
+- [x] `.ai-knowledge/index.md` — 全局索引导航
+- [x] 7 个 submodule `.ai-knowledge/` — 模块专属知识（KP + pitfalls + modules docs）
+- [x] 9 个 LocalPod `.claude/` — 层级 CLAUDE.md 初始化
+- [x] `.ai-knowledge/specs/` — 项目宪法 + 3 模板 + 2 Spec 案例
+
+### 工程化文档
+- [x] `roadmap.md` — 五层进阶路径（v3.0）
+- [x] `feynman-learning-report.md` — 费曼学习报告
+- [x] `changelog.md` — 变更日志
+- [x] L1 checklist（本文件）
+- [x] 团队培训材料（8 文件）
+
+---
+
+## 关键里程碑
+
+| 里程碑 | 状态 | 日期 |
+|---|---|---|
+| L1 基础工具链 | ✅ | 2026-04-08 |
+| L2 模块文档 15/15 | ✅ | 2026-04-08 |
+| L3 知识体系 41 KP + 25 坑 | ✅ | 2026-04-08 |
+| L4 Spec 三件套 + 宪法 | ✅ | 2026-04-08 |
+| L5 自进化闭环 + 审计 | ✅ | 2026-04-08 |
+| 培训材料体系 | ✅ | 2026-04-09 |
+| 五层分层架构落地 | ✅ | 2026-04-20 |
+| Spec 案例 2/3 | ✅ | 2026-04-20 |

@@ -1,0 +1,40 @@
+# XPWatchWidget 宪法
+
+> 本文件是 XPWatchWidget 的**稳定规范**，描述模块边界、核心约束与对外契约。
+
+## 1. 模块定位
+
+watchOS 手表小组件 Extension。核心职责：
+- 手表表盘信息小组件（WatchImageWidget）
+- 手表车控快捷操作小组件（WatchControlWidget）
+- Complication 复杂功能展示
+
+**明确不属于**：完整车控流程、Watch App 页面逻辑。
+
+## 2. 架构约束
+
+WidgetKit Timeline Provider 模式（与 iOS Widget 一致）。数据通过 App Group 共享获取。
+
+## 3. 语言策略
+
+Swift + SwiftUI。OC 通过 Bridging-Header 桥接。
+
+## 4. 依赖边界
+
+**允许**：App Group 共享数据。
+**禁止**：UIKit、不支持 watchOS 的库。
+
+## 5. 禁止事项
+
+- 禁止在 Widget 中发起网络请求
+- 禁止使用 UIKit 类
+- 禁止内存超限
+
+## 6. 与其他模块的接口契约
+
+- 数据来源：App Group UserDefaults
+- Entitlements: XPWatchWidgetExtension.entitlements
+
+---
+
+> 变更本文件请同步更新 `.ai-knowledge/deps.yml` 与 module-registry。

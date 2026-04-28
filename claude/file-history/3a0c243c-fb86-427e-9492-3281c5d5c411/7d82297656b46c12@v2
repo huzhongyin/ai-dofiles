@@ -1,0 +1,86 @@
+# Bug 分析流程踩坑记录
+
+> 覆盖 bug-analysis skill 执行过程中发现的方法论缺陷
+
+---
+
+### 坑 1: 日志关键字禁止猜测，必须从代码确认
+- 现象: 使用 `predict result|lock|Lock|闭锁` 等业务描述词直接 grep 日志
+- 原因: Phase 1.5 流程被跳过，未从代码中 `DLogTagInfo`/`NSLog` 等实际日志语句提取 tag 和格式字符串
+- 解决: 严格执行三步流程：
+  1. 读取模块知识库了解日志 tag（如 `kMultiBleOptTag`、`kBLEKeyPollingTag`）
+  2. 从源码确认 `DLogTagInfo(tag, format, ...)` 中的实际字符串
+  3. 用代码确认的关键字 grep 日志
+- 教训: **故障描述 ≠ 日志关键字**。"闭锁失败"不代表日志中有"闭锁"二字
+
+### 坑 2: 双通道（BLE + MQTT）Bug 必须分别追踪两个数据源
+- 现象: 只分析了 Polling 暂停的直接原因（shift_state 异常），未追溯数据来源通道差异
+- 原因: 未区分 BLE 和 MQTT 各自携带的数据字段
+- 解决: 对涉及车态数据的 bug，必须回答：
+  1. BLE 通道传输了哪些字段？（取决于车型 DataParser，需从代码确认）
+  2. MQTT 通道传输了哪些字段？（instant 和 digital_vehicle 两路各不相同）
+  3. 目标字段来自哪个通道？该通道是否连接正常？
+- 教训: BLE 和 MQTT 传输的车态字段集合**不对称**，分析时不能假设两个通道数据等价
+- 案例: 2026-03-23 闭锁失败 — BLE 因 DataParser 路由 Bug 不输出 shift_state，MQTT 因 App 进后台主动断连
+
+### 坑 3: 不要轻易归因为"外部不可控因素"
+- 现象: 分析停在"T-Box 停止推送"，归类为"车端数据链路异常"
+- 原因: 未先检查 App 端自身原因（如 MQTT 主动断连）
+- 解决:
+  - 归因为"外部不可控"前，必须**先穷尽 App 端可能性**
+  - 检查通道连接状态日志，确认是否 App 端主动断开
+  - 只有当 App 端通道正常但数据仍异常时，才可归因为外部
+- 教训: **"外部不可控因素"是最后的归因选项，不是默认归因**
+
+### 坑 4: fallback 通道每条失败路径都要追到底
+- 现象: 仅简述"主驾有人"阻断了 4G fallback，未追踪代码实际读取的字段来源
+- 原因: 将 fallback 失败视为次要问题，未深入代码
+- 解决: 对"双重封锁"场景（主路径 + fallback 同时失败），每条路径都需要：
+  1. 确认代码判断条件中实际读取的字段路径
+  2. 确认该字段的数据来源通道
+  3. 确认该通道在故障时间段的连接状态和最后更新时间
+- 教训: fallback 通道的失败往往揭示更深层的数据来源设计问题（如字段跨通道不对齐）
+
+### 坑 5: 枚举/状态码的"不存在"与"异常值"要区分
+- 现象: MQTT diff 中 `drive` 字段只有 `p_shift_st`（P档时间戳），没有 `shift_state`
+- 原因: 混淆了 diff（增量数据）和 full（全量数据）中的字段
+- 解决: 当代码同时读取 diffVehicleDict 和 fullVehicleDict 时，必须分别确认：
+  1. diff 中是否包含目标字段（决定是否进入处理分支）
+  2. full 中目标字段的实际值（决定处理结果）
+- 教训: `StateSafeEnum(diff[@"drive"][@"shift_state"])` 的结果取决于 diff 是否包含该字段，不能从 diff 日志推断 full 中的值
+
+### 坑 6: "日志中无某字段" ≠ "协议/代码不支持该字段"
+- 现象: 日志中 BLE cppParser 输出没有 `drive.shift_state`，便断定"BLE 协议不携带 shift_state"
+- 原因: 未检查 BLE 数据解析库（XPBLEDataProcessor）的源码
+- 正确做法: 
+  1. 确认车型对应的 DataParser（通过 `DataParserFactory` + 日志中 `vehicleTypeCode`）
+  2. 在对应 Parser 的 `specificityMessage()` switch-case 中追踪每个 CAN 消息类型的解析方法
+  3. 确认目标字段的解析方法是否被正确调用
+- 实际根因: `D55DataParser::specificityMessage()` 中 `D55CanType_App_Msg1` 的 case 错误调用了 `parseVehSysState()` 而非 `parseAppMsg1()`，导致 `buildDriveMessage()` 永远不执行
+- 教训: **"日志输出中没有" 可能是解析层 Bug，必须从解析代码确认**
+
+### 坑 7: 数据异常时必须先检查通道连接状态
+- 现象: MQTT 在停车后未推送 shift_state 更新，便断定"T-Box 停止推送"
+- 原因: 未查日志中 MQTT 连接状态变化
+- 正确做法:
+  1. 搜索 `MQTT连接状态变化|disconnect|didStateChangeTo` 确认通道是否断连
+  2. 确认断连原因（主动断开/网络异常/心跳超时）
+  3. 确认断连时间点与数据缺失时间点的关系
+- 实际根因: App 在 21:01:23 主动断开 MQTT 连接（进入后台），直到 22:39 才重连。不是 T-Box 问题
+- 教训: **先排除通道可用性，再分析数据内容**
+
+### 坑 8: 代码实际读取的字段名 ≠ 日志中搜索的字段名
+- 现象: 搜索 BLE 日志中 `driverSeatOccupied`=1，断定主驾传感器异常
+- 原因: 未确认代码（`revealHttpLock`）实际读取的是 `seat.driver_seat_state`（MQTT 字段），而非 `polling.driverSeatOccupied`（BLE 字段）
+- 正确做法:
+  1. 先从代码确认实际读取的字段路径（如 `fullVehicleStateDict[@"seat"][@"driver_seat_state"]`）
+  2. 用代码确认的字段名搜索日志
+  3. 确认该字段的数据来源通道和最后更新时间
+- 实际根因: BLE 确实推送了 `driverSeatOccupied=0`，但代码用的是 `seat.driver_seat_state`（来自 MQTT instant），MQTT 断连导致该字段停留在旧值 1
+- 教训: **必须从代码确认实际读取的字段名，再用该字段名搜索日志**
+
+### 坑 9: 数据来源链必须完整追踪
+- 总结: 坑 6/7/8 的共同模式是**数据来源链追踪不完整**
+- 完整的数据来源链：`代码读取的字段 → 该字段在内存中的赋值来源 → 数据解析代码 → 原始数据通道 → 通道连接状态`
+- 任何一层断裂都可能是根因所在
+- 当代码逻辑本身正确但结果异常时，问题几乎必然在数据来源链上

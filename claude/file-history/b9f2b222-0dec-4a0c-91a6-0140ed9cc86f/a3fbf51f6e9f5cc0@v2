@@ -1,0 +1,398 @@
+"""
+Claude Code 基础适配器
+用于集成小鹏AI编码治理系统到Claude Code工作流中
+"""
+
+import json
+import os
+from pathlib import Path
+from typing import Dict, List, Optional, Any
+from datetime import datetime
+
+from scripts.architecture_scanner import ArchitectureScanner
+from scripts.permission_checker import PermissionChecker
+from scripts.standards_validator import StandardsValidator
+from scripts.models.project_model import ModuleInfo
+from scripts.models.permission_model import User, PermissionRequest, ActionType
+from scripts.models.standards_model import StandardsViolationReport
+
+class ClaudeCodeAdapter:
+    """Claude Code适配器 - 提供统一的AI编码治理接口"""
+
+    def __init__(self, project_root: Optional[str] = None):
+        """初始化适配器"""
+        self.project_root = Path(project_root) if project_root else Path.cwd()
+
+        # 初始化核心组件
+        self.architecture_scanner = ArchitectureScanner(str(self.project_root))
+        self.permission_checker = PermissionChecker()
+        self.standards_validator = StandardsValidator()
+
+        # 缓存当前项目状态
+        self._project_info: Optional[Dict] = None
+        self._user_context: Optional[User] = None
+
+    def initialize_project(self) -> Dict[str, Any]:
+        """初始化项目扫描和权限配置"""
+        try:
+            # 扫描项目架构
+            project_arch = self.architecture_scanner.scan_project()
+            modules = project_arch.modules
+
+            # 生成权限矩阵
+            permission_matrix = self._generate_permission_matrix(modules)
+
+            # 项目信息摘要
+            project_info = {
+                "project_path": str(self.project_root),
+                "scan_timestamp": datetime.now().isoformat(),
+                "total_modules": len(modules),
+                "modules_by_type": self._count_modules_by_type(modules),
+                "permission_matrix": permission_matrix,
+                "status": "initialized"
+            }
+
+            self._project_info = project_info
+            return project_info
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "project_path": str(self.project_root)
+            }
+
+    def check_module_access(self, user_id: str, module_name: str, action: str, user_context: Optional[Dict] = None) -> Dict[str, Any]:
+        """检查模块访问权限"""
+        try:
+            # 构建用户上下文
+            user = self._build_user_context(user_id, user_context)
+
+            # 构建权限请求
+            action_enum = self._convert_action_string(action)
+            request = PermissionRequest(
+                user=user,
+                module=module_name,
+                action=action_enum
+            )
+
+            # 执行权限检查
+            response = self.permission_checker.check_permission(request)
+
+            return {
+                "allowed": response.allowed,
+                "restrictions": response.restrictions,
+                "warning": response.warning,
+                "error": response.error,
+                "audit_required": response.audit_required,
+                "module": module_name,
+                "action": action,
+                "user_id": user_id
+            }
+
+        except Exception as e:
+            return {
+                "allowed": False,
+                "error": f"权限检查失败: {str(e)}",
+                "module": module_name,
+                "action": action,
+                "user_id": user_id
+            }
+
+    def validate_code_standards(self, file_paths: Optional[List[str]] = None) -> Dict[str, Any]:
+        """验证代码标准符合性"""
+        try:
+            if file_paths:
+                # 验证指定文件
+                violations = []
+                for file_path in file_paths:
+                    file_violations = self.standards_validator._validate_file(Path(file_path))
+                    violations.extend(file_violations)
+
+                # 构建简化报告
+                report = {
+                    "total_violations": len(violations),
+                    "violations": [self._format_violation(v) for v in violations[:10]],  # 限制返回数量
+                    "scanned_files": len(file_paths),
+                    "status": "partial_scan"
+                }
+            else:
+                # 验证整个项目
+                full_report = self.standards_validator.validate_project(str(self.project_root))
+                report = self._format_standards_report(full_report)
+
+            return report
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "total_violations": 0
+            }
+
+    def get_ai_coding_suggestions(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """获取AI编码建议和约束"""
+        try:
+            module = context.get("module")
+            action = context.get("action", "ai_assist")
+            user_id = context.get("user_id", "claude_code")
+
+            # 检查AI辅助权限
+            access_check = self.check_module_access(user_id, module, action)
+
+            if not access_check.get("allowed"):
+                return {
+                    "allowed": False,
+                    "reason": access_check.get("error", "无AI辅助权限"),
+                    "suggestions": []
+                }
+
+            # 获取模块特定的编码建议
+            suggestions = self._get_module_coding_suggestions(module)
+
+            # 添加权限约束
+            constraints = access_check.get("restrictions", [])
+
+            return {
+                "allowed": True,
+                "module": module,
+                "suggestions": suggestions,
+                "constraints": constraints,
+                "audit_required": access_check.get("audit_required", False)
+            }
+
+        except Exception as e:
+            return {
+                "allowed": False,
+                "error": str(e),
+                "suggestions": []
+            }
+
+    def get_project_health_summary(self) -> Dict[str, Any]:
+        """获取项目健康状态摘要"""
+        try:
+            if not self._project_info:
+                self.initialize_project()
+
+            # 执行快速标准检查
+            standards_report = self.validate_code_standards()
+
+            # 计算健康分数
+            health_score = self._calculate_health_score(standards_report)
+
+            return {
+                "project_path": str(self.project_root),
+                "health_score": health_score,
+                "total_modules": self._project_info.get("total_modules", 0),
+                "standards_violations": standards_report.get("total_violations", 0),
+                "high_priority_issues": self._count_high_priority_issues(standards_report),
+                "last_scan": self._project_info.get("scan_timestamp"),
+                "status": "healthy" if health_score > 80 else "needs_attention"
+            }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "health_score": 0
+            }
+
+    def _build_user_context(self, user_id: str, context: Optional[Dict] = None) -> User:
+        """构建用户上下文"""
+        if context:
+            return User(
+                id=user_id,
+                name=context.get("name", user_id),
+                roles=context.get("roles", ["business_developer"]),
+                teams=context.get("teams", ["default-team"])
+            )
+        else:
+            # 默认用户配置（Claude Code用户）
+            return User(
+                id=user_id,
+                name="Claude Code User",
+                roles=["business_developer", "senior_architect"],  # 给予较高权限用于AI辅助
+                teams=["ai-team", "platform-team"]
+            )
+
+    def _convert_action_string(self, action: str) -> ActionType:
+        """转换动作字符串为枚举"""
+        action_mapping = {
+            "read": ActionType.READ,
+            "write": ActionType.WRITE,
+            "ai_assist": ActionType.AI_ASSIST
+        }
+        return action_mapping.get(action.lower(), ActionType.AI_ASSIST)
+
+    def _generate_permission_matrix(self, modules: List[ModuleInfo]) -> Dict[str, Dict]:
+        """生成权限矩阵"""
+        matrix = {}
+
+        for module in modules:
+            matrix[module.name] = {
+                "type": module.type.value,
+                "permission_level": module.permission_level.value,
+                "owners": module.owners,
+                "read_access": "all" if module.permission_level.value == "public" else "restricted",
+                "write_access": "owners_only" if module.permission_level.value == "restricted" else "team_managed",
+                "ai_assist": "restricted" if module.name.startswith("XPVehicle") else "allowed"
+            }
+
+        return matrix
+
+    def _count_modules_by_type(self, modules: List[ModuleInfo]) -> Dict[str, int]:
+        """统计各类型模块数量"""
+        counts = {}
+        for module in modules:
+            type_name = module.type.value
+            counts[type_name] = counts.get(type_name, 0) + 1
+        return counts
+
+    def _format_violation(self, violation) -> Dict[str, Any]:
+        """格式化违规实例"""
+        return {
+            "rule_id": violation.rule_id,
+            "file": violation.file_path,
+            "line": violation.line_number,
+            "message": violation.message,
+            "severity": violation.severity.value,
+            "suggested_fix": violation.suggested_fix
+        }
+
+    def _format_standards_report(self, report: StandardsViolationReport) -> Dict[str, Any]:
+        """格式化标准报告"""
+        return {
+            "total_violations": report.total_violations,
+            "scanned_files": report.scanned_files,
+            "scan_duration_ms": report.scan_duration_ms,
+            "violations_by_severity": {k.value: v for k, v in report.violations_by_severity.items()},
+            "violations_by_type": {k.value: v for k, v in report.violations_by_type.items()},
+            "top_violations": [self._format_violation(v) for v in report.violations[:5]],
+            "recommendations": report.recommendations,
+            "status": "completed"
+        }
+
+    def _get_module_coding_suggestions(self, module: str) -> List[str]:
+        """获取模块特定的编码建议"""
+        suggestions = []
+
+        if module and module.startswith("XPVehicle"):
+            suggestions.extend([
+                "车控模块代码需要特别注意线程安全",
+                "使用XP前缀命名所有Objective-C类",
+                "重要API调用需要添加错误处理",
+                "避免在主线程执行耗时操作"
+            ])
+        elif module and module.startswith("XPBusiness_"):
+            suggestions.extend([
+                "业务模块应当遵循MVVM架构模式",
+                "网络请求需要添加超时和重试机制",
+                "用户界面更新必须在主线程执行"
+            ])
+        elif module and module.startswith("XPBase_"):
+            suggestions.extend([
+                "基础模块应当保持高度通用性",
+                "避免依赖具体业务逻辑",
+                "提供清晰的文档和示例"
+            ])
+
+        # 通用建议
+        suggestions.extend([
+            "遵循小鹏iOS编码规范",
+            "添加必要的单元测试",
+            "确保代码具有良好的可读性"
+        ])
+
+        return suggestions
+
+    def _calculate_health_score(self, standards_report: Dict) -> int:
+        """计算项目健康分数"""
+        total_violations = standards_report.get("total_violations", 0)
+        scanned_files = standards_report.get("scanned_files", 1)
+
+        if scanned_files == 0:
+            return 100
+
+        # 基础分数
+        base_score = 100
+
+        # 根据违规密度扣分
+        violation_density = total_violations / scanned_files
+
+        if violation_density < 0.5:
+            penalty = violation_density * 10  # 轻微扣分
+        elif violation_density < 2.0:
+            penalty = 5 + (violation_density - 0.5) * 20  # 中等扣分
+        else:
+            penalty = 35 + min((violation_density - 2.0) * 15, 50)  # 重度扣分，最多扣85分
+
+        return max(0, int(base_score - penalty))
+
+    def _count_high_priority_issues(self, standards_report: Dict) -> int:
+        """统计高优先级问题数量"""
+        violations_by_severity = standards_report.get("violations_by_severity", {})
+        return violations_by_severity.get("error", 0) + violations_by_severity.get("warning", 0)
+
+    # Claude Code 集成接口
+    def pre_tool_use_hook(self, tool_name: str, parameters: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """工具使用前的钩子 - 权限检查"""
+        if tool_name in ["Edit", "Write", "bash"]:
+            # 检查文件操作权限
+            file_path = parameters.get("file_path") or parameters.get("command", "")
+            module = self._extract_module_from_path(file_path)
+
+            if module:
+                user_id = context.get("user_id", "claude_code")
+                access_check = self.check_module_access(user_id, module, "write")
+
+                if not access_check.get("allowed"):
+                    return {
+                        "allowed": False,
+                        "reason": f"无权限修改模块 {module}: {access_check.get('error', '权限不足')}",
+                        "suggestion": "请联系模块负责人或申请临时授权"
+                    }
+
+        return {"allowed": True}
+
+    def post_tool_use_hook(self, tool_name: str, parameters: Dict[str, Any], result: Any, context: Dict[str, Any]) -> Dict[str, Any]:
+        """工具使用后的钩子 - 标准验证"""
+        if tool_name in ["Edit", "Write"] and result.get("success"):
+            file_path = parameters.get("file_path")
+
+            if file_path and self._is_source_file(file_path):
+                # 验证修改后的文件是否符合标准
+                validation_result = self.validate_code_standards([file_path])
+
+                if validation_result.get("total_violations", 0) > 0:
+                    return {
+                        "warning": f"文件 {file_path} 存在 {validation_result['total_violations']} 个标准违规",
+                        "violations": validation_result.get("violations", [])[:3],  # 显示前3个违规
+                        "suggestion": "建议在提交前修复这些问题"
+                    }
+
+        return {"status": "ok"}
+
+    def _extract_module_from_path(self, file_path: str) -> Optional[str]:
+        """从文件路径提取模块名"""
+        if not file_path:
+            return None
+
+        path = Path(file_path)
+        parts = path.parts
+
+        # 查找LocalPods模块
+        if "LocalPods" in parts:
+            pod_index = parts.index("LocalPods")
+            if pod_index + 1 < len(parts):
+                return parts[pod_index + 1]
+
+        # 查找主要目录模块
+        if len(parts) > 1:
+            return parts[0]  # 使用顶级目录作为模块名
+
+        return None
+
+    def _is_source_file(self, file_path: str) -> bool:
+        """判断是否是源代码文件"""
+        source_extensions = {".swift", ".h", ".m", ".mm", ".cpp", ".cc"}
+        return Path(file_path).suffix.lower() in source_extensions

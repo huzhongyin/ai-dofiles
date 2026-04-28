@@ -1,0 +1,129 @@
+//
+//  CarKeyInteractionFlow.swift
+//  Pods
+//
+//  Created by huzy2 on 2024/12/11.
+//
+
+import Foundation
+import XPVehicleSDK
+import Combine
+
+class CarKeyPassInteractionFlow: NSObject, CarKeyPassInteraction {
+    
+    var _carKeyPassFlowAccesser: CarKeyPassAccessProtocol?
+    var carKeyPassFlowAccesser: CarKeyPassAccessProtocol? {
+        get {
+            return XPVehicleSDK.shared.vehicleManager.currentVehicle()?.digitalKeyManager?.getCurrentCarKeyPlugin()
+        }
+    }
+    
+    var cancellables = Set<AnyCancellable>()
+    
+    func startCarKeyPair(autoMakerId: String!, profileTemplateId: String!, brandName: String!, delegate: CarKeyPassEventDelegate, result: @escaping XPCarKeyInteractionCallBack<UIViewController>) {
+        self.carKeyPassFlowAccesser?.setCarkeyEventDelegate(delegate: delegate)
+        self.startCarKeyPair(autoMakerId: autoMakerId, profileTemplateId: profileTemplateId, brandName: brandName).sink { completion in
+            switch(completion) {
+            case .finished:
+                Log.i("carKey pair finished")
+            case .failure(let error):
+                Log.i("carKey pair failed \(error)")
+                result(error as? CarKeyPassEventError ?? .Unknown, nil)
+            }
+        } receiveValue: { controller in
+            result(.None, controller)
+        }.store(in: &cancellables)
+    }
+    
+    func startCarKeyShare(isPromptToShareUrl: Bool, delegate: CarKeyPassEventDelegate, result: @escaping XPCarKeyInteractionCallBack<UIViewController>) {
+        self.carKeyPassFlowAccesser?.setCarkeyEventDelegate(delegate: delegate)
+        self.startCarKeyShare(isPromptToShareUrl: isPromptToShareUrl).sink { completion in
+            switch(completion) {
+            case .finished:
+                Log.i("carKey share finished")
+            case .failure(let error):
+                Log.i("carKey share failed \(error)")
+                result(error as? CarKeyPassEventError ?? .Unknown, nil)
+            }
+        } receiveValue: { controller in
+            result(.None, controller)
+        }.store(in: &cancellables)
+    }
+    
+    private func startCarKeyPair(autoMakerId: String!, profileTemplateId: String!, brandName: String!) -> AnyPublisher<UIViewController?, Error> {
+        return self.getCarKeyPasswordFlow().flatMap { password in
+            return self.pairingFlow(password: password, autoMakerId: autoMakerId, profileTemplateId: profileTemplateId, brandName: brandName)
+        }.eraseToAnyPublisher()
+    }
+    
+    private func startCarKeyShare(isPromptToShareUrl: Bool) -> AnyPublisher<UIViewController?, Error> {
+        return Future { promise in
+            self.carKeyPassFlowAccesser?.startCarKeyShare(isPromptToShareUrl: isPromptToShareUrl) { error, controller in
+                if error == .None {
+                    promise(.success(controller ?? nil))
+                } else {
+                    promise(.failure(error))
+                }
+            }
+        }.eraseToAnyPublisher()
+    }
+    
+    private func getCarKeyPasswordFlow() -> AnyPublisher<String,Error> {
+        return Future { promise in
+            SelfKeyV3Manager.getCarKeyPairPassword(vin: XPVehicleSDK.currentVehicleData()?.vin, callback: { response in
+                if (response.code == 200 && response.data != nil) {
+                    guard let password = response.data?.password else {
+                        promise(.failure(CarKeyPassEventError.NoPassword))
+                        return
+                    }
+                    promise(.success(password))
+                } else {
+                    if response.code == 2004 {
+                        promise(.failure(CarKeyPassEventError.carKeyIsExist))
+                    } else {
+                        promise(.failure(CarKeyPassEventError.NoPassword))
+                    }
+                }
+            })
+        }.eraseToAnyPublisher()
+    }
+    
+    private func pairingFlow(password: String!, autoMakerId: String!, profileTemplateId: String!, brandName: String!) -> AnyPublisher<UIViewController?, Error> {
+        return Future { promise in
+            self.carKeyPassFlowAccesser?.startCarKeyPair(password: password, autoMakerId: autoMakerId, profileTemplateId: profileTemplateId, brandName: brandName, supportedRadioTechnologies: self.supportCarKeyType().rawValue) { error, controller in
+                if error == .None {
+                    NotificationCenter.default.post(name: VehicleNotification.kCarKeyFlowDidStart, object: nil)
+                    promise(.success(controller ?? nil))
+                } else {
+                    promise(.failure(error))
+                    NotificationCenter.default.post(name: VehicleNotification.kCarKeyFlowDidEnd, object: nil)
+                }
+            }
+        }.eraseToAnyPublisher()
+    }
+    
+
+    func currentCarIsSupportCarKey() -> Bool {
+        return XPVehicleExt.currentCarIsSupportCarKey()
+    }
+    
+    func getLocalKeyId() -> String? {
+        return self.carKeyPassFlowAccesser?.getCurrentCarKeyId()
+    }
+    
+    func getLocalKeyInfo() -> Dictionary<String, Any>? {
+        return self.carKeyPassFlowAccesser?.getCurrentCarKeyInfo()
+    }
+    
+    func localKeyIsAvailable() -> Bool {
+        return self.carKeyPassFlowAccesser?.passIsAvailable() == .None
+    }
+    
+    func openCarKeyPass() {
+        CarKeyPassAccesser.openCarKeyPass()
+    }
+    
+    func supportCarKeyType() -> CarKeyPairType {
+        return CarKeyPassAccesser.supportCarKeyType()
+    }
+}

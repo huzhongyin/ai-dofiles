@@ -1,0 +1,25 @@
+# Polling OTA 数据版本化
+
+## 元信息
+- 触发关键词: ["Polling OTA", "PollingOtaManager", "V1V2V3数据", "蓝牙定位参数", "XPPollingSDK.bundle"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+蓝牙定位参数有 V1/V2/V3 三个版本，存储在 `XPPollingSDK.bundle` 中：
+
+- **V1**: 基础定位参数
+- **V2**: 增强定位参数
+- **V3**: 最新算法参数
+
+不同车型使用不同版本数据（由 `XPCarAbilityConfig.isSupportPollingV1/V2/V3` 和 `pollingLocationVersion` 决定）。
+
+**加载入口**: `PLXPBleLocationAndPollingOtaManager`
+- `loadBleLocationOtaDataV1:callback:`
+- `loadBleLocationOtaDataV2:callback:`
+- `loadBleLocationOtaDataV3:callback:`
+
+**核心规则**: 新车型接入时需确认使用哪个版本的 Polling 数据，配置错误会导致距离判断不准。
+
+**代码位置**: `submodule/XPPollingSDK/XPPollingSDK/sourceFile/BLELocationAndPollingOTA/`

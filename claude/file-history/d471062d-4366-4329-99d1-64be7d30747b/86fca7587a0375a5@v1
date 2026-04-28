@@ -1,0 +1,929 @@
+//
+//  XPBluetoothManager.m
+//  XiaoPengQiChe
+//
+//  Created by Ajzonic on 2018/11/12.
+//  Copyright © 2018年 xiaopeng.com. All rights reserved.
+//
+
+#import "XPBluetoothManager.h"
+#import "YYThreadSafeDictionary.h"
+#import "NSData+YYAdd.h"
+#import "NSArray+Log.h"
+#import <NSString+IsEmpty.h>
+#import <KVOController/KVOController.h>
+#import <libkern/OSAtomic.h>
+#import "XPBLEDefined.h"
+
+@implementation XPBluetoothConnectInfo
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _lock = dispatch_semaphore_create(1);
+        _serviceUUIDs = [NSArray array];
+        _characteristicsUUIDs = [NSArray array];
+    }
+    
+    return self;
+}
+
+- (void)setupPeripheral:(CBPeripheral*)peripheral {
+    dispatch_semaphore_wait(_lock, DISPATCH_TIME_FOREVER);
+    _peripheral = peripheral;
+    dispatch_semaphore_signal(_lock);
+}
+
+- (CBPeripheral *)getPeripheral {
+    CBPeripheral* retval = nil;
+    dispatch_semaphore_wait(_lock, DISPATCH_TIME_FOREVER);
+    retval = _peripheral;
+    dispatch_semaphore_signal(_lock);
+    return retval;
+}
+
+
+- (BOOL)discoverFilter:(NSString*)peripheralName advertisementData:(NSDictionary*)advertisementData RSSI:(NSNumber*)RSSI {
+    return YES;
+}
+
+- (BOOL)connectFilter:(NSString*)peripheralName advertisementData:(NSDictionary*)advertisementData RSSI:(NSNumber*)RSSI {
+    return YES;
+}
+
+- (NSString*)description {
+    return [NSString stringWithFormat:@"%@[%@蓝牙](peripheralName=%@,serviceUUIDs=%@,characteristicsUUIDs=%@,peripheral=%@,advertisementData=%@,instance=%p)",
+            NSStringFromClass(self.class),
+            self.positionName,
+            self.peripheralName,
+            self.serviceUUIDs,
+            self.characteristicsUUIDs,
+            self.peripheral,
+            self.advertisementData,
+            self];
+}
+
+@end
+
+
+@interface XPBluetoothManager ()
+
+@property (nonatomic,strong) NSThread* bluetoothManagerThread;
+
+@property (nonatomic,assign) XPBluetoothCentralState centralState;
+@property (nonatomic,assign) BOOL isScanning;
+
+@property (nonatomic,strong) BabyBluetooth *baby;
+//@property (nonatomic,strong) NSString *peripheralName;
+
+@property (nonatomic,strong) RACSubject<NSDictionary*>* notifySubject;
+@property (nonatomic,strong) RACSubject<NSDictionary*>* disconnectSubject;
+@property (nonatomic,strong) RACSubject<NSDictionary*>* connectSubject;
+@property (nonatomic,strong) RACSubject<NSDictionary*>* readSubject;
+@property (nonatomic,strong) RACSubject<NSDictionary*>* sendSubject;
+@property (nonatomic,strong) RACSubject<id>* discoveryPeripheralSubject;
+@property (nonatomic,strong) RACSubject<NSDictionary*>* discoveryServiceSubject;
+@property (nonatomic,strong) RACSubject<NSDictionary*>* discoveryCharacteristicSubject;
+
+@property (nonatomic,strong) YYThreadSafeDictionary* connectInfos;
+
+@property (nonatomic, strong) NSMutableArray<CBUUID *> * scanUUIDs;
+
+@end
+
+
+@implementation XPBluetoothManager
+
+
+#pragma mark - Singleton
+
++ (instancetype)manager {
+    static XPBluetoothManager *__instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        __instance = [[XPBluetoothManager alloc] init];
+    });
+    
+    return __instance;
+}
+
+#pragma mark - Initialization
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _bluetoothManagerThread = [[NSThread alloc] initWithTarget:self
+                                                          selector:@selector(bluetoothManagerThreadEntryPoint:)
+                                                            object:@"com.xiaopeng.bluetooth"];
+        [_bluetoothManagerThread start];
+        _connectInfos = [[YYThreadSafeDictionary alloc] init];
+    }
+    
+    return self;
+}
+
+- (void)initBabyBluetoothIfNeed {
+    self.baby;//初始化BabyBluetooth，以设置状态监听等
+}
+
+- (void)bluetoothManagerThreadEntryPoint:(NSString*)threadName {
+    @autoreleasepool {
+        [[NSThread currentThread] setName:threadName];
+        NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
+        [runLoop addPort:[NSMachPort port] forMode:NSDefaultRunLoopMode];
+        [runLoop run];
+    }
+}
+
+- (void)performBlock:(void (^)(void))block {
+    [self performSelector:@selector(doBlock:)
+                 onThread:self.bluetoothManagerThread
+               withObject:[block copy]
+            waitUntilDone:NO
+                    modes:@[NSRunLoopCommonModes]];
+}
+
+- (void)doBlock:(void (^)(void))block {
+    if (block) {
+        block();
+    }
+}
+
+- (void)clearCarBLEInfo
+{
+    DLogTagInfo( kBluetoothTag, @"清理车辆蓝牙缓存信息" );
+    _scanUUIDs = nil;
+    
+    [self.connectInfos removeAllObjects];
+}
+
+- (void)cancelAndClear {
+    DLogTagInfo( kBluetoothTag, @"取消所有在途连接，终止扫描，并清理所有BLE信息" );
+    if (nil != _baby)
+    {
+        [_baby cancelAllPeripheralsConnection];
+        [_baby cancelScan];
+        _baby.stop(0);
+    }
+    
+    [self clearCarBLEInfo];
+}
+
+#pragma mark -
+
+- (void)connectToPeripheral:(CBPeripheral *)peripheral connectInfo:(XPBluetoothConnectInfo *)connectInfo {
+    DLogTagInfo( kBluetoothTag, @"%@蓝牙 直接连接蓝牙设备:connectInfo=%@, peripheral:%@",  connectInfo.positionName, connectInfo, peripheral);
+    NSArray* tempServiceUUIDs = connectInfo.serviceUUIDs;
+    NSArray* tempCharacteristicsUUIDs = connectInfo.characteristicsUUIDs;
+    if (nil == tempServiceUUIDs || 0 == tempServiceUUIDs.count) {
+        tempServiceUUIDs = [NSArray array];
+    }
+    
+    if (nil == tempCharacteristicsUUIDs || 0 == tempCharacteristicsUUIDs.count) {
+        tempCharacteristicsUUIDs = [NSArray array];
+    }
+
+    DLogTagInfo( kBluetoothTag, @"%@蓝牙 [%@]缓存设备直接设定发现参数为 discoverServices=%@,discoverCharacteristics=%@", connectInfo.positionName, connectInfo.peripheralName, [tempServiceUUIDs description],[tempCharacteristicsUUIDs description]);
+    [self.baby setBabyOptionsWithScanForPeripheralsWithOptions:nil
+                                  connectPeripheralWithOptions:nil
+                                scanForPeripheralsWithServices:nil
+                                          discoverWithServices:tempServiceUUIDs
+                                   discoverWithCharacteristics:tempCharacteristicsUUIDs];
+    
+    self.baby.having(peripheral).then
+    .connectToPeripherals()
+    .discoverServices()
+    .discoverCharacteristics()
+    .discoverDescriptorsForCharacteristic()
+    .begin();
+}
+
+- (CBPeripheral*)retrievePeripheralsWithIdentifiers:(NSUUID*)uuid {
+    if (self.centralState != XPBlueToothCentralPoweredOn) {
+         DLogTagInfo( kBluetoothTag, @"蓝牙不是power on状态，不能获取缓存对象 当前状态：%@", NSStringFromXPBluetoothCentralState(self.centralState));
+
+         return nil;
+    }
+
+    __CHECK_RET(0!=uuid.UUIDString.length, nil);
+    NSArray* array = [[self.baby centralManager] retrievePeripheralsWithIdentifiers:[NSArray arrayWithObject:uuid]];
+    if (array.count == 0) {
+        DLogTagInfo(kBluetoothTag, @"<PA>未获取到系统保存的蓝牙句柄: %@", [uuid UUIDString]);
+    }
+    else {
+        DLogTagInfo(kBluetoothTag, @"<PA>已获取到系统保存的蓝牙句柄: %@ retrievePeripherals: %@", [uuid UUIDString], array);
+    }
+    __CHECK_RET(0!=array.count, nil);
+    return [array firstObject];
+}
+
+- (void)connect:(XPBluetoothConnectInfo*)connectInfo {
+    if (self.centralState != XPBlueToothCentralPoweredOn) {
+         DLogTagInfo( kBluetoothTag, @"蓝牙不是power on状态，取消连接，并初始化baby触发系统蓝牙权限弹窗 当前状态：%@", NSStringFromXPBluetoothCentralState(self.centralState));
+         [self baby];
+
+         return;
+    }
+    
+    CBPeripheral * peripheral = connectInfo.peripheral;
+    
+    @weakify(self);
+    [self performBlock:^{
+        @strongify(self);
+        DLogTagInfo( kBluetoothTag, @"尝试连接:%@", connectInfo);
+        if (![self.connectInfos objectForKey:[connectInfo peripheralName]]) {
+            DLogTagInfo( kBluetoothTag, @"由于是初次连接，故将连接信息记录到本地:%@" ,connectInfo);
+            [self.connectInfos setObject:connectInfo forKey:[connectInfo peripheralName]];
+        }
+        if (nil != peripheral) {
+            DLogTagInfo( kBluetoothTag, @"连接信息中设备信息不为空,跳过扫描,直接连接蓝牙设备:%@" ,connectInfo);
+            [self connectToPeripheral:peripheral connectInfo:connectInfo];
+        } else {
+            DLogTagInfo( kBluetoothTag, @"连接信息中设备信息为空,进入扫描:%@" ,connectInfo);
+            [self connect:connectInfo.peripheralName serviceUUIDs:connectInfo.serviceUUIDs characteristicsUUIDs:connectInfo.characteristicsUUIDs];
+        }
+    }];
+}
+
+- (NSString *)UUIDFromBleName:(NSString *)name
+{
+    NSInteger cutlen = name.length;
+    if (cutlen > 8)
+    {
+        cutlen = 8;
+    }
+    NSString * uuid = [name substringFromIndex:name.length - cutlen];
+    return uuid;
+}
+
+- (CBUUID *)CBUUIDFromBleName:(NSString *)name
+{
+    if (0 == [name length])
+    {
+        DLogTagWarn(kBluetoothTag, @"^^^车端蓝牙SSID名称为空:%@", name);
+        return nil;
+    }
+    
+    CBUUID * uuid = nil;
+    @try {
+        uuid = [CBUUID UUIDWithString:[self UUIDFromBleName:name]];
+    } @catch (NSException *exception) {
+        DLogTagWarn(kBluetoothTag, @"^^^车端蓝牙SSID名称转CBUUID出现异常 name:%@ UUIDFromBleName:%@", name, [self UUIDFromBleName:name]);
+    } @finally {
+    }
+    return uuid;
+}
+
+- (BOOL)isExistsScanUUID:(NSString *)uuidStr
+{
+    __block BOOL exists = NO;
+    [_scanUUIDs enumerateObjectsUsingBlock:^(CBUUID * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if ([[obj UUIDString] isEqualToString:uuidStr])
+        {
+            exists = YES;
+            *stop = YES;
+        }
+    }];
+    
+    return exists;
+}
+
+- (void)connect:(NSString *)peripheralName serviceUUIDs:(NSArray<CBUUID*>*)serviceUUIDs characteristicsUUIDs:(NSArray<CBUUID*>*)characteristicsUUIDs {
+    DLogTagInfo( kBluetoothTag, @"扫描连接名为%@，serviceUUIDs包含%@，characteristicsUUIDs包含%@ 的设备" ,peripheralName,[serviceUUIDs description],[characteristicsUUIDs description]);
+    NSArray* tempServiceUUIDs = serviceUUIDs;
+    NSArray* tempCharacteristicsUUIDs = characteristicsUUIDs;
+    if (nil == tempServiceUUIDs || 0 == tempServiceUUIDs.count) {
+        tempServiceUUIDs = [NSArray array];
+    }
+    
+    if (nil == tempCharacteristicsUUIDs || 0 == tempCharacteristicsUUIDs.count) {
+        tempCharacteristicsUUIDs = [NSArray array];
+    }
+
+    // 目前暂时再这里累积记录需扫描的 UUIDs，将来需要优化（改动将会很大）
+    if (_useScanUUIDs)
+    {
+        if (nil == _scanUUIDs)
+        {
+            _scanUUIDs = [NSMutableArray arrayWithCapacity:4];
+        }
+        
+        CBUUID * uuid = [self CBUUIDFromBleName:peripheralName];
+        if (uuid && ![self isExistsScanUUID:uuid.UUIDString])
+        {
+            [_scanUUIDs addObject:uuid];
+        }
+    }
+    else
+    {
+        if (nil != _scanUUIDs)
+        {
+            _scanUUIDs = nil;
+        }
+    }
+    
+    DLogTagInfo( kBluetoothTag, @"[%@]新设备设定扫描参数为 scanServiceUUIDs=%@, discoverServices=%@, discoverCharacteristics=%@", peripheralName, [_scanUUIDs description], [tempServiceUUIDs description], [tempCharacteristicsUUIDs description]);
+    [self.baby setBabyOptionsWithScanForPeripheralsWithOptions:nil
+                                  connectPeripheralWithOptions:nil
+                                scanForPeripheralsWithServices:_scanUUIDs
+                                          discoverWithServices:tempServiceUUIDs
+                                   discoverWithCharacteristics:tempCharacteristicsUUIDs];
+    self.baby.scanForPeripherals()
+    .connectToPeripherals()
+    .discoverServices()
+    .discoverCharacteristics()
+    .discoverDescriptorsForCharacteristic()
+    .begin();
+}
+
+- (void)send:(NSData*)data UUID:(NSString*)uuid peripheral:(CBPeripheral*)peripheral {
+    __CHECK(0!=data.length);
+    __CHECK(CBPeripheralStateConnected == peripheral.state);
+    @weakify(self);
+    [self performBlock:^{
+        @strongify(self);
+        DLogTagInfo( kBluetoothTag, @"%@蓝牙 尝试发送数据包（%@）给设备%@,uuid=%@",[self findConnectInfo:peripheral].positionName,[data hexString],peripheral,uuid);
+        CBCharacteristic *characteristic = [self characteristicWithUUID:uuid peripheral:peripheral];
+        if (nil == characteristic) {
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙 尝试读设备特征（%@）,uuid=%@:由于找不到对应特征，故发送失败",[self findConnectInfo:peripheral].positionName,peripheral,uuid);
+        } else {
+            if (0==(characteristic.properties&CBCharacteristicPropertyWrite)&&
+                0==(characteristic.properties&CBCharacteristicPropertyWriteWithoutResponse)) {
+                DLogTagInfo( kBluetoothTag, @"%@蓝牙 由于特征%@没有写权限%@，故发送失败",[self findConnectInfo:peripheral].positionName,[characteristic.UUID UUIDString],CBCharacteristicPropertiesToString(characteristic.properties));
+                characteristic = nil;
+            } else {
+                DLogTagInfo( kBluetoothTag, @"%@蓝牙 执行写入数据给设备%@,characteristic:%@",[self findConnectInfo:peripheral].positionName,peripheral,characteristic);
+                [peripheral writeValue:data forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+            }
+        }
+    }];
+}
+
+- (void)notifyWithUUID:(NSString*)uuid peripheral:(CBPeripheral*)peripheral {
+    @weakify(self);
+    __CHECK(CBPeripheralStateConnected == peripheral.state);
+    [self performBlock:^{
+        @strongify(self);
+        DLogTagInfo( kBluetoothTag, @"%@蓝牙 尝试订阅设备特征（%@）,uuid=%@",[self findConnectInfo:peripheral].positionName,peripheral,uuid);
+        CBCharacteristic *characteristic = [self characteristicWithUUID:uuid peripheral:peripheral];
+        if (nil == characteristic) {
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙  尝试读设备特征（%@）,uuid=%@:由于找不到对应特征，故订阅失败",[self findConnectInfo:peripheral].positionName,peripheral,uuid);
+        } else {
+            const BOOL canBeNotifiy = (characteristic.properties&CBCharacteristicPropertyNotify)|| (characteristic.properties&CBCharacteristicPropertyIndicate);
+            if (canBeNotifiy) {
+                DLogTagInfo(kBluetoothTag, @"%@蓝牙 订阅设备%@的%@属性",[self findConnectInfo:peripheral].positionName,peripheral,[characteristic.UUID UUIDString]);
+                [self notify:peripheral characteristic:characteristic];
+            } else {
+                DLogTagInfo(kBluetoothTag, @"%@蓝牙 由于特征%@没有订阅权限%@，故订阅失败",[self findConnectInfo:peripheral].positionName,[characteristic.UUID UUIDString],CBCharacteristicPropertiesToString(characteristic.properties));
+                characteristic = nil;
+            }
+        }
+    }];
+}
+
+- (void)onScanStateUpdate:(NSDictionary*)update {
+    DLogTagInfo( kBluetoothTag, @"蓝牙模块扫描状态更新，新状态为：%@" ,[self.baby centralManager].isScanning?@"正在扫描":@"不在扫描");
+    self.isScanning = [self.baby centralManager].isScanning;
+}
+
+- (void)requestValueWithUUID:(NSString*)uuid peripheral:(CBPeripheral*)peripheral {
+    @weakify(self);
+    __CHECK(CBPeripheralStateConnected == peripheral.state);
+    [self performBlock:^{
+        @strongify(self);
+        DLogTagInfo( kBluetoothTag, @"%@蓝牙 尝试读设备特征（%@）,uuid=%@",[self findConnectInfo:peripheral].positionName,peripheral,uuid);
+        CBCharacteristic *characteristic = [self characteristicWithUUID:uuid peripheral:peripheral];
+        if (nil == characteristic) {
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙 尝试读设备特征（%@）,uuid=%@:由于找不到对应特征，故读失败",[self findConnectInfo:peripheral].positionName,peripheral,uuid);
+        } else {
+            if (0==(characteristic.properties&CBCharacteristicPropertyRead)) {
+                DLogTagInfo( kBluetoothTag, @"%@蓝牙 由于特征%@没有读取权限%@，故读失败",[self findConnectInfo:peripheral].positionName,[characteristic.UUID UUIDString],CBCharacteristicPropertiesToString(characteristic.properties));
+                characteristic = nil;
+            } else {
+                [peripheral readValueForCharacteristic:characteristic];
+            }
+        }
+    }];
+}
+
+- (void)disconnect:(CBPeripheral*)peripheral {
+    DLogTagInfo( kBluetoothTag, @"%@蓝牙 断开与设备%@的蓝牙连接",[self findConnectInfo:peripheral].positionName,peripheral);
+    @weakify(self);
+    [self performBlock:^{
+        @strongify(self);
+        if (nil!=peripheral && peripheral.state == CBPeripheralStateConnected) {
+            [_baby cancelPeripheralConnection:peripheral];
+        } else {
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙 不是connected状态，不调用cancel", [self findConnectInfo:peripheral].positionName);
+        }
+    }];
+    
+}
+
+- (void)forceDisconnect:(CBPeripheral*)peripheral {
+    DLogTagInfo( kBluetoothTag, @"%@蓝牙 断开与设备%@的蓝牙连接",[self findConnectInfo:peripheral].positionName,peripheral);
+    @weakify(self);
+    [self performBlock:^{
+        @strongify(self);
+        if (nil!=peripheral) {
+            [_baby cancelPeripheralConnection:peripheral];
+        } else {
+            DLogTagInfo( kBluetoothTag, @"peripheral为空，不调用cancel");
+        }
+    }];
+    
+}
+
+- (void)cancelScan {
+    DLogTagInfo( kBluetoothTag, @"停止设备扫描");
+    [_baby cancelScan];
+}
+
+- (BOOL)peripheralIsConnected:(CBPeripheral *)peripheral {
+    if (!peripheral) {
+        return NO;
+    }
+    if (peripheral.state == CBPeripheralStateConnected) {
+        DLogTagInfo( kBluetoothTag, @"%@蓝牙已是连接状态，不需要连接:peripheral=%@",[self findConnectInfo:peripheral].positionName,peripheral);
+        return YES;
+    } else {
+        return NO;
+    }
+}
+
+#pragma mark -
+- (RACSubject *)notifySubject {
+    if (!_notifySubject) {
+        _notifySubject = [RACSubject subject];
+    }
+    return _notifySubject;
+}
+
+- (RACSubject *)disconnectSubject {
+    if (!_disconnectSubject) {
+        _disconnectSubject = [RACSubject subject];
+    }
+    
+    return _disconnectSubject;
+}
+
+- (RACSubject *)connectSubject {
+    if (!_connectSubject) {
+        _connectSubject = [RACSubject subject];
+    }
+    
+    return _connectSubject;
+}
+
+- (RACSubject *)readSubject {
+    if (!_readSubject) {
+        _readSubject = [RACSubject subject];
+    }
+    
+    return _readSubject;
+}
+
+- (RACSubject *)sendSubject {
+    if (!_sendSubject) {
+        _sendSubject = [RACSubject subject];
+    }
+    
+    return _sendSubject;
+}
+
+- (RACSubject *)discoveryPeripheralSubject {
+    if (!_discoveryPeripheralSubject) {
+        _discoveryPeripheralSubject = [RACSubject subject];
+    }
+    
+    return _discoveryPeripheralSubject;
+}
+
+- (RACSubject *)discoveryServiceSubject {
+    if (!_discoveryServiceSubject) {
+        _discoveryServiceSubject = [RACSubject subject];
+    }
+    
+    return _discoveryServiceSubject;
+}
+
+- (RACSubject *)discoveryCharacteristicSubject {
+    if (!_discoveryCharacteristicSubject) {
+        _discoveryCharacteristicSubject = [RACSubject subject];
+    }
+    
+    return _discoveryCharacteristicSubject;
+}
+
+- (BabyBluetooth *)baby {
+    if(!_baby) {
+        _baby = [BabyBluetooth shareBabyBluetooth];
+        [self.KVOController observe:[_baby centralManager]
+                            keyPath:@"isScanning"
+                            options:(NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial)
+                             action:@selector(onScanStateUpdate:)];
+        [self setBabyFilters];
+        [self setBabyDelegates];
+    }
+    
+    return _baby;
+}
+
+#pragma mark -
+- (XPBluetoothConnectInfo*)findConnectInfo:(CBPeripheral *)peripheral
+{
+    XPBluetoothConnectInfo * info = nil;
+    NSOrderedSet<XPBluetoothConnectInfo*>* set = [NSOrderedSet orderedSetWithArray:[self.connectInfos allValues]];
+    for (XPBluetoothConnectInfo* connectInfo in set) {
+        if ([connectInfo.peripheral.identifier.UUIDString isEqualToString:peripheral.identifier.UUIDString]) {
+            info = connectInfo;
+            break;
+        }
+    }
+    
+    return info;
+}
+
+- (void)setBabyDelegates {
+    @weakify(self);
+    [_baby setBlockOnCentralManagerDidUpdateState:^(CBCentralManager *central) {
+        @strongify(self)
+        XPBluetoothCentralState oldState = self.centralState;
+        switch (central.state) {
+            case CBManagerStateResetting:
+                DLogTagInfo( kBluetoothTag, @"蓝牙功能打开失败，设备重置" );
+                self.centralState = XPBlueToothCentralResetting;
+                OSMemoryBarrier();
+                break;
+            case CBManagerStateUnsupported:
+                DLogTagInfo( kBluetoothTag, @"蓝牙功能打开失败，不支持蓝牙" );
+                self.centralState = XPBlueToothCentralUnsupported;
+                OSMemoryBarrier();
+                break;
+            case CBManagerStateUnauthorized:
+                DLogTagInfo( kBluetoothTag, @"蓝牙功能打开失败，未授权" );
+                self.centralState = XPBlueToothCentralUnauthorized;
+                OSMemoryBarrier();
+                break;
+            case CBManagerStatePoweredOff:
+                DLogTagInfo( kBluetoothTag, @"蓝牙功能打开失败，蓝牙关闭" );
+                self.centralState = XPBlueToothCentralPoweredOff;
+                OSMemoryBarrier();
+                break;
+            case CBManagerStatePoweredOn:
+                DLogTagInfo( kBluetoothTag, @"蓝牙功能打开成功，设备打开成功" );
+                self.centralState = XPBlueToothCentralPoweredOn;
+                OSMemoryBarrier();
+                break;
+            default:
+                DLogTagInfo( kBluetoothTag, @"蓝牙功能打开失败，设备为未知状态" );
+                self.centralState = XPBlueToothCentralUnknown;
+                break;
+        }
+        
+        if (self.centralState != XPBlueToothCentralPoweredOn) {
+            [self.baby cancelAllPeripheralsConnection];
+        }
+        if (XPBlueToothCentralPoweredOn != self.centralState && XPBlueToothCentralPoweredOn == oldState) {
+            [self.disconnectSubject sendNext:nil];
+        }
+    }];
+    
+    //扫描外设
+    [_baby setBlockOnDiscoverToPeripherals:^(CBCentralManager *central, CBPeripheral *peripheral, NSDictionary *advertisementData, NSNumber *RSSI) {
+        @strongify(self);
+        [self performBlock:^{
+            NSString* localName = [advertisementData objectForKey:CBAdvertisementDataLocalNameKey];
+            NSOrderedSet* set = [NSOrderedSet orderedSetWithArray:[self.connectInfos allKeys]];
+            DLogTagInfo( kBluetoothTag, @"蓝牙找到一个设备，设备名：“%@”,advertisementData=%@" ,peripheral.name,advertisementData);
+            if ([set containsObject:localName]) {
+                XPBluetoothConnectInfo* connectInfo = [self.connectInfos objectForKey:localName];
+                connectInfo.peripheral = peripheral;
+                connectInfo.advertisementData = advertisementData;
+                DLogTagInfo( kBluetoothTag, @"蓝牙找到一个设备，设备名：%@,是目标设备,终止扫描,开始连接[%@蓝牙],advertisementData=%@" ,peripheral.name,connectInfo.positionName,advertisementData);
+            } else {
+                DLogTagInfo( kBluetoothTag, @"蓝牙找到一个设备，设备：%@,不是目标设备,跳过" ,peripheral);
+            }
+        }];
+    }];
+    
+    //连接外设
+    [_baby setBlockOnConnected:^(CBCentralManager *central, CBPeripheral *peripheral) {
+        @strongify(self);
+        [self performBlock:^{
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙连接设备“%@”成功", [self findConnectInfo:peripheral].positionName, peripheral);
+            NSMutableDictionary* info = [NSMutableDictionary dictionaryWithCapacity:3];
+            NSOrderedSet<XPBluetoothConnectInfo*>* set = [NSOrderedSet orderedSetWithArray:[self.connectInfos allValues]];
+            for (XPBluetoothConnectInfo* connectInfo in set) {
+                if ([connectInfo.peripheral.identifier.UUIDString isEqualToString:peripheral.identifier.UUIDString]) {
+                    [info setObject:connectInfo.peripheralName forKey:@"peripheralName"];
+                    break;
+                }
+            }
+            if (nil!=peripheral) {
+                [info setObject:peripheral forKey:@"peripheral"];
+                if (0!=peripheral.identifier.UUIDString.length) {
+                    [info setObject:peripheral.identifier.UUIDString forKey:@"peripheralUUID"];
+                }
+            }
+            [self.connectSubject sendNext:[NSDictionary dictionaryWithDictionary:info]];
+        }];
+    }];
+    
+    [_baby setBlockOnFailToConnect:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
+        @strongify(self);
+        [self performBlock:^{
+            NSOrderedSet<XPBluetoothConnectInfo*>* set = [NSOrderedSet orderedSetWithArray:[self.connectInfos allValues]];
+            for (XPBluetoothConnectInfo* connectInfo in set) {
+                if ([connectInfo.peripheral.identifier.UUIDString isEqualToString:peripheral.identifier.UUIDString]) {
+                    break;
+                }
+            }
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙连接设备“%@”失败,error=%@", [self findConnectInfo:peripheral].positionName, peripheral, error);
+            NSMutableDictionary* info = [NSMutableDictionary dictionaryWithCapacity:3];
+            if (nil!=error) {
+                [info setObject:error forKey:@"error"];
+            }
+            if (0!=peripheral.identifier.UUIDString.length) {
+                [info setObject:peripheral.identifier.UUIDString forKey:@"peripheralUUID"];
+            }
+            if (0!=peripheral.services.count) {
+                NSMutableOrderedSet* servicesUUIDs = [NSMutableOrderedSet orderedSetWithCapacity:peripheral.services.count];
+                NSMutableOrderedSet* characteristicUUIDs = [NSMutableOrderedSet orderedSetWithCapacity:10];
+                for (CBService* service in peripheral.services) {
+                    [servicesUUIDs addObject:service.UUID.UUIDString];
+                    for (CBCharacteristic* characteristic in service.characteristics) {
+                        [characteristicUUIDs addObject:characteristic.UUID.UUIDString];
+                    }
+                }
+                if (0!=servicesUUIDs.count) {
+                    [info setObject:[NSArray arrayWithArray:servicesUUIDs.array] forKey:@"servicesUUIDs"];
+                }
+                if (0!=characteristicUUIDs.count) {
+                    [info setObject:[NSArray arrayWithArray:characteristicUUIDs.array] forKey:@"characteristicUUIDs"];
+                }
+            }
+            [self.connectSubject sendNext:[NSDictionary dictionaryWithDictionary:info]];
+        }];
+    }];
+    
+    [_baby setBlockOnDisconnect:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
+        @strongify(self);
+        if (nil!=error) {
+            DLogTagError(kBluetoothTag, @"与%@蓝牙设备%@断开连接,error = %@", [self findConnectInfo:peripheral].positionName, peripheral, error);
+        } else {
+            DLogTagInfo(kBluetoothTag, @"与%@蓝牙设备%@连接断开成功", [self findConnectInfo:peripheral].positionName, peripheral);
+        }
+        [self performBlock:^{
+            NSOrderedSet<XPBluetoothConnectInfo*>* set = [NSOrderedSet orderedSetWithArray:[self.connectInfos allValues]];
+            for (XPBluetoothConnectInfo* connectInfo in set) {
+                if ([connectInfo.peripheral.identifier.UUIDString isEqualToString:peripheral.identifier.UUIDString]) {
+                    break;
+                }
+            }
+            NSMutableDictionary* info = [NSMutableDictionary dictionaryWithCapacity:3];
+            if (nil!=error) {
+                [info setObject:error forKey:@"error"];
+            }
+            if (0!=peripheral.identifier.UUIDString.length) {
+                [info setObject:peripheral.identifier.UUIDString forKey:@"peripheralUUID"];
+            }
+            [self.disconnectSubject sendNext:[NSDictionary dictionaryWithDictionary:info]];
+        }];
+    }];
+    
+    //发现服务
+    [_baby setBlockOnDiscoverServices:^(CBPeripheral *peripheral, NSError *error) {
+        @strongify(self);
+        [self performBlock:^{
+            NSArray* services = [peripheral.services.rac_sequence map:^id _Nullable(CBService * _Nullable service) {
+                return service.UUID.UUIDString;
+            }].array;
+            
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙设备%@发现服务：%@", [self findConnectInfo:peripheral].positionName, peripheral, services);
+            
+            NSDictionary* info = @{
+                                   @"peripheralUUID":peripheral.identifier.UUIDString,
+                                   @"services":services
+                                   };
+            [self.discoveryServiceSubject sendNext:info];
+        }];
+    }];
+    
+    //发现特征
+    [_baby setBlockOnDiscoverCharacteristics:^(CBPeripheral *peripheral, CBService *service, NSError *error) {
+        @strongify(self);
+        [self performBlock:^{
+            if (![service.UUID.UUIDString isEqualToString:XP_BLEKEY_SERVICE_UUID]) {
+                return;
+            }
+            NSMutableArray* characteristics = [NSMutableArray arrayWithCapacity:service.characteristics.count];
+            NSMutableOrderedSet* characteristicsUUIDs = [NSMutableOrderedSet orderedSetWithCapacity:service.characteristics.count];
+            for (CBCharacteristic *characteristic in service.characteristics) {
+                NSArray* list = @[characteristic.UUID.UUIDString,CBCharacteristicPropertiesToString(characteristic.properties)];
+                [characteristicsUUIDs addObject:characteristic.UUID.UUIDString];
+                [characteristics addObject:list];
+            }
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙设备“%@”-服务“%@”中发现特征：%@", [self findConnectInfo:peripheral].positionName,peripheral,service.UUID,characteristics);
+            NSDictionary* info = @{
+                                   @"peripheralUUID":peripheral.identifier.UUIDString,
+                                   @"serviceUUID":service.UUID.UUIDString,
+                                   @"characteristics":characteristicsUUIDs
+                                   };
+            [self.discoveryCharacteristicSubject sendNext:info];
+        }];
+    }];
+    
+    //发现描述
+    [_baby setBlockOnDiscoverDescriptorsForCharacteristic:^(CBPeripheral *peripheral, CBCharacteristic *characteristic, NSError *error) {
+        @strongify(self);
+        [self performBlock:^{
+            NSMutableArray* descriptors = [NSMutableArray arrayWithCapacity:characteristic.descriptors.count];
+            for (CBDescriptor *d in characteristic.descriptors) {
+                [descriptors addObject:d.UUID.UUIDString];
+            }
+            DLogTagInfo( kBluetoothTag, @"%@蓝牙设备“%@”-特征“%@”中发现描述：%@", [self findConnectInfo:peripheral].positionName,peripheral,[characteristic.UUID UUIDString],descriptors);
+        }];
+    }];
+    
+    [_baby setBlockOnReadValueForCharacteristic:^(CBPeripheral *peripheral, CBCharacteristic *characteristic, NSError *error) {
+        @strongify(self);
+        [self performBlock:^{
+            DLogTagInfo(kBluetoothTag,@"%@蓝牙读取回调 peripheral:%@,characteristic:%@ and new value:%@,error;%@",[self findConnectInfo:peripheral].positionName,peripheral,[characteristic.UUID UUIDString], characteristic.value,error);
+            NSMutableDictionary* info = [NSMutableDictionary dictionaryWithCapacity:3];
+            if (nil!=error) {
+                [info setObject:error forKey:@"error"];
+            }
+            if (0!=characteristic.UUID.UUIDString.length) {
+                [info setObject:characteristic.UUID.UUIDString forKey:@"characteristicUUID"];
+            }
+            if (0!=peripheral.identifier.UUIDString.length) {
+                [info setObject:peripheral.identifier.UUIDString forKey:@"peripheralUUID"];
+            }
+            
+            if (nil!=characteristic.value) {
+                NSData* data = [NSData dataWithData:characteristic.value];
+                [info setObject:data forKey:@"data"];
+            }
+            [self.readSubject sendNext:[NSDictionary dictionaryWithDictionary:info]];
+        }];
+    }];
+    
+    [_baby setBlockOnDidWriteValueForCharacteristic:^(CBPeripheral *peripheral,CBCharacteristic *characteristic, NSError *error) {
+        @strongify(self);
+        [self performBlock:^{
+            DLogTagInfo(kBluetoothTag,@"%@蓝牙写入回调 characteristic:%@ and new value:%@,error:%@",[self findConnectInfo:peripheral].positionName,[characteristic.UUID UUIDString], characteristic.value,error);
+            NSMutableDictionary* info = [NSMutableDictionary dictionaryWithCapacity:3];
+            if (nil!=error) {
+                [info setObject:error forKey:@"error"];
+            }
+            if (0!=peripheral.identifier.UUIDString.length) {
+                [info setObject:peripheral.identifier.UUIDString forKey:@"peripheralUUID"];
+            }
+            if (0!=characteristic.UUID.UUIDString.length) {
+                [info setObject:characteristic.UUID.UUIDString forKey:@"characteristicUUID"];
+            }
+            
+            if (nil!=characteristic.value) {
+                NSData* data = [NSData dataWithData:characteristic.value];
+                [info setObject:data forKey:@"data"];
+            }
+            [self.sendSubject sendNext:[NSDictionary dictionaryWithDictionary:info]];
+        }];
+    }];
+    
+    [_baby setBlockOnDidUpdateName:^(CBPeripheral *peripheral) {
+        @strongify(self);
+        DLogTagInfo(kBluetoothTag,@"%@蓝牙外设名字更新，UUID=%@，name=%@",[self findConnectInfo:peripheral].positionName,peripheral.identifier, peripheral.name);
+    }];
+}
+
+- (void)notify:(CBPeripheral *)peripheral
+characteristic:(CBCharacteristic *)characteristic {
+    @weakify(self);
+    [_baby notify:peripheral
+   characteristic:characteristic
+            block:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
+        
+                NSData* rec_data = [NSData dataWithData:characteristics.value];
+                NSString * rec_hexString = [rec_data hexString];
+                DLogTagInfo(kBluetoothTag, @"%@接收到蓝牙原始数据：data=%@,peripheral=%@,characteristics=%@,error=%@", [self findConnectInfo:peripheral].positionName, rec_hexString, peripheral, [characteristics.UUID UUIDString], error);
+        
+                @strongify(self);
+                [self performBlock:^{
+                    __CHECK(CBPeripheralStateConnected == peripheral.state);
+                    NSData* data = [NSData dataWithData:characteristics.value];
+                    NSMutableDictionary* info = [NSMutableDictionary dictionaryWithCapacity:3];
+                    [info setObject:peripheral.identifier.UUIDString forKey:@"peripheralUUID"];
+                    
+                    if (0!=characteristics.UUID.UUIDString.length) {
+                        [info setObject:characteristics.UUID.UUIDString forKey:@"characteristicUUID"];
+                    }
+                    
+                    if (error==nil) {
+                        [info setObject:data forKey:@"data"];
+                    } else {
+                        [info setObject:error forKey:@"error"];
+                    }
+                    
+                    [self.notifySubject sendNext:[NSDictionary dictionaryWithDictionary:info]];
+                }];
+    }];
+}
+
+- (void)cancelNotifyWithUUID:(NSString*)uuid peripheral:(CBPeripheral*)peripheral {
+    CBCharacteristic *characteristic = [self characteristicWithUUID:uuid peripheral:peripheral];
+    if (characteristic) {
+        [_baby cancelNotify:peripheral characteristic:characteristic];
+    }
+}
+
+
+
+- (XPBluetoothConnectInfo *)mactchItemWithPeripheralName:(NSString *)peripheralName advertisementData:(NSDictionary *)advertisementData
+{
+    NSString* localName = [advertisementData objectForKey:CBAdvertisementDataLocalNameKey];
+
+    NSArray< XPBluetoothConnectInfo* >* list = [NSArray arrayWithArray:self.connectInfos.allValues];
+
+    XPBluetoothConnectInfo * found = nil;
+    for (XPBluetoothConnectInfo* item in list) {
+        if ([item.peripheralName isEqualToString:localName]
+            || [item.peripheralName isEqualToString:peripheralName])
+        {
+            found = item;
+            break;
+        }
+    }
+    
+    return found;
+}
+
+- (NSArray<NSString *> *)deviceSSIDs
+{
+    NSMutableArray * SSIDs = [NSMutableArray arrayWithCapacity:10];
+  
+    NSArray< XPBluetoothConnectInfo* >* list = [NSArray arrayWithArray:self.connectInfos.allValues];
+
+    for (XPBluetoothConnectInfo* item in list) {
+        if (item.peripheralName.length > 0)
+        {
+            [SSIDs addObject:item.peripheralName];
+        }
+    }
+    
+    return SSIDs;
+}
+
+- (void)setBabyFilters {
+    @weakify(self);
+    [_baby setFilterOnDiscoverPeripherals:^BOOL(NSString *peripheralName, NSDictionary *advertisementData, NSNumber *RSSI) {
+        @strongify(self);
+        
+        XPBluetoothConnectInfo* item = [self mactchItemWithPeripheralName:peripheralName advertisementData:advertisementData];
+        if (nil == item)
+        {
+            DLogTagInfo(kBluetoothTag, @"<M发现过滤>名称不符合要求，设备名称和LocalName都不在设备列表中[%@], 跳过 peripheralName:%@, localName:%@, advertisementData: %@", [[self deviceSSIDs] componentsJoinedByString:@", "], peripheralName, [advertisementData objectForKey:CBAdvertisementDataLocalNameKey],  advertisementData);
+            return NO;
+        }
+        
+        DLogTagInfo(kBluetoothTag, @"<M发现过滤>名称符合要求，进一步检测参数，[%@]蓝牙 peripheralName:%@, localName:%@, advertisementData: %@", item.positionName, peripheralName, [advertisementData objectForKey:CBAdvertisementDataLocalNameKey],  advertisementData);
+
+        return [item discoverFilter:peripheralName advertisementData:advertisementData RSSI:RSSI];
+    }];
+    [_baby setFilterOnConnectToPeripherals:^BOOL(NSString *peripheralName, NSDictionary *advertisementData, NSNumber *RSSI) {
+        @strongify(self);
+        
+        XPBluetoothConnectInfo* item = [self mactchItemWithPeripheralName:peripheralName advertisementData:advertisementData];
+        if (nil == item)
+        {
+            DLogTagInfo(kBluetoothTag, @"<M连接过滤>不符合要求，设备名称和LocalName都不在设备列表中[%@], 跳过 peripheralName:%@, localName:%@, advertisementData: %@", [[self deviceSSIDs] componentsJoinedByString:@", "], peripheralName, [advertisementData objectForKey:CBAdvertisementDataLocalNameKey], advertisementData);
+            return NO;
+        }
+        
+        DLogTagInfo(kBluetoothTag, @"<M连接过滤>名称符合要求，进一步检测参数，[%@] peripheralName:%@, localName:%@, advertisementData: %@", item.positionName, peripheralName, [advertisementData objectForKey:CBAdvertisementDataLocalNameKey],  advertisementData);
+
+        return [item connectFilter:peripheralName advertisementData:advertisementData RSSI:RSSI];
+    }];
+}
+
+- (CBCharacteristic *)characteristicWithUUID:(NSString*)uuid peripheral:(CBPeripheral*)peripheral {
+    for (CBService *service in peripheral.services) {
+        for (CBCharacteristic *characteristic in service.characteristics) {
+            if ([characteristic.UUID.UUIDString isEqualToString:uuid]) {
+                return characteristic;
+            }
+        }
+    }
+    return nil;
+}
+
+- (BOOL)safeCheckCentralState:(const XPBluetoothCentralState)state {
+    return OSAtomicCompareAndSwap64Barrier(state, state, &_centralState);
+}
+
+@end

@@ -1,0 +1,49 @@
+//
+//  BleKeyV3DataParser.hpp
+//  iOS-BLEDataProcessor
+//
+//  Created by huzy2 on 2024/8/28.
+//
+
+#ifndef BleKeyV3DataParser_hpp
+#define BleKeyV3DataParser_hpp
+
+#include <stdio.h>
+
+#include "BaseDataParser.hpp"
+#include "BLEKeyV3DecodeMessage.hpp"
+#include "BleKeyV3Header.h"
+
+class BleKeyV3DataParser: public BaseDataParser {
+    
+public:
+    
+    cJSON * parse(const uint8_t* data, size_t dataSize,uint8_t *sessionKey,size_t sessionKeySize,uint8_t *authKey,size_t authKeySize,int isEncrypted) override;
+    
+    void buildCommonResponseMessage(CommonResponseMessage *commonResponse);
+    void buildCarNumDataMessage(CarNumDataMessage *carNumData);
+    void buildSelfCalibrationMessage(SelfCalibrationMessage *selfCalibrationData);
+    void buildRssiCollectMessage(RssiCollectMessage *rssiCollectData);
+    void buildChargeExtensionMessage(ChargeExtensionMessage *chargeExtensionData);
+    void buildParkingControlStateMessage(ParkingControlStateMessage *parkingControlStateMessage);
+    void buildPollingFuncStateMessage(PollingFuncStateMessage *pollingFuncStateMessage);
+    
+private:
+    void parseSingleMessage(BleKeyV3OutputMessage *outputMessage);
+    void parseSpecialMessage();
+    
+    std::vector<BleKeyV3OutputMessage> specialMessages;
+    
+    void parseAuth0Response(BleKeyV3OutputMessage *outputMessage);
+    void parseCommonCarState(BleKeyV3OutputMessage *outputMessage);
+    void parseBleXpuParkingState(BleKeyV3OutputMessage *outputMessage);
+    void parseChargeState(BleKeyV3OutputMessage *outputMessage);
+    void parseSelfCalibrationMessage(BleKeyV3OutputMessage *outputMessage);
+    void parseRssiCollectMessage(BleKeyV3OutputMessage *outputMessage);
+    void parseParkingControlStateMessage(BleKeyV3OutputMessage *outputMessage);
+    void parseNumericMessage(BleKeyV3OutputMessage *outputMessage);
+    void parsePollingFuncStateMessage(BleKeyV3OutputMessage *outputMessage);
+    void parseRkeResponseMessage(BleKeyV3OutputMessage *outputMessage);
+};
+
+#endif /* BleKeyV3DataParser_hpp */

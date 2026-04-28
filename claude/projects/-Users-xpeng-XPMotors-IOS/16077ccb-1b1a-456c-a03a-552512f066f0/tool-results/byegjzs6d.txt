@@ -1,0 +1,1034 @@
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleExt/.ai-knowledge/knowledge-points/vehicle-ext-pattern.kp.md
+# XPVehicleExt Extension 模式
+
+## 元信息
+- 触发关键词: ["XPVehicleExt", "extension模式", "扩展功能", "Ext目录", "车端扩展"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`XPVehicleExt` 通过 Swift extension 模式扩展功能，每个子功能一个 extension 文件：
+
+```swift
+extension XPVehicleExt {  // Xcombo 场景
+    func getXComboMine(...) { ... }
+}
+
+extension XPVehicleExt {  // 行程报告
+    func requestTripList(...) { ... }
+}
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleExt/.ai-knowledge/knowledge-points/file-transfer-tcp-socket.kp.md
+# 文件传输走 TCP Socket 不走 BLE/MQTT
+
+## 元信息
+- 触发关键词: ["FileTransfer", "文件传输", "TCP Socket", "车端相机", "XPVehicleFileTransferManager"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+车端文件传输（相机照片等）使用独立的 **TCP Socket 直连**，不走 BLE 或 MQTT 通道：
+
+- **实现**: 纯 OC（`XPVehicleFileTransferManager` + `XPCarFileTransferTcpSocket`）
+- **协议**: TCP Socket 直连车端
+- **用途**: 大文件传输（车端相机照片下载到手机）
+
+**核心规则**: 不要尝试将文件传输改为 BLE 或 MQTT 通道，带宽和延迟不满足大文件需求。
+
+**代码位置**: `submodule/XPVehicleExt/XPVehicleExt/FileTransfer/`
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleExt/.ai-knowledge/knowledge-points/ai-calendar-sync.kp.md
+# AI 日历同步机制
+
+## 元信息
+- 触发关键词: ["AiCalendar", "日历同步", "AiCalendarSyncManager", "EventKit", "MD5比对"]
+- 分类: 业务逻辑
+- 优先级: 低
+- 最后更新: 2026-04-08
+
+## 内容
+AI 日历同步（`AiCalendarSyncManager`）采用 Combine 驱动的异步流：
+
+**同步流程**:
+1. 读取系统日历（EventKit `eventStore.calendars(for:)`）
+2. 日历事件转 JSON
+3. JSON 序列化（使用 `.sortedKeys` 保证顺序稳定）
+4. 计算 MD5 与云端比较
+5. MD5 不一致 → ZIP 压缩 → 上传 OSS
+
+**已知问题**: `eventStore.calendars(for:)` 首次调用可能返回空数组，代码内已做 1 秒延迟重试。
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-ibeacon-keepalive.kp.md
+# 后台保活依赖 iBeacon
+
+## 元信息
+- 触发关键词: ["iBeacon", "后台保活", "KeepAlive", "PLiBeaconDevicePullAlive", "App后台运行", "leaveVehicle"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-23
+
+## 内容
+Polling 无感解锁/闭锁需要 App 在后台持续运行。保活机制依赖 iBeacon：
+
+- **实现类**: `PLiBeaconDevicePullAlive`（位于 Polling/KeepAlive/VirtualTest/）
+- **原理**: 使用 iBeacon 虚拟设备维持 App 后台运行（iOS 允许 iBeacon 相关应用后台运行）
+- **配合**: `PLXPGCDTimer`（GCD 定时器）维持心跳
+
+### 保活失效排查
+- **现象**: App 进入后台后 Polling 不再工作（无法自动解锁）
+- **常见根因**: 低电量模式或 iOS 系统限制导致 iBeacon 保活失效；或 VehicleManager 意外调用 `leaveVehicle()` 注销了 iBeacon
+- **排查**: 检查 iBeacon 注册状态 + `leaveVehicle()` 调用时机
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-dual-channel-dependency.kp.md
+# Polling 双通道（BLE + MQTT）车态数据依赖
+
+## 元信息
+- 触发关键词: ["drive.shift_state", "vehicleStateChanged", "gearValueIsSupportPolling", "双通道", "BLE档位", "MQTT档位", "Polling暂停"]
+- 分类: 业务设计
+- 优先级: 高
+- 最后更新: 2026-04-21
+
+## 内容
+
+Polling 的 `gearValueIsSupportPolling` 状态同时依赖 BLE 和 MQTT 两个通道推送的 `drive.shift_state`：
+
+1. **BLE 通道**: 车端 CAN 数据 → XPBLEDataProcessor DataParser → `buildDriveMessage` → `drive.shift_state`
+2. **MQTT 通道**: 车端 → 云端 → MQTT → TCP 推送 → `drive.shift_state`
+
+两个通道任一推送 `drive.shift_state` 变化，都会触发 `PLXPMultiBleManager.vehicleStateChanged:` 更新 `gearValueIsSupportPolling`。
+
+### 风险点
+- 若 BLE DataParser 存在路由 Bug（如 D55DataParser 的 `D55CanType_App_Msg1` 错误路由），BLE 通道将无法推送档位
+- 此时若 MQTT 也断连，Polling 状态将无法恢复，导致感应闭锁/解锁失效
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-ota-versioning.kp.md
+# Polling OTA 数据版本化
+
+## 元信息
+- 触发关键词: ["Polling OTA", "PollingOtaManager", "V1V2V3数据", "蓝牙定位参数", "XPPollingSDK.bundle"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+蓝牙定位参数有 V1/V2/V3 三个版本，存储在 `XPPollingSDK.bundle` 中：
+
+- **V1**: 基础定位参数
+- **V2**: 增强定位参数
+- **V3**: 最新算法参数
+
+不同车型使用不同版本数据（由 `XPCarAbilityConfig.isSupportPollingV1/V2/V3` 和 `pollingLocationVersion` 决定）。
+
+**加载入口**: `PLXPBleLocationAndPollingOtaManager`
+- `loadBleLocationOtaDataV1:callback:`
+- `loadBleLocationOtaDataV2:callback:`
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-data-version-match.kp.md
+# 数据版本与车型匹配
+
+## 元信息
+- 触发关键词: [Polling, 数据版本, V1, V2, V3, XPCarAbilityConfig, isSupportPolling]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-22
+
+## 内容
+
+### 现象
+Polling 功能正常启动但距离判断完全偏差。
+
+### 根因
+蓝牙定位参数有 V1/V2/V3 三个版本，需与 `XPCarAbilityConfig.isSupportPollingV1/V2/V3` 配置匹配。
+
+### 修复
+新车型接入时确认 Polling 数据版本配置。
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-proxy-pattern.kp.md
+# Polling Proxy 依赖注入模式
+
+## 元信息
+- 触发关键词: ["PLDataProxyProtocol", "PLPollingProxyProtocol", "Polling代理", "Proxy注入", "Polling解耦"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+XPPollingSDK 通过 Proxy 协议模式与主工程完全解耦：
+
+1. **`PLDataProxyProtocol`** — 数据代理（输入）
+   - SDK 通过此协议获取钥匙配置、车型信息等数据
+   - 主工程实现此协议并通过 `setKeySettingDataProxy:` 注入
+
+2. **`PLPollingProxyProtocol`** — 结果代理（输出）
+   - SDK 通过此协议回调解锁/闭锁结果
+   - 主工程实现此协议并通过 `setPollingProxy:` 注入
+
+**核心规则**: 
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-multi-ble-antenna.kp.md
+# 多蓝牙天线 RSSI 聚合
+
+## 元信息
+- 触发关键词: ["多蓝牙件", "PLXPMultiBleManager", "蓝牙天线", "RSSI聚合", "PollingEffect"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+新车型可能配备多达 6 个蓝牙天线：
+
+| 位置 | 标识 |
+|------|------|
+| 主天线 | main |
+| 左侧 | left |
+| 右侧 | right |
+| 中间 | center |
+| 后左 | backLeft |
+| 后右 | backRight |
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-distance-levels.kp.md
+# Polling 9 级距离模型
+
+## 元信息
+- 触发关键词: ["PLBLEKeyDistanceLevel", "距离等级", "解锁圈", "闭锁圈", "缓冲圈", "迎宾圈", "Polling距离"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+Polling 系统定义了 9 级同心圆距离模型（`PLBLEKeyDistanceLevel`），从近到远：
+
+```
+车辆中心
+  ← InCar (车内)
+  ← 1m圈 (OneMetreCircle)
+  ← 解锁圈 (UnlockCircle)     ← 靠近到此距离触发解锁
+  ← 授权圈 (EnableCircle)
+  ← 缓冲圈 (BufferCircle)     ← 防止乒乓抖动的缓冲区
+  ← 闭锁圈 (LockCircle)       ← 远离到此距离触发闭锁
+  ← 迎宾圈 (WelcomeCircle)
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-pingpong-buffer-circle.kp.md
+# 解锁/闭锁距离配置乒乓问题
+
+## 元信息
+- 触发关键词: [Polling, 乒乓, 解锁闭锁, BufferCircle, RSSI, 距离配置]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-22
+
+## 内容
+
+### 现象
+用户站在车旁时反复解锁/闭锁。
+
+### 根因
+解锁圈和闭锁圈距离设置过近，RSSI 信号波动导致距离判断在两个圈之间反复跳动。
+
+### 修复
+确保缓冲圈（BufferCircle）在解锁圈和闭锁圈之间有足够间距。
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-antenna-adaptation.kp.md
+# 新车型天线布局适配
+
+## 元信息
+- 触发关键词: [Polling, 天线, RSSI, PLXPMultiBleManager, 新车型, 聚合算法]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-22
+
+## 内容
+
+### 现象
+新车型 Polling 距离判断不准，经常误触发解锁。
+
+### 根因
+新车型蓝牙天线数量/位置与旧车型不同（最多 6 个天线），`PLXPMultiBleManager` 的 RSSI 聚合算法需要针对性调参。
+
+### 修复
+新车型接入时必须实地测试天线布局，调整聚合参数。
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-command-codes.kp.md
+# Polling 与普通车控指令码差异
+
+## 元信息
+- 触发关键词: ["PLXPTBoxCommand", "PollingUnlock", "Polling指令", "TBox指令", "解锁指令码", "Polling解锁"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+Polling 解锁和普通车控解锁走的是**不同的指令码**：
+
+| 操作 | Polling 指令 | 普通车控指令 |
+|------|-------------|-------------|
+| 解锁 | `PLXPTBoxCommandPollingUnlock` | `PLXPTBoxCommandUnlock` / `BLEBoxCommandUnlock(0x01)` |
+| 闭锁 | `PLXPTBoxCommandPollingLock` | `PLXPTBoxCommandLock` / `BLEBoxCommandLock(0x02)` |
+
+**PLXPTBoxCommand** 共约 30 个指令，包括：解锁/闭锁/后备箱/充电口/滑门/剪刀门/泊车等。
+
+**核心规则**: 混用指令码会导致车端识别错误的指令来源（无感 vs 手动），可能影响计费、安全策略等。
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPPollingSDK/.ai-knowledge/knowledge-points/polling-predict-generations.kp.md
+# Polling 三代预测算法共存
+
+## 元信息
+- 触发关键词: ["Predict算法", "FirstPolling", "SecondPolling", "KNN算法", "预测引擎", "PLXPPollingHandler"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+Polling 和 BLELocation 各有三代预测算法**同时共存**，通过配置切换：
+
+**Polling 预测器**:
+| 代次 | 类名 | 说明 |
+|------|------|------|
+| 一代 | `PLXPPollingFirstPollingHandler` | 基础阈值判断 |
+| 二代 | `PLXPPollingSecondPollingHandler` / `PLXPPollingSecondOptHandler` | 优化版 |
+| KNN | `PLXPPollingKnnHandler` | KNN 机器学习算法 |
+
+**BLELocation 预测器**: 同样有 First/Opt/KNN 三套
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPBLEDataProcessor/.ai-knowledge/knowledge-points/dataparser-dual-channel-amplification.kp.md
+# 双通道故障放大效应
+
+## 元信息
+- 触发关键词: [DataParser, BLE, MQTT, 双通道, 故障放大, shift_state, gearValueIsSupportPolling]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-22
+
+## 内容
+
+### 现象
+单通道数据缺失时，另一通道断连会导致功能完全失效。
+
+### 根因
+Polling 状态（如 `gearValueIsSupportPolling`）同时依赖 BLE 和 MQTT 两个通道推送的 `drive.shift_state`。当 BLE 通道因 DataParser Bug 无法推送档位，而 MQTT 断连后也停止推送，Polling 状态将无法恢复。
+
+### 教训
+排查此类问题时必须同时分析 BLE 和 MQTT 两个数据通道，不能仅分析其中一个。
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPCarControlCore/.ai-knowledge/knowledge-points/config-xiaopeng-vs-mona.kp.md
+# XiaopengVehicle vs MonaVehicle 差异
+
+## 元信息
+- 触发关键词: ["XiaopengVehicle", "MonaVehicle", "小鹏车型", "Mona车型", "车型差异", "isMona"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+两个 BaseVehicle 实现类的关键差异：
+
+| 维度 | XiaopengVehicle | MonaVehicle |
+|------|----------------|-------------|
+| 日志 Tag | `"XP车控"` | `"Mona车控"` |
+| 蓝牙处理 | XPBLEDataProcessor / XPBleKeyV3DataProcessor | MonaBleDataProcessor |
+| 车控请求 | `VehicleControlRequestManager()` | `VehicleControlRequestManager(isMona: true)` |
+| OTA | 走数字车态推送 | 需主动 `requestOTAState()` |
+| 特殊持有 | — | `CarService?`（Mona SDK 虚拟实例）|
+| 维修模式 | — | 有 `repairMode` 状态 |
+| 创建实例 | 支持 `createVehicle(vin:)` | **不支持** `createVehicle` |
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPCarControlCore/.ai-knowledge/knowledge-points/config-sdk-opened-vehicles.kp.md
+# SDK 2.0 开放车型白名单
+
+## 元信息
+- 触发关键词: ["isOpenedVehicleTypeCode", "SDK开放车型", "白名单", "createVehicle", "多车车控"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+国内版有 SDK 2.0 开放车型白名单机制（`isOpenedVehicleTypeCode`）：
+
+- **国内**: 只有白名单车型才能使用 SDK 车控功能
+- **海外**: 全部车型开放
+
+**影响范围**:
+1. `createVehicle(vin:)` — 只有开放车型才能创建独立车控实例
+2. `BleKeyCard.isValid()` — 对开放车型的钥匙有效性走不同的判断逻辑（`digitalKeyManager?.digitalKey(keyCardType: .SAFE)`）
+
+**注意**: Mona 车型（DM）不支持通过 `createVehicle` 创建独立实例，这与白名单无关。
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPCarControlCore/.ai-knowledge/knowledge-points/config-property-growth.kp.md
+# 车型配置 100+ 属性增长管理
+
+## 元信息
+- 触发关键词: ["isSupportBleKey", "isSupportCarControl", "能力开关", "配置属性", "新增属性", "BOOL属性"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`XPCarAbilityConfig` 目前已有 100+ 属性且持续增长。
+
+**属性分类**:
+- 能力开关: `isSupportXxx`（BOOL）— 如 isSupportBleKey / isSupportPollingV3
+- 版本枚举: `xxxVersion`（枚举）— 如 bleKeyVersion / pollingLocationVersion
+- UI 资源: `xxxImageName / xxxImagePostfix`（NSString）— 各车型特化图片
+
+**新增属性规范**:
+1. 在 `XPBaseCarAbilityConfig` 基类的 `baseCarAbilityConfigDictionary` 中设置默认值
+2. 在相关车型子类的 `getCarAbilityConfigDictionary` 中覆盖
+3. OC 实现 → **新增属性需确保 Swift 侧可正常访问**（通过 Bridging-Header）
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPCarControlCore/.ai-knowledge/knowledge-points/config-four-layer-override.kp.md
+# 车型配置四层覆盖
+
+## 元信息
+- 触发关键词: ["XPCarAbilityConfig", "配置覆盖", "OCM配置", "车型配置", "能力配置", "ConfigManager"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+车型能力配置有严格的四层覆盖优先级（从低到高）：
+
+```
+基础默认值 (baseCarAbilityConfigDictionary)
+    ↓ 被覆盖
+车型配置字典 (getCarAbilityConfigDictionary)  — 各子类重写
+    ↓ 被覆盖
+扩展车型配置 (expandConfigDictionary:)        — D55A/E28B 等变体
+    ↓ 被覆盖
+OCM 远程配置                                  — 云端动态下发
+```
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPCarControlCore/.ai-knowledge/knowledge-points/config-vehicle-type-codes.kp.md
+# 车型编码映射
+
+## 元信息
+- 触发关键词: ["vehicleTypeCode", "车型编码", "VehicleType枚举", "D22", "E28", "F30", "H93", "D01", "DM", "ED"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+项目中存在两套车型编码系统，使用场景不同：
+
+| 编码系统 | 示例 | 使用位置 |
+|---------|------|---------|
+| 长编码（vehicleTypeCode） | D22/D55/E28/E38/F30/F57/H93 | XPCarAbilityConfig 子类、XPBLEDataProcessor |
+| 短编码（VehicleType 枚举） | DF/DG/ED/EE/FF/FH/HE/DM | VehicleData、VehicleManager 判断逻辑 |
+
+**关键映射**:
+| 短编码 | 长编码 | 车型名 |
+|-------|-------|-------|
+| ED | E28 | P7 |
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-data-vs-tboxdata.kp.md
+# BLE data 与 tboxData 通道分发
+
+- 触发关键词: XPBLEData, data, tboxData, BLE通道, TBox通道
+- 分类: 蓝牙通信
+- 优先级: high
+- 最后更新: 2026-04-22
+
+## 要点
+
+`XPBLEData` 有两个数据字段，对应不同通道：
+- `.data` → BLE 通道发送
+- `.tboxData` → TBox/MQTT 通道发送
+
+## 典型问题
+
+将 `tboxData` 通过 BLE 发送会导致帧格式不匹配，车端收到指令但无法执行或执行错误操作。
+
+## 规则
+
+严格按通道分发：`.data` 只走 BLE，`.tboxData` 只走 TBox。不可混用。
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/vehicle-mona-no-independent-instance.kp.md
+# Mona 不支持 createVehicle 独立实例
+
+- 触发关键词: Mona, MonaVehicle, createVehicle, 独立实例, 多车车控
+- 分类: 车辆生命周期
+- 优先级: high
+- 最后更新: 2026-04-22
+
+## 要点
+
+`MonaVehicle` 不支持通过 `createVehicle(vin:)` 创建独立实例，调用会返回 nil。这是设计限制。
+
+## 规则
+
+Mona 车型不走多车车控流程。涉及多车场景时需判断车型，Mona 车型跳过独立实例创建。
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-v3-msgid-routing.kp.md
+# V3 协议 msgId 前置路由避免 tag/type 冲突
+
+- 触发关键词: V3, msgId, tag, type, handleBleKeyV3Message, handleXPBleKeyV3Content, RtAuth, RtNotification, TLV
+- 分类: 蓝牙通信
+- 优先级: high
+- 最后更新: 2026-04-22
+
+## 要点
+
+V3 协议中不同 msgId 的消息可以使用相同的 tag 值和 type 值：
+- tag=0x7F6F 被 RKE 和 RtAuth (msgId=0x0B) 共用
+- type=0xD0 被车态和 RtNotification (msgId=0x0C) 共用
+
+## 典型问题
+
+在通用 `handleXPBleKeyV3Content` 的 tag/type switch 中处理新 msgId 消息，会导致路由错误（如 RtAuth 响应被误解析为 RKE 响应）。
+
+## 规则
+
+新增 V3 msgId 时，必须在 `handleBleKeyV3Message` 中通过 `message->msgId` 前置路由到专用 handler（如 `handleRtAuthContent`/`handleRtNotificationContent`），避免进入共用的 tag/type 分发逻辑。
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/vehicle-switch-flow.kp.md
+# 切车流程与安全
+
+## 元信息
+- 触发关键词: ["切车", "switchVehicle", "vehicleSwitchedEvent", "vehicleWillSwitchEvent", "切车流程", "切车安全"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+切车是车控 SDK 中最关键的生命周期操作，7 步严格顺序：
+
+1. `vehicleWillSwitchEvent.send(vin)` — 通知"将要切车"
+2. `closeCurrentVehicle()` — **停止当前车服务，断开所有连接**
+3. 在 `switchVehicleQueue`（后台线程）创建新车控实例
+4. 根据 `isMona()` 选择 `MonaVehicle` 或 `XiaopengVehicle`
+5. `vehicleInstance = 新实例`
+6. `vehicleInstance.startService()` — 启动新车服务
+7. `vehicleSwitchedEvent.send()` — 通知"切车完成"
+
+**关键约束**:
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/carkey-vehicle-support.kp.md
+# Apple CarKey 车型支持条件
+
+## 元信息
+- 触发关键词: ["CarKey", "carkey", "CCC钥匙", "钱包钥匙", "CCC_DK_THIRD", "DK3_OPEN", "CarKeyPassAccesser", "CarKeyConditionCheck", "PHONE_UWB_KEY", "Mona CarKey", "vaildBleKeyCategory", "localKeyIsAvailable", "localCarKeyIsVaild", "CarKey冻结", "CarKey挂失"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-09
+
+## 内容
+
+### 支持条件（全部满足才可用）
+Apple CarKey（CCC 钱包钥匙）需要同时满足以下条件：
+1. **iOS 版本**: iOS 18.0+
+2. **蓝牙协议**: V3 协议（`bleKeyVersion == BleKeyProtocolVesion.V3.rawValue`）
+3. **车辆能力**: `CCC_DK_THIRD == true`（对应 `DK3_OPEN` 配置项）
+4. **VID 配置**: `cccVid != nil`（ExtInfo 中的 CCC Vehicle ID）
+5. **硬件支持**: `CarKeyPassAccesser.supportCarKeyType() >= .ble`
+
+### 判断入口
+- `CarKeyConditionCheck.isSupportCarKeySoftware(cccVid:bleKeyVersion:isSupportCCC:)` — 综合判断
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-mona-independent.kp.md
+# Mona 车型蓝牙协议独立
+
+## 元信息
+- 触发关键词: ["Mona蓝牙", "MonaBleDataProcessor", "Mona协议", "Mona鉴权", "D01蓝牙"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+Mona 车型（vehicleTypeCode="DM"）使用完全独立的蓝牙协议栈：
+
+- **数据处理器**: `MonaBleDataProcessor`（不是 `XPBLEDataProcessor`）
+- **鉴权流程**: `generateAuth1MessageWithUid:vin:r0:cipher1:cipher2:`（不同于 V3 的 Auth0→Auth1）
+- **车控指令**: `generateVehilceControlMessageWithCmd:sessionKey:counter:`
+- **车型实现**: `MonaVehicle`（不是 `XiaopengVehicle`）
+- **车控请求**: `VehicleControlRequestManager(isMona: true)`
+
+**核心规则**: Mona 的所有蓝牙通信逻辑都与小鹏系车型隔离，修改小鹏蓝牙代码时不要假设对 Mona 生效，反之亦然。
+
+**代码位置**: 
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-protocol-versions.kp.md
+# 蓝牙协议版本选择
+
+## 元信息
+- 触发关键词: ["蓝牙协议", "BLE协议版本", "V1V2V3", "bleKeyVersion", "BleKeyProtocolVesion", "蓝牙钥匙版本"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+项目蓝牙协议分三个版本，由 `XPCarAbilityConfig.bleKeyVersion` 决定：
+
+1. **V1/V2 协议**: 使用 `XPBLEDataProcessor` 处理，无加密
+   - `parseMessageWithVehicleCode:bleData:` 解析
+   - `generateBleData:controlId:vehicleTypeCode:msgType:controlType:` 组装
+2. **V3 协议**: 使用 `XPBleKeyV3DataProcessor`，需要 sessionKey + hmacKey 双密钥
+   - 鉴权分 Auth0 → Auth1 两步，**顺序不能乱**
+   - 解析: `parseBleKeyV3MessageWithVehicleCode:bleData:sessionKey:authKey:isEncrypted:`
+3. **Mona 协议**: 独立的 `MonaBleDataProcessor`，完全不走 XPBLEDataProcessor
+   - 有自己的鉴权流程 `generateAuth1MessageWithUid:vin:r0:cipher1:cipher2:`
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-auth-v3-flow.kp.md
+# V3 蓝牙鉴权两步流程
+
+## 元信息
+- 触发关键词: ["Auth0", "Auth1", "V3鉴权", "sessionKey", "hmacKey", "蓝牙鉴权", "BleKeyV3", "RtAuth"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+V3 蓝牙协议有两种鉴权模式：
+
+### 模式一：普通蓝牙钥匙鉴权（Auth0 → Auth1）
+
+1. **Auth0**: App 发送 `generateAuth0DataIndictor:uid:hexKeyId:rand0:...` → 车端返回 `Auth0ResponseMessage`（含 rand01, rand1）
+2. **Auth1**: App 用 Auth0 响应数据生成 sessionKey（`generateSessionKey:hexKeyId:rand0:rand1:`），再完成鉴权
+
+**密钥说明**:
+- `sessionKey`: 通信加密密钥，Auth0 成功后生成
+- `hmacKey`: HMAC 签名密钥，用于 V3 消息完整性校验
+- `authKey`: 鉴权密钥
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/mqtt-message-id-matching.kp.md
+# MQTT 消息回调 ID 匹配
+
+## 元信息
+- 触发关键词: ["msg_ref", "msgRef", "messageId", "MQTT回调", "消息匹配", "MQTTHandler"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+MQTTHandler 的消息请求/响应匹配依赖消息 ID 字段，但**不同 topic 的字段名不同**：
+
+- 部分 topic: `msg_ref`
+- 部分 topic: `msgRef`
+- 部分 topic: `msgId`
+
+新增 MQTT topic 时必须确认该 topic 的响应消息中使用哪个字段名，否则回调永远无法触发（15s 后超时）。
+
+**超时时间**: 默认 15 秒（`timeOutTime` 参数可自定义）
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/MQTT/MQTTHandler.swift`
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-message-types.kp.md
+# BLE 消息类型说明
+
+## 元信息
+- 触发关键词: ["BLEKeyMessageType", "消息类型", "0xEF", "0xED", "0xEC", "Control消息", "Data消息"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+BLE 消息分四种类型（`BLEKeyMessageType` 枚举）：
+
+| 类型 | 值 | 用途 |
+|------|---|------|
+| Control | 0xEF | 车控指令消息 |
+| Data | 0xED | 带校验的数据消息 |
+| DataNoVerify | 0xEC | 无校验的数据消息 |
+| Resp | — | 响应消息 |
+
+**子类型**（`BLEKeyMsgControlHeaderMessageType`）：Auth / Wakeup / Parking / Default
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/vehicle-event-system.kp.md
+# 车辆事件系统
+
+## 元信息
+- 触发关键词: ["VehicleEvent", "subscribe", "unsubscribe", "事件订阅", "观察者模式", "vehicleStateChangedEvent"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+车控 SDK 使用自定义的 `VehicleEvent<T>` 泛型事件系统（观察者模式）：
+
+**使用方式**:
+```swift
+// 订阅
+presenter?.vehicleStateChangedEvent.subscribe(self) { notiObj in
+    let diffState = notiObj.diff
+    let fullState = notiObj.state
+}
+
+// 取消订阅
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/combine-published-usage.kp.md
+# Combine 与 @Published 使用场景
+
+## 元信息
+- 触发关键词: ["@Published", "Combine", "响应式", "状态监听", "VehicleConnection Published"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+项目中 Combine 框架使用场景有限且需注意线程：
+
+1. **VehicleConnection**: `address` 和 `connectState` 使用 `@Published`
+2. **AiCalendarSyncManager**: 大量使用 Combine（`sink`/`store`/`receive(on:)`）
+
+**线程安全规则**:
+- `@Published` 属性的值变更默认在设置线程触发
+- VehicleConnection 的 `@Published` 状态可能从后台线程（BLE 回调、MQTT 回调）变更，**监听时必须使用 `receive(on: DispatchQueue.main)` 切换到主线程**，否则 UI 更新会崩溃
+- 示例：
+```swift
+vehicleConnection.$connectState
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/vehicle-sdk-facade.kp.md
+# XPVehicleSDK 门面模式
+
+## 元信息
+- 触发关键词: ["XPVehicleSDK", "currentVehicle", "门面模式", "SDK入口", "车控入口"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`XPVehicleSDK` 是对外门面类（Facade），隐藏内部实现层级：
+
+```
+XPVehicleSDK (对外静态方法)
+    ↓ 内部持有
+VehicleManager (管理车辆列表和切车)
+    ↓ 内部持有
+BaseVehicle (vehicleInstance，当前车控实例)
+    ↓ 实现为
+XiaopengVehicle / MonaVehicle
+```
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/mqtt-singleton-switch-vehicle.kp.md
+# MQTT 单例与切车
+
+## 元信息
+- 触发关键词: ["MQTTPublisher单例", "切车MQTT", "MQTT disconnect", "MqttServiceManager", "MQTT重连"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`MQTTPublisher` 是全局单例，所有车型共用同一个 MQTT 连接实例。
+
+**切车流程**:
+1. 先 `disconnect()` 断开当前连接
+2. 重新 `startService(uid:)` 建立新连接
+
+不执行 disconnect 就切车会导致新车的消息发到旧连接的 topic 上。
+
+**生命周期**: `MqttServiceManager.shared` 管理
+- 登录后: `startService(uid:)`
+- 退出登录: `stopService()`
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/vehicle-state-readonly.kp.md
+# VehicleState 只读与更新机制
+
+## 元信息
+- 触发关键词: ["VehicleState", "vehicleState", "车态数据", "状态更新", "VehicleStateModel", "diffState"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`VehicleCommunication.vehicleState` 是**只读属性**，业务层无法直接修改车辆状态。
+
+**状态更新路径**:
+1. BLE/MQTT 通道接收到车端状态数据
+2. 内部 `VehicleStateModel` 解析并计算 diff
+3. 触发 `vehicleStateChanged(diffState:connectionType:)` 回调
+4. `vehicleStateChangedEvent.send(VehicleStateNotiObject)` 通知业务层
+
+**VehicleStateNotiObject 结构**:
+- `.state` — 完整状态
+- `.diff` — 本次变更的差异部分
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/blekey-card-validity.kp.md
+# BleKeyCard 钥匙有效性判断
+
+## 元信息
+- 触发关键词: ["BleKeyCard", "isValid", "钥匙有效性", "钥匙状态", "BleKeyCardStatus", "数字钥匙"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`BleKeyCard.isValid()` 的判断逻辑并非简单的状态检查，有特殊分支：
+
+1. **标准路径**: 检查 `BleKeyCardStatus` 是否为有效状态（正常/待激活等）
+2. **SDK 2nd car 特殊路径**: 如果当前车是 `isOpenedVehicleTypeCode`（SDK 开放车型），则改用 `digitalKeyManager?.digitalKey(keyCardType: .SAFE)` 判断有效性
+
+**BleKeyCardStatus 枚举**（16 种）: 正常/待激活/挂失/锁定/注销/过期等
+
+**BleKeyCardType 枚举**（16 种）: BLE/NFC/CCC/ICCOA/ICCE 多协议支持
+
+**注意**: 修改 isValid() 逻辑时必须考虑两条路径的一致性。
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/vehicle-dual-channel.kp.md
+# 车控双通道架构
+
+## 元信息
+- 触发关键词: ["双通道", "BLE和TCP", "蓝牙和MQTT", "连接通道", "VehicleConnectionType", "connectionType", "shift_state", "driver_seat_state", "driverSeatOccupied", "instant", "digital_vehicle", "MQTT断连", "后台断连"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-21
+
+## 内容
+每辆车同时持有 BLE + TCP/MQTT 两路连接通道（`VehicleConnection` 子类）：
+
+| 通道 | 特点 | 实现类 |
+|------|------|--------|
+| BLE | 近场、低延迟、实时性高 | `XiaopengBLEConnection` |
+| TCP/MQTT | 远程、通过云端中转 | `XiaopengTCPConnection` |
+
+**状态更新来源区分**: `vehicleStateChanged(diffState:connectionType:)` 回调中通过 `connectionType` 参数区分状态来自哪个通道。
+
+**核心规则**: 
+- 两路连接状态独立管理
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/mqtt-connected-state.kp.md
+# MQTT 连接状态判定
+
+## 元信息
+- 触发关键词: ["MQTT连接", "MQTTConnectionState", "connected状态", "MQTT订阅", "MQTT连接成功"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+MQTT 的 `state == .connected` 需要**同时满足**两个条件：
+1. MQTT TCP 连接成功
+2. Topic 订阅成功
+
+仅 TCP 连上但尚未订阅成功时，状态仍为 `connecting`，此时发送消息会失败。
+
+**状态枚举（两层）**: 
+- 底层: `MQTTPublisherConnectionState`（MQTTPublisher 使用）
+  - `.disconnected`(0) — 未连接
+  - `.connecting`(1) — 连接中（含已连但未订阅）
+  - `.connected`(2) — 连接+订阅均成功
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/mqtt-auto-reconnect.kp.md
+# MQTT 自动重连重发机制
+
+## 元信息
+- 触发关键词: ["needReconnect", "重连重发", "MQTT断线", "自动重发", "MQTTHandler重连"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+MQTTHandler 的 `publish` 方法有 `needReconnect` 参数（默认 true）：
+
+- **true**: 断线后自动尝试重连，重连成功后自动重发待发消息
+- **false**: 断线直接返回错误，不重试
+
+**注意**: 订阅失败会自动 1 秒重试，**但没有最大重试次数限制**，可能导致无限重试。
+
+**典型用法**:
+```swift
+handler.publish(message: json, messageId: "msg_001", timeOutTime: 15, needReconnect: true) { response, error in
+    // needReconnect=true: 断线会自动重连后重发
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-vehicle-parser-isolation.kp.md
+# BLE 各车型解析器相互隔离
+
+## 元信息
+- 触发关键词: ["DataParser", "车型解析器", "D22DataParser", "E28DataParser", "F30DataParser", "MonaDataParser", "蓝牙解析"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+BLE 数据解析采用工厂模式（`DataParserFactory`），每个车型有独立解析器：
+- D22/D55/E28/E38/F30 各有独立的 `*DataParser` 类
+- Mona 有独立的 `MonaDataParser`
+
+**核心规则**: 各车型解析器差异较大，修改一个车型的解析逻辑时**必须确认不影响其他车型**。不要试图"统一"不同车型的解析代码。
+
+**工厂入口**: `DataParserManager` → `DataParserFactory` → 各车型 Parser
+
+**代码位置**: `submodule/XPBLEDataProcessor/cross-platform/BLEDataParser/`
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-data-dual-channel.kp.md
+# BLE 数据双通道输出
+
+## 元信息
+- 触发关键词: ["XPBLEData", "tboxData", "双通道", "BLE通道", "TBox通道", "蓝牙发送数据"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+`XPBLEDataProcessor.generateBleData` 返回的 `XPBLEData` 对象包含两路数据：
+
+1. **`.data`** — 直接通过 BLE 蓝牙通道发送给车端
+2. **`.tboxData`** — 通过 TBox（TCP/MQTT）通道发送给车端
+
+**核心规则**: 两路数据**不可混淆**，各走各的通道。并非所有指令都有 tboxData。
+
+**代码位置**: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/XPBLEDataProcessor.h`
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/ble-v3-rt-auth.kp.md
+# BLE V3 RT 鉴权协议（RtAuth/RtNotification）
+
+## 元信息
+- 触发关键词: ["RtAuth", "RtNotification", "0x0B", "0x0C", "generateRtAuthRequestData", "明文传输", "RT小程序", "rtAuthResult", "rtNotification", "handleRtAuthContent", "BLEKeyV3MessageTypeRtAuth"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+V3 协议新增两种消息类型，专用于 RobotTaxi (RT) 小程序蓝牙鉴权和车端通知：
+
+### 消息定义
+
+| msgId | 名称 | 方向 | 说明 |
+|-------|------|------|------|
+| 0x0B | RtAuth | 双向 | RT 鉴权请求（App→车）/ 鉴权结果（车→App）|
+| 0x0C | RtNotification | 车→App | 车端状态通知（如 Polling 解锁结果）|
+
+### 核心特性：明文传输
+
+---
+FILE: /Users/xpeng/XPMotors_IOS/submodule/XPVehicleSDK/.ai-knowledge/knowledge-points/vehicle-protocol-composition.kp.md
+# BaseVehicle 协议组合模式
+
+## 元信息
+- 触发关键词: ["BaseVehicle", "VehiclePresenter", "VehicleCommunication", "VehiclePresenterExt", "协议组合", "车辆协议"]
+- 分类: 领域知识
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+`BaseVehicle` 通过协议组合模式定义"一辆车"的完整能力：
+
+```
+BaseVehicle = VehiclePresenter + VehiclePresenterExt + VehicleCommunication
+```
+
+| 子协议 | 职责 | 关键 API |
+|--------|------|----------|
+| VehiclePresenter | 展示层能力 | vehicleState / sendControlCommand / connect / disconnect / events |
+| VehiclePresenterExt | 扩展能力 | RSSI 观察 / Polling 代理 |
+| VehicleCommunication | 通信能力 | vin / uid / tcpConnection / bleConnection / cacheManager |
+---
+FILE: /Users/xpeng/XPMotors_IOS/.ai-knowledge/knowledge-points/bug-analysis-log-search-methodology.kp.md
+# Bug 分析日志检索方法论
+
+## 元信息
+- 触发关键词: ["日志检索", "日志分析", "log grep", "日志关键字", "bug-analysis", "排查方法论"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-21
+
+## 核心原则：知识库 → 代码 → 日志关键字 → grep 日志
+
+**禁止**模糊猜测日志关键字。所有日志检索必须遵循以下严格流程：
+
+### Step 1: 读取涉及模块的知识库
+- 读取模块的 `.ai-knowledge/modules/*.md` 了解模块架构和日志 tag
+- 读取模块的 `.claude/rules/*.md` 了解模块约束和已知规范
+- 读取模块的 `CLAUDE.md` 了解模块规范
+
+### Step 2: 从代码中确认日志关键字
+- 根据知识库确定的文件路径，读取源码
+- 在源码中找到实际的日志打印语句（如 `DLogTagInfo`、`XP_LOG_INFO`、`NSLog`）
+---
+FILE: /Users/xpeng/XPMotors_IOS/.ai-knowledge/knowledge-points/legacy-typo-no-rename.kp.md
+# 存量拼写错误不要修改
+
+## 元信息
+- 触发关键词: ["VEVeihcle", "拼写错误", "存量代码", "remuseBlePolling", "重命名风险"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+项目存量代码中存在已知拼写错误，**不建议修改以免影响引用**：
+
+| 错误 | 正确 | 位置 |
+|------|------|------|
+| `VEVeihcleSDKTool` | VEVehicleSDKTool | XPVehicleExt/Utilities/ |
+| `remuseBlePolling` | resumeBlePolling | XPPollingSDK 生命周期协议 |
+
+**原因**: 这些名称已在多处被引用（其他 submodule、主工程、OC/Swift 互操作），修改会触发大范围级联变更。
+
+**正确做法**: 新增代码使用正确拼写，存量代码保持不变。如需重命名，需评估影响范围后专门立项。
+---
+FILE: /Users/xpeng/XPMotors_IOS/.ai-knowledge/knowledge-points/oc-swift-bridge.kp.md
+# OC/Swift 互操作规范
+
+## 元信息
+- 触发关键词: ["OC调用Swift", "Swift调用OC", "桥接", "@objc", "Bridging-Header", "互操作"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+项目 OC/Swift 互操作规范：
+
+1. **Swift 暴露给 OC**: 必须添加 `@objc` 和 `public` 修饰符
+   - 类: `@objc(XPBLEKeyCard) public class BleKeyCard`
+   - 枚举: `@objc(XPBLEKeyCardStatus) public enum BleKeyCardStatus`
+   - 方法: `@objc public func xxx()`
+
+2. **OC 暴露给 Swift**: 通过 Bridging-Header
+   - 新增 OC 文件需同步更新 Bridging-Header
+
+3. **典型互操作模式**:
+---
+FILE: /Users/xpeng/XPMotors_IOS/.ai-knowledge/knowledge-points/submodule-management.kp.md
+# submodule 独立仓库管理
+
+## 元信息
+- 触发关键词: ["submodule", "独立仓库", "子模块提交", "XPVehicleSDK仓库", "git submodule"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+`submodule/` 下的代码有**独立 git 仓库**，修改需单独提交：
+
+| submodule | 内容 |
+|-----------|------|
+| XPVehicleSDK | 车端 SDK（VehicleManager/BaseVehicle/Connection） |
+| XPCarControlCore | 车控核心（XPCarAbilityConfig） |
+| XPBLEDataProcessor | 蓝牙数据处理（C++/OC） |
+| XPMQTTLibrary | MQTT 通信 |
+| XPPollingSDK | 轮询 SDK（OC/C++ 混编） |
+| XPVehicleExt | 车端扩展 |
+| XPCarBusiCH | 车端业务 |
+---
+FILE: /Users/xpeng/XPMotors_IOS/.ai-knowledge/knowledge-points/grdb-database-usage.kp.md
+# GRDB 数据库使用规范
+
+## 元信息
+- 触发关键词: ["GRDB", "XPDBManager", "数据库", "BleKeyCard表", "数据库迁移", "XPDBClient"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+项目使用 GRDB 进行本地数据持久化，统一由 `XPDBManager` 管理：
+
+**注册的表**:
+1. `BleKeyCard` — 蓝牙钥匙卡（16 种状态、16 种类型）
+2. `CertKeyCard` — 证书钥匙卡
+3. `CertKeyMessage` — 证书钥匙消息
+4. `ChargeSearchHistoryModel` — 充电搜索历史
+
+**使用规范**:
+- 数据模型需实现 GRDB 的 `FetchableRecord` + `PersistableRecord` 协议
+- 表结构变更走数据库迁移（`BleKeyCard` 已有迁移支持）

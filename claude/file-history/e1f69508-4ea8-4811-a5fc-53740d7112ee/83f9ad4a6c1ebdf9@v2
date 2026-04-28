@@ -1,0 +1,19 @@
+# 存量拼写错误不要修改
+
+## 元信息
+- 触发关键词: ["VEVeihcle", "拼写错误", "存量代码", "remuseBlePolling", "重命名风险"]
+- 分类: 工程规范
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+项目存量代码中存在已知拼写错误，**不建议修改以免影响引用**：
+
+| 错误 | 正确 | 位置 |
+|------|------|------|
+| `VEVeihcleSDKTool` | VEVehicleSDKTool | XPVehicleExt/Utilities/ |
+| `remuseBlePolling` | resumeBlePolling | XPPollingSDK 生命周期协议 |
+
+**原因**: 这些名称已在多处被引用（其他 submodule、主工程、OC/Swift 互操作），修改会触发大范围级联变更。
+
+**正确做法**: 新增代码使用正确拼写，存量代码保持不变。如需重命名，需评估影响范围后专门立项。

@@ -1,0 +1,24 @@
+# 车控双通道架构
+
+## 元信息
+- 触发关键词: ["双通道", "BLE和TCP", "蓝牙和MQTT", "连接通道", "VehicleConnectionType", "connectionType"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+每辆车同时持有 BLE + TCP/MQTT 两路连接通道（`VehicleConnection` 子类）：
+
+| 通道 | 特点 | 实现类 |
+|------|------|--------|
+| BLE | 近场、低延迟、实时性高 | `XiaopengBLEConnection` |
+| TCP/MQTT | 远程、通过云端中转 | `XiaopengTCPConnection` |
+
+**状态更新来源区分**: `vehicleStateChanged(diffState:connectionType:)` 回调中通过 `connectionType` 参数区分状态来自哪个通道。
+
+**核心规则**: 
+- 两路连接状态独立管理
+- 业务层不直接操作连接，通过 `VehiclePresenter.sendControlCommand` 自动选择通道
+- `BaseVehicle` 实例同时持有两路连接
+
+**代码位置**: `submodule/XPVehicleSDK/Core/Connection/`

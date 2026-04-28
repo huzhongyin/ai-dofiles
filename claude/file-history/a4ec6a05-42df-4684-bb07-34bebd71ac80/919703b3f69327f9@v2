@@ -1,0 +1,29 @@
+{
+  "expectations": [
+    {
+      "text": "Provides systematic learning structure with clear phases",
+      "passed": false,
+      "evidence": "Without skill: Provided good materials but lacks the systematic 4-phase structure of Feynman learning method."
+    },
+    {
+      "text": "Conducts deep interview to understand background and needs",
+      "passed": false,
+      "evidence": "Without skill: No interview process - made assumptions about user needs and background."
+    },
+    {
+      "text": "Addresses the specific infinite re-render problem mentioned",
+      "passed": true,
+      "evidence": "Without skill: Did address the infinite re-render problem through troubleshooting guide and examples."
+    },
+    {
+      "text": "Includes verification/testing mechanism for learning",
+      "passed": true,
+      "evidence": "Without skill: Included practice exercises and troubleshooting guide for verification."
+    },
+    {
+      "text": "Creates reusable knowledge assets/skill templates",
+      "passed": false,
+      "evidence": "Without skill: No skill templates or systematically reusable knowledge assets created."
+    }
+  ]
+}

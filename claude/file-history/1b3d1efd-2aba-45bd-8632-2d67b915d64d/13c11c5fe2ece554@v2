@@ -1,0 +1,170 @@
+//
+//  XPBleKeyV3DataProcessor.h
+//  iOS-BLEDataProcessor
+//
+//  Created by huzy2 on 2024/8/30.
+//
+
+#import <Foundation/Foundation.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+
+@interface XPBleKeyV3DataProcessor : NSObject
+
+/// 蓝牙包解析 BleKeyV3
+/// - Parameters:
+///   - vehicleCode: 车型编码Code
+///   - bleData: 蓝牙包
+///   return: json字符串
++ (NSString *)parseBleKeyV3MessageWithVehicleCode:(NSString *)vehicleCode bleData:(NSData *)bleData sessionKey:(NSData *)sessionKey authKey:(NSData *)authKey isEncrypted:(BOOL)isEncrypted;
+
+//auth0
++ (NSData *_Nullable)generateAuth0DataIndictor:(NSString * _Nonnull)hexIndictor
+                                           uid:(uint64_t)uid
+                                      hexKeyId:(NSString * _Nonnull)hexKeyId
+                                         rand0:(uint32_t)rand0
+                                     timeStamp:(uint64_t)timeStamp
+                                     isWelcome:(BOOL)isWelcome
+                                 pollingSwitch:(uint8_t)pollingSwitch
+                           pollingEnableSwitch:(BOOL)pollingEnableSwitch
+                                unlockDistance:(float)unlockDistance
+                                  lockDistance:(float)lockDistance
+                            selfCalibrationLen:(uint8_t)selfCalibrationLen
+                          selfCalibrationArray:(NSArray * _Nullable)selfCalibrationArray
+                                   deviceModel:(NSString * _Nonnull)deviceModel
+                                       bleName:(NSString * _Nonnull)bleName
+                                    hexAuthKey:(NSString * _Nonnull)hexAuthKey;
+
++ (NSData *_Nullable)generateRescueAuth0DataIndictor:(NSString * _Nonnull)hexIndictor
+                                           uid:(uint64_t)uid
+                                      hexKeyId:(NSString * _Nonnull)hexKeyId
+                                         rand0:(uint32_t)rand0
+                                     timeStamp:(uint64_t)timeStamp
+                                    hexAuthKey:(NSString * _Nonnull)hexAuthKey;
+
++ (NSData *)generateAuthKey:(NSString *)authKey;
+
++ (NSData *)generateSessionKey:(NSString * _Nonnull)hexAuthKey
+                      hexKeyId:(NSString * _Nonnull)hexKeyId
+                         rand0:(uint32_t)rand0
+                         rand1:(uint32_t)rand1;
+
++ (NSData *)generateRescueSessionKeyWithRand0:(uint32_t)rand0
+                         rand1:(uint32_t)rand1;
+
++ (NSData *)generateHmacKey:(NSString * _Nonnull)hexAuthKey
+                     rand01:(uint32_t)rand01
+                     rand12:(uint32_t)rand12;
+
+//auth1
++ (NSData *_Nullable)generateAuth1DataRand12:(uint32_t)rand12
+                              hexCertMessage:(NSString * _Nonnull)hexCertMessage
+                                  sessionKey:(NSData * _Nonnull)sessionKey;
+
++ (NSData *_Nullable)generateRescueAuth1DataRand12:(uint32_t)rand12
+                              hexCertMessage:(NSString * _Nonnull)hexCertMessage
+                                  sessionKey:(NSData * _Nonnull)sessionKey;
+
+//rke
++ (NSData *_Nullable)generateQueryStateRequestData:(BOOL)isEncrypt
+                                         controlId:(uint8_t)controlId
+                                       controlData:(NSArray * _Nonnull)controlData
+                                        sessionKey:(NSData * _Nullable)sessionKey
+                                           hmacKey:(NSData * _Nullable)hmacKey;
+
++ (NSData *_Nullable)generateNotifyStateRequestData:(BOOL)isEncrypt
+                                          controlId:(uint8_t)controlId
+                                        controlData:(NSArray * _Nonnull)controlData
+                                         sessionKey:(NSData * _Nullable)sessionKey
+                                            hmacKey:(NSData * _Nullable)hmacKey;
+
++ (NSData * _Nullable)generateRkeControlRequestData:(BOOL)isEncrypt
+                                          controlId:(uint8_t)controlId
+                                        controlData:(NSArray * _Nonnull)controlData
+                                         sessionKey:(NSData * _Nullable)sessionKey
+                                            hmacKey:(NSData * _Nullable)hmacKey;
+
++ (NSData * _Nullable)generateRescueRkeControlRequestData:(BOOL)isEncrypt
+                                          controlId:(uint8_t)controlId
+                                                cmd:(uint8_t)cmd
+                                         sessionKey:(NSData * _Nullable)sessionKey;
+
++ (NSData * _Nullable)generateNotifyPollingFuncState:(BOOL)isEncrypt
+                                          controlId:(uint8_t)controlId
+                                             controlData:(NSArray * _Nonnull)controlData
+                                              sessionKey:(NSData * _Nullable)sessionKey
+                                                 hmacKey:(NSData * _Nullable)hmacKey;
+
+// notfiy
++ (NSData *_Nullable)generateParkingHeartData:(BOOL)isEncrypt
+                                          cmd:(uint8_t)cmd
+                                    parkingId:(uint8_t)parkingId
+                                    sessionKey:(NSData * _Nullable)sessionKey;
+
++ (NSData *_Nullable)generateSelfCalibrationData:(BOOL)isEncrypt
+                                       direction:(uint8_t)direction
+                                        distance:(float)distance
+                                       collectCount:(uint32_t)collectCount
+                                         timeout:(uint32_t)timeout
+                                             uid:(uint32_t)uid
+                                       deviceModel:(NSString * _Nonnull)deviceModel
+                                       sessionKey:(NSData * _Nullable)sessionKey;
+
++ (NSData *_Nullable)generateRssiCollectData:(BOOL)isEncrypt
+                                   direction:(uint8_t)direction
+                                    distance:(float)distance
+                                collectCount:(uint32_t)collectCount
+                                    isPocket:(BOOL)isPocket
+                                       angle:(uint16_t)angle
+                                         uid:(uint32_t)uid
+                                 deviceModel:(NSString * _Nonnull)deviceModel
+                                  sessionKey:(NSData * _Nullable)sessionKey;
+
++ (NSData *_Nullable)generatePollingCustomeData:(BOOL)isEncrypt
+                                      isWelcome:(BOOL)isWelcome
+                                  pollingSwitch:(uint8_t)pollingSwitch
+                                 unlockDistance:(float)unlockDistance
+                                   lockDistance:(float)lockDistance
+                           isUseSelfCalibration:(uint8_t)isUseSelfCalibration
+                           selfCalibrationArray:(NSArray * _Nullable)selfCalibrationArray
+                                     sessionKey:(NSData * _Nullable)sessionKey;
++ (NSData *_Nullable)generatePollingCustomeDataV2:(BOOL)isWelcome
+                                  pollingSwitch:(uint8_t)pollingSwitch
+                                 unlockDistance:(float)unlockDistance
+                                   lockDistance:(float)lockDistance
+                           isUseSelfCalibration:(uint8_t)isUseSelfCalibration
+                             selfCalibrationArray:(NSArray * _Nullable)selfCalibrationArray;
+
+
++ (NSData *_Nullable)generateParkingLimitDistanceData:(BOOL)isEncrypt
+                                      isLimit:(uint8_t)isLimit
+                                           sessionKey:(NSData * _Nullable)sessionKey;
++ (NSData *_Nullable)generateParkingLimitDistanceDataV2:(uint8_t)isLimit;
+
++ (NSData *_Nullable)generatePollingEnableConfigData:(BOOL)isEncrypt
+                                 pollingEnableSwitch:(bool)pollingEnableSwitch
+                                          sessionKey:(NSData * _Nullable)sessionKey;
++ (NSData *_Nullable)generatePollingEnableConfigDataV2:(bool)pollingEnableSwitch;
+
++ (NSData *_Nullable)generateDeviceModelData:(BOOL)isEncrypt
+                                 deviceModel:(NSString *)deviceModel
+                                          sessionKey:(NSData * _Nullable)sessionKey;
++ (NSData *_Nullable)generateDeviceModelDataV2:(NSString *)deviceModel;
+
+
++ (NSData *_Nullable)createTboxMessageV3:(uint8_t)controlId
+                          controlCommand:(uint8_t)controlCommand
+                             certMessage:(NSString * _Nonnull)certMessage;
+
++ (NSArray<NSData *> *_Nullable)generateCombinedNotifyData:(BOOL)isEncrypt
+                                          combinedData:(NSArray<NSData *> *)dataArray
+                                          sessionKey:(NSData * _Nullable)sessionKey;
+
+// rtAuth
++ (NSData *_Nullable)generateRtAuthRequestData:(NSData * _Nonnull)certificate
+                                   deviceModel:(NSString * _Nonnull)deviceModel;
+
+@end
+
+NS_ASSUME_NONNULL_END

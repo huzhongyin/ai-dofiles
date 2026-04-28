@@ -1,0 +1,181 @@
+# 模块名: XPPollingSDK
+
+## 模块职责
+XPPollingSDK 是蓝牙无感进入/闭锁的核心 SDK，通过蓝牙 RSSI 信号强度实现用户接近车辆时自动解锁、离开车辆时自动闭锁的功能。内部包含蓝牙定位算法（BLELocation）、距离预测引擎（Predict）、Polling 决策引擎（解锁/闭锁/授权）、多蓝牙件管理（PollingEffect）、OTA 固件升级数据、后台保活机制等。该模块维持 OC/C++ 混编架构，是项目中最复杂的存量模块之一，独立维护。
+
+## 语言构成
+- OC 文件数（.m/.mm）: 48
+- OC 头文件数（.h）: 61
+- C++ 文件数: 0（C++ 代码内嵌在 .mm 文件中）
+- Swift 文件数: 0
+- 混编说明: OC 为主体，Predict 子模块的核心算法使用 .mm（OC++ 混编），通过 C++ 实现 KNN 等预测算法
+
+## 目录结构
+```
+XPPollingSDK/
+├── XPPollingSDK.h/m              # SDK 入口（对外唯一接口类）
+├── sourceFile/
+│   ├── Polling/                  # Polling 核心（感应解锁/闭锁决策）
+│   │   ├── PLXPPollingManager.h/mm      # 总管理器（单例，实现 5 个协议）
+│   │   ├── PLXPPollingDefined.h         # 常量/枚举定义
+│   │   ├── PLXPKeySettingData.h/m       # 钥匙配置数据模型
+│   │   ├── PLXPBlePollingLifeManageProtocol.h  # 生命周期协议
+│   │   ├── Predict/                     # Polling 预测引擎
+│   │   │   ├── PLXPPollingHandler.h/mm  # 基础预测处理器
+│   │   │   ├── PLXPPollingFirstPollingHandler.h/mm  # 一代 Polling 处理器
+│   │   │   ├── PLXPPollingSecondPollingHandler.h/mm # 二代 Polling 处理器
+│   │   │   ├── PLXPPollingSecondOptHandler.h/m      # 二代优化处理器
+│   │   │   └── PLXPPollingKnnHandler.h/m            # KNN 算法处理器
+│   │   ├── KeepAlive/                   # 后台保活
+│   │   │   ├── PLXPGCDTimer.h/m         # GCD 定时器
+│   │   │   └── VirtualTest/PLiBeaconDevicePullAlive.h/m  # iBeacon 保活
+│   │   └── AutoTest/                    # 自动化测试工具
+│   │       ├── PLXPCarAutoTest.h/m      # 车辆自动测试
+│   │       └── PLXPAutoTestView.h/m     # 测试界面
+│   ├── BLELocation/              # 蓝牙定位算法
+│   │   ├── PLXPBleLocationManager.h/mm  # 定位管理器（单例）
+│   │   ├── PLXPBleLocationDefined.h     # 定位常量/枚举
+│   │   ├── PLXPBLEInfoManager.h/m       # 蓝牙信息管理
+│   │   ├── PLXPBleInfoCache.h/m         # 蓝牙信息缓存
+│   │   ├── PLXPRssiModel.h/m            # RSSI 信号模型
+│   │   ├── PLXPBleLocationLifeManageProtocol.h  # 定位生命周期协议
+│   │   └── Predict/                     # 定位预测引擎
+│   │       ├── PLPredictInterface.h/mm          # 预测接口
+│   │       ├── PLPredictModel.h/mm              # 预测模型
+│   │       ├── PLXPBleLocationHandler.h/mm      # 基础定位处理器
+│   │       ├── PLXPPollingFirstBleLocationHandler.h/mm  # 一代定位
+│   │       ├── PLXPPollingKNNBleLocationHandler.h/mm    # KNN 定位
+│   │       ├── PLXPPollingOptBleLocationHandler.h/mm    # 优化定位
+│   │       ├── PLXPPollingFirstPredictInterface.h/mm    # 一代预测接口
+│   │       ├── PLXPPollingFirstPredictModel.h/mm        # 一代预测模型
+│   │       ├── PLXPPollingKNNPredictInterce.h/mm        # KNN 预测接口
+│   │       ├── PLXPPollingKNNPredictModel.h/mm          # KNN 预测模型
+│   │       ├── PLXPPollingOptPredictModel.h/mm          # 优化预测模型
+│   │       └── PLXPPollingPredictInterfaceOpt.h/mm      # 优化预测接口
+│   ├── BLELocationAndPollingOTA/ # 蓝牙定位 + OTA 数据
+│   │   ├── PLXPBleLocationAndPollingOtaManager.h/m  # OTA 数据管理器
+│   │   ├── PLXPBleLocationAndPollingOtaCache.h/m    # OTA 缓存
+│   │   └── PLXPBleLocationAndPollingOtaDefined.h    # OTA 常量
+│   ├── PollingEffect/            # 多蓝牙件协同效果
+│   │   ├── PLXPMultiBleManager.h/m              # 多蓝牙件管理器
+│   │   ├── PLXPMultiBleEventTool.h/m            # 多蓝牙事件工具
+│   │   ├── PLXPMultiBleLocationResultTool.h/m   # 多蓝牙定位结果
+│   │   ├── PLPollingEffectDataManager.h/m       # Polling 效果数据管理
+│   │   ├── PLPollingEffectDefined.h             # 效果常量
+│   │   └── PLXPBleCarEventProtocol.h            # 车辆事件协议
+│   ├── Proxy/                    # 代理协议层
+│   │   ├── PLDataProxyProtocol.h        # 数据代理（获取钥匙配置）
+│   │   ├── PLPollingProxyProtocol.h     # Polling 代理（解锁/闭锁回调）
+│   │   └── PLProxyManager.h/m           # 代理管理器
+│   └── Util/                     # 工具类
+│       ├── PLXPCommandTool.h/m          # 指令工具
+│       ├── PLXPMMKVTool.h/m             # MMKV 封装
+│       ├── PLXPPollingSettingTool.h/m   # Polling 配置工具
+│       ├── PLVehicleConfigTool.h/m      # 车辆配置工具
+│       ├── PLVehicleStateInstance.h/m   # 车辆状态实例
+│       ├── PLXPAppStartTool.h/m         # App 启动工具
+│       ├── PLXPCTMediatorTool.h/m       # CTMediator 工具
+│       ├── PLXPUtility.h/m              # 通用工具
+│       ├── PLXPTimerProxy.h/m           # 定时器代理
+│       ├── PLPermissionManager.h/m      # 权限管理
+│       ├── MMKV+CustomKey.h/m           # MMKV 自定义 key
+│       └── NSTimer+Blocks.h/m           # NSTimer 分类
+├── Test/                         # 测试工具
+│   ├── XPPollingSDK+Test.h/m            # 测试扩展
+│   ├── PLPollingTestRssi.h/mm           # RSSI 测试
+│   ├── PLPollingTestTool.h/m            # 测试工具
+│   └── config/                          # 测试配置（模拟 XPCarAbilityConfig）
+├── Resource/
+│   └── XPPollingSDK.bundle              # Polling V1/V2/V3 数据文件
+└── PollingDemo/                  # 独立 Demo 工程
+```
+
+## 核心 API
+
+| 方法/类 | 语言 | 用途 | 说明 |
+|---------|------|------|------|
+| `XPPollingSDK` | OC | SDK 唯一入口类 | ⚠️ 所有外部调用必须通过此类 |
+| `+[XPPollingSDK setupWithLaunchOptions:]` | OC | SDK 初始化 | App 启动时调用 |
+| `+[XPPollingSDK setKeySettingDataProxy:]` | OC | 注入钥匙配置数据 | 实现 `PLDataProxyProtocol` |
+| `+[XPPollingSDK setPollingProxy:]` | OC | 注入 Polling 回调代理 | 实现 `PLPollingProxyProtocol` |
+| `+[XPPollingSDK configPollingMode:]` | OC | 设置运行模式 | 0=关/1=仅解锁/2=仅闭锁/3=全开 |
+| `+[XPPollingSDK configUnlockDistance:]` | OC | 设置解锁距离阈值 | 单位: 米 |
+| `+[XPPollingSDK configLockDistance:]` | OC | 设置闭锁距离阈值 | 单位: 米 |
+| `+[XPPollingSDK configTxPowerArrayV2:]` | OC | 配置 V2 蓝牙发射功率 | 数组格式 |
+| `PLXPPollingManager` | OC | 感应解锁/闭锁总管理器 | 单例，实现 5 个协议 |
+| `PLXPBleLocationManager` | OC | 蓝牙定位管理器 | 单例，RSSI → 距离 → 区域 |
+| `PLXPPollingHandler` | OC | Polling 预测处理器基类 | 子类: First/Second/SecondOpt/KNN |
+| `PLXPBleLocationAndPollingOtaManager` | OC | Polling 数据 + OTA 管理 | V1/V2/V3 数据加载 |
+| `PLXPMultiBleManager` | OC | 多蓝牙件管理器 | 多天线 RSSI 聚合 |
+
+## 参数说明
+- `PLPollingRunMode` — 运行模式（None/UnLock/Lock/LockAndUnlock）
+- `PLPollingAction` — 操作类型（Idle/Lock/Unlock/InCar/Enable/Disable）
+- `PLPollingCmdType` — 指令类型（12 种：解锁/闭锁/授权/后备箱/充电口等）
+- `PLBLEKeyDistanceLevel` — 距离等级（9 级：初始化/车内/1m圈/解锁圈/授权圈/缓冲圈/闭锁圈/迎宾圈/连接圈）
+- `PLBLEVehicleDirection` — 方向枚举（12 个方向：前/后/左/右/4 个 45°角/4 个车内位置）
+- `PLBLELocationResult` — 定位结果（None/InCar/OutCar）
+- `PLPredictResult` — 预测结果（11 种：无/车内/解锁/闭锁/授权/解除授权/后备箱/充电口/锁回退）
+- `PLXPTBoxCommand` — TBox 控制指令（约 30 个：解锁/闭锁/后备箱/充电口/滑门/剪刀门等）
+- `PLXPKeySettingData` — 钥匙配置数据（距离阈值/模式/声音/灵敏度/发射功率等）
+
+## 依赖关系
+- **上游依赖**:
+  - `MMKV` — 持久化 Polling 配置、钥匙硬件信息、开关状态
+  - `CoreBluetooth`（间接）— 通过 XPVehicleSDK 获取 RSSI 数据
+  - `XPCarAbilityConfig`（通过 Proxy）— 获取车型 Polling 能力配置
+  - `XPBLEDataProcessor`（间接）— BLE 数据解析
+- **下游被依赖**:
+  - `XPVehicleSDK/Function/Polling/` — Polling 功能集成入口
+  - `XPVehicleSDK/Function/RssiManager/` — RSSI 信号管理
+  - `XiaoPengQiChe/Services/Bluetooth/` — App 层蓝牙服务
+
+## OC/Swift 互操作
+- 纯 OC 模块，无 Swift 代码
+- 对外接口通过 `XPPollingSDK.h` 暴露
+- 依赖注入通过 Proxy 协议模式（`PLDataProxyProtocol`、`PLPollingProxyProtocol`），实现与主工程解耦
+- ⚠️ 头文件中明确注释：**所有调用必须通过 XPPollingSDK，不接受主工程直接引用 PL 开头的文件**
+
+## 常见用法
+
+### SDK 初始化
+```objc
+// App 启动时
+[XPPollingSDK setupWithLaunchOptions:launchOptions];
+[XPPollingSDK setKeySettingDataProxy:dataProxy];
+[XPPollingSDK setPollingProxy:pollingProxy];
+```
+
+### 配置 Polling 模式
+```objc
+// 设置为解锁+闭锁全开
+[XPPollingSDK configPollingMode:PLPollingRunModeLockAndUnlock];
+[XPPollingSDK configUnlockDistance:2.0];
+[XPPollingSDK configLockDistance:5.0];
+[XPPollingSDK configLockWithSound:YES];
+```
+
+### Polling 生命周期管理
+```objc
+// 通过 PLXPBlePollingLifeManageProtocol
+PLXPKeySettingData *keyData = [[PLXPKeySettingData alloc] initWithProxyKeySettingData:dict];
+[pollingManager initBlePollingWithKeySettingData:keyData isRemedy:NO];
+
+// 暂停/恢复
+[pollingManager pauseBlePolling];
+[pollingManager remuseBlePolling];
+
+// 停止
+[pollingManager deinitBlePolling];
+```
+
+## 已知限制/陷阱
+- **⚠️ 存量模块，不建议大规模重构**：CLAUDE.md 中明确指出 "XPPollingSDK 暂维持 OC/C++ 混编，独立维护"
+- **Predict 算法有多代共存**：一代（First）、二代（Second/SecondOpt）、KNN 三套预测算法同时存在，通过配置切换
+- **后台保活依赖 iBeacon**：`PLiBeaconDevicePullAlive` 使用 iBeacon 虚拟设备保持 App 后台运行
+- **多蓝牙件场景复杂**：新车型可能有 6 个蓝牙天线（main/left/right/center/backLeft/backRight），RSSI 聚合逻辑在 `PLXPMultiBleManager`
+- **Proxy 模式解耦**：SDK 不直接依赖主工程，所有数据通过 `PLDataProxyProtocol` 获取（如钥匙配置），结果通过 `PLPollingProxyProtocol` 回调（解锁/闭锁成功）
+- **距离等级有 9 级**（InitCircle → ConnectCircle），不同等级触发不同动作。配置不当可能导致"反复解锁闭锁"的乒乓问题
+- **TBox 指令集很大**（约 30 个指令），Polling 解锁和普通车控解锁走的是不同的指令码（`PLXPTBoxCommandPollingUnlock` vs `PLXPTBoxCommandUnlock`）
+- **测试工具内置**：Test 目录下有完整的模拟测试套件，包含模拟 RSSI、模拟 XPCarAbilityConfig，可独立运行 PollingDemo
+- **OTA 数据版本化**：蓝牙定位参数有 V1/V2/V3 三个版本，不同车型使用不同版本数据，存储在 `XPPollingSDK.bundle` 中

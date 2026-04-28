@@ -1,0 +1,149 @@
+# XPMotors iOS — 项目宪法 (Constitution)
+
+> 版本: 1.0
+> 最后更新: 2026-04-08
+> 说明: 本文件定义了 AI 辅助开发中不可违反的项目级约束，是所有 Spec 生成和代码执行的最高优先级规则
+
+---
+
+## 1. 架构约束
+
+### 1.1 分层架构不可跨层调用
+```
+App 层 (Modules/Services) → 只能通过 VehiclePresenter 协议访问车控能力
+    ↓ 不可跨层
+VehicleBridge 层 → 只能通过 XPVehicleSDK 门面访问 SDK
+    ↓ 不可跨层  
+SDK 层 (XPVehicleSDK) → 通过 BaseVehicle 管理连接和状态
+    ↓
+连接层 (VehicleConnection) → 管理 BLE/TCP 双通道
+    ↓
+协议层 (XPBLEDataProcessor/MQTTPublisher) → 数据编解码和传输
+```
+
+**禁止**: App 层直接 import VehicleConnection / XPBLEDataProcessor / MQTTPublisher
+
+### 1.2 submodule 边界
+每个 submodule 有独立仓库，对外只通过头文件/公开 API 暴露：
+- `XPVehicleSDK` → `XPVehicleSDK.currentVehicle()` 门面
+- `XPPollingSDK` → `XPPollingSDK.h` 入口类（不直接引用 PL 前缀内部文件）
+- `XPBLEDataProcessor` → `XPBLEDataProcessor.h` / `XPBleKeyV3DataProcessor.h` / `MonaBleDataProcessor.h`
+- `XPVehicleExt` → `XPVehicleExt` 类的 extension 方法
+
+### 1.3 LocalPods 组件化边界
+- `XPBase_*` — 基础组件，不依赖业务
+- `XPBusiness_*` — 业务组件，可依赖基础组件
+- `XPCenter_*` — 中台组件，可依赖基础组件
+
+**禁止**: 基础组件反向依赖业务组件
+
+---
+
+## 2. 语言策略约束
+
+### 2.1 存量 vs 新增
+| 场景 | 语言 | 规则 |
+|------|------|------|
+| 修改存量 OC 代码 | OC | 保持 OC 风格，不混合迁移 |
+| 新建功能模块 | Swift | 优先 Swift，遵循共版设计 |
+| 底层数据层 | C++ | 共平台方向，.mm 桥接 |
+| 存量复杂模块（XPPollingSDK） | OC/C++ | 维持现状，独立维护 |
+
+### 2.2 互操作规则
+- Swift → OC: 必须 `@objc` + `public`
+- OC → Swift: 通过 Bridging-Header
+- C++ → OC: 通过 .mm 文件
+- **禁止**: 在同一个 PR 中混合"语言迁移"和"功能开发"
+
+---
+
+## 3. 车控安全约束
+
+### 3.1 指令下发完整性
+修改车控相关代码（VehicleBridge、submodule/、BLEKey）时，**必须**确认：
+- [ ] 指令下发链路完整（从 UI → Presenter → Connection → Protocol）
+- [ ] 状态回调链路完整（从 Protocol → Connection → Presenter → Event → UI）
+- [ ] 不影响其他车型（特别是 XiaopengVehicle vs MonaVehicle）
+
+### 3.2 切车安全
+- 切车必须先断开旧连接再建立新连接
+- 不在主线程创建车控实例
+- 业务层收到 `vehicleSwitchedEvent` 后才能使用新 presenter
+
+### 3.3 蓝牙协议安全
+- C++ packed 结构体字段顺序不可修改
+- BLE data 和 tboxData 不可混用
+- V3 鉴权 Auth0 → Auth1 顺序不可乱
+- Polling 指令码与普通车控指令码不可混用
+
+### 3.4 Mona 隔离
+- Mona 车型的蓝牙、车控、OTA 逻辑与小鹏系完全隔离
+- 修改小鹏蓝牙代码不影响 Mona，反之亦然
+- Mona 不支持 `createVehicle` 独立实例
+
+---
+
+## 4. 共版设计约束
+
+### 4.1 差异化通过配置抹平
+- 国内/国际差异通过 `XPCarAbilityConfig` + OCM 远程配置管理
+- **禁止**: 在代码中硬编码 `if 国内版 { ... } else { ... }`
+- 正确做法: `if config.isSupportXxx { ... }`
+
+### 4.2 车型差异化通过子类/配置
+- 新增车型必须创建 `XP<型号>CarAbilityConfig` 子类
+- 必须在工厂方法中注册
+- 配置覆盖优先级: base → 车型 → 扩展车型 → OCM 远程
+
+---
+
+## 5. 代码质量约束
+
+### 5.1 命名规范
+- OC 类: `XP` 前缀 + 模块名 + 功能名
+- Swift 类: 无前缀，模块名 + 功能名
+- Bridge 类: `XP*Bridge`
+- 存量拼写错误不修改（如 `VEVeihcleSDKTool`、`remuseBlePolling`）
+
+### 5.2 依赖管理
+- 使用 CocoaPods，最低支持 iOS 13.0
+- 优先使用项目已有封装，**禁止重复造轮子**
+- 新增第三方依赖需团队评审
+
+### 5.3 测试
+- 修改代码后运行相关单测，不跑全量
+- submodule 修改需在独立仓库提交
+
+---
+
+## 6. 知识库维护约束
+
+### 6.1 沉淀时机
+完成需求/修复 Bug/代码审查后，执行知识沉淀 SOP（`.ai-knowledge/knowledge-sedimentation-sop.md`）
+
+### 6.2 知识点质量
+- 触发关键词必须包含具体方法名/类名
+- 代码路径必须实际验证
+- "核心规则"必须具体可操作（"必须xxx"/"禁止xxx"）
+
+### 6.3 模块文档同步
+模块 API 变更时同步更新 `.ai-knowledge/modules/*.md`
+
+### 6.4 问题归因原则
+- 问题沉淀必须归因到源头，禁止创建中间态存储目录（如 `pitfalls/`）
+- 归因路径：Skill 流程缺陷 → 修复对应 `SKILL.md`；规范缺失 → 补充对应层级 `constitution.md` / `rules/*.md`；知识盲区 → 新增 `knowledge-points/*.kp.md`；一次性 Bug → 不沉淀
+- 详见 `.ai-knowledge/knowledge-sedimentation-sop.md` 归因分类表
+
+### 6.5 Keywords 命名规范
+- module-registry 和 deps.yml 中的 keywords/trigger_keywords 必须描述模块的**职责和功能**（模块做什么），禁止使用实现细节
+- **禁止**: 具体类名（D55DataParser、E28aDataParser）、字段名（shift_state、gearValue、door_lock）、变量名（autoLock、BLEKey感应）
+- **正确**: 职责语义词（蓝牙解析、CAN解析、车态提取、感应闭锁、近场感应、距离预测）
+- Keywords 应从 module-context 的职责描述中提取，而非人工猜测
+- module-registry keywords 作为单一数据源，deps.yml trigger_keywords 应与之对齐
+
+### 6.6 功能方案书（Feature-Spec）架构
+- 知识库以「功能方案书」为骨架，调用链为主线，共享节点为引用单元
+- 每个功能方案书必须覆盖完整闭环：入口 → 前提条件 → 激活条件 → 执行条件 → 正常状态 → 异常状态
+- 共享调用链节点（shared-node）仅通过 `@ref()` 引用加载，不独立触发
+- feature-spec 必须声明 `depends_on_files` + `锚点签名`，用于变更检测和知识缓存
+- 详见 `.ai-knowledge/specs/feature-spec-standard.md`

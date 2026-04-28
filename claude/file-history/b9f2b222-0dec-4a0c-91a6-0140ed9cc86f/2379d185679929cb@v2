@@ -1,0 +1,1178 @@
+# 小鹏iOS AI-Coding治理体系 - Phase 1 实施计划
+
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 建立小鹏iOS项目的AI-Coding基础治理框架，包括架构扫描、权限控制、规范检查和Claude Code适配
+
+**Architecture:** 采用分层架构设计，自下而上构建数据源层、规范标准层、统一抽象层和AI工具适配层。使用Python构建核心服务，Swift/Shell脚本处理iOS项目集成
+
+**Tech Stack:** Python 3.11, FastAPI, Redis, SQLite, Swift, Shell Scripts, Git Hooks, Claude Code SDK
+
+---
+
+## Chunk 1: 项目架构扫描器核心
+
+### Task 1: 项目架构分析器
+
+**Files:**
+- Create: `scripts/architecture_scanner.py`
+- Create: `scripts/models/project_model.py`
+- Create: `tests/test_architecture_scanner.py`
+- Create: `config/scanner_config.yaml`
+
+- [ ] **Step 1: 创建项目模型数据结构**
+
+在 `scripts/models/project_model.py` 中定义：
+
+```python
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional
+from enum import Enum
+
+class ModuleType(Enum):
+    MAIN_APP = "main_app"
+    LOCAL_POD = "local_pod"
+    SUBMODULE = "submodule"
+    THIRD_PARTY = "third_party"
+
+class PermissionLevel(Enum):
+    PUBLIC = "public"
+    TEAM_MANAGED = "team_managed"
+    RESTRICTED = "restricted"
+    FORBIDDEN = "forbidden"
+
+@dataclass
+class ModuleInfo:
+    name: str
+    type: ModuleType
+    path: str
+    dependencies: List[str] = field(default_factory=list)
+    owners: List[str] = field(default_factory=list)
+    permission_level: PermissionLevel = PermissionLevel.PUBLIC
+    description: Optional[str] = None
+
+@dataclass
+class DependencyLayer:
+    name: str
+    level: int
+    modules: List[str] = field(default_factory=list)
+
+@dataclass
+class ProjectArchitecture:
+    main_app: str
+    modules: List[ModuleInfo] = field(default_factory=list)
+    dependency_layers: List[DependencyLayer] = field(default_factory=list)
+    circular_dependencies: List[tuple] = field(default_factory=list)
+```
+
+- [ ] **Step 2: 编写架构扫描器测试**
+
+在 `tests/test_architecture_scanner.py` 中：
+
+```python
+import pytest
+import tempfile
+import os
+from pathlib import Path
+from scripts.architecture_scanner import ArchitectureScanner
+from scripts.models.project_model import ModuleType, PermissionLevel
+
+class TestArchitectureScanner:
+
+    def setup_method(self):
+        """为每个测试创建临时项目结构"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.project_root = Path(self.temp_dir)
+
+        # 创建模拟的小鹏项目结构
+        self._create_mock_project()
+        self.scanner = ArchitectureScanner(str(self.project_root))
+
+    def _create_mock_project(self):
+        """创建模拟的iOS项目结构"""
+        # Podfile
+        podfile_content = """
+platform :ios, '12.0'
+
+target 'XiaoPengQiChe' do
+  use_frameworks!
+
+  # 本地pod
+  pod 'XPBase_Common', :path => './LocalPods/XPBase_Common'
+  pod 'XPBusiness_AI', :path => './LocalPods/XPBusiness_AI'
+
+  # 第三方依赖
+  pod 'AFNetworking', '~> 4.0'
+  pod 'Masonry'
+end
+        """
+        (self.project_root / "Podfile").write_text(podfile_content)
+
+        # LocalPods 结构
+        local_pods = self.project_root / "LocalPods"
+        local_pods.mkdir()
+
+        (local_pods / "XPBase_Common" / "XPBase_Common.podspec").mkdir(parents=True)
+        (local_pods / "XPBase_Common" / "XPBase_Common.podspec").write_text("""
+Pod::Spec.new do |s|
+  s.name = 'XPBase_Common'
+  s.version = '1.0.0'
+  s.dependency 'AFNetworking'
+end
+        """)
+
+        # Submodules
+        submodules = self.project_root / "submodule"
+        submodules.mkdir()
+        (submodules / "XPVehicleSDK" / "README.md").mkdir(parents=True)
+        (submodules / "XPVehicleSDK" / "README.md").write_text("# XPVehicleSDK")
+
+    def test_scan_podfile_dependencies(self):
+        """测试Podfile依赖扫描"""
+        result = self.scanner.scan_project()
+
+        # 验证主应用被识别
+        assert result.main_app == "XiaoPengQiChe"
+
+        # 验证本地pod被识别
+        local_pods = [m for m in result.modules if m.type == ModuleType.LOCAL_POD]
+        assert len(local_pods) >= 1
+
+        local_pod_names = [m.name for m in local_pods]
+        assert "XPBase_Common" in local_pod_names
+        assert "XPBusiness_AI" in local_pod_names
+
+    def test_detect_submodules(self):
+        """测试子模块检测"""
+        result = self.scanner.scan_project()
+
+        submodules = [m for m in result.modules if m.type == ModuleType.SUBMODULE]
+        submodule_names = [m.name for m in submodules]
+        assert "XPVehicleSDK" in submodule_names
+
+    def test_generate_permission_matrix(self):
+        """测试权限矩阵生成"""
+        result = self.scanner.scan_project()
+        permissions = self.scanner.generate_permission_matrix(result.modules)
+
+        # 子模块应该是受限权限
+        vehicle_module = next(m for m in result.modules if m.name == "XPVehicleSDK")
+        assert vehicle_module.permission_level == PermissionLevel.RESTRICTED
+
+        # 业务模块应该是团队管理
+        business_modules = [m for m in result.modules if m.name.startswith("XPBusiness_")]
+        if business_modules:
+            assert business_modules[0].permission_level == PermissionLevel.TEAM_MANAGED
+```
+
+- [ ] **Step 3: 运行测试确认失败**
+
+运行: `python -m pytest tests/test_architecture_scanner.py -v`
+Expected: FAIL with "No module named 'scripts.architecture_scanner'"
+
+- [ ] **Step 4: 实现架构扫描器核心逻辑**
+
+在 `scripts/architecture_scanner.py` 中：
+
+```python
+import os
+import re
+import yaml
+from pathlib import Path
+from typing import List, Dict, Optional
+from scripts.models.project_model import (
+    ProjectArchitecture, ModuleInfo, DependencyLayer,
+    ModuleType, PermissionLevel
+)
+
+class ArchitectureScanner:
+    """小鹏iOS项目架构扫描器"""
+
+    def __init__(self, project_root: str):
+        self.project_root = Path(project_root)
+        self.config = self._load_config()
+
+    def _load_config(self) -> dict:
+        """加载扫描配置"""
+        config_path = Path(__file__).parent.parent / "config" / "scanner_config.yaml"
+        if config_path.exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f)
+        return self._default_config()
+
+    def _default_config(self) -> dict:
+        """默认扫描配置"""
+        return {
+            'sources': {
+                'podfile': './Podfile',
+                'local_pods': './LocalPods/*/*.podspec',
+                'submodules': './submodule/*/README.md'
+            },
+            'analysis_targets': {
+                'dependency_tree': True,
+                'circular_dependency': True,
+                'module_boundaries': True,
+                'ownership_mapping': True
+            },
+            'team_mapping': {
+                'XPVehicle*': ['vehicle-team'],
+                'XPBusiness_AI*': ['ai-team'],
+                'XPBusiness_Media*': ['media-team'],
+                'XPBase_*': ['platform-team']
+            }
+        }
+
+    def scan_project(self) -> ProjectArchitecture:
+        """扫描整个项目架构"""
+        architecture = ProjectArchitecture(main_app="")
+
+        # 扫描Podfile获取主应用和依赖
+        self._scan_podfile(architecture)
+
+        # 扫描本地Pods
+        self._scan_local_pods(architecture)
+
+        # 扫描子模块
+        self._scan_submodules(architecture)
+
+        # 生成依赖层级
+        self._build_dependency_layers(architecture)
+
+        # 检测循环依赖
+        self._detect_circular_dependencies(architecture)
+
+        # 生成权限矩阵
+        architecture.modules = self.generate_permission_matrix(architecture.modules)
+
+        return architecture
+
+    def _scan_podfile(self, architecture: ProjectArchitecture):
+        """扫描Podfile获取主应用信息"""
+        podfile_path = self.project_root / "Podfile"
+        if not podfile_path.exists():
+            return
+
+        content = podfile_path.read_text(encoding='utf-8')
+
+        # 提取主应用target
+        target_match = re.search(r"target\s+['\"]([^'\"]+)['\"]", content)
+        if target_match:
+            architecture.main_app = target_match.group(1)
+
+        # 提取第三方依赖
+        third_party_pods = re.findall(r"pod\s+['\"]([^'\"]+)['\"](?:,\s*['\"][^'\"]*['\"])?(?:\s*,\s*:path\s*=>\s*['\"][^'\"]+['\"])?", content)
+
+        for pod_name in third_party_pods:
+            # 排除本地pod (包含:path的)
+            if f":path => './LocalPods/{pod_name}" not in content:
+                module = ModuleInfo(
+                    name=pod_name,
+                    type=ModuleType.THIRD_PARTY,
+                    path=f"Pods/{pod_name}",
+                    permission_level=PermissionLevel.PUBLIC
+                )
+                architecture.modules.append(module)
+
+    def _scan_local_pods(self, architecture: ProjectArchitecture):
+        """扫描LocalPods目录"""
+        local_pods_dir = self.project_root / "LocalPods"
+        if not local_pods_dir.exists():
+            return
+
+        for pod_dir in local_pods_dir.iterdir():
+            if pod_dir.is_dir():
+                podspec_file = pod_dir / f"{pod_dir.name}.podspec"
+                if podspec_file.exists():
+                    module = ModuleInfo(
+                        name=pod_dir.name,
+                        type=ModuleType.LOCAL_POD,
+                        path=str(pod_dir.relative_to(self.project_root)),
+                        permission_level=PermissionLevel.TEAM_MANAGED
+                    )
+
+                    # 解析podspec中的依赖
+                    self._parse_podspec_dependencies(podspec_file, module)
+
+                    architecture.modules.append(module)
+
+    def _scan_submodules(self, architecture: ProjectArchitecture):
+        """扫描Git子模块"""
+        submodule_dir = self.project_root / "submodule"
+        if not submodule_dir.exists():
+            return
+
+        for sub_dir in submodule_dir.iterdir():
+            if sub_dir.is_dir():
+                module = ModuleInfo(
+                    name=sub_dir.name,
+                    type=ModuleType.SUBMODULE,
+                    path=str(sub_dir.relative_to(self.project_root)),
+                    permission_level=PermissionLevel.RESTRICTED
+                )
+                architecture.modules.append(module)
+
+    def _parse_podspec_dependencies(self, podspec_file: Path, module: ModuleInfo):
+        """解析podspec文件中的依赖关系"""
+        try:
+            content = podspec_file.read_text(encoding='utf-8')
+            # 提取s.dependency声明
+            dependencies = re.findall(r"s\.dependency\s+['\"]([^'\"]+)['\"]", content)
+            module.dependencies.extend(dependencies)
+        except Exception as e:
+            print(f"Warning: Failed to parse {podspec_file}: {e}")
+
+    def _build_dependency_layers(self, architecture: ProjectArchitecture):
+        """构建依赖层级结构"""
+        layers = [
+            DependencyLayer("App", 0, [architecture.main_app]),
+            DependencyLayer("Business", 1, [m.name for m in architecture.modules if m.name.startswith("XPBusiness_")]),
+            DependencyLayer("Base", 2, [m.name for m in architecture.modules if m.name.startswith("XPBase_")]),
+            DependencyLayer("Vehicle", 3, [m.name for m in architecture.modules if "Vehicle" in m.name]),
+            DependencyLayer("Utilities", 4, [m.name for m in architecture.modules if m.name in ["XPBucket", "XPNetwork"]])
+        ]
+
+        architecture.dependency_layers = layers
+
+    def _detect_circular_dependencies(self, architecture: ProjectArchitecture):
+        """检测循环依赖"""
+        # 简化版循环依赖检测
+        module_deps = {m.name: m.dependencies for m in architecture.modules}
+
+        def has_cycle(start, current, path, visited):
+            if current in visited:
+                if current == start:
+                    return path
+                return None
+
+            visited.add(current)
+            path.append(current)
+
+            for dep in module_deps.get(current, []):
+                cycle = has_cycle(start, dep, path[:], visited.copy())
+                if cycle:
+                    return cycle
+
+            return None
+
+        cycles = []
+        for module_name in module_deps:
+            cycle = has_cycle(module_name, module_name, [], set())
+            if cycle and len(cycle) > 1:
+                cycles.append(tuple(cycle))
+
+        architecture.circular_dependencies = list(set(cycles))
+
+    def generate_permission_matrix(self, modules: List[ModuleInfo]) -> List[ModuleInfo]:
+        """生成权限矩阵"""
+        for module in modules:
+            # 根据模块类型设置权限
+            if module.type == ModuleType.SUBMODULE:
+                module.permission_level = PermissionLevel.RESTRICTED
+                if "Vehicle" in module.name:
+                    module.owners = ["vehicle-team", "senior-architect"]
+
+            elif module.type == ModuleType.LOCAL_POD:
+                if module.name.startswith("XPBusiness_"):
+                    module.permission_level = PermissionLevel.TEAM_MANAGED
+                    team = self._extract_business_team(module.name)
+                    module.owners = [team, "senior-architect"]
+                elif module.name.startswith("XPBase_"):
+                    module.permission_level = PermissionLevel.PUBLIC
+                    module.owners = ["platform-team"]
+
+        return modules
+
+    def _extract_business_team(self, module_name: str) -> str:
+        """从业务模块名提取对应团队"""
+        if "AI" in module_name:
+            return "ai-team"
+        elif "Media" in module_name:
+            return "media-team"
+        elif "Map" in module_name:
+            return "map-team"
+        return "business-team"
+```
+
+- [ ] **Step 5: 创建扫描器配置文件**
+
+在 `config/scanner_config.yaml` 中：
+
+```yaml
+# 小鹏iOS项目架构扫描配置
+sources:
+  podfile: "./Podfile"
+  local_pods: "./LocalPods/*/*.podspec"
+  submodules: "./submodule/*/README.md"
+
+analysis_targets:
+  dependency_tree: true
+  circular_dependency: true
+  module_boundaries: true
+  ownership_mapping: true
+
+# 团队映射规则
+team_mapping:
+  "XPVehicleSDK": ["vehicle-team"]
+  "XPCarControlCore": ["vehicle-team"]
+  "XPBusiness_AI*": ["ai-team"]
+  "XPBusiness_Media*": ["media-team"]
+  "XPBusiness_Map*": ["map-team"]
+  "XPBase_*": ["platform-team"]
+
+# 权限层级定义
+permission_levels:
+  restricted:
+    description: "仅模块所有者可修改"
+    teams: ["vehicle-team", "senior-architect"]
+    ai_assist: "require_human_review"
+
+  team_managed:
+    description: "对应团队管理"
+    teams: ["module_owner_team", "senior-architect"]
+    ai_assist: "team_managed"
+
+  public:
+    description: "全团队可访问"
+    teams: ["all"]
+    ai_assist: "unrestricted"
+
+# 依赖层级规则
+dependency_rules:
+  allowed_layers:
+    - name: "App"
+      level: 0
+      can_depend_on: ["Business", "Base"]
+
+    - name: "Business"
+      level: 1
+      can_depend_on: ["Base", "Vehicle", "Utilities"]
+
+    - name: "Base"
+      level: 2
+      can_depend_on: ["Utilities"]
+
+    - name: "Vehicle"
+      level: 3
+      can_depend_on: ["Base", "Utilities"]
+
+    - name: "Utilities"
+      level: 4
+      can_depend_on: []
+```
+
+- [ ] **Step 6: 运行测试确认通过**
+
+运行: `python -m pytest tests/test_architecture_scanner.py -v`
+Expected: PASS (所有测试通过)
+
+- [ ] **Step 7: 提交架构扫描器**
+
+```bash
+git add scripts/architecture_scanner.py scripts/models/project_model.py tests/test_architecture_scanner.py config/scanner_config.yaml
+git commit -m "feat: add iOS project architecture scanner
+
+- 实现Podfile、LocalPods、Submodules扫描
+- 支持依赖关系分析和循环依赖检测
+- 自动生成权限矩阵和团队所有权映射
+- 提供完整测试覆盖和配置化能力"
+```
+
+---
+
+## Chunk 2: 权限控制系统核心
+
+### Task 2: 权限检查器
+
+**Files:**
+- Create: `scripts/permission_checker.py`
+- Create: `scripts/models/permission_model.py`
+- Create: `tests/test_permission_checker.py`
+- Create: `config/permission_config.yaml`
+
+- [ ] **Step 8: 定义权限模型**
+
+在 `scripts/models/permission_model.py` 中：
+
+```python
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional, Any
+from enum import Enum
+from datetime import datetime, timedelta
+
+class ActionType(Enum):
+    READ = "read"
+    WRITE = "write"
+    AI_ASSIST = "ai_assist"
+
+class PermissionResult(Enum):
+    ALLOWED = "allowed"
+    DENIED = "denied"
+    REQUIRES_APPROVAL = "requires_approval"
+
+@dataclass
+class User:
+    id: str
+    name: str
+    roles: List[str] = field(default_factory=list)
+    teams: List[str] = field(default_factory=list)
+    source_ip: Optional[str] = None
+    user_agent: Optional[str] = None
+
+@dataclass
+class PermissionRequest:
+    user: User
+    module: str
+    action: ActionType
+    context: Dict[str, Any] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=datetime.now)
+
+@dataclass
+class PermissionResponse:
+    allowed: bool
+    restrictions: List[str] = field(default_factory=list)
+    warning: Optional[str] = None
+    error: Optional[str] = None
+    cache_ttl: int = 300  # 5分钟默认缓存
+    audit_required: bool = False
+
+@dataclass
+class TemporaryGrant:
+    user_id: str
+    module: str
+    action: ActionType
+    granted_by: str
+    expires_at: datetime
+    reason: str
+    auto_revoke: bool = True
+
+@dataclass
+class AuditEntry:
+    timestamp: datetime
+    user_id: str
+    module: str
+    action: ActionType
+    result: PermissionResult
+    source_ip: Optional[str] = None
+    additional_context: Dict[str, Any] = field(default_factory=dict)
+```
+
+- [ ] **Step 9: 编写权限检查器测试**
+
+在 `tests/test_permission_checker.py` 中：
+
+```python
+import pytest
+from datetime import datetime, timedelta
+from scripts.permission_checker import PermissionChecker
+from scripts.models.permission_model import (
+    User, PermissionRequest, ActionType, PermissionResult
+)
+
+class TestPermissionChecker:
+
+    def setup_method(self):
+        """设置测试环境"""
+        self.permission_checker = PermissionChecker()
+
+        # 测试用户
+        self.vehicle_dev = User(
+            id="user001",
+            name="张三",
+            roles=["vehicle_team_member"],
+            teams=["vehicle-team"]
+        )
+
+        self.ai_dev = User(
+            id="user002",
+            name="李四",
+            roles=["business_developer"],
+            teams=["ai-team"]
+        )
+
+        self.architect = User(
+            id="user003",
+            name="王五",
+            roles=["senior_architect"],
+            teams=["architecture-team"]
+        )
+
+    def test_vehicle_team_can_modify_vehicle_sdk(self):
+        """测试车控团队可以修改车控SDK"""
+        request = PermissionRequest(
+            user=self.vehicle_dev,
+            module="XPVehicleSDK",
+            action=ActionType.WRITE
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == True
+        assert response.error is None
+
+    def test_ai_team_cannot_modify_vehicle_sdk(self):
+        """测试AI团队不能修改车控SDK"""
+        request = PermissionRequest(
+            user=self.ai_dev,
+            module="XPVehicleSDK",
+            action=ActionType.WRITE
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == False
+        assert "unauthorized" in response.error.lower()
+
+    def test_architect_has_universal_access(self):
+        """测试架构师拥有全局访问权限"""
+        request = PermissionRequest(
+            user=self.architect,
+            module="XPVehicleSDK",
+            action=ActionType.WRITE
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == True
+
+    def test_ai_assist_requires_special_check(self):
+        """测试AI辅助需要特殊检查"""
+        request = PermissionRequest(
+            user=self.vehicle_dev,
+            module="XPVehicleSDK",
+            action=ActionType.AI_ASSIST
+        )
+
+        response = self.permission_checker.check_permission(request)
+        # 车控模块的AI辅助应该需要审核
+        assert response.audit_required == True
+
+    def test_degraded_mode_allows_read_only(self):
+        """测试降级模式允许只读访问"""
+        # 模拟系统不健康状态
+        self.permission_checker._system_healthy = False
+
+        request = PermissionRequest(
+            user=self.ai_dev,
+            module="XPBase_Common",
+            action=ActionType.READ
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == True
+        assert "degraded_mode" in response.restrictions
+        assert response.warning is not None
+
+    def test_degraded_mode_blocks_writes(self):
+        """测试降级模式阻止写操作"""
+        # 模拟系统不健康状态
+        self.permission_checker._system_healthy = False
+
+        request = PermissionRequest(
+            user=self.ai_dev,
+            module="XPBase_Common",
+            action=ActionType.WRITE
+        )
+
+        response = self.permission_checker.check_permission(request)
+        assert response.allowed == False
+        assert "system_unavailable" in response.restrictions
+```
+
+- [ ] **Step 10: 运行权限测试确认失败**
+
+运行: `python -m pytest tests/test_permission_checker.py -v`
+Expected: FAIL with "No module named 'scripts.permission_checker'"
+
+- [ ] **Step 11: 实现权限检查器核心逻辑**
+
+在 `scripts/permission_checker.py` 中：
+
+```python
+import yaml
+import time
+import hashlib
+from pathlib import Path
+from typing import Dict, List, Optional, Set
+from datetime import datetime, timedelta
+from scripts.models.permission_model import (
+    User, PermissionRequest, PermissionResponse, ActionType,
+    PermissionResult, TemporaryGrant, AuditEntry
+)
+
+class PermissionChecker:
+    """权限检查器 - 支持模块级权限控制和降级策略"""
+
+    def __init__(self, config_path: Optional[str] = None):
+        self.config = self._load_config(config_path)
+        self._permission_cache: Dict[str, tuple] = {}  # (result, expire_time)
+        self._system_healthy = True
+        self._audit_log: List[AuditEntry] = []
+        self._temp_grants: List[TemporaryGrant] = []
+
+    def _load_config(self, config_path: Optional[str] = None) -> dict:
+        """加载权限配置"""
+        if config_path is None:
+            config_path = Path(__file__).parent.parent / "config" / "permission_config.yaml"
+
+        if Path(config_path).exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f)
+
+        return self._default_permission_config()
+
+    def _default_permission_config(self) -> dict:
+        """默认权限配置"""
+        return {
+            'roles': {
+                'vehicle_team_member': {
+                    'permissions': [
+                        'vehicle_sdk:read',
+                        'vehicle_sdk:write',
+                        'ai_assist:vehicle_modules'
+                    ]
+                },
+                'business_developer': {
+                    'permissions': [
+                        'business_modules:read',
+                        'business_modules:write',
+                        'ai_assist:business_modules',
+                        'base_modules:read'
+                    ]
+                },
+                'senior_architect': {
+                    'permissions': [
+                        '*:read',
+                        '*:write',
+                        'ai_assist:all_modules',
+                        'permission:manage'
+                    ]
+                }
+            },
+            'module_ownership': {
+                'XPVehicleSDK': {
+                    'owners': ['vehicle-team'],
+                    'collaborators': ['senior-architect'],
+                    'permission_level': 'restricted',
+                    'ai_restrictions': [
+                        'require_human_review_for_core_apis',
+                        'audit_all_ai_generated_changes'
+                    ]
+                },
+                'XPCarControlCore': {
+                    'owners': ['vehicle-team'],
+                    'permission_level': 'restricted'
+                },
+                'XPBusiness_AI': {
+                    'owners': ['ai-team'],
+                    'permission_level': 'team_managed'
+                },
+                'XPBase_Common': {
+                    'owners': ['platform-team'],
+                    'permission_level': 'public'
+                }
+            },
+            'cache_settings': {
+                'ttl': 300,  # 5分钟
+                'max_size': 1000
+            }
+        }
+
+    def check_permission(self, request: PermissionRequest) -> PermissionResponse:
+        """检查模块访问权限"""
+        # 1. 检查缓存
+        cache_key = self._generate_cache_key(request)
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result:
+            return cached_result
+
+        # 2. 系统健康检查
+        if not self._check_system_health():
+            result = self._handle_degraded_mode(request)
+            self._audit_permission_check(request, result)
+            return result
+
+        # 3. 检查临时授权
+        temp_grant = self._check_temporary_grants(request)
+        if temp_grant:
+            result = PermissionResponse(allowed=True, restrictions=['temporary_grant'])
+            self._cache_result(cache_key, result)
+            self._audit_permission_check(request, result)
+            return result
+
+        # 4. 执行权限检查
+        result = self._perform_permission_check(request)
+
+        # 5. 缓存结果
+        self._cache_result(cache_key, result)
+
+        # 6. 记录审计日志
+        self._audit_permission_check(request, result)
+
+        return result
+
+    def _check_system_health(self) -> bool:
+        """检查系统健康状态"""
+        # 简化版健康检查 - 实际应该检查数据库、缓存等
+        return self._system_healthy
+
+    def _handle_degraded_mode(self, request: PermissionRequest) -> PermissionResponse:
+        """处理系统降级模式"""
+        if request.action == ActionType.READ:
+            self._log_degraded_access(request)
+            return PermissionResponse(
+                allowed=True,
+                restrictions=['degraded_mode'],
+                warning='系统降级模式，仅允许只读访问',
+                cache_ttl=60  # 降级模式下缓存时间更短
+            )
+
+        return PermissionResponse(
+            allowed=False,
+            restrictions=['system_unavailable'],
+            error='权限系统暂不可用，请联系管理员',
+            cache_ttl=0  # 不缓存错误结果
+        )
+
+    def _perform_permission_check(self, request: PermissionRequest) -> PermissionResponse:
+        """执行实际的权限检查"""
+        user = request.user
+        module = request.module
+        action = request.action
+
+        # 1. 检查用户角色权限
+        user_permissions = self._get_user_permissions(user)
+
+        # 2. 检查模块所有权
+        module_config = self._get_module_config(module)
+
+        # 3. 验证基本权限
+        if not self._has_basic_permission(user_permissions, module, action):
+            return PermissionResponse(
+                allowed=False,
+                error=f"用户 {user.name} 无权限对模块 {module} 执行 {action.value} 操作"
+            )
+
+        # 4. AI辅助特殊检查
+        if action == ActionType.AI_ASSIST:
+            return self._check_ai_permissions(user, module, module_config)
+
+        # 5. 检查模块级限制
+        restrictions = self._check_module_restrictions(user, module, module_config)
+
+        return PermissionResponse(
+            allowed=True,
+            restrictions=restrictions,
+            audit_required=len(restrictions) > 0
+        )
+
+    def _get_user_permissions(self, user: User) -> Set[str]:
+        """获取用户的所有权限"""
+        permissions = set()
+
+        for role in user.roles:
+            role_config = self.config['roles'].get(role, {})
+            role_permissions = role_config.get('permissions', [])
+            permissions.update(role_permissions)
+
+        return permissions
+
+    def _get_module_config(self, module: str) -> dict:
+        """获取模块配置"""
+        module_ownership = self.config.get('module_ownership', {})
+
+        # 精确匹配
+        if module in module_ownership:
+            return module_ownership[module]
+
+        # 模式匹配 (如 XPBusiness_* 匹配所有XPBusiness_开头的模块)
+        for pattern, config in module_ownership.items():
+            if pattern.endswith('*'):
+                prefix = pattern[:-1]
+                if module.startswith(prefix):
+                    return config
+
+        # 默认配置
+        return {'permission_level': 'public', 'owners': ['all']}
+
+    def _has_basic_permission(self, user_permissions: Set[str], module: str, action: ActionType) -> bool:
+        """检查基本权限"""
+        # 检查通配符权限
+        if f"*:{action.value}" in user_permissions:
+            return True
+
+        # 检查具体模块权限
+        permission_key = f"{module.lower()}:{action.value}"
+        if permission_key in user_permissions:
+            return True
+
+        # 检查模块类别权限
+        if module.startswith("XPVehicle"):
+            return f"vehicle_modules:{action.value}" in user_permissions
+        elif module.startswith("XPBusiness_"):
+            return f"business_modules:{action.value}" in user_permissions
+        elif module.startswith("XPBase_"):
+            return f"base_modules:{action.value}" in user_permissions
+
+        return False
+
+    def _check_ai_permissions(self, user: User, module: str, module_config: dict) -> PermissionResponse:
+        """检查AI辅助权限"""
+        ai_restrictions = module_config.get('ai_restrictions', [])
+
+        # 受限模块需要人工审核
+        if 'require_human_review_for_core_apis' in ai_restrictions:
+            return PermissionResponse(
+                allowed=True,
+                restrictions=['ai_human_review_required'],
+                audit_required=True,
+                warning=f"模块 {module} 的AI辅助修改需要人工审核"
+            )
+
+        # 审计所有AI生成的变更
+        if 'audit_all_ai_generated_changes' in ai_restrictions:
+            return PermissionResponse(
+                allowed=True,
+                restrictions=['ai_audit_required'],
+                audit_required=True
+            )
+
+        return PermissionResponse(allowed=True)
+
+    def _check_module_restrictions(self, user: User, module: str, module_config: dict) -> List[str]:
+        """检查模块级限制"""
+        restrictions = []
+        permission_level = module_config.get('permission_level', 'public')
+
+        if permission_level == 'restricted':
+            owners = module_config.get('owners', [])
+            collaborators = module_config.get('collaborators', [])
+
+            user_teams = set(user.teams)
+            allowed_teams = set(owners + collaborators)
+
+            if not user_teams.intersection(allowed_teams):
+                # 这种情况应该在基本权限检查中就被拒绝了
+                restrictions.append('unauthorized_module_access')
+
+        return restrictions
+
+    def _check_temporary_grants(self, request: PermissionRequest) -> Optional[TemporaryGrant]:
+        """检查临时授权"""
+        current_time = datetime.now()
+
+        for grant in self._temp_grants:
+            if (grant.user_id == request.user.id and
+                grant.module == request.module and
+                grant.action == request.action and
+                grant.expires_at > current_time):
+                return grant
+
+        return None
+
+    def _generate_cache_key(self, request: PermissionRequest) -> str:
+        """生成缓存键"""
+        key_parts = [
+            request.user.id,
+            request.module,
+            request.action.value,
+            str(sorted(request.user.roles)),
+            str(sorted(request.user.teams))
+        ]
+        key_string = "|".join(key_parts)
+        return hashlib.md5(key_string.encode()).hexdigest()
+
+    def _get_from_cache(self, cache_key: str) -> Optional[PermissionResponse]:
+        """从缓存获取结果"""
+        if cache_key in self._permission_cache:
+            result, expire_time = self._permission_cache[cache_key]
+            if time.time() < expire_time:
+                return result
+            else:
+                # 清理过期缓存
+                del self._permission_cache[cache_key]
+        return None
+
+    def _cache_result(self, cache_key: str, result: PermissionResponse):
+        """缓存权限检查结果"""
+        if result.cache_ttl > 0:
+            expire_time = time.time() + result.cache_ttl
+            self._permission_cache[cache_key] = (result, expire_time)
+
+            # 简单的缓存大小控制
+            max_size = self.config.get('cache_settings', {}).get('max_size', 1000)
+            if len(self._permission_cache) > max_size:
+                # 移除最老的条目
+                oldest_key = min(self._permission_cache.keys(),
+                               key=lambda k: self._permission_cache[k][1])
+                del self._permission_cache[oldest_key]
+
+    def _audit_permission_check(self, request: PermissionRequest, response: PermissionResponse):
+        """记录权限检查审计日志"""
+        result = PermissionResult.ALLOWED if response.allowed else PermissionResult.DENIED
+
+        audit_entry = AuditEntry(
+            timestamp=datetime.now(),
+            user_id=request.user.id,
+            module=request.module,
+            action=request.action,
+            result=result,
+            source_ip=request.user.source_ip,
+            additional_context={
+                'restrictions': response.restrictions,
+                'audit_required': response.audit_required,
+                'cache_hit': hasattr(response, '_from_cache')
+            }
+        )
+
+        self._audit_log.append(audit_entry)
+
+        # 实际生产中应该写入持久化存储
+        if not response.allowed or response.audit_required:
+            print(f"AUDIT: {audit_entry}")
+
+    def _log_degraded_access(self, request: PermissionRequest):
+        """记录降级模式访问"""
+        print(f"DEGRADED ACCESS: User {request.user.id} accessing {request.module} in degraded mode")
+
+    def add_temporary_grant(self, grant: TemporaryGrant):
+        """添加临时授权"""
+        self._temp_grants.append(grant)
+
+        # 清理过期的临时授权
+        current_time = datetime.now()
+        self._temp_grants = [g for g in self._temp_grants if g.expires_at > current_time]
+```
+
+- [ ] **Step 12: 创建权限配置文件**
+
+在 `config/permission_config.yaml` 中：
+
+```yaml
+# 小鹏iOS AI-Coding权限配置
+
+# 角色定义
+roles:
+  vehicle_team_member:
+    permissions:
+      - "vehicle_sdk:read"
+      - "vehicle_sdk:write"
+      - "ai_assist:vehicle_modules"
+      - "base_modules:read"
+
+  business_developer:
+    permissions:
+      - "business_modules:read"
+      - "business_modules:write"
+      - "ai_assist:business_modules"
+      - "base_modules:read"
+
+  senior_architect:
+    permissions:
+      - "*:read"
+      - "*:write"
+      - "ai_assist:all_modules"
+      - "permission:manage"
+
+  platform_developer:
+    permissions:
+      - "base_modules:read"
+      - "base_modules:write"
+      - "business_modules:read"
+      - "ai_assist:base_modules"
+
+# 模块所有权配置
+module_ownership:
+  # 车控SDK - 高度受限
+  XPVehicleSDK:
+    owners: ["vehicle-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "restricted"
+    ai_restrictions:
+      - "require_human_review_for_core_apis"
+      - "no_direct_modification_of_protocol_files"
+      - "audit_all_ai_generated_changes"
+
+  XPCarControlCore:
+    owners: ["vehicle-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "restricted"
+    ai_restrictions:
+      - "require_human_review_for_core_apis"
+      - "audit_all_ai_generated_changes"
+
+  # 业务模块 - 团队管理
+  "XPBusiness_AI":
+    owners: ["ai-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "team_managed"
+    ai_restrictions:
+      - "audit_ai_generated_changes"
+
+  "XPBusiness_Media":
+    owners: ["media-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "team_managed"
+
+  "XPBusiness_Map":
+    owners: ["map-team"]
+    collaborators: ["senior-architect"]
+    permission_level: "team_managed"
+
+  # 基础模块 - 相对开放
+  "XPBase_*":
+    owners: ["platform-team"]
+    collaborators: ["all"]
+    permission_level: "public"
+    ai_restrictions:
+      - "code_style_enforcement"
+
+# 权限生命周期管理
+permission_lifecycle:
+  temporary_grants:
+    max_duration: "72h"
+    auto_revoke: true
+    approval_required: ["team_lead", "senior_architect"]
+
+  emergency_access:
+    approvers: ["senior_architect", "security_officer"]
+    audit_trail: mandatory
+    max_duration: "24h"
+    auto_notification: ["security_team", "module_owner"]
+
+  permission_inheritance:
+    senior_roles_inherit_junior: true
+    cross_team_requires_approval: true
+
+# 系统配置
+system_config:
+  cache_settings:
+    ttl: 300  # 5分钟
+    max_size: 1000
+
+  degraded_mode:
+    allow_reads: true
+    block_writes: true
+    max_duration: "1h"
+
+  audit_settings:
+    log_all_denials: true
+    log_sensitive_modules: true
+    retention_days: 365
+```
+
+- [ ] **Step 13: 运行权限检查器测试**
+
+运行: `python -m pytest tests/test_permission_checker.py -v`
+Expected: PASS (所有测试通过)
+
+- [ ] **Step 14: 提交权限控制系统**
+
+```bash
+git add scripts/permission_checker.py scripts/models/permission_model.py tests/test_permission_checker.py config/permission_config.yaml
+git commit -m "feat: add permission control system
+
+- 实现基于RBAC的模块级权限控制
+- 支持临时授权和应急访问机制
+- 包含系统降级和故障恢复策略
+- AI辅助操作的特殊权限检查
+- 完整的审计日志和缓存机制"
+```
+
+---

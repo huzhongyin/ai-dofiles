@@ -1,0 +1,214 @@
+# 模块名: XPBase_Router
+
+## 模块职责
+App 内路由导航框架，提供统一的 URL-based 页面跳转和模块间服务调用能力。核心功能包括：URL 路由注册与跳转（兼容新旧两套路由系统 TheRouter/XPRouter）、模块间服务发现与调用（11 个模块 ServiceProtocol）、路由拦截器与自定义器链、云端路由开关配置、以及 100+ 条业务路由 URL 常量定义。正在从旧版 XPRouter（OC）向 TheRouter（Swift）迁移。
+
+## 语言构成
+- Swift 文件数: 41
+- OC 文件数: 3（XPRouter.h/.m + UserInfo.h/.m + XPWebViewControllerProtocol.h）
+- 混编说明: **以 Swift 为主**，OC 部分为旧版路由系统保留。本地 Pod（`LocalPods/XPBase_Router/`），可直接修改
+
+## 核心 API
+
+### RouterHelper（路由核心 — Swift 新版）
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `.shared` | Swift | 路由单例 | `RouterHelper.shared` |
+| `initRouter()` | Swift | 初始化路由（App 启动时调用） | `RouterHelper.shared.initRouter()` |
+| `initServices()` | Swift | 注册所有模块服务 | `RouterHelper.shared.initServices()` |
+| `open(_:)` | Swift | 打开 URL 路由（多个重载） | `RouterHelper.open("xiaopeng://charging/home")` |
+| `canOpen(_:)` | Swift | 判断 URL 是否可打开 | `RouterHelper.canOpen("xiaopeng://...")` |
+| `registerInterceptor(_:)` | Swift | 注册路由拦截器 | `RouterHelper.shared.registerInterceptor(myInterceptor)` |
+| `addRouterCustomiser(_:)` | Swift | 注册路由自定义器 | `RouterHelper.shared.addRouterCustomiser(myCustomiser)` |
+| `forceRegisterAllRouters()` | Swift | 强制注册所有路由（调试用） | `RouterHelper.shared.forceRegisterAllRouters()` |
+
+### RouterHelper+Service（模块服务发现）
+| 方法 | 语言 | 返回类型 | 用途 |
+|------|------|---------|------|
+| `getIMModule()` | Swift | `IMModuleProtocol` | 获取 IM 模块服务 |
+| `getIMReverseAPI()` | Swift | `IMReverseProtocol` | 获取 IM 反向 API |
+| `getUserModule()` | Swift | `UserModuleProtocol` | 获取用户模块服务 |
+| `getUserReverseAPI()` | Swift | `UserReverseProtocol` | 获取用户反向 API |
+| `getMineModule()` | Swift | `MineModuleProtocol` | 获取我的模块服务 |
+| `getAIModule()` | Swift | `AIModuleProtocol` | 获取 AI 模块服务 |
+| `getMessageModule()` | Swift | `MessageModuleProtocol` | 获取消息模块服务 |
+| `getServiceModule()` | Swift | `ServiceModuleProtocol` | 获取服务模块 |
+| `getRNModule()` | Swift | `RNModuleProtocol` | 获取 RN 模块服务 |
+| `getXpengModule()` | Swift | `XpengModuleProtocol` | 获取小鹏模块服务 |
+| `getCommunityReverseAPI()` | Swift | `CommunityReverseProtocol` | 获取社区反向 API |
+| `getServiceReverseAPI(param:)` | Swift | `ServiceReverseProtocol` | 获取服务反向 API |
+
+### XPRouter（旧版路由 — OC，渐进废弃中）
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `+registerURLPattern:routerHandler:` | OC | 注册 URL → Handler 映射 | `[XPRouter registerURLPattern:@"xiaopeng://..." routerHandler:^(NSDictionary *params){...}]` |
+| `+unregisterURLPattern:` | OC | 取消注册 | `[XPRouter unregisterURLPattern:@"xiaopeng://..."]` |
+| `+openURL:` | OC | 打开 URL | `[XPRouter openURL:@"xiaopeng://charging/home"]` |
+| `+openURL:extraUserInfo:completion:` | OC | 带参数和回调打开 | 见下方用法 |
+| `+canOpenURL:matchExactly:` | OC | 判断是否可打开（精确/模糊匹配） | `[XPRouter canOpenURL:url matchExactly:YES]` |
+
+### RouterHelperInterceptor（拦截器基类）
+| 类/方法 | 语言 | 用途 |
+|---------|------|------|
+| `RouterHelperInterceptor` | Swift | 路由拦截器基类（open class，需子类化） |
+| `shouldIntercept(_:userInfo:)` | Swift | 子类重写此方法决定是否拦截 |
+| `RouterHelperRouterCustomiser` | Swift | 路由自定义器基类（open class） |
+| `customise(urlString:userInfo:)` | Swift | 子类重写此方法修改路由 URL 和参数 |
+| `RouterHelperPriority` | Swift | 拦截/自定义优先级枚举（low/normal/high） |
+
+## URL 常量定义
+
+### XPRouterURL（旧版 — 兼容保留，不再新增）
+覆盖 100+ 条业务路由，按模块分组：
+| 模块 | 路由示例 | 数量 |
+|------|---------|------|
+| 账户 | `xiaopeng://account/login`, `xiaopeng://account/wallet` | ~15 |
+| 充电 | `xiaopeng://charging/home`, `xiaopeng://charging/map` | ~12 |
+| 社区 | `xiaopeng://bbs/home`, `xiaopeng://bbs/thread` | ~18 |
+| 服务 | `xiaopeng://service/car/status`, `xiaopeng://service/car/control` | ~6 |
+| 车控 | `xiaopeng://common/car/bleParking`, `xiaopeng://fileTransferByWifi` | ~10 |
+| 数字钥匙 | `xiaopeng://virtual/carselect`, `xiaopeng://virtual/cardmanager` | ~10 |
+| IM | `xiaopeng://chat/session` | ~1 |
+| 通用 | `xiaopeng://common/home`, `xiaopeng://common/scan` | ~6 |
+| 商城 | `xiaopeng://xlab/home` | ~1 |
+
+### TheRouterURL（新版 — 新增路由写这里）
+- `TheRouterURL+Module.swift` — 11 个模块服务路径（如 `module/im`, `module/user`）
+- `TheRouterURL+AI.swift` / `+Account.swift` / `+Community.swift` / ... — 按业务域拆分的新路由
+
+## 关键协议（ServiceProtocol 目录）
+
+| 协议 | 用途 | OC 可用 |
+|------|------|---------|
+| `IMModuleProtocol` | IM 登录/登出/会话/未读数 | ✅ @objc |
+| `IMReverseProtocol` | IM 反向调用（由 IM 模块实现） | ✅ @objc |
+| `IMModuleSwiftProtocol` | IM 纯 Swift API（Combine Subject） | ❌ Swift only |
+| `UserModuleProtocol` | 用户信息/登录状态 | ✅ @objc |
+| `UserReverseProtocol` | 用户模块反向调用 | ✅ @objc |
+| `MineModuleProtocol` | 我的模块 | ✅ @objc |
+| `AIModuleProtocol` | AI 模块 | ✅ @objc |
+| `AIReverseProtocol` | AI 反向调用 | ❌ Swift only |
+| `MessageModuleProtocol` | 消息模块 | ✅ @objc |
+| `ServiceModuleProtocol` | 服务模块 | ✅ @objc |
+| `RNModuleProtocol` | RN 页面导航 | ✅ @objc |
+| `XpengModuleProtocol` | 小鹏业务模块 | ✅ @objc |
+| `CommunityReverseProtocol` | 社区反向调用 | ❌ Swift only |
+
+## 依赖关系
+- **上游依赖**:
+  - `TheRouter` — 新版路由引擎（第三方库）
+  - `bBox` — 基础工具箱（BBLog/BBTracker/BBEnvironment）
+  - `NIMSDK_LITE` — IM SDK（IMModuleProtocol 依赖 NIMRecentSession 类型）
+  - `XPNetwork` — HTTP 请求（IMModuleProtocol 依赖）
+  - `CloudConfig` — 云端配置（路由开关 `TheRouter.migration.newRouter`）
+  - `XPConfigCenter` — 配置中心（路由白名单）
+- **下游被依赖**:
+  - 几乎所有业务模块 — 通过 RouterHelper 进行页面跳转和服务调用
+  - `XPAppBiz` — BizMediator 中的 CTMediator 路由（与 XPBase_Router 并行的另一套旧路由）
+
+## 架构层次
+```
+业务模块（充电/社区/车控/IM/...）
+    ↓ 跳转 & 服务调用
+XPBase_Router
+    ├── Router/               — 路由核心
+    │   ├── RouterHelper.swift      — 新版路由入口（单例，兼容新旧）
+    │   ├── RouterHelper+Navigate   — URL 跳转（open/canOpen）
+    │   ├── RouterHelper+Service    — 模块服务发现（getXxxModule）
+    │   ├── RouterHelperInterceptor — 拦截器 & 自定义器
+    │   ├── RouterUtilDelegate      — 旧版路由桥接协议（过渡期）
+    │   └── XPRouter.h/.m          — 旧版路由引擎（OC，渐进废弃）
+    ├── URL/                  — 路由 URL 常量
+    │   ├── XPRouterURL.swift       — 旧版 URL 定义（100+ 条，不再新增）
+    │   ├── TheRouterURL.swift      — 新版 URL 定义基类
+    │   └── TheRouterURL+*.swift    — 按业务域拆分的扩展（12 个文件）
+    ├── ServiceProtocol/      — 模块间服务协议（11 个模块）
+    ├── ServiceModel/         — 服务数据模型
+    └── Util/                 — 工具
+        ├── RouterCloudConfig — 云端路由开关
+        └── RouterSystemConfig — 路由白名单
+    ↓ 底层
+TheRouter (路由引擎) + CloudConfig (开关) + XPConfigCenter (白名单)
+```
+
+## 常见用法
+
+### 页面跳转
+```swift
+// 简单跳转
+RouterHelper.open("xiaopeng://charging/home")
+
+// 带参数跳转
+RouterHelper.open("xiaopeng://bbs/thread", userInfo: ["threadId": "12345"])
+
+// 带标题跳转
+RouterHelper.open("xiaopeng://activity/openurl", userInfo: ["url": h5Url], title: "活动页")
+
+// 判断能否跳转
+if RouterHelper.canOpen("xiaopeng://ai/skills/config") {
+    RouterHelper.open("xiaopeng://ai/skills/config")
+}
+```
+
+### 模块服务调用
+```swift
+// 获取 IM 模块
+let imModule = RouterHelper.shared.getIMModule()
+imModule.login(with: IMLoginType.Chat) { success in
+    // 登录完成
+}
+
+// 获取用户模块
+let userModule = RouterHelper.shared.getUserModule()
+
+// 获取 AI 模块
+let aiModule = RouterHelper.shared.getAIModule()
+```
+
+### 注册拦截器
+```swift
+class LoginInterceptor: RouterHelperInterceptor {
+    override func shouldIntercept(_ urlString: String, userInfo: [String: Any]) -> Bool {
+        // 未登录时拦截需要登录的页面
+        if needsLogin(urlString) && !isLoggedIn {
+            showLoginPage()
+            return true
+        }
+        return false
+    }
+}
+
+// 注册（按优先级排序）
+RouterHelper.shared.registerInterceptor(LoginInterceptor(priority: .high))
+```
+
+### OC 旧版路由（存量代码）
+```objc
+// 注册路由
+[XPRouter registerURLPattern:@"xiaopeng://account/wallet" routerHandler:^(NSDictionary *params) {
+    UIViewController *vc = [[WalletViewController alloc] init];
+    // push vc...
+}];
+
+// 打开路由
+[XPRouter openURL:@"xiaopeng://account/wallet"];
+```
+
+## 关键机制
+- **新旧路由兼容**: `RouterHelper.realOpen` 先尝试 TheRouter（新版），失败后回退到 `XPRouterUtil`（旧版 OC），最终强制使用 TheRouter
+- **云端路由开关**: `RouterCloudConfig.isNewRouterEnabled()` 通过 CloudConfig 控制是否启用 TheRouter，可远程切换
+- **拦截器链**: 注册多个拦截器按优先级（high > normal > low）依次执行，任一拦截则不继续
+- **自定义器链**: 注册多个自定义器按优先级执行，可修改路由 URL 和参数
+- **URL 预处理**: `preprocess(urlString:)` 将 URL 参数分离为 baseURL + extraParams，兼容新旧两套逻辑
+- **路由白名单**: `RouterSystemConfig` 从 XPConfigCenter 拉取远程白名单，控制可跳转范围
+- **Module/Reverse 双向协议**: 每个模块有 Module（正向调用）和 Reverse（反向调用）两套协议，实现模块间解耦
+- **RouterUtilDelegate 过渡**: 旧版 XPRouterUtil 通过 delegate 模式桥接到 RouterHelper，避免迁移期间断裂
+
+## 已知限制/陷阱
+- **XPRouterURL 不再新增**: 注释标注"命名太混乱只做兼容性保留"，新路由 URL 必须定义在 `TheRouterURL+*.swift` 中
+- `canFuzzyOpen` 已标记 `@available(*, deprecated)`，全面切换 TheRouter 后将移除
+- `getService` 内部使用 `assert + as!` 强制转换，如果模块服务未注册会 crash（仅 Debug 环境 assert 有效）
+- TheRouter 初始化时排除了多个库的 identifier（XRN/Unity/Cronet/NIMSDK 等），避免路由注册扫描到第三方库
+- OC 对 Swift 枚举支持差，`IMLoginType` 使用 `static let` 常量代替枚举
+- 本地 Pod，修改后需 `pod install` 生效
+- NIMSDK_LITE 是 podspec 硬依赖，即使不使用 IM 模块也会被引入

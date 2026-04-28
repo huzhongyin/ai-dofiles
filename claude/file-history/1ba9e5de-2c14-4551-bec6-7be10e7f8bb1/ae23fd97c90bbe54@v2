@@ -1,0 +1,76 @@
+#!/usr/bin/env ruby
+# parse-podfile-lock.rb — 解析 Podfile.lock 输出结构化依赖图 (JSON)
+# 用法: ruby scripts/parse-podfile-lock.rb [Podfile.lock路径] > deps-graph.json
+
+require 'json'
+
+lockfile_path = ARGV[0] || 'Podfile.lock'
+unless File.exist?(lockfile_path)
+  $stderr.puts "Error: #{lockfile_path} not found"
+  exit 1
+end
+
+content = File.read(lockfile_path)
+
+# 分段解析
+sections = {}
+current_section = nil
+content.each_line do |line|
+  line.chomp!
+  if line =~ /^([A-Z][A-Z\s]+):$/
+    current_section = $1.strip
+    sections[current_section] = []
+  elsif current_section
+    sections[current_section] << line
+  end
+end
+
+# 解析 PODS 段 — 提取每个 pod 的直接依赖
+pods = {}
+current_pod = nil
+(sections['PODS'] || []).each do |line|
+  if line =~ /^\s{2}-\s+(.+?)\s+\((.+?)\):?\s*$/
+    name = $1.split('/').first  # 取主 pod 名
+    version = $2
+    has_deps = line.end_with?(':')
+    current_pod = name
+    pods[name] ||= { 'version' => version, 'deps' => [], 'subspecs' => [] }
+    pods[name]['version'] = version
+    # 检查是否为 subspec
+    if $1.include?('/')
+      pods[name]['subspecs'] << $1
+    end
+  elsif line =~ /^\s{4}-\s+(.+?)(?:\s+\(.*\))?$/ && current_pod
+    dep_name = $1.split('/').first
+    pods[current_pod]['deps'] << dep_name unless pods[current_pod]['deps'].include?(dep_name) || dep_name == current_pod
+  end
+end
+
+# 解析 EXTERNAL SOURCES 段 — 提取本地路径
+external_sources = {}
+current_source = nil
+(sections['EXTERNAL SOURCES'] || []).each do |line|
+  if line =~ /^\s{2}(\S+):$/
+    current_source = $1
+    external_sources[current_source] = {}
+  elsif current_source && line =~ /^\s{4}:(\w+):\s*(.+)$/
+    external_sources[current_source][$1] = $2.strip
+  end
+end
+
+# 合并路径信息到 pods
+external_sources.each do |name, info|
+  if pods[name] && info['path']
+    pods[name]['path'] = info['path']
+  end
+end
+
+# 输出
+result = {
+  'generated_at' => Time.now.strftime('%Y-%m-%dT%H:%M:%S%z'),
+  'lockfile' => lockfile_path,
+  'pod_count' => pods.size,
+  'pods' => pods
+}
+
+puts JSON.pretty_generate(result)

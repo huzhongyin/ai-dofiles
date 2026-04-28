@@ -1,0 +1,39 @@
+# XPCenter_User — LocalPod 规范
+
+## 模块定位
+
+用户中心中台模块，负责登录/注册全流程（手机号/微信/快捷登录）、用户信息存储与查询、登录态管理（token/uid/isLogin）、验证码管理（XPVerifyCodeMgr）、隐私权限协议、IM/MQTT 账号管理。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `LocalPods/XPCenter_User/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+OC 为主（.h/.m），少量 Swift（UserPolicyImpl.swift）。OC 类 `XP` 前缀（XPUserCenter/XPVerifyCodeMgr 等）。登录态通过单例管理，线程安全。
+
+## Podspec 依赖约束
+
+依赖 XPBase_Common、XPBase_UI。被上层业务模块广泛依赖（登录态查询）。私有源 `gitlab.x-peng.com`，语义化版本。含 UserInfo/Login/Privacy 等功能子目录。
+
+## 命名前缀与 API 稳定性
+
+OC 类 `XP` 前缀（XPUserCenter/XPVerifyCodeMgr）。`XPCenter_*` 命名约定表示中台模块。公开 API（isLogin/currentUser/token）需保持稳定，Breaking Change 影响全量业务模块。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。
+
+## 禁止行为
+
+- 禁止在登录流程中明文存储 token/密码（必须走 Keychain）
+- 禁止绕过 XPUserCenter 单例直接读写用户信息
+- 禁止在本模块引入 UI 页面（登录页 UI 由上层 Module 承载）
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → `.claude/rules/ios-coding.md`
+- 主工程如何集成本 Pod → L2 `CLAUDE.app.md`
+- 跨 Pod 的全局命名规范 → L1 `.claude/rules/project-common.md`

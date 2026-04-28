@@ -1,0 +1,50 @@
+# 节点: 档位状态更新链路
+
+## 元信息
+- node_id: gear-state-update
+- owner_module: XPPollingSDK
+- referenced_by:
+  - XPPollingSDK/features/auto-lock
+- depends_on_files:
+  - submodule/XPPollingSDK/XPPollingSDK/sourceFile/PollingEffect/PLXPMultiBleManager.m
+- last_updated: 2026-04-22
+- code_anchors_verified: 2026-04-22
+
+## 链路描述
+车态数据（来自 BLE 解析或 MQTT 推送）中的 `drive.shift_state` 字段变化时，PLXPMultiBleManager 接收通知并更新 `gearValueIsSupportPolling` 标记。该标记是 Polling 暂停/恢复的关键条件之一。
+
+## 代码位置
+| 步骤 | 文件路径 | 方法名 | 行号 | 锚点签名 |
+|------|---------|--------|------|---------|
+| 1 | PLXPMultiBleManager.m | vehicleStateChanged: | 383 | `vehicleStateChanged:(XPVehicleStateNotiObject *)object` |
+| 2 | PLXPMultiBleManager.m | 检查 diffVehicleDict drive.shift_state | 391 | `object.diffVehicleDict[@"drive"][@"shift_state"]` |
+| 3 | PLXPMultiBleManager.m | 读取 fullVehicleDict shift_state → gearValue | 392 | `object.fullVehicleDict[@"drive"][@"shift_state"]` |
+| 4 | PLXPMultiBleManager.m | P档/Invalid → gearValueIsSupportPolling=YES | 393-396 | `gearValue == PLXPBLEKeyCarGearValueP` |
+| 5 | PLXPMultiBleManager.m | N档 → gearValueIsSupportPolling=NO | 399-404 | `gearValue == PLXPBLEKeyCarGearValueN` |
+| 6 | PLXPMultiBleManager.m | 其他档位 → gearValueIsSupportPolling=NO | 412-416 | `车辆不是P档或N档` |
+| 7 | PLXPMultiBleManager.m | 补救模式：NotAvailable + carStateIsRemedy → YES | 406-410 | `self.carStateIsRemedy && gearValue == PLXPBLEKeyCarGearValueNotAvailable` |
+| 8 | PLXPMultiBleManager.m | 调用 judgePollingIsPaused 执行暂停/恢复 | 398/404/410/415 | `[self judgePollingIsPaused]` |
+
+## 输入/输出
+- 输入: `XPVehicleStateNotiObject`，其中 `diffVehicleDict[@"drive"][@"shift_state"]` 表示档位变化，`fullVehicleDict[@"drive"][@"shift_state"]` 为当前档位值
+- 输出: `self.gearValueIsSupportPolling`（BOOL），决定 Polling 是否暂停
+- 数据源: BLE 通道（@ref(module:XPBLEDataProcessor, node:dataparser-drive-output)）或 MQTT 推送
+
+## 日志关键字
+| 场景 | Tag | 格式字符串 |
+|------|-----|-----------|
+| P 档 | kBLEKeyPredictTag | `车辆是P档，可以执行predict` |
+| N 档 | kBLEKeyPredictTag | `车辆是N档，可以执行predict,但不支持Polling` |
+| 其他档位 | kBLEKeyPredictTag | `车辆不是P档或N档，同时不执行predict与Polling` |
+| 暂停/恢复 | MultiBleOptTag | `polling服务要暂停:` / `polling服务要恢复` |
+| gearValue 值 | MultiBleOptTag | `gearValueIsSupportPolling:%d` |
+
+## 状态转换（如有）
+| 状态 | 含义 | 转换条件 | 代码位置 |
+|------|------|---------|---------|
+| gearValueIsSupportPolling=YES | Polling 可执行 | shift_state == P/Invalid 或 (NotAvailable + carStateIsRemedy) | PLXPMultiBleManager.m:395/407 |
+| gearValueIsSupportPolling=NO | Polling 暂停 | shift_state == N 或其他非 P 档 | PLXPMultiBleManager.m:401/413 |
+
+## 设计决策与教训（仅限代码无法考证的内容）
+- **双通道数据源**：drive.shift_state 既可来自 BLE DataParser 解析，也可来自 MQTT 推送。当 BLE 通道因 DataParser 路由 Bug 不输出 drive 节点时，完全依赖 MQTT。若 MQTT 也断连，gearValueIsSupportPolling 将卡在初始值 NO，导致 Polling 永久暂停。
+- **无超时恢复机制**：当前设计中 gearValueIsSupportPolling 没有超时回退逻辑，一旦两个通道同时故障，只能等通道恢复后才能解除暂停。建议增加超时恢复机制。

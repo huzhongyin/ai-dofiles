@@ -1,0 +1,20 @@
+# MQTT 消息回调 ID 匹配
+
+## 元信息
+- 触发关键词: ["msg_ref", "msgRef", "messageId", "MQTT回调", "消息匹配", "MQTTHandler"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+MQTTHandler 的消息请求/响应匹配依赖消息 ID 字段，但**不同 topic 的字段名不同**：
+
+- 部分 topic: `msg_ref`
+- 部分 topic: `msgRef`
+- 部分 topic: `msgId`
+
+新增 MQTT topic 时必须确认该 topic 的响应消息中使用哪个字段名，否则回调永远无法触发（15s 后超时）。
+
+**超时时间**: 默认 15 秒（`timeOutTime` 参数可自定义）
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Core/MQTT/MQTTHandler.swift`

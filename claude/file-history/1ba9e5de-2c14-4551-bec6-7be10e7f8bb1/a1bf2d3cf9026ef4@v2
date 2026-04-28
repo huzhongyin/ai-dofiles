@@ -1,0 +1,143 @@
+# 依赖图静态声明 vs 运行时动态解析 — 对比方案书
+
+> 关联 spec: `2026-04-17-spec-coding-tiered-architecture-design.md` §3 YAGNI
+> 创建日期: 2026-04-17
+> 结论: 维持静态 deps.yml + deps-lint skill 辅助保鲜（方案 C）
+
+---
+
+## 1. 背景
+
+在 `2026-04-17-spec-coding-tiered-architecture-design.md` §3 非目标（YAGNI）中明确写道：
+
+> **不**把依赖图做成运行时动态解析（本轮仅做静态声明式 deps.yml）
+
+本文档详细解释这个设计决策的技术原因，并对比三种方案的优劣。
+
+---
+
+## 2. 方案 A：静态声明式 deps.yml（当前方案）
+
+### 机制
+
+每个模块手工维护 `deps.yml`，声明：
+- `depends_on[].id` — 依赖哪个模块
+- `trigger_keywords` — 何时触发加载（精细化过滤）
+- `critical_constraints` — 加载哪些具体条款（`path#anchor`）
+
+knowledge-recall 读取 deps.yml → 按 trigger_keywords 过滤 → 递归展开（depth ≤ 2）。
+
+### 优势
+
+1. **可控性**：人工审定"什么时候加载什么"，避免噪声。`trigger_keywords` 实现了"任务描述中提到蓝牙才加载 XPVehicleSDK"这种精准控制
+2. **可预测性**：加载行为完全由声明文件决定，可纸面验证（validation.md 已验证 3 个 UC）
+3. **性能零开销**：读几个 YAML 文件，无需扫描源码
+4. **锚点精准**：`critical_constraints` 指定加载 constitution.md 的某个章节，而非全量——控制上下文膨胀
+5. **审计友好**：git diff 可追踪依赖变更
+
+### 劣势
+
+1. **手工维护成本**：每次新增/删除依赖需手动更新 deps.yml
+2. **可能过时**：代码已删除 import 但 deps.yml 未更新，或反之
+3. **覆盖率依赖人工**：如果不声明依赖，knowledge-recall 就不会扩展
+
+---
+
+## 3. 方案 B：运行时动态解析（假设方案）
+
+### 机制
+
+knowledge-recall 运行时自动从以下数据源推断依赖关系：
+- 扫描 Podfile/Podspec 提取 pod 依赖声明
+- 扫描 .gitmodules 提取 submodule 关系
+- 扫描目标模块的 `import` / `#import` 语句，提取实际代码依赖
+- 构建运行时依赖图，替代或辅助 deps.yml
+
+### 优势
+
+1. **自动准确**：依赖关系直接来自代码事实，不会过时
+2. **零维护**：不需要手动维护 deps.yml
+3. **发现隐式依赖**：代码中 import 了但没在 deps.yml 声明的依赖也能被发现
+
+### 劣势（核心问题）
+
+#### 问题 1：粒度过粗，无法实现 trigger_keywords 过滤
+
+动态解析能告诉你"XiaoPengQiChe 依赖 XPVehicleSDK"（Podfile 有声明），但**无法**告诉你"只有任务涉及蓝牙/车控时才需要加载 XPVehicleSDK 的规范"。
+
+当前 deps.yml 的 `trigger_keywords: [车控, 蓝牙, BLE, MQTT, 鉴权]` 是**语义层**的过滤，代码依赖图只有**结构层**信息。失去 trigger_keywords = 每次碰到 XiaoPengQiChe 都会加载所有 8 个依赖模块的规范，上下文爆炸。
+
+#### 问题 2：无法获得 critical_constraints 锚点
+
+动态解析知道"依赖 XPVehicleSDK"，但**不知道**应该加载 constitution.md 的哪个章节。是加载"车控指令流程"还是"蓝牙安全"还是全部？这种**语义关联**只能人工指定。
+
+如果全量加载 → 每个被依赖模块的 constitution.md 全文进入上下文 → token 消耗暴增。
+
+#### 问题 3：解析性能不可控
+
+- **Podfile 解析**：需要 Ruby eval 或正则解析，Podfile 中有变量、条件判断（如 `LocalVehicleSDK`）、`load 'pod_integrate'` 外部文件引入——简单正则无法完整解析
+- **import 扫描**：主工程 2000+ .h/.m/.swift 文件，每次任务开始都全量扫描不现实
+- **缓存问题**：如果缓存，又回到了"可能过时"的问题
+
+#### 问题 4：依赖类型混淆
+
+Podfile 声明的是**构建依赖**（编译需要），不等于**规范依赖**（AI 编码时需要了解的约束）。例如：
+- `XPBase_Common`（基础工具库）是几乎所有模块的构建依赖，但改 UI 时不需要加载它的规范
+- `ReactiveObjC`（第三方库）是构建依赖，但在规范体系中无意义
+
+静态 deps.yml 区分的是"规范层面的依赖"，动态解析混入大量"仅构建层面的依赖"。
+
+#### 问题 5：Claude Code 环境限制
+
+knowledge-recall 是一个 SKILL.md（纯 Markdown 指令），不是可执行程序。它运行在 Claude Code 的 LLM 推理流程中：
+- 可以读文件（Read tool）、搜索（Grep/Glob）
+- 但不适合做复杂的 AST 解析或 Podfile eval
+- 每次 skill 执行消耗 token，扫描源码 = 大量 Read/Grep 调用 = token 和延迟暴增
+
+---
+
+## 4. 方案 C：混合方案（静态声明 + 动态校验辅助）— 推荐
+
+### 机制
+
+- **主路径仍用 deps.yml**（保留 trigger_keywords + critical_constraints 语义控制）
+- **新增 deps-lint skill**（离线工具，非 knowledge-recall 运行时）：
+  - 定期扫描 Podfile/import 语句，与 deps.yml 对比
+  - 报告：deps.yml 声明了但代码中未使用的依赖（stale）
+  - 报告：代码中 import 了但 deps.yml 未声明的依赖（missing）
+  - 输出建议，人工确认后更新 deps.yml
+
+### 优势
+
+- 保留静态方案的精准控制和低开销
+- 通过离线 lint 弥补"可能过时"的缺点
+- lint 结果由人确认，避免自动化引入噪声
+
+### 劣势
+
+- 仍需人工最终确认（但这其实是优势——依赖关系的语义审定不应自动化）
+
+---
+
+## 5. 结论
+
+| 维度 | 静态 deps.yml | 运行时动态解析 | 混合方案 |
+|------|:---:|:---:|:---:|
+| trigger_keywords 精细过滤 | ✅ | ❌ 不可能 | ✅ |
+| critical_constraints 锚点 | ✅ | ❌ 不可能 | ✅ |
+| 维护成本 | 中（手工） | 零 | 低（lint 辅助） |
+| 上下文膨胀控制 | ✅ 精准 | ❌ 全量加载 | ✅ 精准 |
+| 依赖准确性 | 可能过时 | 实时准确 | lint 辅助保鲜 |
+| 性能开销 | 极低 | 高（扫描源码） | 极低（lint 离线） |
+| 实现复杂度 | 已完成 | 高（Podfile 解析+import AST） | 中（增量 skill） |
+
+**推荐方案 C：维持当前静态 deps.yml + 在子项目 ⑥ 中实现 deps-lint skill 作为离线校验工具。**
+
+核心原因：**依赖图在本架构中不仅是"谁依赖谁"的结构信息，更重要的是"何时加载"（trigger_keywords）和"加载什么"（critical_constraints）的语义信息——这部分无法从代码自动推断。**
+
+---
+
+## 6. 后续行动
+
+- 子项目 ⑥ 将实现 deps-lint skill，对比代码实际依赖与 deps.yml 声明，输出 stale/missing 报告
+- deps-lint 的详细设计见实施计划 `子项目 ⑥` 章节

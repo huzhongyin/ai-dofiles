@@ -1,0 +1,12 @@
+# Spec 产物归属元数据
+scope:
+  - submodule/XPVehicleSDK
+  - submodule/XPVehicleExt
+  - submodule/XPCarControlCore
+  - XiaoPengQiChe
+level: L4+L2
+note: >
+  Apple CarKey 冻结场景下私有钥匙连接策略优化。
+  主要涉及 XPVehicleSDK/DigitalKey + XPVehicleExt/CarKey (L4)，
+  同时影响 XPCarControlCore 桥接层和主工程 DigitalKey3 UI 模块 (L2)。
+  产物物理位置保留在 L1 .ai-knowledge/specs/，逻辑归属以 L4 为主。

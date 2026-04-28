@@ -1,0 +1,329 @@
+[I][2026-03-21 +8.0 12:21:53.375][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -83 name: BLE
+[I][2026-03-21 +8.0 12:21:53.375][0, 88339][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-87 -87 -81 -91 ]
+[I][2026-03-21 +8.0 12:21:53.375][0, 88339][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为5
+[I][2026-03-21 +8.0 12:21:53.375][0, 88339][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为6
+[I][2026-03-21 +8.0 12:21:53.375][0, 88339][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:迎宾圈
+[I][2026-03-21 +8.0 12:21:53.375][0, 88339][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:48, -[PLXPPollingFirstPollingHandler notifyTrunkNeedOpen]][Info: 车辆是解锁状态，不发送后备箱可解锁指令与可闭锁的指令
+[I][2026-03-21 +8.0 12:21:53.375][0, 88339][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:86, -[PLXPPollingFirstPollingHandler distanceLevelSetterAction]][Info: PLogic，解锁圈内上锁，走到连接圈，取消Flag
+[I][2026-03-21 +8.0 12:21:53.375][0, 88339][BLEKeyTagPolling][PLXPPollingHandler.mm:157, -[PLXPPollingHandler predictLock]][Info: <PA>predict result: lock, extension: nil
+[I][2026-03-21 +8.0 12:21:53.377][0, 88339][BLEKeyTagPolling][PLXPPollingManager.mm:878, -[PLXPPollingManager sendPollingLockCommand:]][Info: <PA>主蓝牙连接-鉴权成功，发送闭锁指令
+[I][2026-03-21 +8.0 12:21:53.377][0, 88339][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 12:21:53.377][0, 88339][BLEKeyLocationTag][PLXPMultiBleLocationResultTool.m:52, -[PLXPMultiBleLocationResultTool predictSuccess:]][Info: 超过闭锁圈，重置手表闭锁
+[I][2026-03-21 +8.0 12:21:53.383][0, 259*][CarHome][XPCarStateViewModel.m:159, -[XPCarStateViewModel init]_block_invoke][Info:use location from carState lat:29.857405 lon:107.095421 angle:22.874201
+[I][2026-03-21 +8.0 12:21:53.383][0, 259*][CarHome][XPCarStateViewModel.m:982, -[XPCarStateViewModel updateLocationWithVin:coordinate:]][Info:regeocode search skip with same coordinate lat: 29.857405, lon: 107.095421, vin: L1NSPGH98NA168139
+[W][2026-03-21 +8.0 12:21:53.426][0, 55559][BLEParkingTag][XPAutoParkingViewController.m:3164, -[XPAutoParkingViewController sendHeartBeat:]][Warning:heart beat thread is：<NSThread: 0x149395240>{number = 69, name = (null)}
+[I][2026-03-21 +8.0 12:21:53.426][0, 55559][BLEParkingTag][XPAutoParkingViewController.m:3344, -[XPAutoParkingViewController sendHeartBeat:]][Info:发送泊车指令cmd=XPBLEParkingCommandSummonBackward,parkingState = XPAppAutoParkingStateSummoning,parkingExpState = XPAppAutoParkingExpTypeNormal
+[I][2026-03-21 +8.0 12:21:53.427][0, 55559][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(39) .StartParkingHeartBeat ...
+[I][2026-03-21 +8.0 12:21:53.427][0, 55559][XPBLEDataMake][XPBLEDataProcessor.m:191, +[XPBLEDataProcessor createParkingHeartbeatMessageWith:count:]][Info:提取单元测试：
+NSData *result = [XPBLEDataProcessor createParkingHeartbeatMessageWith:(BLEParkingCommand)2 count:100];
+NSString * testResultToHexStr = [result hexString];
+NSString * testResultHexRight = @"ef03020264"; // 当次执行结果 
+--
+[I][2026-03-21 +8.0 12:22:01.696][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:bb:9e rssi: -80 name: BLEFR
+[I][2026-03-21 +8.0 12:22:01.697][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -79 name: BLE
+[I][2026-03-21 +8.0 12:22:01.697][0, 133203][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -79
+[I][2026-03-21 +8.0 12:22:01.697][0, 88339][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-85 -89 -79 -80 ]
+[I][2026-03-21 +8.0 12:22:01.698][0, 88339][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为5
+[I][2026-03-21 +8.0 12:22:01.698][0, 88339][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为6
+[I][2026-03-21 +8.0 12:22:01.698][0, 88339][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:迎宾圈
+[I][2026-03-21 +8.0 12:22:01.698][0, 88339][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:48, -[PLXPPollingFirstPollingHandler notifyTrunkNeedOpen]][Info: 车辆是解锁状态，不发送后备箱可解锁指令与可闭锁的指令
+[I][2026-03-21 +8.0 12:22:01.699][0, 88339][BLEKeyTagPolling][PLXPPollingManager.mm:878, -[PLXPPollingManager sendPollingLockCommand:]][Info: <PA>主蓝牙连接-鉴权成功，发送闭锁指令
+[I][2026-03-21 +8.0 12:22:01.699][0, 88339][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 12:22:01.699][0, 88339][BLEKeyLocationTag][PLXPMultiBleLocationResultTool.m:52, -[PLXPMultiBleLocationResultTool predictSuccess:]][Info: 超过闭锁圈，重置手表闭锁
+[I][2026-03-21 +8.0 12:22:01.702][0, 133203][XPStatisticsCaches][XPStatisticsCaches.m:158, -[XPStatisticsCaches getEventParams]][ready upload 21 events
+[I][2026-03-21 +8.0 12:22:01.703][0, 74239][CronetManager][CronetManager.m:146, +[CronetManager updateHostList:]][cronet update empty host list
+[I][2026-03-21 +8.0 12:22:01.703][0, 74239][CronetManager][CronetManager.m:141, +[CronetManager installCronetIntoSessionConfiguration:]][cronet install success
+[I][2026-03-21 +8.0 12:22:01.703][0, 74239][HttpSessionManager][HttpSessionManager.m:60, -[HttpSessionManager initWithEnvDomainURL:disableCronet:]][prepare for security policy: NO
+[I][2026-03-21 +8.0 12:22:01.710][0, 133203][HttpClient][HttpClientHandler.m:175, +[HttpClientHandler printLogWithRequestModel:]][
+=========================== http start request ===========================
+time:2026-03-21 12:22:01
+url:https://appdata.xiaopeng.com/app/report
+header:
+--
+[I][2026-03-21 +8.0 14:05:37.960][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -74 name: BLER
+[I][2026-03-21 +8.0 14:05:37.961][0, 77075][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -80
+[I][2026-03-21 +8.0 14:05:37.961][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -80 name: BLE
+[I][2026-03-21 +8.0 14:05:37.961][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-84 -89 -74 -92 ]
+[I][2026-03-21 +8.0 14:05:37.961][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为6
+[I][2026-03-21 +8.0 14:05:37.962][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为5
+[I][2026-03-21 +8.0 14:05:37.962][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:闭锁圈
+[I][2026-03-21 +8.0 14:05:37.962][0, 88079][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:52, -[PLXPPollingFirstPollingHandler notifyTrunkNeedOpen]][Info: 在闭锁内，可以打开后备箱
+[I][2026-03-21 +8.0 14:05:37.962][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:190, -[PLXPPollingHandler predictPollingTrunkEnable]][Info: <PA>predict result: trunk enable, extension: nil
+[I][2026-03-21 +8.0 14:05:37.962][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:05:37.962][0, 88079][BLEKeyLocationTag][PLXPMultiBleLocationResultTool.m:52, -[PLXPMultiBleLocationResultTool predictSuccess:]][Info: 超过闭锁圈，重置手表闭锁
+[W][2026-03-21 +8.0 14:05:38.002][0, 88611][BLEParkingTag][XPAutoParkingViewController.m:3164, -[XPAutoParkingViewController sendHeartBeat:]][Warning:heart beat thread is：<NSThread: 0x118f64f00>{number = 43, name = (null)}
+[I][2026-03-21 +8.0 14:05:38.002][0, 88611][BLEParkingTag][XPAutoParkingViewController.m:3344, -[XPAutoParkingViewController sendHeartBeat:]][Info:发送泊车指令cmd=XPBLEParkingCommandSummonForward,parkingState = XPAppAutoParkingStateSummoning,parkingExpState = XPAppAutoParkingExpTypeNormal
+[I][2026-03-21 +8.0 14:05:38.002][0, 88611][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(39) .StartParkingHeartBeat ...
+[I][2026-03-21 +8.0 14:05:38.003][0, 88611][XPBLEDataMake][XPBLEDataProcessor.m:191, +[XPBLEDataProcessor createParkingHeartbeatMessageWith:count:]][Info:提取单元测试：
+NSData *result = [XPBLEDataProcessor createParkingHeartbeatMessageWith:(BLEParkingCommand)1 count:49];
+NSString * testResultToHexStr = [result hexString];
+NSString * testResultHexRight = @"ef03020131"; // 当次执行结果 
+XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);
+[I][2026-03-21 +8.0 14:05:38.003][0, 88611][XiaopengBaseControlRequest][XiaopengBaseControlRequest.swift:208, _sendBleData(_:)][Info: [指令发送] 蓝牙数据发送VehicleCommand:(39) .StartParkingHeartBeat开始
+--
+[I][2026-03-21 +8.0 14:05:40.059][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -86 name: BLER
+[I][2026-03-21 +8.0 14:05:40.060][0, 88611][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -91
+[I][2026-03-21 +8.0 14:05:40.060][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -91 name: BLE
+[I][2026-03-21 +8.0 14:05:40.060][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-85 -90 -86 -89 ]
+[I][2026-03-21 +8.0 14:05:40.060][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为5
+[I][2026-03-21 +8.0 14:05:40.061][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为6
+[I][2026-03-21 +8.0 14:05:40.061][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:迎宾圈
+[I][2026-03-21 +8.0 14:05:40.061][0, 88079][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:55, -[PLXPPollingFirstPollingHandler notifyTrunkNeedOpen]][Info: 不在闭锁内，不可以打开后备箱
+[I][2026-03-21 +8.0 14:05:40.061][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:198, -[PLXPPollingHandler predictPollingTrunkDisable]][Info: <PA>predict result: trunk disable, extension: nil
+[I][2026-03-21 +8.0 14:05:40.061][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:05:40.061][0, 88079][BLEKeyLocationTag][PLXPMultiBleLocationResultTool.m:52, -[PLXPMultiBleLocationResultTool predictSuccess:]][Info: 超过闭锁圈，重置手表闭锁
+[W][2026-03-21 +8.0 14:05:40.101][0, 77075][BLEParkingTag][XPAutoParkingViewController.m:3164, -[XPAutoParkingViewController sendHeartBeat:]][Warning:heart beat thread is：<NSThread: 0x149af2040>{number = 58, name = (null)}
+[I][2026-03-21 +8.0 14:05:40.102][0, 77075][BLEParkingTag][XPAutoParkingViewController.m:3344, -[XPAutoParkingViewController sendHeartBeat:]][Info:发送泊车指令cmd=XPBLEParkingCommandSummonForward,parkingState = XPAppAutoParkingStateSummoning,parkingExpState = XPAppAutoParkingExpTypeNormal
+[I][2026-03-21 +8.0 14:05:40.102][0, 77075][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(39) .StartParkingHeartBeat ...
+[I][2026-03-21 +8.0 14:05:40.102][0, 77075][XPBLEDataMake][XPBLEDataProcessor.m:191, +[XPBLEDataProcessor createParkingHeartbeatMessageWith:count:]][Info:提取单元测试：
+NSData *result = [XPBLEDataProcessor createParkingHeartbeatMessageWith:(BLEParkingCommand)1 count:63];
+NSString * testResultToHexStr = [result hexString];
+NSString * testResultHexRight = @"ef0302013f"; // 当次执行结果 
+XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);
+[I][2026-03-21 +8.0 14:05:40.102][0, 77075][XiaopengBaseControlRequest][XiaopengBaseControlRequest.swift:208, _sendBleData(_:)][Info: [指令发送] 蓝牙数据发送VehicleCommand:(39) .StartParkingHeartBeat开始
+--
+[I][2026-03-21 +8.0 14:05:41.111][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -95 name: BLER
+[I][2026-03-21 +8.0 14:05:41.112][0, 88611][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -87
+[I][2026-03-21 +8.0 14:05:41.112][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -87 name: BLE
+[I][2026-03-21 +8.0 14:05:41.113][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-91 -79 -95 -84 ]
+[I][2026-03-21 +8.0 14:05:41.113][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为6
+[I][2026-03-21 +8.0 14:05:41.113][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为5
+[I][2026-03-21 +8.0 14:05:41.114][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:闭锁圈
+[I][2026-03-21 +8.0 14:05:41.114][0, 88079][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:52, -[PLXPPollingFirstPollingHandler notifyTrunkNeedOpen]][Info: 在闭锁内，可以打开后备箱
+[I][2026-03-21 +8.0 14:05:41.114][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:190, -[PLXPPollingHandler predictPollingTrunkEnable]][Info: <PA>predict result: trunk enable, extension: nil
+[I][2026-03-21 +8.0 14:05:41.114][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:05:41.114][0, 88079][BLEKeyLocationTag][PLXPMultiBleLocationResultTool.m:52, -[PLXPMultiBleLocationResultTool predictSuccess:]][Info: 超过闭锁圈，重置手表闭锁
+[W][2026-03-21 +8.0 14:05:41.152][0, 76547][BLEParkingTag][XPAutoParkingViewController.m:3164, -[XPAutoParkingViewController sendHeartBeat:]][Warning:heart beat thread is：<NSThread: 0x149af3e80>{number = 38, name = (null)}
+[I][2026-03-21 +8.0 14:05:41.152][0, 76547][BLEParkingTag][XPAutoParkingViewController.m:3344, -[XPAutoParkingViewController sendHeartBeat:]][Info:发送泊车指令cmd=XPBLEParkingCommandSummonForward,parkingState = XPAppAutoParkingStateSummoning,parkingExpState = XPAppAutoParkingExpTypeNormal
+[I][2026-03-21 +8.0 14:05:41.152][0, 76547][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(39) .StartParkingHeartBeat ...
+[I][2026-03-21 +8.0 14:05:41.153][0, 76547][XPBLEDataMake][XPBLEDataProcessor.m:191, +[XPBLEDataProcessor createParkingHeartbeatMessageWith:count:]][Info:提取单元测试：
+NSData *result = [XPBLEDataProcessor createParkingHeartbeatMessageWith:(BLEParkingCommand)1 count:70];
+NSString * testResultToHexStr = [result hexString];
+NSString * testResultHexRight = @"ef03020146"; // 当次执行结果 
+XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);
+[I][2026-03-21 +8.0 14:05:41.153][0, 76547][XiaopengBaseControlRequest][XiaopengBaseControlRequest.swift:208, _sendBleData(_:)][Info: [指令发送] 蓝牙数据发送VehicleCommand:(39) .StartParkingHeartBeat开始
+--
+[I][2026-03-21 +8.0 14:05:42.160][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -91 name: BLER
+[I][2026-03-21 +8.0 14:05:42.161][0, 77075][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -82
+[I][2026-03-21 +8.0 14:05:42.161][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -82 name: BLE
+[I][2026-03-21 +8.0 14:05:42.161][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-87 -86 -91 -90 ]
+[I][2026-03-21 +8.0 14:05:42.161][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为5
+[I][2026-03-21 +8.0 14:05:42.161][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为6
+[I][2026-03-21 +8.0 14:05:42.161][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:迎宾圈
+[I][2026-03-21 +8.0 14:05:42.161][0, 88079][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:55, -[PLXPPollingFirstPollingHandler notifyTrunkNeedOpen]][Info: 不在闭锁内，不可以打开后备箱
+[I][2026-03-21 +8.0 14:05:42.162][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:198, -[PLXPPollingHandler predictPollingTrunkDisable]][Info: <PA>predict result: trunk disable, extension: nil
+[I][2026-03-21 +8.0 14:05:42.162][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:05:42.162][0, 88079][BLEKeyLocationTag][PLXPMultiBleLocationResultTool.m:52, -[PLXPMultiBleLocationResultTool predictSuccess:]][Info: 超过闭锁圈，重置手表闭锁
+[W][2026-03-21 +8.0 14:05:42.202][0, 77075][BLEParkingTag][XPAutoParkingViewController.m:3164, -[XPAutoParkingViewController sendHeartBeat:]][Warning:heart beat thread is：<NSThread: 0x149af2040>{number = 58, name = (null)}
+[I][2026-03-21 +8.0 14:05:42.202][0, 77075][BLEParkingTag][XPAutoParkingViewController.m:3344, -[XPAutoParkingViewController sendHeartBeat:]][Info:发送泊车指令cmd=XPBLEParkingCommandSummonForward,parkingState = XPAppAutoParkingStateSummoning,parkingExpState = XPAppAutoParkingExpTypeNormal
+[I][2026-03-21 +8.0 14:05:42.203][0, 77075][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(39) .StartParkingHeartBeat ...
+[I][2026-03-21 +8.0 14:05:42.203][0, 132103][XPBLEDataMake][XPBLEDataProcessor.m:191, +[XPBLEDataProcessor createParkingHeartbeatMessageWith:count:]][Info:提取单元测试：
+NSData *result = [XPBLEDataProcessor createParkingHeartbeatMessageWith:(BLEParkingCommand)1 count:77];
+NSString * testResultToHexStr = [result hexString];
+NSString * testResultHexRight = @"ef0302014d"; // 当次执行结果 
+XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);
+[I][2026-03-21 +8.0 14:05:42.203][0, 132103][XiaopengBaseControlRequest][XiaopengBaseControlRequest.swift:208, _sendBleData(_:)][Info: [指令发送] 蓝牙数据发送VehicleCommand:(39) .StartParkingHeartBeat开始
+--
+[I][2026-03-21 +8.0 14:05:43.210][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -94 name: BLER
+[I][2026-03-21 +8.0 14:05:43.211][0, 132103][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -86
+[I][2026-03-21 +8.0 14:05:43.211][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -86 name: BLE
+[I][2026-03-21 +8.0 14:05:43.211][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-82 -87 -94 -87 ]
+[I][2026-03-21 +8.0 14:05:43.211][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为6
+[I][2026-03-21 +8.0 14:05:43.211][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为5
+[I][2026-03-21 +8.0 14:05:43.211][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:闭锁圈
+[I][2026-03-21 +8.0 14:05:43.211][0, 88079][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:52, -[PLXPPollingFirstPollingHandler notifyTrunkNeedOpen]][Info: 在闭锁内，可以打开后备箱
+[I][2026-03-21 +8.0 14:05:43.211][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:190, -[PLXPPollingHandler predictPollingTrunkEnable]][Info: <PA>predict result: trunk enable, extension: nil
+[I][2026-03-21 +8.0 14:05:43.211][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:05:43.212][0, 88079][BLEKeyLocationTag][PLXPMultiBleLocationResultTool.m:52, -[PLXPMultiBleLocationResultTool predictSuccess:]][Info: 超过闭锁圈，重置手表闭锁
+[W][2026-03-21 +8.0 14:05:43.251][0, 132103][BLEParkingTag][XPAutoParkingViewController.m:3164, -[XPAutoParkingViewController sendHeartBeat:]][Warning:heart beat thread is：<NSThread: 0x140defe40>{number = 63, name = (null)}
+[I][2026-03-21 +8.0 14:05:43.252][0, 132103][BLEParkingTag][XPAutoParkingViewController.m:3344, -[XPAutoParkingViewController sendHeartBeat:]][Info:发送泊车指令cmd=XPBLEParkingCommandSummonForward,parkingState = XPAppAutoParkingStateSummoning,parkingExpState = XPAppAutoParkingExpTypeNormal
+[I][2026-03-21 +8.0 14:05:43.252][0, 132103][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(39) .StartParkingHeartBeat ...
+[I][2026-03-21 +8.0 14:05:43.252][0, 76547][XPBLEDataMake][XPBLEDataProcessor.m:191, +[XPBLEDataProcessor createParkingHeartbeatMessageWith:count:]][Info:提取单元测试：
+NSData *result = [XPBLEDataProcessor createParkingHeartbeatMessageWith:(BLEParkingCommand)1 count:84];
+NSString * testResultToHexStr = [result hexString];
+NSString * testResultHexRight = @"ef03020154"; // 当次执行结果 
+XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);
+[I][2026-03-21 +8.0 14:05:43.252][0, 76547][XiaopengBaseControlRequest][XiaopengBaseControlRequest.swift:208, _sendBleData(_:)][Info: [指令发送] 蓝牙数据发送VehicleCommand:(39) .StartParkingHeartBeat开始
+--
+}
+[I][2026-03-21 +8.0 14:05:48.477][0, 259*][CarHome][XPCarEnduranceView.m:206, -[XPCarEnduranceView startChangeRoundedEndurance:]][Info:续航初始值: 255, text: 255
+[I][2026-03-21 +8.0 14:05:48.479][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -85 name: BLER
+[I][2026-03-21 +8.0 14:05:48.479][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -61 name: BLE
+[I][2026-03-21 +8.0 14:05:48.479][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-73 -68 -85 -64 ]
+[I][2026-03-21 +8.0 14:05:48.479][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为3
+[I][2026-03-21 +8.0 14:05:48.479][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为2
+[I][2026-03-21 +8.0 14:05:48.479][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:解锁圈
+[I][2026-03-21 +8.0 14:05:48.479][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:149, -[PLXPPollingHandler predictUnlock]][Info: <PA>predict result: unlock, extension: nil
+[I][2026-03-21 +8.0 14:05:48.480][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:05:48.487][0, 259*][CarHome][XPCarStateViewModel.m:159, -[XPCarStateViewModel init]_block_invoke][Info:use location from carState lat:29.857380 lon:107.095413 angle:22.722401
+[I][2026-03-21 +8.0 14:05:48.487][0, 259*][CarHome][XPCarStateViewModel.m:982, -[XPCarStateViewModel updateLocationWithVin:coordinate:]][Info:regeocode search skip with same coordinate lat: 29.857380, lon: 107.095413, vin: L1NSPGH98NA168139
+[W][2026-03-21 +8.0 14:05:48.502][0, 77859][BLEParkingTag][XPAutoParkingViewController.m:3164, -[XPAutoParkingViewController sendHeartBeat:]][Warning:heart beat thread is：<NSThread: 0x127bf8880>{number = 46, name = (null)}
+[I][2026-03-21 +8.0 14:05:48.502][0, 77859][BLEParkingTag][XPAutoParkingViewController.m:3349, -[XPAutoParkingViewController sendHeartBeat:]][Info:发送泊车心跳cmd=XPBLEParkingCommandDefault,parkingState = XPAppAutoParkingStateSummoning,parkingExpState = XPAppAutoParkingExpTypeNormal
+[I][2026-03-21 +8.0 14:05:48.502][0, 77859][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(39) .StartParkingHeartBeat ...
+[I][2026-03-21 +8.0 14:05:48.503][0, 77859][XPBLEDataMake][XPBLEDataProcessor.m:191, +[XPBLEDataProcessor createParkingHeartbeatMessageWith:count:]][Info:提取单元测试：
+NSData *result = [XPBLEDataProcessor createParkingHeartbeatMessageWith:(BLEParkingCommand)0 count:119];
+NSString * testResultToHexStr = [result hexString];
+NSString * testResultHexRight = @"ef03020077"; // 当次执行结果 
+XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);
+--
+[I][2026-03-21 +8.0 14:05:49.448][0, 259*][CarHome][XPCarStateViewModel.m:982, -[XPCarStateViewModel updateLocationWithVin:coordinate:]][Info:regeocode search skip with same coordinate lat: 29.857380, lon: 107.095413, vin: L1NSPGH98NA168139
+[I][2026-03-21 +8.0 14:05:49.511][0, 76547][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -82
+[I][2026-03-21 +8.0 14:05:49.511][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -82 name: BLER
+[I][2026-03-21 +8.0 14:05:49.512][0, 77859][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -66
+[I][2026-03-21 +8.0 14:05:49.512][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -66 name: BLE
+[I][2026-03-21 +8.0 14:05:49.513][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-61 -65 -82 -63 ]
+[I][2026-03-21 +8.0 14:05:49.513][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:279, -[PLXPPollingHandler setLastDistanceLevel:]][Info: 设置lastDistanceLevel为2
+[I][2026-03-21 +8.0 14:05:49.513][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:273, -[PLXPPollingHandler setDistanceLevel:]][Info: 设置distanceLevel为1
+[I][2026-03-21 +8.0 14:05:49.513][0, 88079][BLEKeyTagPolling][PLXPPollingHandler.mm:384, -[PLXPPollingHandler bleKeyLocationStr]][Info: PLogic，现在的圈是:1m圈
+[I][2026-03-21 +8.0 14:05:49.514][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:05:49.515][0, 77859][XPStatisticsCaches][XPStatisticsCaches.m:158, -[XPStatisticsCaches getEventParams]][ready upload 21 events
+[I][2026-03-21 +8.0 14:05:49.516][0, 77075][CronetManager][CronetManager.m:146, +[CronetManager updateHostList:]][cronet update empty host list
+[I][2026-03-21 +8.0 14:05:49.516][0, 77075][CronetManager][CronetManager.m:141, +[CronetManager installCronetIntoSessionConfiguration:]][cronet install success
+[I][2026-03-21 +8.0 14:05:49.517][0, 77075][HttpSessionManager][HttpSessionManager.m:60, -[HttpSessionManager initWithEnvDomainURL:disableCronet:]][prepare for security policy: NO
+[I][2026-03-21 +8.0 14:05:49.523][0, 77859][HttpClient][HttpClientHandler.m:175, +[HttpClientHandler printLogWithRequestModel:]][
+=========================== http start request ===========================
+time:2026-03-21 14:05:49
+url:https://appdata.xiaopeng.com/app/report
+header:
+{
+--
+XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);
+[I][2026-03-21 +8.0 14:05:50.453][0, 88611][XiaopengBaseControlRequest][XiaopengBaseControlRequest.swift:208, _sendBleData(_:)][Info: [指令发送] 蓝牙数据发送VehicleCommand:(39) .StartParkingHeartBeat开始
+[I][2026-03-21 +8.0 14:05:50.453][0, 259*][XiaopengBLEConnection+SendData][XiaopengBLEConnection+SendData.swift:40, sendV2Data(_:)][Info: [蓝牙指令发送] 监听蓝牙数据接收流程结束 controlId: 0 parkingHeartCommand: 默认 sendData: [5 bytes] 
+[I][2026-03-21 +8.0 14:05:50.454][0, 259*][BleSendDataFlow][BleSendDataFlow.swift:101, write(params:success:failed:)][Info: [蓝牙写数据] 写数据开始 [5 bytes] 当前任务数 1
+[I][2026-03-21 +8.0 14:05:50.561][0, 77859][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -71
+[I][2026-03-21 +8.0 14:05:50.561][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -71 name: BLER
+[I][2026-03-21 +8.0 14:05:50.562][0, 77859][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -65
+[I][2026-03-21 +8.0 14:05:50.562][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -65 name: BLE
+[I][2026-03-21 +8.0 14:05:50.563][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-66 -70 -71 -69 ]
+[I][2026-03-21 +8.0 14:05:50.563][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[W][2026-03-21 +8.0 14:05:50.602][0, 88611][BLEParkingTag][XPAutoParkingViewController.m:3164, -[XPAutoParkingViewController sendHeartBeat:]][Warning:heart beat thread is：<NSThread: 0x118f64f00>{number = 43, name = (null)}
+[I][2026-03-21 +8.0 14:05:50.602][0, 88611][BLEParkingTag][XPAutoParkingViewController.m:3349, -[XPAutoParkingViewController sendHeartBeat:]][Info:发送泊车心跳cmd=XPBLEParkingCommandDefault,parkingState = XPAppAutoParkingStateSummoningAvariable,parkingExpState = XPAppAutoParkingExpTypeNormal
+[I][2026-03-21 +8.0 14:05:50.603][0, 88611][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(39) .StartParkingHeartBeat ...
+[I][2026-03-21 +8.0 14:05:50.603][0, 77859][XPBLEDataMake][XPBLEDataProcessor.m:191, +[XPBLEDataProcessor createParkingHeartbeatMessageWith:count:]][Info:提取单元测试：
+NSData *result = [XPBLEDataProcessor createParkingHeartbeatMessageWith:(BLEParkingCommand)0 count:5];
+NSString * testResultToHexStr = [result hexString];
+NSString * testResultHexRight = @"ef03020005"; // 当次执行结果 
+XCTAssertTrue([testResultToHexStr isEqualToString:testResultHexRight]);
+[I][2026-03-21 +8.0 14:05:50.603][0, 77859][XiaopengBaseControlRequest][XiaopengBaseControlRequest.swift:208, _sendBleData(_:)][Info: [指令发送] 蓝牙数据发送VehicleCommand:(39) .StartParkingHeartBeat开始
+[I][2026-03-21 +8.0 14:05:50.603][0, 259*][XiaopengBLEConnection+SendData][XiaopengBLEConnection+SendData.swift:40, sendV2Data(_:)][Info: [蓝牙指令发送] 监听蓝牙数据接收流程结束 controlId: 0 parkingHeartCommand: 默认 sendData: [5 bytes] 
+--
+		watchKey = 0
+	}
+}
+=========================== http end response ===========================
+[I][2026-03-21 +8.0 14:05:51.611][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b3:96:de rssi: -84 name: BLER
+[I][2026-03-21 +8.0 14:05:51.611][0, 76547][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -84
+[I][2026-03-21 +8.0 14:05:51.612][0, 88611][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -62
+[I][2026-03-21 +8.0 14:05:51.612][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:9b:dd:79 rssi: -62 name: BLE
+[I][2026-03-21 +8.0 14:05:51.612][0, 88079][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+[-65 -65 -84 -66 ]
+[I][2026-03-21 +8.0 14:05:51.613][0, 88079][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:05:51.806][0, 76547][BleSendDataFlow][BleSendDataFlow.swift:105, write(params:success:failed:)][Info: [蓝牙写数据] 写数据开始 ef03020709
+[I][2026-03-21 +8.0 14:05:51.806][0, 76547][BleDevice+SendData][BleDevice+SendData.swift:28, sendData(data:writeType:timeOut:success:failed:)][Info: [蓝牙写数据] 写数据开始 ef03020709
+[I][2026-03-21 +8.0 14:05:51.806][0, 76547][BluetoothData][Peripheral+Live.swift:55, init(cbperipheral:)][Info: _writeValueForCharacteristic: 5 bytes <CBCharacteristic: 0x14093b3c0, UUID = 0000ED28-ABAB-9C8C-2801-B1A015E46D6C, properties = 0xC, value = (null), notifying = NO>  CBCharacteristicWriteType(rawValue: 0)
+[I][2026-03-21 +8.0 14:05:51.814][0, 77859][BluetoothData][Peripheral+Live.swift:126, peripheral(_:didUpdateValueFor:error:)][Info: 数据更新 peripheral: KW36-BLE didUpdateValueForCharacteristic <CBCharacteristic: 0x14093b360, UUID = 0000ED28-ABAB-9C8C-2802-D3DF573FF530, properties = 0x20, value = {length = 10, bytes = 0x03180e00006907400080}, notifying = YES>
+[I][2026-03-21 +8.0 14:05:51.814][0, 259*][Optional(XPVehicleSDK.BLEPostionName.main)蓝牙连接][BleDevice.swift:306, observeIndicate()][Info: 蓝牙订阅数据 收到数据: data: Optional(10 bytes)
+[I][2026-03-21 +8.0 14:05:51.814][0, 259*][BLESelfKeyHandler][BLESelfKeyHandler.swift:120, addDeviceObserver()][Info: 蓝牙BLE 收到数据 data[10]:  03180e00006907400080
+[I][2026-03-21 +8.0 14:05:51.814][0, 259*][XPBLEDataMake][XPBLEDataProcessor.m:113, +[XPBLEDataProcessor parseMessageWithVehicleCode:bleData:]][Info:parseMessageWithVehicleCode result:[{
+		"type":	"vehicleState",
+		"vehicleState":	{
+			"door":	{
+--
+	alarmState = 2;
+	powerMode = 2;
+	driverSeatOccupied = 1
+}]
+[I][2026-03-21 +8.0 14:27:04.338][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:585, -[PLXPPollingManager setBeforeDisconnectDoorLockState:]][Error: <PA>设置了beforeDisconnectDoorLockState 0
+[I][2026-03-21 +8.0 14:27:04.338][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:490, -[PLXPMultiBleEventTool setLastDoorLockState:]][Info: 设置lastDoorLockState为1
+[I][2026-03-21 +8.0 14:27:04.338][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:495, -[PLXPMultiBleEventTool setCurrentDoorLockState:]][Info: 设置currentDoorLockState为0
+[I][2026-03-21 +8.0 14:27:04.338][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:504, -[PLXPMultiBleEventTool setCurrentDoorLockState:]][Info: 检测到车被解锁
+[I][2026-03-21 +8.0 14:27:04.340][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:350, -[PLXPPollingManager resetAllPollingCommandLimit:]][Info: 重置所有重连次数
+[I][2026-03-21 +8.0 14:27:04.341][0, 259*][BLEKeyTagPolling][PLXPPollingHandler.mm:317, -[PLXPPollingHandler setLockOperateTime:]][Info: 设置polling闭锁操作限制,7
+[I][2026-03-21 +8.0 14:27:04.342][0, 259*][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 14:27:04.342][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:339, -[PLXPMultiBleEventTool vehicleStateChanged:]][Info: 四门两盖关闭
+[I][2026-03-21 +8.0 14:27:04.342][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:358, -[PLXPMultiBleEventTool vehicleStateChanged:]][Info: 四门两盖关闭
+[I][2026-03-21 +8.0 14:27:04.343][0, 259*][CarHome][XPCarStateViewModel.m:400, -[XPCarStateViewModel start]_block_invoke_6][Info:收到车态变化消息：VehicleStateNotiObject:<channel:BLE, diffVehicleDict:{
+	timestamp = 1774074424.333661;
+	bleTimestamp = 1774074424.333661;
+	vin = L1NSPGH98NA168139;
+	door = {
+		rear_left_door_ajar_st = 0;
+		trunk_ajar_st = 0;
+		temp_lock_st = 0;
+--
+	alarmState = 2;
+	powerMode = 2;
+	driverSeatOccupied = 1
+}, "timestamp": 795779403.435302]
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:585, -[PLXPPollingManager setBeforeDisconnectDoorLockState:]][Error: <PA>设置了beforeDisconnectDoorLockState 0
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:490, -[PLXPMultiBleEventTool setLastDoorLockState:]][Info: 设置lastDoorLockState为1
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:495, -[PLXPMultiBleEventTool setCurrentDoorLockState:]][Info: 设置currentDoorLockState为0
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:504, -[PLXPMultiBleEventTool setCurrentDoorLockState:]][Info: 检测到车被解锁
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:350, -[PLXPPollingManager resetAllPollingCommandLimit:]][Info: 重置所有重连次数
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][BLEKeyTagPolling][PLXPPollingHandler.mm:317, -[PLXPPollingHandler setLockOperateTime:]][Info: 设置polling闭锁操作限制,7
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:339, -[PLXPMultiBleEventTool vehicleStateChanged:]][Info: 四门两盖关闭
+[I][2026-03-21 +8.0 17:50:03.439][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:358, -[PLXPMultiBleEventTool vehicleStateChanged:]][Info: 四门两盖关闭
+[I][2026-03-21 +8.0 17:50:03.440][0, 259*][CarHome][XPCarStateViewModel.m:400, -[XPCarStateViewModel start]_block_invoke_6][Info:收到车态变化消息：VehicleStateNotiObject:<channel:BLE, diffVehicleDict:{
+	polling = {
+		trunkReleaseState = 0;
+		alarmState = 2;
+		powerMode = 2;
+		driverSeatOccupied = 1
+	};
+	door = {
+--
+	passenger_door_ajar_st = 0;
+	driver_door_ajar_st = 0;
+	rear_right_door_ajar_st = 0
+}, "bleTimestamp": 795779965.064459, "vin": L1NSPGH98NA168139]
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:585, -[PLXPPollingManager setBeforeDisconnectDoorLockState:]][Error: <PA>设置了beforeDisconnectDoorLockState 0
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:490, -[PLXPMultiBleEventTool setLastDoorLockState:]][Info: 设置lastDoorLockState为1
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:495, -[PLXPMultiBleEventTool setCurrentDoorLockState:]][Info: 设置currentDoorLockState为0
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:504, -[PLXPMultiBleEventTool setCurrentDoorLockState:]][Info: 检测到车被解锁
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:350, -[PLXPPollingManager resetAllPollingCommandLimit:]][Info: 重置所有重连次数
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][BLEKeyTagPolling][PLXPPollingHandler.mm:317, -[PLXPPollingHandler setLockOperateTime:]][Info: 设置polling闭锁操作限制,7
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:339, -[PLXPMultiBleEventTool vehicleStateChanged:]][Info: 四门两盖关闭
+[I][2026-03-21 +8.0 17:59:25.070][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:358, -[PLXPMultiBleEventTool vehicleStateChanged:]][Info: 四门两盖关闭
+[I][2026-03-21 +8.0 17:59:25.071][0, 259*][CarHome][XPCarStateViewModel.m:400, -[XPCarStateViewModel start]_block_invoke_6][Info:收到车态变化消息：VehicleStateNotiObject:<channel:BLE, diffVehicleDict:{
+	timestamp = 1774087165.064459;
+	door = {
+		rear_left_door_ajar_st = 0;
+		trunk_ajar_st = 0;
+		temp_lock_st = 0;
+		bonnet_ajar_st = 0;
+		driver_door_lock_st = 0;
+--
+	passenger_door_ajar_st = 0;
+	driver_door_ajar_st = 0;
+	rear_right_door_ajar_st = 0
+}, "timestamp": 795785485.840903, "bleTimestamp": 795785485.840903]
+[I][2026-03-21 +8.0 19:31:25.845][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:585, -[PLXPPollingManager setBeforeDisconnectDoorLockState:]][Error: <PA>设置了beforeDisconnectDoorLockState 0
+[I][2026-03-21 +8.0 19:31:25.845][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:490, -[PLXPMultiBleEventTool setLastDoorLockState:]][Info: 设置lastDoorLockState为1
+[I][2026-03-21 +8.0 19:31:25.845][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:495, -[PLXPMultiBleEventTool setCurrentDoorLockState:]][Info: 设置currentDoorLockState为0
+[I][2026-03-21 +8.0 19:31:25.845][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:504, -[PLXPMultiBleEventTool setCurrentDoorLockState:]][Info: 检测到车被解锁
+[I][2026-03-21 +8.0 19:31:25.845][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:350, -[PLXPPollingManager resetAllPollingCommandLimit:]][Info: 重置所有重连次数
+[I][2026-03-21 +8.0 19:31:25.845][0, 259*][BLEKeyTagPolling][PLXPPollingHandler.mm:317, -[PLXPPollingHandler setLockOperateTime:]][Info: 设置polling闭锁操作限制,8
+[I][2026-03-21 +8.0 19:31:25.845][0, 259*][MultiBleOptTag][PLXPPollingManager.mm:442, -[PLXPPollingManager sendPollingBussinessCommand:]][Info: polling服务处于暂停状态，不执行任何polling指令
+[I][2026-03-21 +8.0 19:31:25.846][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:339, -[PLXPMultiBleEventTool vehicleStateChanged:]][Info: 四门两盖关闭
+[I][2026-03-21 +8.0 19:31:25.846][0, 259*][MultiBleOptTag][PLXPMultiBleEventTool.m:358, -[PLXPMultiBleEventTool vehicleStateChanged:]][Info: 四门两盖关闭
+[I][2026-03-21 +8.0 19:31:25.846][0, 259*][CarHome][XPCarStateViewModel.m:400, -[XPCarStateViewModel start]_block_invoke_6][Info:收到车态变化消息：VehicleStateNotiObject:<channel:BLE, diffVehicleDict:{
+	bleTimestamp = 1774092685.840903;
+	timestamp = 1774092685.840903;
+	polling = {
+		trunkReleaseState = 0;
+		alarmState = 2;
+		powerMode = 2;
+		driverSeatOccupied = 1

@@ -1,0 +1,59 @@
+# XPAIWorkflow
+
+> 车控团队专属 Claude Code AI 工作流配置 Submodule。
+> 主工程其他团队无需关注此仓库。
+
+## 快速开始
+
+新成员 clone 主工程后，执行一次初始化：
+
+```bash
+bash submodule/XPAIWorkflow/setup.sh
+```
+
+完成后在主工程目录启动 Claude Code，团队 AI 工作流即刻生效。
+
+## 目录结构
+
+```
+XPAIWorkflow/
+├── .claude/
+│   ├── CLAUDE.md               # 团队 AI 行为总规范
+│   ├── commands/               # 团队专属 slash commands
+│   │   └── add-ai-submodule.md
+│   ├── hooks/                  # Hooks 脚本
+│   │   ├── session-start.sh    # 会话启动提示
+│   │   └── pre-tool-use.sh     # 高危操作拦截
+│   └── workflows/
+│       └── ai-workflow.yml     # AI 流程路由配置
+├── setup.sh                    # 一键环境初始化（新成员执行一次）
+└── README.md
+```
+
+## 工作原理
+
+`setup.sh` 在主工程根目录创建符号链接：
+
+```
+XPMotors_IOS/.claude  →  submodule/XPAIWorkflow/.claude
+```
+
+并自动将 `.claude` 加入主工程 `.gitignore`，确保其他团队不受影响。
+
+## 配置变更流程
+
+1. 在此仓库修改配置文件
+2. 提交 MR，经团队 review 后合并
+3. 团队成员执行 `git pull` 拉取最新配置（符号链接无需重建）
+
+## 可用命令
+
+| 命令 | 说明 |
+|------|------|
+| `/add-ai-submodule` | AI 配置 submodule 设计与维护 |
+| `/feature-dev` | 新功能开发全流程 |
+| `/code-review` | 代码审查 |
+
+## 个人覆盖
+
+个人差异化配置请在 `~/.claude/` 全局目录配置，**不要提交到此仓库**。

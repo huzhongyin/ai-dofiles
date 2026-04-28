@@ -1,0 +1,39 @@
+# XPPollingSDK — Submodule 规范
+
+> ⚠️ 本仓库为独立 git 仓，本文件与同目录 `.ai-knowledge/` 需在子仓单独提交
+
+## 模块定位
+
+TODO: 一句话说明本模块职责
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `submodule/XPPollingSDK/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+TODO: 根据探测到的语言组合填充（Submodule 可能是纯 Swift / OC / C++ 混编）。
+
+## 对外 API 边界
+
+TODO: 占位 — 本 submodule 对外暴露的入口类 / 协议 / Manager / Presenter；稳定 API 列表；Breaking Change 策略；版本兼容承诺。
+
+## 仓内部架构
+
+TODO: 占位 — 内部分层（Connection / Manager / Parser / Handler 等）；内部模块间依赖方向；内部私有 API 的封装边界。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`（submodule 通常依赖较少，但需注意对第三方库的引入受独立仓 Podspec 约束）。
+
+## 禁止行为
+
+TODO: 列出 Submodule 层禁止事项（占位）。
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → 主仓 `.claude/rules/ios-coding.md`
+- 主工程 App 如何调用本 submodule → L2 `CLAUDE.app.md` 的"与 submodule 的边界"
+- 本 submodule 的演进历史与设计决策 → 子仓 ADR 文档

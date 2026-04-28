@@ -1,0 +1,39 @@
+# XP3rdShareLocation 宪法
+
+> 本文件是 XP3rdShareLocation 的**稳定规范**，描述模块边界、核心约束与对外契约。
+
+## 1. 模块定位
+
+第三方位置共享 Extension。核心职责：
+- 向第三方 App 分享当前车辆/用户位置
+- 提供 Share Extension UI（XP3rdShareLocationViewController）
+
+**明确不属于**：导航、充电桩搜索、地图展示。
+
+## 2. 架构约束
+
+Share Extension 入口模式。3rdShareLocationExtension.swift 为 Swift 入口，XP3rdShareLocationViewController.h/.m 为 OC 视图控制器。
+
+## 3. 语言策略
+
+Swift + OC 混编。通过 Bridging-Header 桥接。
+
+## 4. 依赖边界
+
+**允许**：App Group 共享数据、CoreLocation。
+**禁止**：UIApplication、主工程 App 代码。
+
+## 5. 禁止事项
+
+- 禁止使用 UIApplication.shared
+- 禁止在 Extension 中执行长耗时操作
+- 禁止直接访问主 App 数据（通过 App Group 间接）
+
+## 6. 与其他模块的接口契约
+
+- 入口：3rdShareLocationExtension.swift
+- Entitlements: XP3rdShareLocation.entitlements
+
+---
+
+> 变更本文件请同步更新 `.ai-knowledge/deps.yml` 与 module-registry。

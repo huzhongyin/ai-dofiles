@@ -1,0 +1,42 @@
+# XPBLEDataProcessor — Submodule 规范
+
+> ⚠️ 本仓库为独立 git 仓，本文件与同目录 `.ai-knowledge/` 需在子仓单独提交
+
+## 模块定位
+
+跨平台 BLE 数据编解码库（Pod: XPDataProcessor）。C++ 实现数据组装与解析，OC/.mm 桥接层供 iOS 端 XPVehicleSDK 调用。同时支持 Android、鸿蒙、小程序。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `submodule/XPBLEDataProcessor/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+C++ 核心（cross-platform/）+ OC/.mm 桥接（iOS/XPDataProcessor/）。无 Swift。新增核心逻辑写 C++，平台桥接写 OC/.mm。
+
+## 对外 API 边界
+
+公开头文件：XPDataProcessor.h、XPBLEDataProcessor.h、XPBleKeyV3DataProcessor.h、MonaBleDataProcessor.h、XPDataProxyManager.h、BleDataMarcos.h。消费方仅 XPVehicleSDK，禁止 App 层直接 include C++ 头文件。
+
+## 仓内部架构
+
+三层：iOS OC Bridge（XPDataProcessor/）→ C++ Core（cross-platform/BLEDataMaker + BLEDataParser）→ Tools（cross-platform/tools/）。依赖方向：Bridge → Core → Tools，禁止反向。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。仅依赖 openssl。第三方库引入受独立仓 Podspec 约束。
+
+## 禁止行为
+
+- 禁止在 cross-platform/ C++ 层使用 iOS/Android 平台特有 API
+- 禁止在 cross-platform/ 中引入 OC 头文件
+- 禁止绕过 OC Bridge 层直接 include C++ 头文件
+- 禁止手动拼接 BLE 字节流，必须通过 BLEDataMaker/BLEDataParser
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → 主仓 `.claude/rules/ios-coding.md`
+- 主工程 App 如何调用本 submodule → L2 `CLAUDE.app.md` 的"与 submodule 的边界"
+- 本 submodule 的演进历史与设计决策 → 子仓 ADR 文档

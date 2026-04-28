@@ -1,0 +1,240 @@
+//
+//  BLEKeyV3EncodeMessage.hpp
+//  VehicleSDK
+//
+//  Created by huzy2 on 2024/8/18.
+//
+#include <stdio.h>
+#include "BLEKeyV3Message.hpp"
+
+using namespace SDKBleKeyV3;
+
+static const uint8_t most_trans_count_size = 255;
+
+typedef struct BleKeyV3PollingConfigParams {
+    uint8_t isWelcome;
+    uint8_t pollingSwitch;
+    uint8_t pollingUnlockDistance;
+    uint8_t pollingLockDistance;
+    uint8_t selfCalibrationLen;
+    uint8_t *selfCalibrationData;
+}__attribute__((packed)) BleKeyV3PollingConfigParams;
+
+
+typedef struct BleKeyV3Auth0Params {
+    uint8_t *indictor;
+    uint8_t indicatorSize;
+    uint64_t uid;
+    uint8_t *keyId;
+    uint8_t keyIdSize;
+    uint32_t rand0;
+    uint64_t timeStamp;
+    BleKeyV3PollingConfigParams pollingConfig;
+    uint8_t *deviceModel;
+    uint8_t deviceModelSize;
+    uint8_t *bleName;
+    uint8_t bleNameSize;
+    uint8_t *authKey;
+    uint8_t authKeySize;
+}__attribute__((packed)) BleKeyV3Auth0Params;
+
+typedef struct BleKeyV3Auth1Params {
+    uint32_t rand12;
+    uint8_t *certMessage;
+    uint8_t certMessageSize;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+}__attribute__((packed)) BleKeyV3Auth1Params;
+
+typedef struct BleKeyV3RkeParams {
+    BLEKeyV3RKERequestType rkeType;
+    uint8_t rkeId;
+    uint8_t *rkeData;
+    uint8_t rkeDataSize;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+    uint8_t *hmacKey;
+    uint8_t hmacKeySize;
+}__attribute__((packed)) BleKeyV3RkeParams;
+
+typedef struct BleKeyV3QueryStateParams {
+    uint8_t controlId;
+    BLEKeyV3CarStateRKEType *carStateType;
+    uint8_t carStateTypeLen;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+    uint8_t *hmacKey;
+    uint8_t hmacKeySize;
+}__attribute__((packed)) BleKeyV3QueryStateParams;
+
+typedef struct BleKeyV3NotifyStateParams {
+    uint8_t controlId;
+    BLEKeyV3CarStateRKEType *carStateType;
+    uint8_t carStateTypeLen;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+    uint8_t *hmacKey;
+    uint8_t hmacKeySize;
+}__attribute__((packed)) BleKeyV3NotifyStateParams;
+
+typedef struct BleKeyV3RkeControlParams {
+    uint8_t controlId;
+    uint8_t *controlData;
+    uint8_t controlDataLen;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+    uint8_t *hmacKey;
+    uint8_t hmacKeySize;
+}__attribute__((packed)) BleKeyV3RkeControlParams;
+
+typedef struct BleKeyV3PollingFuncStateParams {
+    uint8_t controlId;
+    BLEKeyV3PollingFuncType *funcType;
+    uint8_t funcLen;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+    uint8_t *hmacKey;
+    uint8_t hmacKeySize;
+}__attribute__((packed)) BleKeyV3PollingFuncStateParams;
+
+typedef struct BleKeyV3NotifyParams {
+    BLEKeyV3NotifyType notifyType;
+    uint8_t *notifyData;
+    uint8_t notifyDataSize;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+}__attribute__((packed)) BleKeyV3NotifyParams;
+
+typedef struct BleKeyV3ParkingHeartParams {
+    uint8_t parkingData;
+    uint8_t parkingId;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+}__attribute__((packed)) BleKeyV3ParkingHeartParams;
+
+typedef struct BleKeyV3ParkingLimitDistanceParams {
+    uint8_t isLimit;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+}__attribute__((packed)) BleKeyV3ParkingLimitDistanceParams;
+
+typedef struct BleKeyV3PollingEnableConfigParams {
+    uint8_t pollingEnableSwitch;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+}__attribute__((packed)) BleKeyV3PollingEnableConfigParams;
+
+typedef struct BleKeyV3SelfCalibrationParams {
+    uint8_t direction;
+    float distance;
+    uint32_t collectCount;
+    uint32_t timeout;
+    uint32_t uid;
+    uint8_t *deviceModel;
+    uint8_t deviceModelSize;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+}__attribute__((packed)) BleKeyV3SelfCalibrationParams;
+
+typedef struct BleKeyV3RssiCollectParams {
+    uint8_t direction;
+    float distance;
+    uint32_t collectCount;
+    uint8_t isPocket;
+    uint16_t angle;
+    uint32_t uid;
+    uint8_t *deviceModel;
+    uint8_t deviceModelSize;
+    uint8_t *sessionKey;
+    int sessionKeySize;
+}__attribute__((packed)) BleKeyV3RssiCollectParams;
+
+typedef enum BleKeyV3Auth0RequestCreateResult: uint8_t {
+    BleKeyV3Auth0RequestCreateSuccess     = 0x0,
+    BleKeyV3Auth0RequestCreateAuth0ParamsIsNull,
+    BleKeyV3Auth0RequestCreateIndicatorIsNull,
+    BleKeyV3Auth0RequestCreateKeyIdIsNull,
+    BleKeyV3Auth0RequestCreateDeviceModelIsNull,
+    BleKeyV3Auth0RequestCreateDeviceNameIsNull,
+    BleKeyV3Auth0RequestCreateAuthKeyIsNull
+}BleKeyV3Auth0RequestCreateResult;
+
+typedef enum BleKeyV3Auth1RequestCreateResult: uint8_t {
+    BleKeyV3Auth1RequestCreateSuccess     = 0x0,
+    BleKeyV3Auth1RequestCreateAuth1ParamsIsNull,
+    BleKeyV3Auth1RequestCreateCertMessageIsNull,
+    BleKeyV3Auth1RequestCreateSessionKeyIsNull
+}BleKeyV3Auth1RequestCreateResult;
+
+typedef enum BleKeyV3RkeRequestCreateResult: uint8_t {
+    BleKeyV3RkeRequestCreateSuccess     = 0x0,
+    BleKeyV3RkeRequestCreateQueryStateParamsIsNull,
+    BleKeyV3RkeRequestCreateNotifyStateParamsIsNull,
+    BleKeyV3RkeRequestCreateRkeControlParamsIsNull,
+    BleKeyV3RkeRequestCreateQueryCarStateIsNull,
+    BleKeyV3RkeRequestCreateNotifyCarStateIsNull,
+    BleKeyV3RkeRequestCreateRkeControlDataIsNull,
+    BleKeyV3RkeRequestCreateRkeParamsIsNull,
+    BleKeyV3RkeRequestCreateRkeDataIsNull,
+    BleKeyV3RkeRequestCreateSessionKeyIsNull,
+    BleKeyV3RkeRequestCreateHmacKeyIsNull,
+    BleKeyV3RkeRequestCreatePollingFuncTypeIsNull
+}BleKeyV3RkeRequestCreateResult;
+
+typedef enum BleKeyV3NotifyRequestCreateResult: uint8_t {
+    BleKeyV3NotifyRequestCreateSuccess     = 0x0,
+    BleKeyV3NotifyRequestCreateParkingHeartParamsIsNull,
+    BleKeyV3NotifyRequestCreateSelfCalibrationParamsIsNull,
+    BleKeyV3NotifyRequestCreateSelfCalibrationDeviceModelIsNull,
+    BleKeyV3NotifyRequestCreateRssiCollectParamsIsNull,
+    BleKeyV3NotifyRequestCreateRssiCollectDeviceModelIsNull,
+    BleKeyV3NotifyRequestCreatePollingConfigParamsIsNull,
+    BleKeyV3NotifyRequestCreateNotifyParamsIsNull,
+    BleKeyV3NotifyRequestCreateNotifyDataIsNull,
+    BleKeyV3NotifyRequestCreateSessionKeyIsNull,
+    BleKeyV3NotifyRequestCreateHmacKeyIsNull,
+    BleKeyV3NotifyRequestCreateParkingLimitParamsIsNull,
+    BleKeyV3NotifyRequestCreatePollingEnableParamsIsNull,
+    BleKeyV3NotifyRequestCreateDeviceModelIsNull
+}BleKeyV3NotifyRequestCreateResult;
+
+// auth0
+BleKeyV3Auth0RequestCreateResult createBleKeyV3Auth0RequestWithInput(BleKeyV3Auth0Params *auth0Params, uint8_t pollingEnableSwitch, uint8_t *auth0EncodeData, size_t *auth0EncodeDataSize);
+
+// auth1
+BleKeyV3Auth1RequestCreateResult createBleKeyV3Auth1RequestWithInput(BleKeyV3Auth1Params *auth1Params,uint8_t *auth1EncodeData,size_t *auth1EncodeDataSize);
+
+
+// rke
+BleKeyV3RkeRequestCreateResult createBleKeyV3RkeRequestWithInput(BleKeyV3RkeParams *rkeParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize);
+
+BleKeyV3RkeRequestCreateResult createBleKeyV3QueryStateRequestWithInput(BleKeyV3QueryStateParams *queryStateParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize);
+
+BleKeyV3RkeRequestCreateResult createBleKeyV3NotifyStateRequestWithInput(BleKeyV3NotifyStateParams *notifyStateParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize);
+
+BleKeyV3RkeRequestCreateResult createBleKeyV3RkeControlRequestWithInput(BleKeyV3RkeControlParams *rkeControlParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize);
+BleKeyV3RkeRequestCreateResult createBleKeyV3NotifyPollingFuncStateWithInput(BleKeyV3PollingFuncStateParams *pollingFuncParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize);
+
+
+// notfiy
+BleKeyV3NotifyRequestCreateResult createBleKeyV3NotifyRequestWithInput(BleKeyV3NotifyParams *notifyParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize);
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3ParkingHeartWithInput(BleKeyV3ParkingHeartParams *parkingHeartParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize);
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3SelfCalibrationWithInput(BleKeyV3SelfCalibrationParams *selfCalirationParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize);
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3RssiCollectWithInput(BleKeyV3RssiCollectParams *rssiCollectParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize);
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3PollingCustomeDataWithInput(BleKeyV3PollingConfigParams *pollingConfigParams,int isSecure,uint8_t *sessionKey,int sessionKeySize,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize);
+BleKeyV3NotifyRequestCreateResult createBleKeyV3PollingCustomeDataWithInputV2(BleKeyV3PollingConfigParams *pollingConfigParams, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize);
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3ParkingLimitDistanceWithInput(BleKeyV3ParkingLimitDistanceParams *parkingLimitParams, int isSecure, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize);
+BleKeyV3NotifyRequestCreateResult createBleKeyV3ParkingLimitDistanceWithInputV2(BleKeyV3ParkingLimitDistanceParams *parkingLimitParams, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize);
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3PollingEnableConfigDataWithInput(BleKeyV3PollingEnableConfigParams *pollingEnableParams, int isSecure, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize);
+BleKeyV3NotifyRequestCreateResult createBleKeyV3PollingEnableConfigDataWithInputV2(BleKeyV3PollingEnableConfigParams *pollingEnableParams, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize);
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3DeviceModelDataWithInput(uint8_t *deviceModel, int deviceModelSize, int isSecure,uint8_t *sessionKey,int sessionKeySize,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize);
+BleKeyV3NotifyRequestCreateResult createBleKeyV3DeviceModelDataWithInputV2(uint8_t *deviceModel, int deviceModelSize, uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize);
+
+BleKeyV3NotifyRequestCreateResult createCombinedNotifyData(uint8_t *combinedData, int combinedDataSize, int isSecure,uint8_t *sessionKey,int sessionKeySize, uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize);

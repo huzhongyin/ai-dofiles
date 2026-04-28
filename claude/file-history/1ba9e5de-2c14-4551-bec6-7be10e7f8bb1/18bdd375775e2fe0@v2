@@ -1,0 +1,44 @@
+# XPCarControlCore — Submodule 规范
+
+> ⚠️ 本仓库为独立 git 仓，本文件与同目录 `.ai-knowledge/` 需在子仓单独提交
+
+## 模块定位
+
+车控业务封装层（Pod: XPCarControlCore）。在 XPVehicleSDK 之上封装具体车控功能：数字钥匙、自动泊车、空调、车辆权限、首页等。两个 subspec：Core（主功能）+ Entrance（XPCarSDK 初始化入口）。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `submodule/XPCarControlCore/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+OC + Swift + .mm（C++ 桥接）混编。Modules/ 按业务域划分（AutoParking, BLEKey, CarPermission, Home, Hvac, UserCenter），Services/ 提供通用服务。
+
+## 对外 API 边界
+
+- Modules/：AutoParking、BLEKey、CarPermission、Home、Hvac、UserCenter
+- Services/：CarControlManager、CarResourceManager、DigitalKey、XPBLEHandler 等
+- Protocal/：对外协议定义
+- Entrance：XPCarSDK_InitProcess（App 启动初始化入口）
+
+## 仓内部架构
+
+Modules（业务功能）→ Services（通用服务）→ Bridge（跨语言桥接）+ Define（定义）。Deprecated/ 存放废弃代码，Unstable/ 存放不稳定 API。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。依赖 XPVehicleSDK、XPVehicleExt、XPMQTTLibrary、XPAppBiz（多子模块）、ReactiveObjC、lottie-ios、XPCategory、XPNetwork 等。
+
+## 禁止行为
+
+- 禁止绕过 XPVehicleSDK 直接操作 BLE/MQTT 连接
+- 禁止在本模块中实现 UI 展示逻辑（UI 归 XPCarBusiCH 或 App 层）
+- 禁止在 Entrance subspec 中添加业务逻辑，仅做初始化
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → 主仓 `.claude/rules/ios-coding.md`
+- 主工程 App 如何调用本 submodule → L2 `CLAUDE.app.md` 的"与 submodule 的边界"
+- 本 submodule 的演进历史与设计决策 → 子仓 ADR 文档

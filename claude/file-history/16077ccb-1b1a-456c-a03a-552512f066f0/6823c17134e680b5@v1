@@ -1,0 +1,8 @@
+# 车控指令流程
+
+- 所有车控操作必须通过 `VehiclePresenter.sendControlCommand(command:extParams:success:failed:)` 发送
+- 车控指令会自动选择通道（BLE 优先于 MQTT）：
+  ```
+  App 业务层 → VehiclePresenter → VehicleControlRequestManager → VehicleConnection (BLE/TCP) → 车端
+  ```
+- 禁止直接调用 `BLEConnection.send()` 或 `MQTTHandler.publish()` 发送车控指令

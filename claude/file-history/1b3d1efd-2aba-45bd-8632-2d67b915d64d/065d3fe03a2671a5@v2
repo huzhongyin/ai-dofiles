@@ -1,0 +1,140 @@
+# 模块名: VehicleManager
+
+## 模块职责
+车辆管理器，是 XPVehicleSDK 的顶层业务入口。负责管理用户的车辆列表、切车流程、车控实例生命周期、以及统一分发所有车辆相关事件。App 层通过 VehicleManager 获取当前车辆的 VehiclePresenter 来操作车控功能。
+
+## 语言构成
+- Swift 文件数: ~7（VehicleManager 主类 + VehicleData + VehiclePreference + 扩展）
+- OC 文件数: 0
+- 混编说明: 纯 Swift，通过 @objc 暴露给 OC 层
+
+## 核心 API
+
+### VehicleManager（open class，可被 App 层继承扩展）
+| 方法/属性 | 用途 | 说明 |
+|---------|------|------|
+| `vehicleDataList: [VehicleData]` | 当前用户的车辆列表 | 线程安全（ThreadSafeList） |
+| `currentVehicleData: VehicleData?` | 当前选中车辆的数据 | — |
+| `uid: UInt64` | 当前登录用户 ID | — |
+| `bleSysState: BLESysState` | 系统蓝牙状态 | @objc dynamic，KVO 可观察 |
+| `setup()` | 初始化管理器 | 监听系统蓝牙状态等 |
+| `close()` | 关闭管理器 | 断开所有连接 + 清空列表 |
+| `createVehicle(vin:) -> VehiclePresenter?` | 创建独立车控实例（不切车） | 多车车控场景 |
+| `isOpenedVehicleTypeCode(_:) -> Bool` | 判断车型是否 SDK 2.0 开放车型 | 国内有白名单，海外全开放 |
+
+### 事件系统（VehicleManager 统一转发所有当前车事件）
+| 事件 | 值类型 | 用途 |
+|------|--------|------|
+| `vehicleListChangedEvent` | [VehicleData] | 车辆列表变化 |
+| `vehicleWillSwitchEvent` | String (vin) | 将要切车 |
+| `vehicleSwitchedEvent` | VehicleSwitchedObject | 切车完成（含 vin + presenter） |
+| `vehicleInfoUpdatedEvent` | Bool | 车辆信息更新（true=真实变更，false=随切车发出） |
+| `vehicleStateChangedEvent` | VehicleStateNotiObject | 当前车车态变更 |
+| `digitVehicleStateChangedEvent` | DigitVehicleStateNotiObject | 当前车数字车态变更 |
+| `bleConnectStateChangedEvent` | BLEConnectionState | 当前车蓝牙状态变更 |
+| `mqttConnectStateChangedEvent` | MQTTConnectionState | 当前车 MQTT 状态变更 |
+| `bleSysStateChangedEvent` | BLESysState | 系统蓝牙状态变更 |
+| `onlineStateChangedEvent` | Bool | 当前车在线状态变更 |
+| `digitalKeyChangedEvent` | DigitalKeyChangeType | 数字钥匙变更 |
+| `otaStateChangedEvent` | OTAStateModel | OTA 状态变更 |
+| `vehicleAbilityConfigChangedEvent` | Bool | OCM 配置化变更 |
+| `pollingFuncEventChangedEvent` | PollingFunctionEventModel | Polling 功能事件 |
+| `carkeyEntryStateChangedEvent` | CarKeyPollingSwitchState | 无感进入开关状态 |
+
+### VehicleData（车辆数据模型）
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `vin` | String | 车辆 VIN 码 |
+| `vehicleTypeCode` | String | 车型编码（"ED"/"DF"/"DM"等） |
+| `vehicleType` | VehicleType | 车型枚举 |
+| `invalid` | Bool | 是否已失效（退出登录时标记） |
+
+### VehicleType（车型枚举，24 种车型）
+| 枚举值 | 车型编码 | 说明 |
+|--------|---------|------|
+| .E28 | "ED" | P7 |
+| .D22 | "DF" | P5 |
+| .D55 | "DG" | G3i |
+| .E38 | "EE" | G9 |
+| .F30 | "FF" | G6 |
+| .H93 | "HE" | X9 |
+| .D01 | "DM" | Mona M03 |
+| .F57 | "FH" | P7+ |
+| ... | ... | 共 24 种 |
+
+## 切车流程
+```
+1. vehicleWillSwitchEvent.send(vin)              ← 通知"将要切车"
+2. closeCurrentVehicle()                         ← 停止当前车服务，断开连接
+3. 在 switchVehicleQueue (子线程) 创建新车控实例
+   ├── isMona() → MonaVehicle(uid:vehicle:vehiclePreference:)
+   └── else    → XiaopengVehicle(uid:vehicle:vehiclePreference:)
+4. vehicleInstance = 新实例
+5. vehicleInstance.startService()                 ← 启动新车服务
+6. vehicleSwitchedEvent.send(VehicleSwitchedObject)  ← 通知"切车完成"
+7. vehicleInfoUpdatedEvent.send(false)            ← 通知"车辆信息更新"
+```
+
+## 依赖关系
+- **上游依赖**:
+  - `BaseVehicle` (XiaopengVehicle / MonaVehicle) — 车控实例
+  - `VehicleInfo` — 车辆信息模型
+  - `BleCentral` — 系统蓝牙状态监控
+  - MMKV — 当前车 VIN 缓存
+- **下游被依赖**:
+  - `XPVehicleSDK`（对外门面）— `XPVehicleSDK.currentVehicle()` 实际从 VehicleManager 获取
+  - App 层所有业务模块 — 通过事件系统监听车辆变化
+
+## 与 XPVehicleSDK 的关系
+```
+XPVehicleSDK (对外门面类，提供静态方法)
+    ↓ 内部持有
+VehicleManager (管理车辆列表和切车)
+    ↓ 内部持有
+BaseVehicle (vehicleInstance，当前车控实例)
+    ↓ 实现为
+XiaopengVehicle / MonaVehicle
+```
+
+## 常见用法
+
+### 获取当前车辆的 Presenter
+```swift
+// 通过 XPVehicleSDK 门面获取
+if let presenter = XPVehicleSDK.currentVehicle() {
+    let state = presenter.vehicleState
+    let isOnline = presenter.isOnline
+}
+```
+
+### 监听切车事件
+```swift
+vehicleManager.vehicleSwitchedEvent.subscribe(self) { switchedObj in
+    let vin = switchedObj.vin
+    let presenter = switchedObj.presenter  // 可能为 nil
+    // 刷新 UI
+}
+
+// 大多数业务监听 vehicleInfoUpdatedEvent 即可
+vehicleManager.vehicleInfoUpdatedEvent.subscribe(self) { isRealChange in
+    // 刷新车辆相关 UI
+}
+```
+
+### 创建独立车控实例（多车场景）
+```swift
+if let extraPresenter = vehicleManager.createVehicle(vin: otherVin) {
+    (extraPresenter as? BaseVehicle)?.startService()
+    // 使用 extraPresenter 操作其他车辆
+    // 用完后:
+    (extraPresenter as? BaseVehicle)?.stopService()
+}
+```
+
+## 已知限制/陷阱
+- 切车操作在 `switchVehicleQueue`（后台线程）执行，创建车控实例有耗时，业务层收到 `vehicleSwitchedEvent` 时才能安全使用新 presenter
+- `createVehicle(vin:)` 创建的独立实例需要业务方自行管理 `startService/stopService` 生命周期
+- Mona 车型（vehicleTypeCode=="DM"）不支持通过 `createVehicle` 创建独立实例
+- 国内版有 SDK 2.0 开放车型白名单（`isOpenedVehicleTypeCode`），非白名单车型无法使用 SDK 车控
+- `vehicleSwitchedEvent` 和 `vehicleInfoUpdatedEvent` 有先后顺序关系，大多数业务只需监听后者
+- 清空车辆（退出登录）时会将所有 VehicleData 标记为 `invalid=true`，业务层需检查该标志

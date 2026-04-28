@@ -1,0 +1,66 @@
+//
+//  XPCarKeyHelp.h
+//  XiaoPengQiChe
+//
+//  Created by Xpeng on 2024/12/20.
+//  Copyright © 2024 xiaopeng.com. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+@import XPVehicleExt;
+@import XPVehicleSDK;
+
+NS_ASSUME_NONNULL_BEGIN
+typedef NS_ENUM(NSInteger, XPCarKeyBindType) {
+    XPCarKeyBindTypeUnKnow = 0,
+    XPCarKeyBindTypeBinded = 1,
+    XPCarKeyBindTypeNotBinded = 2,
+};
+
+@interface XPCarKeyHelp : NSObject
+
++ (instancetype)shared;
+
+#pragma mark pass
+
+@property (nonatomic, assign) XPCarKeyBindType bindType;
+
+- (XPCarKeyPairType)supportCarKeyPairType;
+
+//当前手机与车辆硬件系统是否支持Carkey
+- (BOOL)hardwareIsSupportCarKey;
+
+//carkey钥匙是否有效（uwb钥匙有效或者NFC有效）
+- (BOOL)localCarKeyIsVaild;
+
+- (NSString *)localCarKeyId;
+
+////是否有当前车辆的Carkey
+- (BOOL)localCarKeyIsExist;
+
+////当前车辆的carkey是否停用
+- (BOOL)localCarKeyIsSuspended;
+
+//获取carkey的信息
+- (NSDictionary *)localCarKeyInfo;
+
+////跳去钱包钥匙的一堆方法
+- (void)openCarKeyPass;
+
+- (void)requestCarkeyIsBindToUserWithKeyId:(NSString *)keyId Vin:(NSString *)vin complete:(void (^)(XPCarKeyBindType bindType))complete;
+
+//配对
+- (void)startCarKeyPairWithDelegate:(id<XPCarKeyPassEventDelegate>)delegate complete:(void (^)(enum XPCarKeyPassEventError error, UIViewController *pairController))complete;
+
+//分享
+- (void)startCarKeyShareWithDelegate:(id<XPCarKeyPassEventDelegate>)delegate complete:(void (^)(enum XPCarKeyPassEventError error, UIViewController *shareController))complete;
+
+#pragma mark 服务端通信
+//上报钥匙能力到云端
+- (void)uploadCarKeyCapbilitiesWithResult:(void(^)(BOOL success, XPVehicleError *error))result;
+- (void)bindCarkeyToUserWithKeyId:(NSString *)keyId vin:(NSString *)vin success:(void (^)(void))success failed:(void (^)(XPVehicleError * _Nonnull))failed;
+
+
+@end
+
+NS_ASSUME_NONNULL_END

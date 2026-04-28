@@ -1,0 +1,154 @@
+/Users/xpeng/XPMotors_IOS/.claude/skills/spec-design/SKILL.md-49-
+.claude/skills/spec-design/SKILL.md-50-8c. **修改策略标注**: 对调用链中的每个修改点，标注修改策略:
+.claude/skills/spec-design/SKILL.md-51-   - **替换实现**: 保留方法名，修改内部逻辑（如 `passIsAvailable()` → 改内部判断）
+.claude/skills/spec-design/SKILL.md:52:   - **替换 API**: 将调用方改为使用其他已有方法（如 `localCarKeyIsVaild` → 改为调用 `localCarKeyIsExist`）
+.claude/skills/spec-design/SKILL.md-53-   - **删除方法**: 方法不再需要，从协议/类中移除
+.claude/skills/spec-design/SKILL.md-54-   - **新增方法**: 新增方法供调用方使用
+/Users/xpeng/XPMotors_IOS/.claude/skills/spec-design/SKILL.md-55-   - 标注修改策略有助于实施者评估是否有更优路径
+--
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-29-| Q3: CarKey Session 失败是否需特殊处理 | ⚠️ 用户确认 | 业务决策，A/B 选项均合理 |
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-30-| Q4: 修改位置与范围 | ⚠️ 用户确认 | 方案选择，需用户决策 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-31-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:32:**自证率改进方向**: Q2 可以通过更深入地追踪 UI 调用链（如发现 `localCarKeyIsExist` 已存在）来自行确认更优方案，从而将自证率提升到 50%+。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-33-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-34-## F1-code 详情
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-35-| 维度 | 结果 | 说明 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-36-|------|------|------|
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-37-| 任务完成度 | 75% | 9/12 完成（3 个验证 Task 需 Xcode 环境，跳过） |
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:38:| 采纳程度 | 低 | 核心逻辑正确，但未发现已有的 `localCarKeyIsExist` 方法 |
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:39:| 额外修改 | 有 | 应使用 `localCarKeyIsExist` 替换 `localCarKeyIsVaild`，并删除 `localKeyIsAvailable()` |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-40-| 偏差程度 | 小 | 核心修改方向一致，问题在于 API 选择不够最优 |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-41-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-42-### 偏差分析
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-43-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:44:**核心问题**: `XPCarKeyHelp` 中已经存在 `localCarKeyIsExist` 方法（语义为"CarKey 是否存在"），方案应该直接使用此已有 API 替代 `localCarKeyIsVaild`，而不是修改 `localCarKeyIsVaild` 的内部实现（从"状态正常"改为"存在"）。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-45-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-46-**影响**:
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-47-- 方案修改了 `localKeyIsAvailable()` 内部实现来改变 `localCarKeyIsVaild` 的语义 → 不够直接
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:48:- 更优方案: 将所有 `localCarKeyIsVaild` 调用点替换为 `localCarKeyIsExist`，然后删除 `localCarKeyIsVaild` 和 `localKeyIsAvailable()` → 更清爽
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:49:- 根因: design 阶段未搜索 `XPCarKeyHelp` 的全部方法列表，遗漏了已有的 `localCarKeyIsExist`
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-50-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-51-### 未发现 API 的根因分析
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-52-1. design 阶段 grep 搜索的关键词是 `passIsAvailable`、`localCarKeyIsVaild`、`localKeyIsAvailable` — 面向"修改对象"搜索
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-65-## 改进建议
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-66-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-67-### S1: spec-design 应对"修改目标类"执行全量方法扫描
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:68:- **问题**: 修改 `localCarKeyIsVaild` 的内部实现时，未检查 `XPCarKeyHelp` 是否已有语义匹配的方法（`localCarKeyIsExist`）
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-69-- **改进**: spec-design Skill 在 Phase 2 调用链分析中，当修改涉及"改变某方法的语义"时，应对目标类做 `grep` 全量方法列表，检查是否已有语义匹配的替代 API
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-70-- **涉及 Skill**: `spec-design`
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-71-- **预期效果**: 避免"修改已有方法语义"而非"使用已有替代方法"的次优选择
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-108-| S3 | spec-design | 调用链标注"推荐方案 A + 备选方案 B" | ✅ 已实施（Phase 2.5 冲突风险标注） |
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-109-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-110-## 待沉淀知识
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:111:- ⚠️ **`XPCarKeyHelp` 全量 API 文档**: `localCarKeyIsExist` / `localCarKeyIsVaild` / `localKeyIsAvailable` 三者的区别和推荐使用方式，当前知识库未覆盖
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-112-- ⚠️ **spec-design "全量方法扫描"模式**: 当修改涉及改变方法语义时，应先检查目标类是否有更合适的已有 API — 这是一个通用方法论，可沉淀为踩坑记录
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-113-
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-114-## 趋势分析
+--
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-130-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-131-1. **F1-doc 下降 15 分**: 主要因为新增"自证率"维度（0/15 分）。如果不算自证率，F1-doc 为 82/85 = **96.5%**，与上次 97 基本一致。调用链准确性提升（满分），说明 grep 验证机制持续有效。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-132-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md:133:2. **F1-code 显著下降**: 从 A(95) 降到 C(65)。核心原因是未发现 `localCarKeyIsExist` 已有 API。这不是方法论退步，而是**特定案例中对目标类全量能力的搜索不足**。改进建议 S1（全量方法扫描）应能系统性解决此问题。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-134-
+.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-135-3. **效率持平**: 两次均 87.5%，说明 Spec 流程的效率优势稳定。
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/quality-scores/score-carkey-freeze-private-key-strategy-2026-04-09.md-136-
+--
+.ai-knowledge/evolution-log.md-342-  - 自证率 0 分: Q2/Q3/Q4 属于业务决策（合理询问），但指标反映可进一步分解为技术子问题
+.ai-knowledge/evolution-log.md-343-- F1-code: C (65)
+/Users/xpeng/XPMotors_IOS/.ai-knowledge/evolution-log.md-344-  - 任务完成度 75% (9/12), 采纳程度低, 有额外修改, 偏差小
+.ai-knowledge/evolution-log.md:345:  - 核心问题: 未发现 XPCarKeyHelp 中已有 `localCarKeyIsExist` 方法，应直接替换而非修改 `localCarKeyIsVaild` 内部实现
+.ai-knowledge/evolution-log.md-346-  - 根因: spec-design 调用链分析只追踪修改路径上的节点，未对目标类做全量方法扫描
+.ai-knowledge/evolution-log.md-347-- 效率提升: ~87.5%（2h vs 预估 2.5 天）
+.ai-knowledge/evolution-log.md-348-- 改进建议:
+--
+.ai-knowledge/evolution-log.md-371-- spec-tasks 优化 (S4):
+.ai-knowledge/evolution-log.md-372-  - Phase 2.5 扩展: 新增 8d"已有替代 API 检测"——方法语义变更类 Task 必须 grep 目标类全量方法列表
+.ai-knowledge/evolution-log.md-373-  - 约束新增: 方法语义变更类 Task 必须执行替代 API 检测
+.ai-knowledge/evolution-log.md:374:- 改进依据: carkey-freeze F1-code 评分 C(65) 的核心原因——未发现 `localCarKeyIsExist` 已有方法
+.ai-knowledge/evolution-log.md-375-- 说明: L5 飞轮第三次完整闭环 — 评分发现 API 搜索盲点 → S1-S4 改进建议 → 3 个 Skill 同步优化 → 下次 Spec 自动执行全量方法扫描
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/BLEKey/KeyRework/XPCreateSelfKeyViewController.m-365-    }
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/BLEKey/KeyRework/XPCreateSelfKeyViewController.m-366-    
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/BLEKey/KeyRework/XPCreateSelfKeyViewController.m-367-    //本机有钱包钥匙
+XiaoPengQiChe/Modules/BLEKey/KeyRework/XPCreateSelfKeyViewController.m:368:    BOOL hasCarKey = [XPCarKeyHelp.shared localCarKeyIsExist];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/BLEKey/KeyRework/XPCreateSelfKeyViewController.m-369-    //本机本车支持钱包钥匙
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/BLEKey/KeyRework/XPCreateSelfKeyViewController.m-370-    BOOL supportCarKey = [XPCarKeyHelp.shared hardwareIsSupportCarKey];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/BLEKey/KeyRework/XPCreateSelfKeyViewController.m-371-    
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-833-            self.squareKeyViewItem.pollingEnabled = (XPMultiBleManager.sharedManager.pollingRunMode != PollingRunModeNone || peEnable) || (carInfo.isMona && [self monaPollingEnabled]);
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-834-            self.squareKeyViewItem.isDriverMode = [[XPMultiBleManager sharedManager] getIsDriverMode];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-835-            BOOL uwbKeyIsVaild = XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager.vaildBleKeyCategory == XPDigitalKeyCategoryPHONE_UWB_KEY;
+XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m:836:            BOOL carKeyIsVaild = [XPCarKeyHelp.shared localCarKeyIsExist];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-837-            self.squareKeyViewItem.uwbKeyIsVaild = uwbKeyIsVaild;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-838-            self.squareKeyViewItem.carKeyBinded = carKeyIsVaild && XPCarKeyHelp.shared.bindType != XPCarKeyBindTypeNotBinded;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-839-        }
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-1989-    self.squareKeyViewItem.pollingEnabled = (XPMultiBleManager.sharedManager.pollingRunMode != PollingRunModeNone || peEnable) || (CTMediator.isMona && [self monaPollingEnabled]);
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-1990-    self.squareKeyViewItem.isDriverMode = [[XPMultiBleManager sharedManager] getIsDriverMode];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-1991-    BOOL uwbKeyIsVaild = XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager.vaildBleKeyCategory == XPDigitalKeyCategoryPHONE_UWB_KEY;
+XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m:1992:    BOOL carKeyIsExist = [XPCarKeyHelp.shared localCarKeyIsExist];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-1993-    self.squareKeyViewItem.uwbKeyIsVaild = uwbKeyIsVaild;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-1994-    self.squareKeyViewItem.carKeyBinded = carKeyIsExist && XPCarKeyHelp.shared.bindType != XPCarKeyBindTypeNotBinded;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-1995-    [self checkBLECreateKeyButton];
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-2131-    self.squareKeyViewItem.pollingEnabled = (XPMultiBleManager.sharedManager.pollingRunMode != PollingRunModeNone || peEnable) || (carInfo.isMona && [self monaPollingEnabled]);
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-2132-    self.squareKeyViewItem.isDriverMode = [[XPMultiBleManager sharedManager] getIsDriverMode];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-2133-    BOOL uwbKeyIsVaild = XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager.vaildBleKeyCategory == XPDigitalKeyCategoryPHONE_UWB_KEY;
+XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m:2134:    BOOL carKeyIsExist = [XPCarKeyHelp.shared localCarKeyIsExist];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-2135-    self.squareKeyViewItem.uwbKeyIsVaild = uwbKeyIsVaild;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-2136-    self.squareKeyViewItem.carKeyBinded = carKeyIsExist && XPCarKeyHelp.shared.bindType != XPCarKeyBindTypeNotBinded;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/XPCarOwnerHomeViewController.m-2137-    self.squareKeyViewItem.controlItems = squareKeyItems;
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarPermission/XPNewCarPermissionAddPhoneViewController.m-660-
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarPermission/XPNewCarPermissionAddPhoneViewController.m-661-- (void)handleForBleKeyV3 {
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarPermission/XPNewCarPermissionAddPhoneViewController.m-662-    //本机有钱包钥匙
+XiaoPengQiChe/Modules/Home/NewCarPermission/XPNewCarPermissionAddPhoneViewController.m:663:    BOOL hasCarKey = [XPCarKeyHelp.shared localCarKeyIsExist];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarPermission/XPNewCarPermissionAddPhoneViewController.m-664-    if (hasCarKey) {
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarPermission/XPNewCarPermissionAddPhoneViewController.m-665-        XPKeyThreeCarKeyAuthDoneViewController *vc  = [XPKeyThreeCarKeyAuthDoneViewController new];
+XiaoPengQiChe/Modules/Home/NewCarPermission/XPNewCarPermissionAddPhoneViewController.m-666-        [self.navigationController pushViewController:vc animated:YES];
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-142-                showBleStateView = YES;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-143-                self.squareKeyViewItem.statisticState = 7;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-144-            }
+XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m:145:        }else if(!self.squareKeyViewItem.bleKeyExist && !(XPCarKeyHelp.shared.localCarKeyIsExist && [XPCarKeyHelp.shared supportCarKeyPairType] != XPCarKeyPairTypeNfc)){
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-146-            self.subtitleLabel.text = @"未激活";
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-147-            self.subtitleLabel.textColor = [UIColor xp_complementaryTextColor];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-148-            self.squareKeyViewItem.statisticState = 1;
+XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m:149:        }else if(XPCarKeyHelp.shared.localCarKeyIsExist && !self.squareKeyViewItem.carKeyBinded){
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-150-            self.subtitleLabel.text = @"绑定账号";
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-151-            self.subtitleLabel.textColor = [UIColor xp_complementaryTextColor];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/NewCarOwnerHome/View/Key/XPCarSquareKeyView.m-152-            self.squareKeyViewItem.statisticState = 8;
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPCardKeyTableViewCell.m-492-
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPCardKeyTableViewCell.m-493-- (BOOL)showCarKeyUpgrade{
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPCardKeyTableViewCell.m-494-    BOOL show = NO;
+XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPCardKeyTableViewCell.m:495:    if (CTMediator.defaultCarInfo.isMyOwnerCar && [XPCarKeyHelp.shared hardwareIsSupportCarKey] && ![XPCarKeyHelp.shared localCarKeyIsExist]){
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPCardKeyTableViewCell.m-496-        DLogTagInfo(kBLEKeyTag, @"本地没carkey，但是他是车主且支持升级carkey");
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPCardKeyTableViewCell.m-497-        show = YES;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPCardKeyTableViewCell.m-498-    }
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-935-            break;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-936-            
+XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-937-        case XPKeyManageSectionNFCCarkey:
+XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m:938:            return [XPCarKeyHelp.shared localCarKeyIsExist] ? 1 : 0;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-939-            break;
+XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-940-        case XPKeyManageSectionLoginScreen:
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-941-            if ([self showLoginScreen]) {
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1171-        }
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1172-    }
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1173-    
+XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m:1174:    if (indexPath.section == XPKeyManageSectionNFCCarkey && [XPCarKeyHelp.shared localCarKeyIsExist]) {
+XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1175-        [QMUIAlertController showAlertWithTitle:@"" message:@"激活与使用NFC钥匙需启用“NFC功能”，请通过“手机系统设置>通用>NFC”查看" leftButtionTitle:@"好的" leftButtonType:QMUIAlertActionStyleCancel leftAction:nil rightButtonTitle:@"" rightButtonType:QMUIAlertActionStyleCancel rightAction:nil];
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1176-    }
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1177-    
+--
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1261-            }
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1262-            break;
+XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1263-        case XPKeyManageSectionNFCCarkey:
+XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m:1264:            return [XPCarKeyHelp.shared localCarKeyIsExist] ? 10 : 0;
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1265-            break;
+XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1266-        case XPKeyManageSectionLoginScreen:
+/Users/xpeng/XPMotors_IOS/XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m-1267-            if ([self showLoginScreen]) {

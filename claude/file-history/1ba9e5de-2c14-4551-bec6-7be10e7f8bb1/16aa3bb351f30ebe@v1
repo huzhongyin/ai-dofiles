@@ -1,0 +1,69 @@
+# XiaoPengQiChe 宪法
+
+> 本文件是 XiaoPengQiChe 的**稳定规范**，描述模块边界、核心约束与对外契约。
+> 变更需要经过评审，非紧急情况下不要随意修改。
+
+## 1. 模块定位
+
+XPMotors iOS 主工程 App target 的业务代码目录，包含 50 个 Modules、31 个 Services、VehicleBridge 桥接层、Utility 工具等。
+
+核心职责：
+- 业务模块（Home / CarState / Charge / BLEKey / RemoteParking 等）的实现与装配
+- Service 层（Router / Bluetooth / DigitalKey / JSBridge 等）的注册与生命周期管理
+- VehicleBridge 桥接层维护，作为主工程与 submodule/XPVehicleSDK 之间的胶水
+- AppDelegate 生命周期串联
+
+**明确不属于**本模块：
+- 车控 SDK 内部实现（BLE/MQTT 通信、车态解析）→ L4 submodule/XPVehicleSDK
+- 通用 UI / 网络 / 工具封装 → L5 LocalPods
+- target 特有代码（Widget / Watch Extension）→ L3 target 层
+
+## 2. 架构约束
+
+- 架构模式：MVVM（新功能）+ MVC（存量 OC 模块）
+- 核心分层：ViewController ← ViewModel ← Service ← VehicleBridge ← submodule/XPVehicleSDK
+- 允许调用方向：上层 → 下层；Module 间通信必须经 Router / NotificationCenter
+- 禁止方向：下层反向依赖上层；Module 间直接 import 内部类；绕过 VehicleBridge 直接访问 submodule 内部
+- VehicleBridge 职责边界：仅做 OC/Swift 胶水与类型转换，不承载业务逻辑
+
+## 3. 语言策略
+
+- 语言组合：OC + Swift 混编，极少量 .mm（C++/OC 混编）
+- 新功能优先 Swift，共版模块化设计，通过配置抹平国内/国际差异
+- 存量 OC 代码修改时保持 OC 风格，不在同次改动中混合迁移与功能开发
+- 互操作约束与命名规范详见 `../../.claude/rules/coding-style.md`
+
+## 4. 依赖边界
+
+允许依赖（详见 `../deps.yml`）：
+- submodule/XPVehicleSDK（车控指令与状态回调）
+- submodule/XPCarControlCore（OC 车控业务封装）
+- LocalPods/XPBase_*（基础组件）、LocalPods/XPBusiness_*（业务组件）
+- LocalPods/XPCenter_*（中台组件）
+
+禁止依赖：
+- 反向依赖任何 submodule 对主工程的引用
+- 跨 Module 直接依赖（须走 Router）
+- 第三方库需走 CocoaPods 私有源 `gitlab.x-peng.com`
+
+## 5. 禁止事项
+
+- 禁止在 Module 间直接 import 其他 Module 的内部类（必须走 Router / NotificationCenter）
+- 禁止在 ViewController 中直接发起网络请求或操作数据库
+- 禁止直接调用 `BLEConnection.send()` 或 `MQTTHandler.publish()`，必须通过 `VehiclePresenter.sendControlCommand`
+- 禁止绕过 VehicleBridge 访问 submodule 内部类
+- 禁止使用 UserDefaults 存储大量数据（改用 MMKV）
+- 禁止使用 `print()` 输出日志（改用 `Log.i/e/w/d`）
+
+## 6. 与其他模块的接口契约
+
+TODO: 人工精修 VehicleBridge 对外接口、Router 路由注册格式等。
+
+待补充内容：
+- VehicleBridge 层各 Bridge 类（XPVehicleHttpBridge / XPStatisticsBridge / XPOTAConfigBridge ...）的对外 API 与线程契约
+- Router 路由注册格式（URL scheme、参数约定、返回值）
+- NotificationCenter 约定事件命名规范
+
+---
+
+> 变更本文件请同步更新 `../deps.yml` 与 `.ai-knowledge/module-registry.md`。

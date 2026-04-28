@@ -1,0 +1,173 @@
+//
+//  BLEKeyV3Message.hpp
+//  CarControlCore
+//
+//  Created by huzy2 on 2024/1/24.
+//
+
+#ifndef BLEKeyV3Message_hpp
+#define BLEKeyV3Message_hpp
+#include <stdio.h>
+#include <cstdint>
+
+namespace SDKBleKeyV3 {
+
+const static uint16_t BLEKeyV3RKEResponseTag = 0x7F6F;
+
+//一级大类
+typedef enum BLEKeyV3AuthDataType: uint16_t {
+    BLEKeyV3AuthDataTypeIndictor       = 0xA0,
+    BLEKeyV3AuthDataTypeAuth0RequestFactor     = 0x7F50,
+    BLEKeyV3AuthDataTypeAuth0ResponseFactor     = 0x7F51,
+    BLEKeyV3AuthDataTypeAuth1RequestFactor     = 0x7F52,
+    BLEKeyV3AuthDataTypePollingConfig  = 0x7F53,
+} BLEKeyV3Auth0RequestDataType;
+
+typedef enum BLEKeyV3RKERequestType: uint16_t {
+    BLEKeyV3RKERequestTypeQueryCarState          = 0x7F60,
+    BLEKeyV3RKERequestTypeNotifyCarState         = 0x7F61,
+    BLEKeyV3RKERequestTypeControlRequest         = 0x7F62,
+    BLEKeyV3RKERequestTypeNotifyPollingFuncState = 0x7F65
+} BLEKeyV3RKERequestType;
+
+typedef enum BLEKeyV3NotifyType: uint8_t {
+    BLEKeyV3NotifyTypeParkingHeart          = 0xC0,
+    BLEKeyV3NotifyTypeGPS                   = 0xC1,
+    BLEKeyV3NotifyTypeIMU                   = 0xC2,
+    BLEKeyV3NotifyTypePhoneStatus           = 0xC3,
+    BLEKeyV3NotifyTypeSelfCalibration       = 0xC4,
+    BLEKeyV3NotifyTypePollingCustomerData   = 0xC5,
+    BLEKeyV3NotifyTypeRssiCollect           = 0xC6,
+    BLEKeyV3NotifyDeviceModel               = 0xC7,
+    BLEKeyV3NotifyTypeParkingLimitDistance  = 0xC8,
+    BLEKeyV3NotifyTypePollingEnableData     = 0xC9 
+} BLEKeyV3NotifyType;
+
+typedef enum BLEKeyV3Notify1Type: uint8_t {
+    BLEKeyV3NotifyType1TboxState          = 0xDD,
+} BLEKeyV3Notify1Type;
+
+typedef enum BLEKeyV3CarStateType: uint8_t {
+    BLEKeyV3CarStateTypeCommon = 0xD0,
+    BLEKeyV3CarStateTypeCharge = 0xD1,
+    BLEKeyV3CarStateTypeParking = 0xD2,
+    BLEKeyV3CarStateTypeNumerical = 0xD3,
+    BLEKeyV3CarStateTypeSelfCalibrationResult = 0xD4,
+    BLEKeyV3CarStateTypeRssiCollectResult = 0xD6,
+    BLEKeyV3CarStateTypeParkingLimitControlState = 0xD8,
+    BLEKeyV3CarStateTypePollingFuncState = 0xD9
+} BLEKeyV3CarStateType;
+
+typedef enum BLEKeyV3CommonResponseType: uint8_t {
+    BLEKeyV3CommonResponseTypeStatus       = 0x10,
+    BLEKeyV3CommonResponseTypeErrorCode    = 0x11,
+    BLEKeyV3CommonResponseTypeErrorReason  = 0x12
+} BLEKeyV3CommonResponseType;
+
+typedef enum BLEKeyV3RescureCommonResponseType: uint8_t {
+    BLEKeyV3RescureCommonResponseTypeStatus       = 0x01,
+    BLEKeyV3RescureCommonResponseTypeErrorCode    = 0x02,
+    BLEKeyV3RescureCommonResponseTypeErrorReason  = 0x03
+} BLEKeyV3RescureCommonResponseType;
+
+// 二级类别
+typedef enum BLEKeyV3Auth0RequestFactorType: uint8_t {
+    BLEKeyV3Auth0RequestFactorTypeUid         = 0x01,
+    BLEKeyV3Auth0RequestFactorTypeKid         = 0x02,
+    BLEKeyV3Auth0RequestFactorTypeRand0       = 0x03,
+    BLEKeyV3Auth0RequestFactorTypeTimeStamp   = 0x04
+} BLEKeyV3Auth0RequestFactorType;
+
+
+typedef enum BLEKeyV3Auth0RequestPollingConfigType: uint8_t {
+    BLEKeyV3Auth0RequestPollingConfigTypeCustomeRssi       = 0x01,
+    BLEKeyV3Auth0RequestPollingConfigTypeDeviceModel       = 0x02,
+    BLEKeyV3Auth0RequestPollingConfigTypeBleName           = 0x03,
+    BLEKeyV3Auth0RequestPollingConfigEnableSwitch           = 0x04
+} BLEKeyV3Auth0RequestPollingConfigType;
+
+typedef enum BLEKeyV3Auth0ResponseFactorType: uint8_t {
+    BLEKeyV3Auth0ResponseFactorTypeRand01         = 0x01,
+    BLEKeyV3Auth0ResponseFactorTypeRand1          = 0x02
+} BLEKeyV3Auth0ResponseFactorType;
+
+typedef enum BLEKeyV3Auth1RequestFactorType: uint8_t {
+    BLEKeyV3Auth1RequestFactorTypeRand12              = 0x01,
+    BLEKeyV3Auth1RequestFactorTypeCertMessage         = 0x02
+} BLEKeyV3Auth1RequestFactorType;
+
+typedef enum BLEKeyV3CarStateRKEType: uint8_t {
+    BLEKeyV3CarStateRKETypeCancel   = 0x00,
+    BLEKeyV3CarStateRKETypeCommon   = 0x01,
+    BLEKeyV3CarStateRKETypeCharge   = 0x02,
+    BLEKeyV3CarStateRKETypeParking  = 0x04,
+    BLEKeyV3CarStateRKETypeNumrical = 0x08,
+    BLEKeyV3CarStateRKETypeRssi     = 0x10
+} BLEKeyV3CarStateRKEType;
+
+typedef enum BLEKeyV3PollingFuncType: uint8_t {
+    BLEKeyV3PollingFuncTypeNone            = 0x00,
+    BLEKeyV3PollingFuncTypePollingUnlock   = 0x01
+} BLEKeyV3PollingFuncType;
+
+typedef enum BLEKeyV3RKEDataType: uint8_t {
+    BLEKeyV3RKEDataTypeControlId          = 0x0A,
+    BLEKeyV3RKEDataTypeControlData        = 0xB0
+} BLEKeyV3RKEDataType;
+
+typedef enum BLEKeyV3RKEResponseType: uint8_t {
+    BLEKeyV3RKEResponseTypeRkeId        = 0x0A,
+    BLEKeyV3RKEResponseTypeStatus       = 0x10,
+    BLEKeyV3RKEResponseTypeErrorCode    = 0x11,
+    BLEKeyV3RKEResponseTypeErrorReason  = 0x12
+} BLEKeyV3RKEResponseType;
+
+//包头
+typedef enum BLEKeyV3MessageType: uint8_t {
+    BLEKeyV3MessageTypeAuth0 = 0x01,
+    BLEKeyV3MessageTypeAuth1 = 0x02,
+    BLEKeyV3MessageTypeRKE = 0x03,
+    BLEKeyV3MessageTypeNotification = 0x04,
+    BLEKeyV3MessageTypeTest = 0x05,
+    BLEKeyV3MessageTypeNotification1 = 0x14,
+    BLEKeyV3MessageTypeRFU = 0xFF
+} BLEKeyV3MessageType;
+
+typedef enum BLEKeyV3ContentType: uint8_t {
+    BLEKeyV3ContentTypeSingleType = 0x01,
+    BLEKeyV3ContentTypeDualType = 0x02
+} BLEKeyV3ContentType;
+
+typedef struct BLEKeyV3Conent {
+    BLEKeyV3ContentType contentType;
+    uint8_t contentSize;
+    uint16_t tag;
+    uint8_t contentDataLength;
+    uint8_t *contentData;
+}__attribute__((packed)) BLEKeyV3Conent;
+
+typedef struct BLEKeyV3Message {
+    BLEKeyV3MessageType msgId;
+    uint8_t msgLength;
+    uint8_t *messageData;
+    uint16_t checkSum;
+}__attribute__((packed)) BLEKeyV3Message;
+
+size_t payloadSizeForBleKeyV3Message(BLEKeyV3Message* message);
+
+size_t sizeOfBLEKeyV3Message(BLEKeyV3Message* message);
+
+int isEffectiveBLEKeyV3MessageData(BLEKeyV3Message* msg, size_t len);
+
+void copyBleV3MessageRawData(BLEKeyV3Message *v3Mesage,uint8_t *rawData);
+
+
+size_t payloadSizeForBleKeyV3Content(BLEKeyV3Conent* content);
+
+size_t sizeOfBLEKeyV3Content(BLEKeyV3Conent* content);
+
+int isEffectiveBLEKeyV3ContentData(BLEKeyV3Conent* content);
+
+}
+
+#endif /* BLEKeyV3Message_hpp */

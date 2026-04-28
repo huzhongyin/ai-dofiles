@@ -1,0 +1,3 @@
+{"type":"queue-operation","operation":"enqueue","timestamp":"2026-04-01T08:46:18.344Z","sessionId":"1df4d949-b0b8-4ccf-915e-c1e21eda3bcc"}
+{"type":"queue-operation","operation":"dequeue","timestamp":"2026-04-01T08:46:18.345Z","sessionId":"1df4d949-b0b8-4ccf-915e-c1e21eda3bcc"}
+{"parentUuid":null,"isSidechain":false,"promptId":"e669bd46-97f5-4437-9a16-166d05194b44","type":"user","message":{"role":"user","content":[{"type":"text","text":"你当前是什么agent,用的什么模型"}]},"uuid":"a12dc34f-966b-4ed5-9dd3-d268cfdf7b2a","timestamp":"2026-04-01T08:46:18.363Z","permissionMode":"acceptEdits","userType":"external","entrypoint":"sdk-ts","cwd":"/Users/xpeng","sessionId":"1df4d949-b0b8-4ccf-915e-c1e21eda3bcc","version":"2.1.89","gitBranch":"HEAD"}

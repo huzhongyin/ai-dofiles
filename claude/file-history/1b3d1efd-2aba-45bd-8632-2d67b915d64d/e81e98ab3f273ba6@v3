@@ -1,0 +1,24 @@
+# XiaopengVehicle vs MonaVehicle 差异
+
+## 元信息
+- 触发关键词: ["XiaopengVehicle", "MonaVehicle", "小鹏车型", "Mona车型", "车型差异", "isMona"]
+- 分类: 领域知识
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+两个 BaseVehicle 实现类的关键差异：
+
+| 维度 | XiaopengVehicle | MonaVehicle |
+|------|----------------|-------------|
+| 日志 Tag | `"XP车控"` | `"Mona车控"` |
+| 蓝牙处理 | XPBLEDataProcessor / XPBleKeyV3DataProcessor | MonaBleDataProcessor |
+| 车控请求 | `VehicleControlRequestManager()` | `VehicleControlRequestManager(isMona: true)` |
+| OTA | 走数字车态推送 | 需主动 `requestOTAState()` |
+| 特殊持有 | — | `CarService?`（Mona SDK 虚拟实例）|
+| 维修模式 | — | 有 `repairMode` 状态 |
+| 创建实例 | 支持 `createVehicle(vin:)` | **不支持** `createVehicle` |
+
+**判断入口**: `VehicleManager` 通过 `isMona()` 决定实例化哪个类
+
+**代码位置**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/Presenter/`（Xiaopeng/ + Mona/ 子目录）

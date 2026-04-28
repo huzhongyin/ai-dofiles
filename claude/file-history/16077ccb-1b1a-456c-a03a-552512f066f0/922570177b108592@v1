@@ -1,0 +1,11 @@
+# deps.yml — XPPollingSDK 模块依赖声明
+# 格式定义见 .claude/skills/spec-coding-scaffold/templates/deps.schema.yml
+
+module: XPPollingSDK
+
+depends_on:
+  - id: XPVehicleSDK
+    reason: 获取车态数据和连接状态，驱动轮询频率预测
+    trigger_keywords: [轮询, 车态, RSSI, Polling]
+    critical_constraints:
+      - submodule/XPVehicleSDK/.ai-knowledge/specs/constitution.md#依赖边界

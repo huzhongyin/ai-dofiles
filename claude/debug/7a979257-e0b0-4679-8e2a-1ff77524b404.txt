@@ -1,0 +1,129 @@
+2026-04-20T13:21:28.431Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:28.431Z [DEBUG] MDM settings load completed in 2207ms
+2026-04-20T13:21:28.628Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:28.628Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:28.694Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:28.694Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:21:28.694Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:28.694Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:30.186Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-20T13:21:30.187Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-20T13:21:30.187Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-20T13:21:30.187Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-20T13:21:31.902Z [DEBUG] Error log sink initialized
+2026-04-20T13:21:32.368Z [DEBUG] Lock acquisition took longer than expected - another Claude instance may be running
+2026-04-20T13:21:32.480Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:32.481Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:33.286Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:33.297Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:21:33.380Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:33.381Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:33.565Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'userSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:21:33.650Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'userSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:21:33.650Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'projectSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:21:33.650Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'projectSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:21:33.651Z [DEBUG] Git remote URL: null
+2026-04-20T13:21:33.651Z [DEBUG] No git remote URL found
+2026-04-20T13:21:33.828Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-04-20T13:21:34.193Z [DEBUG] [claudeai-mcp] Checking gate (cached)...
+2026-04-20T13:21:34.193Z [DEBUG] [claudeai-mcp] Gate returned: false
+2026-04-20T13:21:34.193Z [DEBUG] [claudeai-mcp] Disabled via gate
+2026-04-20T13:21:34.311Z [DEBUG] [ToolSearch:optimistic] mode=tst, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-04-20T13:21:34.367Z [DEBUG] [STARTUP] Running setup()...
+2026-04-20T13:21:34.409Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:34.409Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:34.410Z [DEBUG] Loading skills from: managed=/Library/Application Support/ClaudeCode/.claude/skills, user=/Users/xpeng/.claude/skills, project=[]
+2026-04-20T13:21:34.755Z [DEBUG] Error log sink initialized
+2026-04-20T13:21:35.102Z [DEBUG] [STARTUP] setup() completed in 730ms
+2026-04-20T13:21:35.103Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-04-20T13:21:36.551Z [DEBUG] Loaded 17 installed plugins from /Users/xpeng/.claude/plugins/installed_plugins.json
+2026-04-20T13:21:36.791Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.791Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.792Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.792Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.802Z [DEBUG] Loading plugin agent-sdk-dev from source: "./plugins/agent-sdk-dev"
+2026-04-20T13:21:36.802Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.802Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.802Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.802Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.802Z [DEBUG] Loading plugin claude-code-setup from source: "./plugins/claude-code-setup"
+2026-04-20T13:21:36.813Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.813Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.813Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.813Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] Loading plugin claude-md-management from source: "./plugins/claude-md-management"
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] Loading plugin code-review from source: "./plugins/code-review"
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] Loading plugin code-simplifier from source: "./plugins/code-simplifier"
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] Loading plugin context7 from source: "./external_plugins/context7"
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] Loading plugin feature-dev from source: "./plugins/feature-dev"
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] Loading plugin frontend-design from source: "./plugins/frontend-design"
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] Loading plugin greptile from source: "./external_plugins/greptile"
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.814Z [DEBUG] Loading plugin hookify from source: "./plugins/hookify"
+2026-04-20T13:21:36.814Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.814Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.815Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.815Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.815Z [DEBUG] Loading plugin playwright from source: "./external_plugins/playwright"
+2026-04-20T13:21:36.815Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.916Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.918Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.918Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.919Z [DEBUG] Loading plugin plugin-dev from source: "./plugins/plugin-dev"
+2026-04-20T13:21:36.921Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.921Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.921Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.922Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.922Z [DEBUG] Loading plugin project-reader from source: "./project-reader"
+2026-04-20T13:21:36.922Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.922Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.922Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.922Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.922Z [DEBUG] Loading plugin ralph-loop from source: "./plugins/ralph-loop"
+2026-04-20T13:21:36.922Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.922Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.922Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.922Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.922Z [DEBUG] Loading plugin security-guidance from source: "./plugins/security-guidance"
+2026-04-20T13:21:36.922Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.922Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.922Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.922Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.922Z [DEBUG] Loading plugin skill-creator from source: "./plugins/skill-creator"
+2026-04-20T13:21:36.923Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.923Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.923Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:21:36.923Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:21:36.923Z [DEBUG] Loading plugin superpowers from source: {"source":"url","url":"https://github.com/obra/superpowers.git"}
+2026-04-20T13:21:36.923Z [DEBUG] Using provided version for superpowers@claude-plugins-official: 5.0.2
+2026-04-20T13:21:37.040Z [DEBUG] Failed to read/parse markdown file:  /Users/xpeng/.claude/commands/new-swift-module-skill-bae51ae0.md: ENOENT: no such file or directory, open '/Users/xpeng/.claude/commands/new-swift-module-skill-bae51ae0.md'
+2026-04-20T13:21:37.080Z [DEBUG] Failed to read/parse markdown file:  /Users/xpeng/.claude/commands/spec-proposal-skill-a6e9ccc8.md: ENOENT: no such file or directory, open '/Users/xpeng/.claude/commands/spec-proposal-skill-a6e9ccc8.md'
+2026-04-20T13:21:37.460Z [DEBUG] Using versioned cached plugin superpowers from /Users/xpeng/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.2
+2026-04-20T13:21:37.616Z [DEBUG] Loaded 91 unique skills (91 unconditional, 0 conditional, managed: 0, user: 28, project: 0, additional: 0, legacy commands: 63)

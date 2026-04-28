@@ -1,0 +1,525 @@
+//
+//  XPCarKeySessionAccesser.swift
+//  XiaoPengQiChe
+//
+//  Created by huzy2 on 2024/4/19.
+//  Copyright © 2024 xiaopeng.com. All rights reserved.
+//
+import CarKey
+import UIKit
+import Combine
+import CryptoSwift
+
+enum CarKeySessionError: Int, Error, Codable, CustomStringConvertible {
+    case None = 0;
+    case CarKeySessionIsNil
+    case BleIsNotConnected
+    case VehicleIdentifierIsNotEqual
+    case VehicleIdentifierNotFound
+    case AnotherRequestInProgress
+    case SessionNotActive
+    case FunctionUnknown
+    case SecurityViolation
+    case MessageTooLong
+    case RequestTimedOut
+    case ClientInBackground
+    case FeatureNotSupported
+    case CarKeySessionIsConnecting
+    case CarKeySessionIsDisconnecting
+    case TaskTimedOut
+    case Block
+    case Unknown
+    
+     var description: String {
+        switch self {
+        case .None:
+            return "None"
+        case .CarKeySessionIsNil:
+            return "CarKeySessionIsNil"
+        case .BleIsNotConnected:
+            return "BleIsNotConnected"
+        case .VehicleIdentifierIsNotEqual:
+            return "VehicleIdentifierIsNotEqual"
+        case .VehicleIdentifierNotFound:
+            return "VehicleIdentifierNotFound"
+        case .AnotherRequestInProgress:
+            return "AnotherRequestInProgress"
+        case .SessionNotActive:
+            return "SessionNotActive"
+        case .FunctionUnknown:
+            return "FunctionUnknown"
+        case .SecurityViolation:
+            return "SecurityViolation"
+        case .MessageTooLong:
+            return "MessageTooLong"
+        case .RequestTimedOut:
+            return "RequestTimedOut"
+        case .ClientInBackground:
+            return "ClientInBackground"
+        case .FeatureNotSupported:
+            return "FeatureNotSupported"
+        case .CarKeySessionIsConnecting:
+            return "CarKeySessionIsConnecting"
+        case .CarKeySessionIsDisconnecting:
+            return "CarKeySessionIsDisconnecting"
+        case .TaskTimedOut:
+            return "TaskTimedOut"
+        case .Block:
+            return "Block"
+        case .Unknown:
+            return "Unknown"
+        }
+    }
+}
+
+enum CarKeySessionState: Int, CustomStringConvertible {
+    case NotConnected = 0
+    case Disconnecting
+    case Connecting
+    case Connected
+    
+    var description: String {
+        switch self {
+        case .NotConnected:
+            return "NotConnected"
+        case .Disconnecting:
+            return "Disconnectting"
+        case .Connecting:
+            return "Connecting"
+        case .Connected:
+            return "Connected"
+        }
+    }
+}
+
+@objc(XPCarKeyPollingSwitchState)
+public enum CarKeyPollingSwitchState: Int {
+    case Unknown = 0 //只有在前台Carkey蓝牙连接上才可以知道开关状态，未连上是返回Unknown
+    case Close
+    case On
+    
+    var description: String {
+        switch self {
+        case .Unknown:
+            return "Unknown"
+        case .Close:
+            return "Close"
+        case .On:
+            return "On"
+        }
+    }
+}
+
+protocol CarKeySessionEventDelegate: NSObjectProtocol {
+    func carKeyFunctionExceptionError(error: CarKeySessionError)
+    func didReceivePassThroughData(data: Data)
+    func reportBlockingException(data: CarKeyExceptionObj)
+}
+
+protocol CarKeySessionAccesserProtocol {
+    func startCarKeySession(timeOut: TimeInterval, _ complete: @escaping ((CarKeySessionError) -> Void))
+    func endCarKeySession(_ completion: ((CarKeySessionError) -> Void)?)
+    func sendPassthroughtData(data: Data, timeOut: TimeInterval, _ complete: @escaping ((CarKeySessionError) -> Void))
+    func getLocalKeyPollingSwitchState(complete: @escaping (CarKeyPollingSwitchState, CarKeySessionError) -> Void)
+}
+
+@available(iOS 18.0, *)
+class CarKeySessionAccesser: NSObject, CarKeySessionAccesserProtocol {
+    
+    static func withTimeout<R>(
+        seconds: TimeInterval,
+        operation: @escaping () async throws -> R
+    ) async throws -> R {
+        try await withThrowingTaskGroup(of: R.self) { group in
+            group.addTask { try await operation() }
+            
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw CarKeySessionError.TaskTimedOut
+            }
+            
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+    }
+    
+    var carKeySession: CarKeyRemoteControlSession?
+    var vehicleIdentifier: String
+    var supportedFunctions: [FunctionIdentifier]?
+    var mockExcpetionType: CarKeyExceptionType = .None
+    
+    let semaphore = DispatchSemaphore(value: 1)
+    var stateSubject: PassthroughSubject<CarKeySessionState, Never> = .init()
+    var _state: CarKeySessionState = .NotConnected
+    var state: CarKeySessionState {
+        get {
+            semaphore.wait()
+            defer { semaphore.signal() }
+            return _state
+        }
+        set {
+            semaphore.wait()
+            guard _state != newValue else {
+                semaphore.signal()
+                return
+            }
+            Log.i("Setting value to \(newValue)")
+            _state = newValue
+            semaphore.signal()
+            stateSubject.send(newValue)
+        }
+    }
+    
+    private var endSessionCancellable: AnyCancellable?
+    
+    weak var carKeyEventDelegate: CarKeySessionEventDelegate?
+    
+    public init(vehicleIdentifier: String, delegate: CarKeySessionEventDelegate?) {
+        self.vehicleIdentifier = vehicleIdentifier
+        self.carKeyEventDelegate = delegate
+        super.init()
+        self.state = .NotConnected
+        self.addObserver()
+        Log.i(tag: "carKeySession", "init,vehicleIdentifier= \(vehicleIdentifier)")
+    }
+    
+    deinit {
+        Log.i(tag: "carKeySession", "deinit,vehicleIdentifier= \(vehicleIdentifier)")
+        carKeyEventDelegate = nil
+        // 确保清理所有资源
+        if carKeySession != nil {
+            endCarKeySession(nil)
+        }
+    }
+    
+    private func addObserver() {
+        NotificationCenter.default.addObserver(self, selector: #selector(mockExceptionTypeChanged), name: NSNotification.Name(rawValue: "CarKeySessionMockExceptionTypeChanged"), object: nil)
+    }
+    
+    @objc func mockExceptionTypeChanged(noti: Notification) {
+        let exceptionType: Int = noti.userInfo?["exceptionType"] as? Int ?? 0
+        self.mockExcpetionType = CarKeyExceptionType.init(rawValue: exceptionType) ?? .None
+    }
+    
+    public func startCarKeySession(timeOut: TimeInterval, _ complete: @escaping ((CarKeySessionError) -> Void)) {
+        if state == .Connecting {
+            complete(CarKeySessionError.CarKeySessionIsConnecting)
+            return
+        }
+        if state == .Disconnecting {
+            complete(CarKeySessionError.CarKeySessionIsDisconnecting)
+            return
+        }
+        self.state = .Connecting
+        if let carKeySession = self.carKeySession {
+            let result = refreshRealTimeCarKeySessionState(carKeySession: carKeySession)
+            self.state = result.0
+            complete(result.1)
+        } else {
+            Log.i(tag: "carKeySession", "startCarKeySession")
+            let monitorTask = Task.detached { [weak self] in
+                guard let self = self else {
+                    return
+                }
+                try await Task.sleep(nanoseconds: UInt64((timeOut + 3) * 1_000_000_000))
+                // 如果执行到这里，说明内层阻塞了
+                Log.i(tag: "carKeySession", "block exception occurred！")
+                self.carKeyEventDelegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.vehicleIdentifier, exceptionType: .Block, sessionError: .Block))
+            }
+            Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    complete(CarKeySessionError.Unknown)
+                    return
+                }
+                do {
+                    Log.i(tag: "carKeySession", "do carkeySession start")
+                    var observeTimeOut: TimeInterval = timeOut
+                    if self.mockExcpetionType == .Block {
+                        observeTimeOut = 10000
+                    }
+                    let result = try await CarKeySessionAccesser.withTimeout(seconds: observeTimeOut) {
+                        if self.mockExcpetionType == .Block {
+                            try await Task.sleep(nanoseconds: UInt64(observeTimeOut * 1_000_000_000))
+                        } else if self.mockExcpetionType == .Timeout {
+                            try await Task.sleep(nanoseconds: UInt64((observeTimeOut + 2) * 1_000_000_000))
+                        } else if self.mockExcpetionType == .Error {
+                            throw CarKeySessionError.RequestTimedOut
+                        }
+                        return try await CarKeyRemoteControl.start(delegate: self)
+                    }
+                    Log.i(tag: "carKeySession", "do carkeySession end")
+                    self.carKeySession = result
+                    let connectState = refreshRealTimeCarKeySessionState(carKeySession: result)
+                    self.state = connectState.0
+                    complete(connectState.1)
+                    monitorTask.cancel()
+                    self.carKeyEventDelegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.vehicleIdentifier, exceptionType: .None, sessionError: .None))
+                } catch CarKeySessionError.TaskTimedOut {
+                    Log.i("carKeySession", "start carkeySession timeout")
+                    monitorTask.cancel()
+                    complete(.TaskTimedOut)
+                    self.carKeyEventDelegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.vehicleIdentifier, exceptionType: .Timeout, sessionError: .TaskTimedOut))
+                } catch {
+                    Log.i(tag: "carKeySession", "start session error occurred: \(error.localizedDescription)")
+                    monitorTask.cancel()
+                    var sessionError: CarKeySessionError = .Unknown
+                    if let carKeyError = error as? CarKeyErrorCode {
+                        if carKeyError == .ClientInBackground {
+                            sessionError = .ClientInBackground
+                        } else if carKeyError == .Internal {
+                            sessionError = .Unknown
+                        } else if carKeyError == .VehicleNotConnected {
+                            sessionError = .BleIsNotConnected
+                        } else if carKeyError == .SessionNotActive {
+                            sessionError = .SessionNotActive
+                        }  else if carKeyError == .SecurityViolation {
+                            sessionError = .SecurityViolation
+                        } else if carKeyError == .RequestTimedOut {
+                            sessionError = .RequestTimedOut
+                        } else {
+                            sessionError = .Unknown
+                        }
+                    } else {
+                        sessionError = .Unknown
+                    }
+                    complete(sessionError)
+                    self.carKeyEventDelegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.vehicleIdentifier, exceptionType: .Error, sessionError: sessionError))
+                }
+            }
+        }
+    }
+    
+    func endCarKeySession(_ completion: ((CarKeySessionError) -> Void)?) {
+        if state != CarKeySessionState.Connecting {
+            let result = executeEndSessionOperation()
+            completion?(result)
+            return
+        }
+        self.endSessionCancellable = self.stateSubject
+            .filter { $0 != CarKeySessionState.Connecting }
+            .first()
+            .sink { [weak self] newState in
+                guard let self = self else {
+                    completion?(.Unknown)
+                    return
+                }
+                self.endSessionCancellable?.cancel()
+                self.endSessionCancellable = nil
+                let result = self.executeEndSessionOperation()
+                completion?(result)
+            }
+    }
+    
+    private func executeEndSessionOperation() -> CarKeySessionError {
+        guard let carKeySession = self.carKeySession else {
+            Log.i(tag: "carKeySession", "car key session is nil")
+            self.state = .NotConnected
+            return CarKeySessionError.CarKeySessionIsNil
+        }
+        self.state = .Disconnecting
+        do {
+            Log.i(tag: "carKeySession", "end key session")
+            try carKeySession.end()
+            self.carKeySession = nil
+            self.state = .NotConnected
+            return CarKeySessionError.None
+        } catch let error as NSError {
+            self.carKeySession = nil
+            self.state = .NotConnected
+            Log.i(tag: "carKeySession", "end session error occurred: \(error.localizedDescription)")
+            return CarKeySessionError.Unknown
+        }
+    }
+    
+    public func sendPassthroughtData(data: Data, timeOut: TimeInterval, _ complete: @escaping ((CarKeySessionError) -> Void)) {
+        guard let carkeySession = self.carKeySession else {
+            complete(.CarKeySessionIsNil)
+            return
+        }
+        if self.vehicleIdentifier == "" {
+            complete(.VehicleIdentifierNotFound)
+            return
+        }
+        let result = self.refreshRealTimeCarKeySessionState(carKeySession: carkeySession)
+        self.state = result.0
+        if result.1 != .None {
+            complete(result.1)
+            return
+        }
+        Task.detached(priority: .userInitiated) {
+            do {
+                let result = try await CarKeySessionAccesser.withTimeout(seconds: timeOut) {
+                    try await carkeySession.sendPassthroughData(data, toVehicle: self.vehicleIdentifier)
+                }
+                complete(.None)
+                Log.i(tag: "carKeySession", "Data sent successfully.")
+            } catch CarKeySessionError.TaskTimedOut {
+                complete(.TaskTimedOut)
+                Log.i("carKeySession", "sendPassthroughtData timeout")
+            } catch {
+                Log.i(tag: "carKeySession", "Failed to send data: \(error.localizedDescription)")
+                if let carKeyError = error as? CarKeyErrorCode {
+                    if carKeyError == .ClientInBackground {
+                        complete(.ClientInBackground)
+                    } else if carKeyError == .Internal {
+                        complete(.Unknown)
+                    } else if carKeyError == .VehicleNotConnected {
+                        complete(.BleIsNotConnected)
+                        self.state = .NotConnected
+                    } else if carKeyError == .AnotherRequestInProgress {
+                        complete(.AnotherRequestInProgress)
+                    } else if carKeyError == .SessionNotActive {
+                        complete(.SessionNotActive)
+                    } else if carKeyError == .MessageTooLong {
+                        complete(.MessageTooLong)
+                    } else if carKeyError == .SecurityViolation {
+                        complete(.SecurityViolation)
+                    } else if carKeyError == .RequestTimedOut {
+                        complete(.RequestTimedOut)
+                    } else {
+                        complete(.Unknown)
+                    }
+                } else {
+                    complete(.Unknown)
+                }
+            }
+        }
+    }
+    
+    public func getLocalKeyPollingSwitchState(complete: @escaping (CarKeyPollingSwitchState, CarKeySessionError) -> Void) {
+        if let session = self.carKeySession {
+            do {
+                let on = try session.isPassiveEntryAvailable(forVehicle: self.vehicleIdentifier)
+                Log.i(tag: "carKeySession", "get passive entry on is \(on)")
+                if on {
+                    complete(.On,.None)
+                } else {
+                    complete(.Close,.None)
+                }
+            } catch {
+                Log.i(tag: "carKeySession", "get passive entry error: \(error.localizedDescription)")
+                complete(.Unknown,.Unknown)
+            }
+        } else {
+            complete(.Unknown,.SessionNotActive)
+        }
+    }
+    
+    private func refreshRealTimeCarKeySessionState(carKeySession: CarKeyRemoteControlSession) -> (CarKeySessionState, CarKeySessionError) {
+        if let vehicleReport = getVehicleReport(carKeySession: carKeySession) {
+            if vehicleReport.isConnected == false {
+                if self.state != .NotConnected {
+                    Log.i(tag: "carKeySession", " vechile is not connected")
+                }
+                return (.NotConnected, .BleIsNotConnected)
+            } else {
+                if self.state != .Connected {
+                    Log.i(tag: "carKeySession", " vechile is connected")
+                }
+                return (.Connected, .None)
+            }
+        } else {
+            Log.i(tag: "carKeySession", "get vechile report nil")
+            return (.NotConnected, .VehicleIdentifierNotFound)
+        }
+    }
+    
+    func getRealTimeCarKeySessionState() -> CarKeySessionState {
+        if self.state == .Connecting {
+            Log.i(tag: "carKeySession", "car key session is connecting")
+            return .Connecting
+        }
+        guard let carKeySession = self.carKeySession else {
+            Log.i(tag: "carKeySession", "car key session is nil")
+            return .NotConnected
+        }
+        let result = refreshRealTimeCarKeySessionState(carKeySession: carKeySession)
+        self.state = result.0
+        return self.state
+    }
+    
+    private func getVehicleReport(carKeySession: CarKeyRemoteControlSession) -> VehicleReport? {
+        do {
+            let vehicleReports = try carKeySession.vehicleReports
+            var report: VehicleReport?
+            for vehicleReport in vehicleReports {
+                Log.i(tag: "carKeySession", "getVehicleReport identifier: \(vehicleReport.identifier.lowercased()), \(self.vehicleIdentifier.lowercased())")
+                if vehicleReport.identifier.lowercased() == self.vehicleIdentifier.lowercased() {
+                    self.vehicleIdentifier = vehicleReport.identifier
+                    report = vehicleReport
+                    break
+                }
+            }
+            if report == nil {
+                Log.i(tag: "carKeySession", "getVehicleReport not found for vehicleIdentifier: \(self.vehicleIdentifier)")
+            }
+            return report
+        } catch {
+            Log.i(tag: "carKeySession", "getVehicleReport error: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+}
+
+@available(iOS 18.0, *)
+extension CarKeySessionAccesser: CarKeyRemoteControlSessionDelegate {
+    
+    public func remoteControlSession(_ session: CarKeyRemoteControlSession, didInvalidateWithError: CarKeyErrorCode) {
+        Log.i(tag: "carKeySession", "didInvalidateWithError: \(didInvalidateWithError)")
+        self.carKeyEventDelegate?.carKeyFunctionExceptionError(error: CarKeySessionError.Unknown)
+    }
+    
+    
+    public func remoteControlSession(_ session: CarKeyRemoteControlSession, vehicleDidUpdateReport: VehicleReport) {
+        Log.i(tag: "carKeySession", "vehicle connect state: \(vehicleDidUpdateReport.isConnected)")
+        Log.i(tag: "carKeySession", "vehicle identifier: \(vehicleDidUpdateReport.identifier.lowercased()), \(self.vehicleIdentifier.lowercased())")
+        if vehicleDidUpdateReport.supportedFunctions != self.supportedFunctions {
+            Log.i(tag: "carKeySession", "origin supported functions: \(String(describing: self.supportedFunctions))")
+            self.supportedFunctions = vehicleDidUpdateReport.supportedFunctions
+            Log.i(tag: "carKeySession", "supported functions updated: \(String(describing: self.supportedFunctions))")
+        }
+        if vehicleDidUpdateReport.supportedFunctions != self.supportedFunctions {
+            Log.i(tag: "carKeySession", "origin vehicle supported functions: \(String(describing: self.supportedFunctions))")
+            if self.supportedFunctions != nil {
+                for functionId in self.supportedFunctions! {
+                    do {
+                        let status =  try vehicleDidUpdateReport.status(for: functionId)
+                        Log.i(tag: "carKeySession", "origin function \(functionId) status: \(status)")
+                        let data = try vehicleDidUpdateReport.proprietaryData(for: functionId)
+                        Log.i(tag: "carKeySession", "origin function \(functionId) data: \(data?.byteArray ?? [])")
+                    } catch {
+                        Log.i(tag: "carKeySession", "origin function \(functionId) status error:", error.localizedDescription)
+                        Log.i(tag: "carKeySession", "origin function \(functionId) data error:", error.localizedDescription)
+                    }
+                }
+            }
+            for functionId in vehicleDidUpdateReport.supportedFunctions {
+                do {
+                    let status =  try vehicleDidUpdateReport.status(for: functionId)
+                    Log.i(tag: "carKeySession", "origin function \(functionId) status: \(status)")
+                    let data = try vehicleDidUpdateReport.proprietaryData(for: functionId)
+                    Log.i(tag: "carKeySession", "origin function \(functionId) data: \(data?.byteArray ?? [])")
+                } catch {
+                    Log.i(tag: "carKeySession", "origin function \(functionId) status error:", error.localizedDescription)
+                    Log.i(tag: "carKeySession", "origin function \(functionId) data error:", error.localizedDescription)
+                }
+            }
+            self.supportedFunctions = vehicleDidUpdateReport.supportedFunctions
+            Log.i(tag: "carKeySession", "vehicle supported functions updated: \(String(describing: self.supportedFunctions))")
+        }
+            
+//        if vehicleDidUpdateReport.identifier.lowercased() == self.vehicleIdentifier.lowercased() {
+//            self.carKeyEventDelegate?.bleConnectState(isConnected: vehicleDidUpdateReport.isConnected)
+//        }
+    }
+    
+    public func remoteControlSession(_ session: CarKeyRemoteControlSession, didReceivePassthroughData: Data, fromVehicle vehicleID: String) {
+        Log.i(tag: "carKeySession", "didReceiveData: \(didReceivePassthroughData.byteArray)")
+        Log.i(tag: "carKeySession", "vehicle identifier: \(vehicleID.lowercased()), \(self.vehicleIdentifier.lowercased())")
+        if vehicleID.lowercased() == self.vehicleIdentifier.lowercased() {
+            self.carKeyEventDelegate?.didReceivePassThroughData(data: didReceivePassthroughData)
+        }
+    }
+}

@@ -1,0 +1,22 @@
+# Mona 车型蓝牙协议独立
+
+## 元信息
+- 触发关键词: ["Mona蓝牙", "MonaBleDataProcessor", "Mona协议", "Mona鉴权", "D01蓝牙"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+Mona 车型（vehicleTypeCode="DM"）使用完全独立的蓝牙协议栈：
+
+- **数据处理器**: `MonaBleDataProcessor`（不是 `XPBLEDataProcessor`）
+- **鉴权流程**: `generateAuth1MessageWithUid:vin:r0:cipher1:cipher2:`（不同于 V3 的 Auth0→Auth1）
+- **车控指令**: `generateVehilceControlMessageWithCmd:sessionKey:counter:`
+- **车型实现**: `MonaVehicle`（不是 `XiaopengVehicle`）
+- **车控请求**: `VehicleControlRequestManager(isMona: true)`
+
+**核心规则**: Mona 的所有蓝牙通信逻辑都与小鹏系车型隔离，修改小鹏蓝牙代码时不要假设对 Mona 生效，反之亦然。
+
+**代码位置**: 
+- 处理器: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/MonaBleDataProcessor.h`
+- 车控: `submodule/XPVehicleSDK/`（MonaVehicle 相关文件）

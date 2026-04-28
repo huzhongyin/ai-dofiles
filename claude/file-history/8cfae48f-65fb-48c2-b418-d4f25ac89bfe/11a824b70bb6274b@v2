@@ -1,0 +1,564 @@
+# XPMotors iOS — AI-Coding 架构图与工作流时序图
+
+> 生成日期: 2026-04-21
+> 涵盖: 五层规范体系、Spec 驱动开发流程、知识飞轮、Skill 协作关系、iOS 分层架构
+
+---
+
+## 1. 五层规范体系架构图
+
+```mermaid
+graph TB
+    subgraph "L1 Project 根（常驻加载）"
+        L1_CLAUDE["CLAUDE.md<br/>(瘦身版根入口)"]
+        L1_RULES["rules/project-common.md<br/>(通用编码方针)"]
+        L1_CONST["constitution.md<br/>(项目宪法 — 最高约束)"]
+        L1_KP["knowledge-points/*.kp.md<br/>(跨模块通用知识)"]
+        L1_SPECS["specs/template-*.md<br/>(模板文件)"]
+        L1_REG["module-registry.md<br/>(模块注册表 — 单一数据源)"]
+    end
+
+    subgraph "L2 主工程 App"
+        L2_CLAUDE["XiaoPengQiChe/.claude/CLAUDE.md"]
+        L2_RULES["rules/architecture.md<br/>rules/coding-style.md"]
+        L2_DEPS["deps.yml"]
+        L2_MODULES["modules/*.md"]
+    end
+
+    subgraph "L3 Target（6 个 Extension）"
+        L3_WATCH["XPWatch"]
+        L3_WIDGET["XPWidget"]
+        L3_WATCHWIDGET["XPWatchWidget"]
+        L3_INTENTS["XPIntentsExtension"]
+        L3_SHARE["XP3rdShareLocation"]
+        L3_MIRROR["XPMirrorExtension"]
+    end
+
+    subgraph "L4 Submodule（独立仓库）"
+        L4_VSDK["XPVehicleSDK<br/>(车控 SDK 门面)"]
+        L4_CCCORE["XPCarControlCore<br/>(车控配置核心)"]
+        L4_BLE["XPBLEDataProcessor<br/>(蓝牙编解码)"]
+        L4_MQTT["XPMQTTLibrary<br/>(MQTT 通信)"]
+        L4_POLL["XPPollingSDK<br/>(轮询 SDK)"]
+        L4_VEXT["XPVehicleExt<br/>(车辆扩展)"]
+        L4_BUSI["XPCarBusiCH<br/>(车控业务)"]
+    end
+
+    subgraph "L5 LocalPod（组件化）"
+        L5_ROUTER["XPBase_Router<br/>(路由)"]
+        L5_COMMON["XPBase_Common<br/>(基础通用)"]
+        L5_UI["XPBase_UI<br/>(UI 组件)"]
+        L5_THEME["XPBase_Theme<br/>(主题)"]
+        L5_WEB["XPBase_WebView<br/>(WebView)"]
+        L5_RN["XPBase_RN<br/>(React Native)"]
+        L5_CAR["XPBusiness_Car<br/>(车辆业务)"]
+        L5_USER["XPCenter_User<br/>(用户中台)"]
+        L5_KITS["XPKits<br/>(工具集)"]
+    end
+
+    L1_CLAUDE --> L2_CLAUDE
+    L2_CLAUDE --> L3_WATCH
+    L2_CLAUDE --> L3_WIDGET
+    L1_CLAUDE --> L4_VSDK
+    L1_CLAUDE --> L5_ROUTER
+
+    style L1_CONST fill:#ff6b6b,color:#fff
+    style L1_REG fill:#ffd93d,color:#333
+```
+
+---
+
+## 2. 每层规范目录结构
+
+```mermaid
+graph LR
+    subgraph "每个模块的标准骨架"
+        A[".claude/"] --> A1["CLAUDE.md"]
+        A --> A2["rules/*.md"]
+        B[".ai-knowledge/"] --> B1["specs/constitution.md"]
+        B --> B2["specs/{需求名}/"]
+        B2 --> B2a["proposal.md"]
+        B2 --> B2b["design.md"]
+        B2 --> B2c["tasks.md"]
+        B --> B3["knowledge-points/*.kp.md"]
+        B --> B5["modules/*.md"]
+        B --> B6["deps.yml"]
+    end
+```
+
+---
+
+## 3. Knowledge-Recall 三路触发工作流
+
+```mermaid
+sequenceDiagram
+    participant U as 用户任务
+    participant KR as knowledge-recall
+    participant REG as module-registry.md
+    participant DEPS as deps.yml
+    participant KB as 知识库文件
+
+    U->>KR: 任务描述 + 涉及路径
+
+    Note over KR: Phase 2: 常驻加载 (L1)
+    KR->>KB: 加载 CLAUDE.md + project-common.md + constitution.md
+
+    Note over KR: Phase 3: 路径命中
+    KR->>REG: 读取 module-registry.md
+    KR->>REG: 遍历 module.path 前缀匹配
+    REG-->>KR: 路径命中集合
+
+    Note over KR: Phase 4: 关键词命中
+    KR->>REG: 遍历 module.keywords 包含匹配
+    REG-->>KR: 关键词命中集合
+
+    Note over KR: 合并: 路径 ∪ 关键词 = 直接命中集 D
+
+    Note over KR: Phase 5: 依赖扩展 (depth ≤ 2)
+    loop 对 D 中每个 module
+        KR->>DEPS: 读取 module/deps.yml
+        DEPS-->>KR: depends_on[] + trigger_keywords
+        alt trigger_keywords 命中
+            KR->>KB: 加载 critical_constraints 锚点
+        else trigger_keywords 未命中
+            KR-->>KR: 标记 [dep-skipped]
+        end
+    end
+
+    Note over KR: Phase 6: 输出分层加载清单
+    KR-->>U: [L1 project] + [L2 app] + [L4 submodule] + [L5 localpod]
+
+    Note over KR: Phase 7: 覆盖度声明
+    KR-->>U: 命中 X / 扩展 Y / 未解析 Z
+```
+
+---
+
+## 4. Spec 驱动开发三件套工作流
+
+```mermaid
+sequenceDiagram
+    participant U as 用户/PM
+    participant SP as spec-proposal
+    participant SD as spec-design
+    participant ST as spec-tasks
+    participant KR as knowledge-recall
+    participant KB as 知识库
+    participant CODE as 代码库
+
+    Note over U,CODE: === Phase 1: 需求提案 (spec-proposal) ===
+    U->>SP: PRD / 需求描述
+    SP->>KB: 加载 constitution.md (最高约束)
+    SP->>KR: 知识召回 (关键词 + 路径)
+    KR-->>SP: 命中知识点 + 模块文档
+    SP->>CODE: grep/glob 影响分析
+    SP->>CODE: 疑问点自证 (先自证后求证)
+    SP-->>SP: ✅ 代码确认 / ⚠️ 需确认
+    SP->>U: AskUserQuestion (仅 ⚠️ 级)
+    U-->>SP: 确认
+    SP->>KB: 保存 proposal.md
+    SP->>KB: 沉淀新知识 (Phase 5.5)
+
+    Note over U,CODE: === Phase 2: 技术方案 (spec-design) ===
+    U->>SD: 开始设计
+    SD->>KB: 读取 proposal.md + constitution.md
+    SD->>CODE: 正向调用链: UI→Presenter→SDK→Connection→Protocol
+    SD->>CODE: 反向调用链: Protocol→Event→VM→UI
+    SD-->>SD: 标注 ✅/⚠️ + 修改策略
+    SD->>SD: 冲突风险标注 (方案A/B)
+    SD->>SD: Constitution 逐项检查
+    SD->>U: AskUserQuestion (仅 ⚠️ 级决策)
+    SD->>KB: 保存 design.md
+    SD->>KB: 沉淀调用链新认知
+
+    Note over U,CODE: === Phase 3: 任务拆解 (spec-tasks) ===
+    U->>ST: 开始拆解
+    ST->>KB: 读取 design.md + proposal.md
+    ST->>CODE: 任务拆解 (文件路径级)
+    ST->>CODE: 路径验证 (glob/grep)
+    ST->>CODE: 隐含依赖检测
+    Note over ST: Protocol实现类 / Notification同步 /<br/>接口移除影响 / 替代API检测
+    ST->>ST: 约束注入 (submodule/OC-Swift/车型)
+    ST->>KB: 保存 tasks.md
+    ST->>U: TodoWrite 创建跟踪项
+    Note over ST: 末尾预置: post-task-review 提醒
+```
+
+---
+
+## 5. 知识飞轮闭环时序图
+
+```mermaid
+graph TB
+    subgraph "知识产出"
+        SP["spec-proposal<br/>Phase 5.5: 分析产物沉淀"]
+        SD["spec-design<br/>Phase 4.5: 调用链新认知"]
+        BA["bug-analysis<br/>Phase 5: 知识沉淀检查"]
+        PTR["post-task-review<br/>3维检测: 新发现/纠错/归因"]
+    end
+
+    subgraph "知识存储"
+        KP["knowledge-points/*.kp.md"]
+        RULES["rules/*.md"]
+        MOD["modules/*.md"]
+        EVO["evolution-log.md"]
+    end
+
+    subgraph "知识消费"
+        KR["knowledge-recall<br/>三路触发"]
+        MC["module-context<br/>文档生成"]
+    end
+
+    subgraph "知识治理"
+        KA["knowledge-audit<br/>4维检测"]
+        SQS["spec-quality-score<br/>F1-doc/F1-code"]
+        DL["deps-lint<br/>依赖校验"]
+        DS["deps-sync<br/>漂移检测"]
+    end
+
+    SP --> KP
+    SD --> KP
+    BA --> KP
+    PTR --> KP
+    PTR --> RULES
+    PTR --> MOD
+
+    KP --> KR
+    RULES --> KR
+    MOD --> KR
+
+    KR --> SP
+    KR --> SD
+    KR --> BA
+    MC --> MOD
+
+    KA --> |审计报告| KP
+    KA --> |修复建议| MOD
+    SQS --> |改进建议| SP
+    SQS --> |改进建议| SD
+
+    EVO --> KA
+
+    style KR fill:#4ecdc4,color:#fff
+    style PTR fill:#ff6b6b,color:#fff
+    style KA fill:#ffd93d,color:#333
+```
+
+```mermaid
+sequenceDiagram
+    participant DEV as 开发过程
+    participant PTR as post-task-review
+    participant KB as 知识库
+    participant KA as knowledge-audit
+    participant KR as knowledge-recall
+
+    Note over DEV,KR: === 知识飞轮单次循环 ===
+
+    DEV->>PTR: 任务完成触发
+    PTR->>PTR: Phase 1: 修改回顾
+    PTR->>KB: Phase 2.1: 新发现检测
+    PTR->>KB: Phase 2.2: 纠错检测 (grep验证路径)
+    PTR->>KB: Phase 2.3: 问题归因检测
+    PTR->>DEV: AskUserQuestion 确认沉淀
+    DEV-->>PTR: 确认
+    PTR->>KB: 写入 knowledge-points / rules / constitution
+    PTR->>KB: 更新 index.md + evolution-log.md
+
+    Note over DEV,KR: === 定期审计 ===
+    KA->>KB: Phase 2: 新鲜度检测 (90天/路径验证)
+    KA->>KB: Phase 3: 覆盖度检测 (git log 热区)
+    KA->>KB: Phase 4: 关键词质量
+    KA->>KB: Phase 5: 模块文档同步
+    KA-->>DEV: 审计报告 + 综合健康度评分
+
+    Note over DEV,KR: === 下次任务 ===
+    DEV->>KR: 新任务触发
+    KR->>KB: 三路触发 (路径+关键词+依赖图)
+    KB-->>KR: 加载更新后的知识
+    KR-->>DEV: 分层加载清单
+```
+
+---
+
+## 6. Skill 协作关系总览
+
+```mermaid
+graph LR
+    subgraph "Spec 驱动开发"
+        SCS["spec-coding-scaffold<br/>🏗️ 骨架生成"]
+        SP["spec-proposal<br/>📋 需求提案"]
+        SD["spec-design<br/>📐 技术方案"]
+        ST["spec-tasks<br/>📝 任务拆解"]
+        SQS["spec-quality-score<br/>📊 质量评分"]
+    end
+
+    subgraph "知识管理"
+        KR["knowledge-recall<br/>🔍 知识召回"]
+        MC["module-context<br/>📄 模块文档"]
+        PTR["post-task-review<br/>💎 知识沉淀"]
+        KA["knowledge-audit<br/>🏥 知识审计"]
+    end
+
+    subgraph "依赖管理"
+        DL["deps-lint<br/>🔧 依赖校验"]
+        DS["deps-sync<br/>🔄 漂移检测"]
+    end
+
+    subgraph "代码开发"
+        NSM["new-swift-module<br/>➕ 新建模块"]
+        OTS["oc-to-swift<br/>🔀 OC迁移"]
+        BA["bug-analysis<br/>🐛 Bug分析"]
+    end
+
+    SCS -->|骨架后| SP
+    SP -->|审批后| SD
+    SD -->|审批后| ST
+    ST -->|完成后| PTR
+    PTR -->|积累后| KA
+    SQS -->|改进建议反馈| SP
+    SQS -->|改进建议反馈| SD
+    SQS -->|改进建议反馈| ST
+
+    KR -.->|为所有 skill 提供知识| SP
+    KR -.-> SD
+    KR -.-> BA
+    KR -.-> OTS
+
+    NSM -->|生成文档| MC
+    MC -->|更新| KR
+
+    DL -.->|校验| SCS
+    DS -.->|同步| SCS
+
+    style KR fill:#4ecdc4,color:#fff
+    style SP fill:#74b9ff,color:#fff
+    style SD fill:#74b9ff,color:#fff
+    style ST fill:#74b9ff,color:#fff
+```
+
+---
+
+## 7. iOS 项目分层架构图
+
+```mermaid
+graph TB
+    subgraph "App 层 (L2 XiaoPengQiChe)"
+        UI["UI 层<br/>50 Modules / ViewController"]
+        VM["ViewModel 层<br/>业务逻辑"]
+        SVC["Services 层<br/>31 个服务"]
+    end
+
+    subgraph "桥接层"
+        VB["VehicleBridge<br/>XPVehicleHttpBridge / XPVehicleBridge"]
+        VP["VehiclePresenter 协议<br/>(App 层唯一入口)"]
+    end
+
+    subgraph "SDK 层 (L4 Submodules)"
+        VSDK["XPVehicleSDK<br/>门面: currentVehicle()"]
+        BV["BaseVehicle<br/>管理连接和状态"]
+        subgraph "车型多态"
+            XV["XiaopengVehicle"]
+            MV["MonaVehicle"]
+        end
+    end
+
+    subgraph "连接层"
+        VC["VehicleConnection<br/>管理 BLE/TCP 双通道"]
+        BLE["BLEConnection"]
+        TCP["TCPConnection"]
+    end
+
+    subgraph "协议层"
+        BLED["XPBLEDataProcessor<br/>蓝牙编解码"]
+        MQTT["MQTTLibrary<br/>MQTT 通信"]
+        POLL["XPPollingSDK<br/>轮询"]
+    end
+
+    subgraph "配置层"
+        CCC["XPCarControlCore<br/>XPCarAbilityConfig"]
+        subgraph "配置覆盖优先级"
+            BASE_CFG["base 配置"]
+            CAR_CFG["车型配置"]
+            EXT_CFG["扩展车型"]
+            OCM_CFG["OCM 远程配置"]
+        end
+    end
+
+    subgraph "组件层 (L5 LocalPods)"
+        LR["XPBase_Router"]
+        LC["XPBase_Common"]
+        LU["XPBase_UI"]
+        LK["XPKits"]
+    end
+
+    UI --> VM
+    VM --> SVC
+    SVC --> VP
+    VP --> VB
+    VB --> VSDK
+    VSDK --> BV
+    BV --> XV
+    BV --> MV
+    BV --> VC
+    VC --> BLE
+    VC --> TCP
+    BLE --> BLED
+    TCP --> MQTT
+    VSDK --> POLL
+    BV --> CCC
+
+    BASE_CFG --> CAR_CFG --> EXT_CFG --> OCM_CFG
+
+    UI -.-> LR
+    UI -.-> LU
+    SVC -.-> LC
+    SVC -.-> LK
+
+    style VP fill:#ff6b6b,color:#fff
+    style VB fill:#ff6b6b,color:#fff
+    style VSDK fill:#ffd93d,color:#333
+
+    linkStyle 3 stroke:#ff0000,stroke-width:2
+    linkStyle 4 stroke:#ff0000,stroke-width:2
+    linkStyle 5 stroke:#ff0000,stroke-width:2
+```
+
+---
+
+## 8. deps.yml 依赖扩展机制
+
+```mermaid
+graph TD
+    subgraph "直接命中模块"
+        M1["XiaoPengQiChe<br/>[hit:path]"]
+    end
+
+    subgraph "一级依赖 (depth=1)"
+        D1["XPVehicleSDK<br/>trigger_keywords: [车控, 蓝牙]"]
+        D2["XPBase_Router<br/>trigger_keywords: [路由]"]
+    end
+
+    subgraph "二级依赖 (depth=2)"
+        D3["XPBLEDataProcessor<br/>trigger_keywords: [蓝牙解析]"]
+        D4["XPCarControlCore<br/>trigger_keywords: [配置, 车型]"]
+    end
+
+    subgraph "三级 (不展开)"
+        D5["XPMQTTLibrary ❌"]
+    end
+
+    M1 -->|deps.yml| D1
+    M1 -->|deps.yml| D2
+    D1 -->|deps.yml| D3
+    D1 -->|deps.yml| D4
+    D4 -->|depth>2 截断| D5
+
+    subgraph "trigger_keywords 过滤"
+        TK["任务: '排查蓝牙鉴权问题'"]
+        TK -->|'蓝牙' 命中| D1
+        TK -->|'蓝牙解析' 命中| D3
+        TK -->|'路由' 未命中| D2_SKIP["D2: [dep-skipped]<br/>仅登记不加载"]
+    end
+
+    style D5 fill:#ccc,color:#666
+    style D2_SKIP fill:#ccc,color:#666
+```
+
+---
+
+## 9. Spec 质量评分与反馈闭环
+
+```mermaid
+graph TB
+    subgraph "Spec 产出"
+        P["proposal.md"]
+        D["design.md"]
+        T["tasks.md"]
+    end
+
+    subgraph "spec-quality-score 评分维度"
+        F1D["F1-doc (文档质量) /100"]
+        F1C["F1-code (代码保留率) A-D"]
+        EFF["效率评测 提升 X%"]
+
+        F1D --> |20分| COMP["完整性"]
+        F1D --> |25分| CHAIN["调用链准确性"]
+        F1D --> |20分| KREL["知识关联"]
+        F1D --> |20分| CONST["Constitution 合规"]
+        F1D --> |15分| SELF["自证率"]
+    end
+
+    P --> F1D
+    D --> F1D
+    T --> F1C
+
+    subgraph "改进反馈"
+        S1["S1: spec-proposal 改进"]
+        S2["S2: spec-design 改进"]
+        S3["S3: spec-tasks 改进"]
+    end
+
+    F1D --> S1
+    F1D --> S2
+    F1D --> S3
+
+    S1 -->|修改 SKILL.md| P
+    S2 -->|修改 SKILL.md| D
+    S3 -->|修改 SKILL.md| T
+
+    style F1D fill:#74b9ff,color:#fff
+    style SELF fill:#ff6b6b,color:#fff
+```
+
+---
+
+## 10. spec-coding-scaffold 骨架生成流程
+
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant SCS as spec-coding-scaffold
+    participant FS as 文件系统
+    participant REG as module-registry.md
+
+    U->>SCS: --level submodule --path submodule/XPPollingSDK --name XPPollingSDK
+
+    Note over SCS: Phase 1: 参数校验
+    SCS->>REG: 检查 id 是否已注册
+    SCS->>FS: 检查 path 目录存在
+
+    Note over SCS: Phase 2: 目标目录探测
+    SCS->>FS: 扫描源文件扩展名 (.swift/.m/.mm/.h/.cpp)
+    SCS-->>SCS: 推断语言组合: OC+C++
+    SCS->>FS: 解析 podspec s.dependency
+    SCS->>FS: 扫描 import 语句
+    SCS-->>SCS: 检测 touches_vehicle_sdk
+
+    Note over SCS: Phase 3: 生成骨架 (6个文件)
+    SCS->>FS: .claude/CLAUDE.md
+    SCS->>FS: .claude/rules/.gitkeep
+    SCS->>FS: .ai-knowledge/specs/constitution.md
+    SCS->>FS: .ai-knowledge/modules/.gitkeep
+    SCS->>FS: .ai-knowledge/deps.yml
+
+    Note over SCS: Phase 4: 注册
+    SCS->>REG: 在 scaffold 标记区 append YAML block
+
+    Note over SCS: Phase 5: 待精修清单
+    SCS-->>U: constitution.md TODO / deps.yml TODO / keywords 默认值
+    SCS-->>U: ⚠️ 子仓需单独 commit
+```
+
+---
+
+## 图例说明
+
+| 符号 | 含义 |
+|------|------|
+| 🔴 `constitution.md` | 最高约束 — 不可违反 |
+| 🟡 `module-registry.md` | 单一数据源 — 所有模块注册 |
+| 🟢 `knowledge-recall` | 三路触发枢纽 — 连接知识与任务 |
+| ✅ | 代码验证通过 — 高置信度 |
+| ⚠️ | 推测路径 — 需用户确认 |
+| `[dep-skipped]` | trigger_keywords 未命中,仅登记不加载 |
+| `depth ≤ 2` | 依赖展开深度上限 |

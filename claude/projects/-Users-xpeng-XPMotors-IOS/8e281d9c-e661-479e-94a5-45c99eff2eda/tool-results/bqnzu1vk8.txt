@@ -1,0 +1,200 @@
+1: 50:[I][2026-03-20 +8.0 18:19:20.081][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+2: 137:[I][2026-03-20 +8.0 18:19:20.100][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+3: 251:[I][2026-03-20 +8.0 18:19:26.062][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+4: 338:[I][2026-03-20 +8.0 18:19:26.080][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+5: 454:[I][2026-03-20 +8.0 18:19:32.079][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+6: 541:[I][2026-03-20 +8.0 18:19:32.099][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+7: 655:[I][2026-03-20 +8.0 18:19:38.031][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+8: 742:[I][2026-03-20 +8.0 18:19:38.047][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+9: 859:[I][2026-03-20 +8.0 18:19:44.085][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+10: 946:[I][2026-03-20 +8.0 18:19:44.102][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+11: 1185:[I][2026-03-21 +8.0 09:15:54.413][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:540, -[XPKeySettingSyncTool uploadLocalData]][Info:syncTool upload params:{
+12: 1192:		pollingLock = 1;
+13: 1232:		pollingLock = 1;
+14: 1279:[I][2026-03-21 +8.0 09:15:54.781][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+15: 2314:		pollingLock = 1;
+16: 2501:[I][2026-03-21 +8.0 09:15:55.822][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:461, -[XPKeySettingSyncTool updateRemoteSignal]_block_invoke_3][Info:upload local data success
+17: 2502:[I][2026-03-21 +8.0 09:15:55.822][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:564, -[XPKeySettingSyncTool doUploadLoaclDataAndUpdate]_block_invoke_2][Info:doUploadLoaclDataAndUpdate complete
+18: 3036:[I][2026-03-21 +8.0 09:15:56.671][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+19: 3037:[I][2026-03-21 +8.0 09:15:56.672][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+20: 5311:[I][2026-03-21 +8.0 10:12:11.470][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:359, -[XPKeySettingSyncTool getKeySettingLocalDataV2]_block_invoke][Info:syncTool local pe:1 pollingLock:1 pollingUnlock:1 walletPE:1 walletLock:(null) walletUnlock:(null)
+21: 5354:[I][2026-03-21 +8.0 10:12:11.471][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+22: 5516:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:669, -[XPKeySettingSyncTool getWelcomeMode]][Info:获取到解锁是否迎宾:1
+23: 5517:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+24: 5518:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+25: 5519:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:735, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV2]][Info:获取自标定的txPowerArrayV2:(null)
+26: 5520:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:753, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV3]][Info:获取自标定的txPowerArrayV3:(null)
+27: 5521:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+28: 5522:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+29: 5523:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:689, -[XPKeySettingSyncTool getLockSound]][Info:获取闭锁是否开启音效:1
+30: 5524:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+31: 5525:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+32: 5526:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+33: 5527:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+34: 5528:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+35: 5555:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:669, -[XPKeySettingSyncTool getWelcomeMode]][Info:获取到解锁是否迎宾:1
+36: 5556:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+37: 5557:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+38: 5558:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:735, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV2]][Info:获取自标定的txPowerArrayV2:(null)
+39: 5559:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:753, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV3]][Info:获取自标定的txPowerArrayV3:(null)
+40: 5560:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+41: 5561:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+42: 5562:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:689, -[XPKeySettingSyncTool getLockSound]][Info:获取闭锁是否开启音效:1
+43: 5563:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+44: 5564:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+45: 5565:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+46: 5566:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+47: 5567:[I][2026-03-21 +8.0 10:12:11.484][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+48: 5597:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:669, -[XPKeySettingSyncTool getWelcomeMode]][Info:获取到解锁是否迎宾:1
+49: 5598:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+50: 5599:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+51: 5600:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:735, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV2]][Info:获取自标定的txPowerArrayV2:(null)
+52: 5601:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:753, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV3]][Info:获取自标定的txPowerArrayV3:(null)
+53: 5602:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+54: 5603:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+55: 5604:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:689, -[XPKeySettingSyncTool getLockSound]][Info:获取闭锁是否开启音效:1
+56: 5605:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+57: 5606:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+58: 5607:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+59: 5608:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+60: 5609:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+61: 5637:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:669, -[XPKeySettingSyncTool getWelcomeMode]][Info:获取到解锁是否迎宾:1
+62: 5638:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+63: 5639:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+64: 5640:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:735, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV2]][Info:获取自标定的txPowerArrayV2:(null)
+65: 5641:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:753, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV3]][Info:获取自标定的txPowerArrayV3:(null)
+66: 5642:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+67: 5643:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+68: 5644:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:689, -[XPKeySettingSyncTool getLockSound]][Info:获取闭锁是否开启音效:1
+69: 5645:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+70: 5646:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+71: 5647:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+72: 5648:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+73: 5649:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+74: 5679:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:669, -[XPKeySettingSyncTool getWelcomeMode]][Info:获取到解锁是否迎宾:1
+75: 5680:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+76: 5681:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+77: 5682:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:735, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV2]][Info:获取自标定的txPowerArrayV2:(null)
+78: 5683:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:753, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV3]][Info:获取自标定的txPowerArrayV3:(null)
+79: 5684:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+80: 5685:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+81: 5686:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:689, -[XPKeySettingSyncTool getLockSound]][Info:获取闭锁是否开启音效:1
+82: 5687:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+83: 5688:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+84: 5689:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+85: 5690:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+86: 5691:[I][2026-03-21 +8.0 10:12:11.487][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+87: 5736:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:669, -[XPKeySettingSyncTool getWelcomeMode]][Info:获取到解锁是否迎宾:1
+88: 5737:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+89: 5738:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+90: 5739:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:735, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV2]][Info:获取自标定的txPowerArrayV2:(null)
+91: 5740:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:753, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV3]][Info:获取自标定的txPowerArrayV3:(null)
+92: 5741:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+93: 5742:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+94: 5743:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:689, -[XPKeySettingSyncTool getLockSound]][Info:获取闭锁是否开启音效:1
+95: 5744:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+96: 5745:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+97: 5746:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+98: 5747:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+99: 5748:[I][2026-03-21 +8.0 10:12:11.489][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+100: 7120:[I][2026-03-21 +8.0 10:12:11.605][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+101: 7121:[I][2026-03-21 +8.0 10:12:11.605][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+102: 7165:	pollingLock = 1;
+103: 8608:[I][2026-03-21 +8.0 10:12:11.771][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+104: 8609:[I][2026-03-21 +8.0 10:12:11.771][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+105: 10158:[I][2026-03-21 +8.0 10:12:11.780][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:443, -[XPKeySettingSyncTool syncRemoteSettingDataSignal]_block_invoke][Info:fetchKeySettingRemoteDataV2 success:http请求响应:
+106: 10165:	pollingLock = 1;
+107: 10173:[I][2026-03-21 +8.0 10:12:11.781][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:435, -[XPKeySettingSyncTool dealWithFetchResposeV2:]_block_invoke][Info:syncTool remote:{
+108: 10177:	pollingLock = 1;
+109: 10184:[I][2026-03-21 +8.0 10:12:11.781][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:115, -[XPKeySettingSyncTool fixPassengerModel]_block_invoke][Info:开始修复主驾模式，判断是否已修复过:1
+110: 10185:[I][2026-03-21 +8.0 10:12:11.781][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:540, -[XPKeySettingSyncTool uploadLocalData]][Info:syncTool upload params:{
+111: 10192:		pollingLock = 1;
+112: 10234:		pollingLock = 1;
+113: 10934:[I][2026-03-21 +8.0 10:12:11.818][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:1250, -[XPKeySettingSyncTool storeDynamicConfig:]][Info:更新动态配置:(null)
+114: 10935:[I][2026-03-21 +8.0 10:12:11.818][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+115: 10936:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+116: 10937:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+117: 10938:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+118: 10939:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+119: 10940:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:669, -[XPKeySettingSyncTool getWelcomeMode]][Info:获取到解锁是否迎宾:1
+120: 10941:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+121: 10942:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+122: 10943:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:735, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV2]][Info:获取自标定的txPowerArrayV2:(null)
+123: 10944:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:753, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV3]][Info:获取自标定的txPowerArrayV3:(null)
+124: 10945:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+125: 10946:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+126: 10947:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:689, -[XPKeySettingSyncTool getLockSound]][Info:获取闭锁是否开启音效:1
+127: 10948:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+128: 10949:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+129: 10950:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+130: 10951:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+131: 10952:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+132: 10976:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:669, -[XPKeySettingSyncTool getWelcomeMode]][Info:获取到解锁是否迎宾:1
+133: 10977:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:722, -[XPKeySettingSyncTool getUnlockDistance]][Info:获取用户设置解锁距离:4.000000
+134: 10978:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:800, -[XPKeySettingSyncTool getLockDistance]][Info:获取用户闭锁距离:7.000000
+135: 10979:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:735, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV2]][Info:获取自标定的txPowerArrayV2:(null)
+136: 10980:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:753, -[XPKeySettingSyncTool getSelfCalibrationTxPowerArrayV3]][Info:获取自标定的txPowerArrayV3:(null)
+137: 10981:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+138: 10982:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+139: 10983:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:689, -[XPKeySettingSyncTool getLockSound]][Info:获取闭锁是否开启音效:1
+140: 10984:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:810, -[XPKeySettingSyncTool getEnableUnlockDistance]][Info:获取用户授权距离:6.000000
+141: 10985:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:830, -[XPKeySettingSyncTool getStartDistance]][Info:获取startDistance:4.000000
+142: 10986:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:820, -[XPKeySettingSyncTool getLockHoldOnSecond]][Info:获取用超过1米闭锁hold时间:5.500000
+143: 10987:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+144: 10988:[I][2026-03-21 +8.0 10:12:11.819][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+145: 11274:[I][2026-03-21 +8.0 10:12:11.829][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+146: 11583:[I][2026-03-21 +8.0 10:12:11.844][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:461, -[XPKeySettingSyncTool updateRemoteSignal]_block_invoke_3][Info:upload local data success
+147: 11584:[I][2026-03-21 +8.0 10:12:11.845][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:84, -[XPKeySettingSyncTool start]_block_invoke_2][Info:sync complete
+148: 11655:[I][2026-03-21 +8.0 10:12:11.859][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+149: 11696:[I][2026-03-21 +8.0 10:12:11.876][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+150: 12132:[I][2026-03-21 +8.0 10:12:11.973][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+151: 12188:[I][2026-03-21 +8.0 10:12:11.976][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+152: 12263:[I][2026-03-21 +8.0 10:12:11.986][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+153: 12692:[I][2026-03-21 +8.0 10:12:12.528][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+154: 13034:[I][2026-03-21 +8.0 10:12:12.545][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+155: 13401:[I][2026-03-21 +8.0 10:12:12.565][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+156: 13742:[I][2026-03-21 +8.0 10:12:12.574][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+157: 13909:[I][2026-03-21 +8.0 10:12:12.579][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+158: 14031:[I][2026-03-21 +8.0 10:12:13.116][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+159: 16836:[I][2026-03-21 +8.0 10:12:16.523][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+160: 16929:[I][2026-03-21 +8.0 10:12:16.536][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+161: 17199:[I][2026-03-21 +8.0 10:12:17.499][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+162: 17286:[I][2026-03-21 +8.0 10:12:17.506][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+163: 18100:[I][2026-03-21 +8.0 10:12:20.530][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+164: 18149:[I][2026-03-21 +8.0 10:12:20.542][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+165: 18253:[I][2026-03-21 +8.0 10:12:23.505][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+166: 18340:[I][2026-03-21 +8.0 10:12:23.515][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+167: 18574:[I][2026-03-21 +8.0 10:12:24.606][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+168: 18635:[I][2026-03-21 +8.0 10:12:24.610][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+169: 18748:[I][2026-03-21 +8.0 10:12:29.492][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+170: 18835:[I][2026-03-21 +8.0 10:12:29.494][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+171: 19009:[I][2026-03-21 +8.0 10:12:35.507][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+172: 19096:[I][2026-03-21 +8.0 10:12:35.516][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+173: 19201:[I][2026-03-21 +8.0 10:12:41.503][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+174: 19288:[I][2026-03-21 +8.0 10:12:41.512][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+175: 19406:[I][2026-03-21 +8.0 10:12:47.506][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+176: 19493:[I][2026-03-21 +8.0 10:12:47.516][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+177: 20101:[I][2026-03-21 +8.0 10:12:53.570][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+178: 20188:[I][2026-03-21 +8.0 10:12:53.593][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+179: 20328:[I][2026-03-21 +8.0 10:12:59.594][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+180: 20415:[I][2026-03-21 +8.0 10:12:59.612][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+181: 20530:[I][2026-03-21 +8.0 10:13:05.553][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+182: 20617:[I][2026-03-21 +8.0 10:13:05.572][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+183: 20734:[I][2026-03-21 +8.0 10:13:11.592][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+184: 20821:[I][2026-03-21 +8.0 10:13:11.610][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+185: 22367:[I][2026-03-21 +8.0 10:13:13.406][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+186: 22423:[I][2026-03-21 +8.0 10:13:13.421][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+187: 22448:[I][2026-03-21 +8.0 10:13:13.696][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:857, -[XPKeySettingSyncTool getPollingEnableSwitchWithDefaultValue:]][Info:syncTool getSwitch pe:1 dValue:1
+188: 22449:[I][2026-03-21 +8.0 10:13:13.696][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:765, -[XPKeySettingSyncTool getIsDriverMode]][Info:获取用户设置是否主驾模式:1
+189: 22857:[I][2026-03-21 +8.0 10:13:13.871][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+190: 23198:[I][2026-03-21 +8.0 10:13:13.886][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+191: 23397:[I][2026-03-21 +8.0 10:13:13.898][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+192: 23494:[I][2026-03-21 +8.0 10:13:13.912][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+193: 23835:[I][2026-03-21 +8.0 10:13:13.919][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+194: 24122:[I][2026-03-21 +8.0 10:13:14.124][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+195: 24373:[I][2026-03-21 +8.0 10:13:17.593][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+196: 24460:[I][2026-03-21 +8.0 10:13:17.611][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+197: 24575:[I][2026-03-21 +8.0 10:13:23.593][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+198: 24662:[I][2026-03-21 +8.0 10:13:23.614][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+199: 24791:[I][2026-03-21 +8.0 10:13:29.554][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+200: 24878:[I][2026-03-21 +8.0 10:13:29.574][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1

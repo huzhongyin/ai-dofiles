@@ -1,0 +1,330 @@
+# 多平台日志格式规范
+
+本文件定义iOS、Android、HarmonyOS和小程序的日志格式解析规则和关键字匹配模式。
+
+## iOS平台日志格式
+
+### 时间格式
+```
+标准格式：2026-03-25 14:30:25.123 +0800
+NSLog格式：2026-03-25 14:30:25.123+0800 [AppName:ProcessID:ThreadID]
+os_log格式：2026-03-25 14:30:25.123456+0800 <subsystem:category>
+```
+
+### 支持语言和关键字模式
+
+#### Swift语言
+```swift
+// 日志打印示例
+NSLog("AutoUnlock: Starting unlock process for vehicleID: %@", vehicleID)
+os_log("AutoUnlock: Unlock failed with error: %{public}@", log: OSLog.default, type: .error, error)
+print("[AutoUnlock] State changed from \(oldState) to \(newState)")
+
+// 匹配模式
+入口标识：\[?AutoUnlock\]?:?\s*(Starting|Begin|Init|启动|开始)
+状态转换：\[?AutoUnlock\]?:?\s*(Status|State|状态).*changed
+异常标识：\[?AutoUnlock\]?:?\s*(Error|Failed|Exception|Timeout|错误|失败|异常|超时)
+退出标识：\[?AutoUnlock\]?:?\s*(Completed|Finished|Success|完成|成功)
+```
+
+#### Objective-C语言
+```objc
+// 日志打印示例
+NSLog(@"[AutoUnlock] Starting unlock process for vehicleID: %@", vehicleID);
+NSLog(@"[AutoUnlock] Error occurred: %@", error.localizedDescription);
+
+// 匹配模式
+入口标识：\[AutoUnlock\]\s*(Starting|Begin|Init|启动|开始)
+状态转换：\[AutoUnlock\]\s*(Status|State|状态).*changed
+异常标识：\[AutoUnlock\]\s*(Error|Failed|Exception|错误|失败|异常)
+退出标识：\[AutoUnlock\]\s*(Completed|Finished|Success|完成|成功)
+```
+
+#### C++调用层（混编场景）
+```cpp
+// 日志打印示例
+printf("[AutoUnlock-CPP] Native unlock process started\n");
+std::cout << "[AutoUnlock-CPP] Error in native layer: " << errorMsg << std::endl;
+
+// 匹配模式
+入口标识：\[AutoUnlock-CPP\]\s*(Native.*started|Init|Begin)
+异常标识：\[AutoUnlock-CPP\]\s*(Error|Exception|Failed).*native
+退出标识：\[AutoUnlock-CPP\]\s*(Native.*completed|Finished|Done)
+```
+
+### 日志级别
+- Debug: 调试信息
+- Info: 一般信息
+- Default: 默认级别
+- Error: 错误信息
+- Fault: 严重错误
+
+## Android平台日志格式
+
+### 时间格式
+```
+标准格式：03-25 14:30:25.123 I/TAG(ProcessID): Message
+详细格式：2026-03-25 14:30:25.123  1234  5678 I TagName: Message
+```
+
+### 支持语言和关键字模式
+
+#### Java语言
+```java
+// 日志打印示例
+Log.d("AutoUnlock", "Starting unlock process for vehicleID: " + vehicleID);
+Log.e("AutoUnlock", "Unlock failed with error: " + error.getMessage());
+
+// 匹配模式
+入口标识：[DIVWEF]/AutoUnlock.*Starting|Begin|Init|启动|开始
+状态转换：[DIVWEF]/AutoUnlock.*Status|State|状态.*changed
+异常标识：[DIVWEF]/AutoUnlock.*Error|Failed|Exception|错误|失败|异常
+退出标识：[DIVWEF]/AutoUnlock.*Completed|Finished|Success|完成|成功
+```
+
+#### Kotlin语言
+```kotlin
+// 日志打印示例
+Log.d("AutoUnlock", "Starting unlock process for vehicleID: $vehicleID")
+Log.e("AutoUnlock", "Unlock failed with error: ${error.message}")
+Timber.d("AutoUnlock: State changed from $oldState to $newState")
+
+// 匹配模式
+入口标识：[DIVWEF]/AutoUnlock.*Starting|Begin|Init|启动|开始
+状态转换：[DIVWEF]/AutoUnlock.*Status|State|状态.*changed
+异常标识：[DIVWEF]/AutoUnlock.*Error|Failed|Exception|错误|失败|异常
+退出标识：[DIVWEF]/AutoUnlock.*Completed|Finished|Success|完成|成功
+```
+
+#### JNI C++层（混编场景）
+```cpp
+// 日志打印示例
+__android_log_print(ANDROID_LOG_DEBUG, "AutoUnlock-JNI", "Native function called");
+__android_log_print(ANDROID_LOG_ERROR, "AutoUnlock-JNI", "Native error: %s", errorMsg);
+
+// 匹配模式
+入口标识：[DIVWEF]/AutoUnlock-JNI.*Native.*called|started|Init
+异常标识：[DIVWEF]/AutoUnlock-JNI.*Native error|Exception|Failed
+退出标识：[DIVWEF]/AutoUnlock-JNI.*Native.*completed|finished
+```
+
+### 日志级别
+- V (Verbose): 详细信息
+- D (Debug): 调试信息
+- I (Info): 一般信息
+- W (Warn): 警告信息
+- E (Error): 错误信息
+- F (Fatal): 致命错误
+
+## HarmonyOS平台日志格式
+
+### 时间格式
+```
+标准格式：03-25 14:30:25.123 1234 5678 I 02d00/AutoUnlock: Message
+系统格式：2026-03-25 14:30:25.123 +0800 [PID:TID] I/TAG: Message
+```
+
+### 支持语言和关键字模式
+
+#### ArkTS/TypeScript语言
+```typescript
+// 日志打印示例
+hilog.info(0x0000, 'AutoUnlock', 'Starting unlock process for vehicleID: %{public}s', vehicleID);
+hilog.error(0x0000, 'AutoUnlock', 'Unlock failed with error: %{public}s', error.message);
+console.log('[AutoUnlock] State transition from', oldState, 'to', newState);
+
+// 匹配模式
+入口标识：[IDWEF]/.*AutoUnlock.*Starting|Begin|Init|启动|开始
+状态转换：[IDWEF]/.*AutoUnlock.*Status|State|状态.*transition|changed
+异常标识：[IDWEF]/.*AutoUnlock.*Error|Failed|Exception|错误|失败|异常
+退出标识：[IDWEF]/.*AutoUnlock.*Completed|Finished|Success|完成|成功
+```
+
+#### JavaScript语言（.js文件）
+```javascript
+// 日志打印示例
+console.log('[AutoUnlock-JS] Starting unlock process for vehicleID:', vehicleID);
+console.error('[AutoUnlock-JS] Unlock failed with error:', error.message);
+
+// 匹配模式
+入口标识：\[AutoUnlock-JS\].*Starting|Begin|Init|启动|开始
+状态转换：\[AutoUnlock-JS\].*Status|State|状态.*changed|transition
+异常标识：\[AutoUnlock-JS\].*Error|Failed|Exception|错误|失败|异常
+退出标识：\[AutoUnlock-JS\].*Completed|Finished|Success|完成|成功
+```
+
+#### Native C++层（混编场景）
+```cpp
+// 日志打印示例
+OH_LOG_INFO(LOG_APP, "[AutoUnlock-Native] Starting native unlock process");
+OH_LOG_ERROR(LOG_APP, "[AutoUnlock-Native] Native error occurred: %{public}s", errorMsg);
+
+// 匹配模式
+入口标识：\[AutoUnlock-Native\].*Starting|native.*process|Init
+异常标识：\[AutoUnlock-Native\].*Native error|Exception|Failed
+退出标识：\[AutoUnlock-Native\].*native.*completed|finished
+```
+
+### 日志级别
+- DEBUG: 调试信息
+- INFO: 一般信息
+- WARN: 警告信息
+- ERROR: 错误信息
+- FATAL: 致命错误
+
+## C++原生模块日志格式
+
+### 跨平台C++日志规范
+C++模块通常作为底层核心逻辑，被各平台调用。需要特别关注跨语言调用栈的日志关联。
+
+#### 标准C++日志模式
+```cpp
+// 日志打印示例
+printf("[%s-CPP] Function %s started\n", moduleName, __FUNCTION__);
+std::cout << "[AutoUnlock-CPP] Error in " << __FILE__ << ":" << __LINE__ << std::endl;
+spdlog::info("[AutoUnlock-CPP] Processing request with ID: {}", requestId);
+
+// 匹配模式
+入口标识：\[.*-CPP\].*Function.*started|Init|Begin|Entry
+状态转换：\[.*-CPP\].*State|Status|Processing.*\w+
+异常标识：\[.*-CPP\].*Error|Exception|Failed|Assertion|Crash
+退出标识：\[.*-CPP\].*Function.*completed|Exit|Done|Finished
+```
+
+#### 混编调用链标识
+```
+iOS混编：[ModuleName-Swift] -> [ModuleName-OC] -> [ModuleName-CPP]
+Android混编：[ModuleName-Kotlin/Java] -> [ModuleName-JNI] -> [ModuleName-CPP]
+HarmonyOS混编：[ModuleName-ArkTS] -> [ModuleName-NAPI] -> [ModuleName-CPP]
+```
+
+### 混编场景特殊处理
+
+#### 调用链追踪规则
+1. **语言层标识**：通过后缀区分不同语言层
+2. **调用方向**：识别上层→下层的调用关系
+3. **数据传递**：关注跨语言边界的数据序列化/反序列化
+4. **错误传播**：追踪底层错误如何传播到上层
+
+#### 常见混编问题模式
+```
+内存管理问题：C++层内存泄漏或野指针
+数据类型转换：跨语言数据转换错误
+线程安全问题：多线程访问C++对象
+JNI异常：Java/Kotlin与C++交互异常
+```
+
+## 小程序平台日志格式
+
+### 时间格式
+```
+微信小程序：[2026-03-25 14:30:25] [LOG] Message
+支付宝小程序：2026-03-25 14:30:25.123 [INFO] [PageName] Message
+```
+
+### 关键字模式
+```javascript
+// 日志打印示例
+console.log('[AutoUnlock] Starting unlock process for vehicleID:', vehicleID);
+console.error('[AutoUnlock] Unlock failed with error:', error.message);
+
+// 匹配模式
+入口标识：\[LOG\].*\[ModuleName\].*Starting|Begin|Init
+状态转换：\[INFO\].*\[ModuleName\].*Status|State
+异常标识：\[ERROR\].*\[ModuleName\].*Error|Failed|Exception
+退出标识：\[LOG\].*\[ModuleName\].*Completed|Finished|Success
+```
+
+### 日志级别
+- log: 一般日志
+- info: 信息日志
+- warn: 警告日志
+- error: 错误日志
+- debug: 调试日志
+
+## 跨平台通用匹配规则
+
+### 时间戳提取正则表达式
+```regex
+iOS: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})
+Android: (\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})
+HarmonyOS: (\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})
+MiniProgram: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})
+```
+
+### 模块名称提取
+```regex
+通用模式: \[?([A-Za-z][A-Za-z0-9_-]*)\]?[:：]
+```
+
+### 关键字分类模式
+
+#### 功能入口关键字
+```
+Starting|Begin|Init|Enter|Launch|Open|Start
+开始|启动|初始化|进入|打开
+```
+
+#### 状态转换关键字
+```
+Status|State|Changed|Transition|Updated|Modified
+状态|变更|转换|更新|切换
+```
+
+#### 异常处理关键字
+```
+Error|Failed|Exception|Timeout|Invalid|Null|Empty
+错误|失败|异常|超时|无效|空|失效
+```
+
+#### 功能退出关键字
+```
+Completed|Finished|Success|Done|End|Exit|Close
+完成|成功|结束|退出|关闭|Done
+```
+
+## 平台特有处理规则
+
+### iOS特殊处理
+- 处理NSLog的进程ID和线程ID信息
+- 识别os_log的subsystem和category
+- 处理Objective-C和Swift的不同日志格式
+
+### Android特殊处理
+- 解析进程ID和线程ID信息
+- 处理不同厂商ROM的日志格式差异
+- 识别系统日志和应用日志的区别
+
+### HarmonyOS特殊处理
+- 处理hilog的domain和tag信息
+- 识别ArkTS和原生代码的日志
+- 处理分布式任务的日志关联
+
+### 小程序特殊处理
+- 处理不同小程序平台的格式差异
+- 识别页面生命周期相关日志
+- 处理异步操作的日志序列
+
+## 使用示例
+
+### 根据平台选择解析器
+```python
+def get_log_parser(platform):
+    parsers = {
+        'iOS': IOSLogParser(),
+        'Android': AndroidLogParser(),
+        'HarmonyOS': HarmonyOSLogParser(),
+        'MiniProgram': MiniProgramLogParser()
+    }
+    return parsers.get(platform, UniversalLogParser())
+```
+
+### 统一关键字匹配
+```python
+def match_keywords(log_line, module_name, platform):
+    patterns = get_platform_patterns(platform)
+    for category, keywords in patterns.items():
+        if match_module_and_keywords(log_line, module_name, keywords):
+            return category
+    return None
+```

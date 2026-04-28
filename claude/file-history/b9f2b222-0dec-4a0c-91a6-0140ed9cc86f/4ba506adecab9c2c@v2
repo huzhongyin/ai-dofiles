@@ -1,0 +1,443 @@
+import re
+import os
+import time
+import hashlib
+from pathlib import Path
+from typing import List, Dict, Optional, Set, Any
+from datetime import datetime
+
+from scripts.models.standards_model import (
+    StandardRule, ViolationInstance, StandardsViolationReport, StandardsConfiguration,
+    StandardType, SeverityLevel, ViolationSource, FeishuDocument, StandardsSync
+)
+
+class StandardsValidator:
+    """代码标准验证器"""
+
+    def __init__(self, config_path: Optional[str] = None):
+        self.config = self._load_configuration(config_path)
+        self.rules = self._load_default_rules()
+        self._file_cache: Dict[str, str] = {}
+        self._violation_cache: Dict[str, List[ViolationInstance]] = {}
+
+    def _load_configuration(self, config_path: Optional[str]) -> StandardsConfiguration:
+        """加载标准配置"""
+        if config_path and Path(config_path).exists():
+            # 后续可以实现从YAML文件加载配置
+            pass
+
+        # 返回默认的小鹏iOS项目配置
+        return StandardsConfiguration(
+            project_name="XPMotors_iOS",
+            language="mixed",
+            include_patterns=[
+                "**/*.swift",
+                "**/*.h",
+                "**/*.m",
+                "**/*.mm",
+                "**/*.cpp",
+                "**/*.cc"
+            ],
+            exclude_patterns=[
+                "**/Pods/**",
+                "**/build/**",
+                "**/DerivedData/**",
+                "**/.git/**",
+                "**/Carthage/**",
+                "**/LocalPods/**/ThirdParty/**"
+            ],
+            enabled_rules=[
+                "swift_naming_conventions",
+                "objc_naming_conventions",
+                "file_header_format",
+                "import_organization",
+                "no_hardcoded_strings",
+                "memory_management",
+                "thread_safety_checks",
+                "api_usage_patterns"
+            ]
+        )
+
+    def _load_default_rules(self) -> List[StandardRule]:
+        """加载默认的小鹏iOS代码规范"""
+        rules = []
+
+        # Swift命名规范
+        rules.append(StandardRule(
+            id="swift_naming_conventions",
+            name="Swift命名规范",
+            type=StandardType.CODE_STYLE,
+            description="检查Swift类名、方法名、属性名是否符合驼峰命名规范",
+            severity=SeverityLevel.WARNING,
+            pattern=r"(class|struct|enum|protocol)\s+([a-z][a-zA-Z0-9]*)",
+            file_patterns=["**/*.swift"],
+            tags=["naming", "swift"],
+            documentation_url="https://xiaopeng.feishu.cn/docs/swift-naming"
+        ))
+
+        # Objective-C命名规范
+        rules.append(StandardRule(
+            id="objc_naming_conventions",
+            name="Objective-C命名规范",
+            type=StandardType.CODE_STYLE,
+            description="检查Objective-C类名是否以XP前缀开头",
+            severity=SeverityLevel.ERROR,
+            pattern=r"@interface\s+(?!XP)[A-Z][a-zA-Z0-9]*",
+            file_patterns=["**/*.h", "**/*.m"],
+            tags=["naming", "objective-c"],
+            documentation_url="https://xiaopeng.feishu.cn/docs/objc-naming"
+        ))
+
+        # 文件头注释格式
+        rules.append(StandardRule(
+            id="file_header_format",
+            name="文件头注释格式",
+            type=StandardType.CODE_STYLE,
+            description="检查文件头部是否包含版权信息和创建时间",
+            severity=SeverityLevel.WARNING,
+            pattern=r"^//\s*Copyright.*XPeng",
+            file_patterns=["**/*.swift", "**/*.h", "**/*.m"],
+            tags=["header", "copyright"]
+        ))
+
+        # Import组织规范
+        rules.append(StandardRule(
+            id="import_organization",
+            name="Import组织规范",
+            type=StandardType.CODE_STYLE,
+            description="检查import语句的组织方式",
+            severity=SeverityLevel.INFO,
+            pattern=r"^import\s+",
+            file_patterns=["**/*.swift", "**/*.h", "**/*.m"],
+            tags=["imports", "organization"]
+        ))
+
+        # 硬编码字符串检查
+        rules.append(StandardRule(
+            id="no_hardcoded_strings",
+            name="避免硬编码字符串",
+            type=StandardType.ARCHITECTURE,
+            description="检查代码中的硬编码字符串，应使用本地化文件",
+            severity=SeverityLevel.WARNING,
+            pattern=r'NSLocalizedString\s*\(\s*@?"[^"]+"\s*,',
+            file_patterns=["**/*.swift", "**/*.m"],
+            tags=["localization", "hardcoded"]
+        ))
+
+        # 内存管理检查
+        rules.append(StandardRule(
+            id="memory_management",
+            name="内存管理检查",
+            type=StandardType.SECURITY,
+            description="检查可能的内存泄漏风险",
+            severity=SeverityLevel.ERROR,
+            pattern=r"(retain|release|autorelease)(?!\s*/)",
+            file_patterns=["**/*.m", "**/*.mm"],
+            tags=["memory", "arc"]
+        ))
+
+        # 线程安全检查
+        rules.append(StandardRule(
+            id="thread_safety_checks",
+            name="线程安全检查",
+            type=StandardType.SECURITY,
+            description="检查UI操作是否在主线程执行",
+            severity=SeverityLevel.ERROR,
+            pattern=r"dispatch_async\s*\(\s*dispatch_get_main_queue\(\)",
+            file_patterns=["**/*.swift", "**/*.m"],
+            tags=["threading", "ui-safety"]
+        ))
+
+        # API使用模式检查
+        rules.append(StandardRule(
+            id="api_usage_patterns",
+            name="API使用模式检查",
+            type=StandardType.ARCHITECTURE,
+            description="检查小鹏特定API的使用模式",
+            severity=SeverityLevel.WARNING,
+            pattern=r"XPRouter\.|XPCarInfo\.|XPStatistics\.",
+            file_patterns=["**/*.swift", "**/*.m"],
+            tags=["api", "xiaopeng"]
+        ))
+
+        return rules
+
+    def validate_project(self, project_path: str) -> StandardsViolationReport:
+        """验证整个项目的标准符合性"""
+        start_time = time.time()
+        project_path = Path(project_path)
+
+        # 获取要扫描的文件
+        files_to_scan = self._get_files_to_scan(project_path)
+
+        # 执行验证
+        all_violations = []
+        scanned_files = 0
+
+        for file_path in files_to_scan:
+            try:
+                violations = self._validate_file(file_path)
+                all_violations.extend(violations)
+                scanned_files += 1
+            except Exception as e:
+                print(f"Warning: Failed to scan {file_path}: {e}")
+
+        # 生成报告
+        scan_duration_ms = int((time.time() - start_time) * 1000)
+
+        # 统计违规
+        violations_by_severity = {level: 0 for level in SeverityLevel}
+        violations_by_type = {standard_type: 0 for standard_type in StandardType}
+
+        for violation in all_violations:
+            violations_by_severity[violation.severity] += 1
+            # 根据规则ID找到规则类型
+            rule = self._get_rule_by_id(violation.rule_id)
+            if rule:
+                violations_by_type[rule.type] += 1
+
+        # 生成修复建议
+        recommendations = self._generate_recommendations(all_violations)
+
+        return StandardsViolationReport(
+            project_path=str(project_path),
+            scan_timestamp=datetime.now(),
+            total_violations=len(all_violations),
+            violations_by_severity=violations_by_severity,
+            violations_by_type=violations_by_type,
+            violations=all_violations,
+            scanned_files=scanned_files,
+            scan_duration_ms=scan_duration_ms,
+            recommendations=recommendations
+        )
+
+    def _get_files_to_scan(self, project_path: Path) -> List[Path]:
+        """获取需要扫描的文件列表"""
+        files = []
+
+        for pattern in self.config.include_patterns:
+            matched_files = list(project_path.glob(pattern))
+            files.extend(matched_files)
+
+        # 过滤掉排除的文件
+        filtered_files = []
+        for file_path in files:
+            should_exclude = False
+            rel_path = file_path.relative_to(project_path)
+            rel_path_str = str(rel_path)
+
+            for exclude_pattern in self.config.exclude_patterns:
+                # 将glob模式转换为简单的字符串匹配
+                exclude_pattern_clean = exclude_pattern.replace('**/','').replace('/**','')
+                if exclude_pattern_clean in rel_path_str:
+                    should_exclude = True
+                    break
+                # 检查路径前缀匹配
+                if rel_path_str.startswith(exclude_pattern_clean.rstrip('*')):
+                    should_exclude = True
+                    break
+
+            if not should_exclude and file_path.is_file():
+                filtered_files.append(file_path)
+
+        return filtered_files
+
+    def _validate_file(self, file_path: Path) -> List[ViolationInstance]:
+        """验证单个文件"""
+        violations = []
+
+        # 读取文件内容
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            # 尝试其他编码
+            try:
+                with open(file_path, 'r', encoding='gbk') as f:
+                    content = f.read()
+            except:
+                return violations  # 跳过无法读取的文件
+
+        # 对每个启用的规则进行检查
+        for rule in self.rules:
+            if rule.id in self.config.enabled_rules and rule.enabled:
+                # 检查文件是否匹配规则的文件模式
+                if self._file_matches_rule(file_path, rule):
+                    rule_violations = self._check_rule(content, file_path, rule)
+                    violations.extend(rule_violations)
+
+        return violations
+
+    def _file_matches_rule(self, file_path: Path, rule: StandardRule) -> bool:
+        """检查文件是否匹配规则的适用模式"""
+        if not rule.file_patterns:
+            return True  # 无限制，适用所有文件
+
+        for pattern in rule.file_patterns:
+            if file_path.match(pattern.replace('**/', '')):
+                return True
+
+        return False
+
+    def _check_rule(self, content: str, file_path: Path, rule: StandardRule) -> List[ViolationInstance]:
+        """检查特定规则"""
+        violations = []
+
+        if not rule.pattern:
+            return violations
+
+        lines = content.split('\n')
+
+        for line_num, line in enumerate(lines, 1):
+            if rule.id == "swift_naming_conventions":
+                violations.extend(self._check_swift_naming(line, line_num, file_path, rule))
+            elif rule.id == "objc_naming_conventions":
+                violations.extend(self._check_objc_naming(line, line_num, file_path, rule))
+            elif rule.id == "file_header_format":
+                if line_num <= 10:  # 只检查前10行
+                    violations.extend(self._check_file_header(line, line_num, file_path, rule))
+            else:
+                # 通用正则表达式检查
+                violations.extend(self._check_pattern(line, line_num, file_path, rule))
+
+        return violations
+
+    def _check_swift_naming(self, line: str, line_num: int, file_path: Path, rule: StandardRule) -> List[ViolationInstance]:
+        """检查Swift命名规范"""
+        violations = []
+        pattern = re.compile(r"(class|struct|enum|protocol)\s+([a-z][a-zA-Z0-9]*)")
+        match = pattern.search(line)
+
+        if match:
+            type_name, name = match.groups()
+            violations.append(ViolationInstance(
+                rule_id=rule.id,
+                file_path=str(file_path),
+                line_number=line_num,
+                message=f"Swift {type_name} 名称 '{name}' 应该以大写字母开头",
+                code_snippet=line.strip(),
+                suggested_fix=f"建议改为: {name.capitalize()}",
+                severity=rule.severity,
+                source=ViolationSource.STATIC_ANALYSIS
+            ))
+
+        return violations
+
+    def _check_objc_naming(self, line: str, line_num: int, file_path: Path, rule: StandardRule) -> List[ViolationInstance]:
+        """检查Objective-C命名规范"""
+        violations = []
+        pattern = re.compile(r"@interface\s+(?!XP)([A-Z][a-zA-Z0-9]*)")
+        match = pattern.search(line)
+
+        if match:
+            class_name = match.group(1)
+            violations.append(ViolationInstance(
+                rule_id=rule.id,
+                file_path=str(file_path),
+                line_number=line_num,
+                message=f"Objective-C 类名 '{class_name}' 必须以 'XP' 前缀开头",
+                code_snippet=line.strip(),
+                suggested_fix=f"建议改为: XP{class_name}",
+                severity=rule.severity,
+                source=ViolationSource.STATIC_ANALYSIS
+            ))
+
+        return violations
+
+    def _check_file_header(self, line: str, line_num: int, file_path: Path, rule: StandardRule) -> List[ViolationInstance]:
+        """检查文件头注释格式"""
+        violations = []
+
+        if line_num == 1 and not re.search(r"//.*Copyright.*XPeng", line):
+            violations.append(ViolationInstance(
+                rule_id=rule.id,
+                file_path=str(file_path),
+                line_number=line_num,
+                message="文件缺少小鹏版权声明",
+                code_snippet=line.strip() if line.strip() else "(empty line)",
+                suggested_fix="添加: // Copyright © 2024 XPeng Inc. All rights reserved.",
+                severity=rule.severity,
+                source=ViolationSource.STATIC_ANALYSIS
+            ))
+
+        return violations
+
+    def _check_pattern(self, line: str, line_num: int, file_path: Path, rule: StandardRule) -> List[ViolationInstance]:
+        """通用模式检查"""
+        violations = []
+
+        if rule.pattern and re.search(rule.pattern, line):
+            violations.append(ViolationInstance(
+                rule_id=rule.id,
+                file_path=str(file_path),
+                line_number=line_num,
+                message=rule.description,
+                code_snippet=line.strip(),
+                severity=rule.severity,
+                source=ViolationSource.STATIC_ANALYSIS
+            ))
+
+        return violations
+
+    def _get_rule_by_id(self, rule_id: str) -> Optional[StandardRule]:
+        """根据ID获取规则"""
+        for rule in self.rules:
+            if rule.id == rule_id:
+                return rule
+        return None
+
+    def _generate_recommendations(self, violations: List[ViolationInstance]) -> List[str]:
+        """基于违规情况生成修复建议"""
+        recommendations = []
+
+        # 统计违规类型
+        violation_counts = {}
+        for violation in violations:
+            rule_id = violation.rule_id
+            violation_counts[rule_id] = violation_counts.get(rule_id, 0) + 1
+
+        # 生成针对性建议
+        if violation_counts.get("objc_naming_conventions", 0) > 0:
+            recommendations.append("建议统一为Objective-C类添加'XP'前缀，参考命名规范文档")
+
+        if violation_counts.get("swift_naming_conventions", 0) > 0:
+            recommendations.append("建议使用驼峰命名法，确保类名以大写字母开头")
+
+        if violation_counts.get("file_header_format", 0) > 0:
+            recommendations.append("建议为所有源文件添加统一的版权声明头部")
+
+        if violation_counts.get("memory_management", 0) > 0:
+            recommendations.append("建议迁移到ARC，避免手动内存管理")
+
+        return recommendations
+
+    def get_enabled_rules(self) -> List[StandardRule]:
+        """获取启用的规则列表"""
+        return [rule for rule in self.rules if rule.id in self.config.enabled_rules and rule.enabled]
+
+    def add_custom_rule(self, rule: StandardRule) -> bool:
+        """添加自定义规则"""
+        # 检查规则ID是否已存在
+        if any(r.id == rule.id for r in self.rules):
+            return False
+
+        self.rules.append(rule)
+        self.config.custom_rules.append(rule)
+        return True
+
+    def update_rule_status(self, rule_id: str, enabled: bool) -> bool:
+        """更新规则状态"""
+        rule = self._get_rule_by_id(rule_id)
+        if not rule:
+            return False
+
+        rule.enabled = enabled
+        rule.updated_at = datetime.now()
+
+        # 更新配置
+        if enabled and rule_id not in self.config.enabled_rules:
+            self.config.enabled_rules.append(rule_id)
+        elif not enabled and rule_id in self.config.enabled_rules:
+            self.config.enabled_rules.remove(rule_id)
+
+        return True

@@ -1,0 +1,1146 @@
+diff --git a/SKILL.md b/SKILL.md
+new file mode 100644
+index 0000000..799c712
+--- /dev/null
++++ b/SKILL.md
+@@ -0,0 +1,90 @@
++---
++name: feynman-learning-verification
++description: 费曼学习法结合三重角色验证的AI学习方法论。用于深度学习技术主题时：(1) 用户提到"费曼学习法"、"三重角色验证"、"深度学习某主题"，(2) 需要验证AI agent知识掌握情况，(3) 希望生成可复用的学习文档，(4) 想要系统化的学习-验证-归档流程。支持任何技术主题的深度学习验证。
++---
++
++# 费曼学习法 + 三重角色验证
++
++基于费曼学习法原理，通过三重角色扮演验证AI对特定技术主题的掌握深度，并生成结构化学习档案。
++
++## 核心流程
++
++### 阶段1：学习主题确立
++1. 明确学习目标和范围边界
++2. 建立知识点检查清单
++3. 设定验证标准
++
++### 阶段2：三重角色验证（聚焦主题）
++
++#### 🎓 角色一：学习主题小白
++- 基于学习主题设计递进式提问
++- 全面覆盖核心知识点
++- 实时评估理解准确性
++- 发现知识盲区
++
++#### 🔥 角色二：领域专家/犀利辩手
++- 针对学习主题进行批判性质疑
++- 挑战理论假设和实践可行性
++- 测试深层理解和应变能力
++- 暴露逻辑漏洞
++
++#### 🤝 角色三：实战搭档
++- 设计真实业务场景
++- 要求用学习主题解决实际问题
++- 验证知识的实用性和迁移能力
++- 测试综合应用水平
++
++### 阶段3：学习归档
++使用 `assets/learning_report_template.md` 生成完整学习文档，包含：
++- 知识点掌握矩阵
++- 验证过程记录
++- 实战案例分析
++- 可复用要点提炼
++
++## 使用方法
++
++### 开始学习验证
++```
++我想深入学习 [具体主题]，请使用费曼学习法进行验证
++```
++
++### 继续中断的验证
++```
++继续 [主题] 的三重角色验证，当前进度：[阶段]
++```
++
++### 生成学习档案
++```
++为本次 [主题] 学习生成完整归档文档
++```
++
++## 参考资源
++
++### 验证模板
++- **小白提问模板**：见 `references/beginner_questions.md`
++- **专家质疑模板**：见 `references/expert_challenges.md`
++- **实战案例库**：见 `references/practical_scenarios.md`
++
++### 评估标准
++- **掌握程度评级**：见 `references/mastery_levels.md`
++- **验证完成度检查**：见 `assets/verification_checklist.md`
++
++### 自动化工具
++- **知识点提取**：使用 `scripts/extract_knowledge_points.py`
++- **学习报告生成**：使用 `scripts/generate_learning_summary.py`
++
++## 关键原则
++
++1. **主题聚焦**：所有验证围绕具体学习主题展开，避免泛化
++2. **渐进深入**：从基础概念到高级应用，层层递进
++3. **实战导向**：理论必须能解决真实问题
++4. **文档驱动**：每次学习都要形成可复用的知识资产
++5. **迭代优化**：根据验证效果持续改进提问策略
++
++## 适用场景
++
++- 学习新技术框架或工具
++- 深入理解复杂概念（如架构设计、算法原理）
++- 准备技术分享或培训
++- 验证知识迁移能力
++- 建立团队知识库
+\ No newline at end of file
+diff --git a/assets/learning_report_template.md b/assets/learning_report_template.md
+new file mode 100644
+index 0000000..dff6bae
+--- /dev/null
++++ b/assets/learning_report_template.md
+@@ -0,0 +1,165 @@
++# [学习主题] 深度学习报告
++
++**学习日期**：{{LEARNING_DATE}}
++**学习主题**：{{LEARNING_TOPIC}}
++**验证方式**：费曼学习法 + 三重角色验证
++**学习时长**：{{LEARNING_DURATION}}
++
++---
++
++## 📋 学习目标与范围
++
++### 学习目标
++{{LEARNING_OBJECTIVES}}
++
++### 知识边界
++- **包含范围**：{{INCLUDED_SCOPE}}
++- **排除范围**：{{EXCLUDED_SCOPE}}
++- **深度要求**：{{DEPTH_REQUIREMENT}}
++
++---
++
++## 🎯 核心知识点掌握矩阵
++
++| 知识点 | 理解深度 | 掌握程度 | 验证方式 | 备注 |
++|--------|----------|----------|----------|------|
++| {{KNOWLEDGE_POINT_1}} | {{DEPTH_LEVEL}} | {{MASTERY_LEVEL}} | {{VERIFICATION_METHOD}} | {{NOTES}} |
++| {{KNOWLEDGE_POINT_2}} | {{DEPTH_LEVEL}} | {{MASTERY_LEVEL}} | {{VERIFICATION_METHOD}} | {{NOTES}} |
++| {{KNOWLEDGE_POINT_3}} | {{DEPTH_LEVEL}} | {{MASTERY_LEVEL}} | {{VERIFICATION_METHOD}} | {{NOTES}} |
++
++**掌握程度说明**：
++- 🟢 **精通**：能教授他人，能创新应用
++- 🟡 **熟练**：能独立应用，理解原理
++- 🔴 **了解**：知道概念，需要指导应用
++- ⚫ **不懂**：概念模糊，无法应用
++
++---
++
++## 🔍 三重角色验证记录
++
++### 🎓 阶段一：小白角色验证
++
++#### 提问覆盖度
++- ✅ 基础概念：{{BASIC_CONCEPTS_COVERED}}
++- ✅ 工作原理：{{MECHANISM_COVERED}}
++- ✅ 应用场景：{{SCENARIOS_COVERED}}
++- ✅ 实现细节：{{IMPLEMENTATION_COVERED}}
++
++#### 关键问题与回答
++{{BEGINNER_QA_SUMMARY}}
++
++#### 发现的知识盲区
++{{KNOWLEDGE_GAPS}}
++
++### 🔥 阶段二：专家质疑验证
++
++#### 质疑领域
++- 理论基础：{{THEORY_CHALLENGES}}
++- 实践可行性：{{PRACTICE_CHALLENGES}}
++- 边界条件：{{BOUNDARY_CHALLENGES}}
++- 架构设计：{{DESIGN_CHALLENGES}}
++
++#### 成功防御的观点
++{{SUCCESSFUL_DEFENSES}}
++
++#### 需要进一步学习的点
++{{FURTHER_LEARNING_NEEDED}}
++
++### 🤝 阶段三：实战搭档验证
++
++#### 应用场景
++{{PRACTICAL_SCENARIOS}}
++
++#### 解决方案质量
++- **技术可行性**：{{TECHNICAL_FEASIBILITY}}
++- **方案完整性**：{{SOLUTION_COMPLETENESS}}
++- **创新性**：{{INNOVATION_LEVEL}}
++- **实际价值**：{{PRACTICAL_VALUE}}
++
++#### 实战中的新发现
++{{PRACTICAL_INSIGHTS}}
++
++---
++
++## 📊 学习效果评估
++
++### 总体评分
++- **理论理解**：{{THEORY_SCORE}}/10
++- **实践能力**：{{PRACTICE_SCORE}}/10
++- **应变能力**：{{ADAPTABILITY_SCORE}}/10
++- **创新思维**：{{INNOVATION_SCORE}}/10
++
++### 学习亮点
++{{LEARNING_HIGHLIGHTS}}
++
++### 待改进领域
++{{IMPROVEMENT_AREAS}}
++
++---
++
++## 💡 核心洞察与收获
++
++### 关键发现
++{{KEY_INSIGHTS}}
++
++### 思维模式转变
++{{MINDSET_SHIFTS}}
++
++### 实用方法论
++{{PRACTICAL_METHODOLOGIES}}
++
++---
++
++## 🔄 可复用知识资产
++
++### 可迁移的原则
++{{TRANSFERABLE_PRINCIPLES}}
++
++### 可复用的模式
++{{REUSABLE_PATTERNS}}
++
++### 值得分享的最佳实践
++{{BEST_PRACTICES}}
++
++---
++
++## 📚 延伸学习计划
++
++### 短期计划（1-2周）
++{{SHORT_TERM_PLAN}}
++
++### 中期计划（1-3个月）
++{{MEDIUM_TERM_PLAN}}
++
++### 长期计划（6个月以上）
++{{LONG_TERM_PLAN}}
++
++### 相关学习资源
++{{LEARNING_RESOURCES}}
++
++---
++
++## 🏷️ 标签与分类
++
++**技术领域**：{{TECH_DOMAIN}}
++**难度级别**：{{DIFFICULTY_LEVEL}}
++**应用场景**：{{APPLICATION_SCENARIOS}}
++**相关技术**：{{RELATED_TECHNOLOGIES}}
++
++---
++
++## 📝 学习过程反思
++
++### 学习方法效果
++{{LEARNING_METHOD_EFFECTIVENESS}}
++
++### 三重角色验证的价值
++{{VERIFICATION_VALUE}}
++
++### 可改进的地方
++{{PROCESS_IMPROVEMENTS}}
++
++---
++
++**报告生成时间**：{{GENERATION_TIMESTAMP}}
++**下次复习计划**：{{NEXT_REVIEW_PLAN}}
+\ No newline at end of file
+diff --git a/assets/verification_checklist.md b/assets/verification_checklist.md
+new file mode 100644
+index 0000000..81557c2
+--- /dev/null
++++ b/assets/verification_checklist.md
+@@ -0,0 +1,137 @@
++# ✅ 三重角色验证完成度检查清单
++
++## 📋 验证前准备
++
++### 学习主题确认
++- [ ] **明确学习目标**：清楚要掌握的具体知识和技能
++- [ ] **定义知识边界**：明确包含和排除的范围
++- [ ] **建立验证标准**：确定掌握程度的评判指标
++- [ ] **准备验证材料**：收集相关资料和参考文档
++
++---
++
++## 🎓 角色一：小白角色验证
++
++### 基础概念覆盖
++- [ ] **核心定义**：能用简单语言解释主题的基本概念
++- [ ] **概念区分**：能区分相似概念的差异
++- [ ] **适用场景**：了解什么时候使用，什么时候不用
++- [ ] **基本术语**：掌握领域内的关键术语
++
++### 原理机制理解
++- [ ] **工作原理**：理解底层的工作机制
++- [ ] **流程步骤**：清楚完整的操作流程
++- [ ] **因果关系**：理解各部分之间的逻辑关系
++- [ ] **设计思路**：明白为什么要这样设计
++
++### 实际应用认知
++- [ ] **典型场景**：能列举常见的应用场景
++- [ ] **使用方法**：知道如何正确使用
++- [ ] **注意事项**：了解常见的坑点和限制
++- [ ] **最佳实践**：掌握推荐的使用方式
++
++### 验证质量检查
++- [ ] **回答准确性**：提供的信息准确无误
++- [ ] **表达清晰度**：解释逻辑清楚，易于理解
++- [ ] **举例恰当性**：例子贴切且有说服力
++- [ ] **知识完整性**：覆盖了主要知识点
++
++---
++
++## 🔥 角色二：专家质疑验证
++
++### 理论基础挑战
++- [ ] **假设质疑**：成功回应对基础假设的质疑
++- [ ] **边界条件**：处理好极端情况和特殊场景
++- [ ] **理论局限**：承认并解释理论的适用范围
++- [ ] **替代方案**：能对比不同方案的优劣
++
++### 实践可行性检验
++- [ ] **技术可行性**：证明方案在技术上可实现
++- [ ] **成本效益分析**：考虑了实施的成本和收益
++- [ ] **资源约束**：在现实约束下仍然可行
++- [ ] **风险评估**：识别并有应对风险的策略
++
++### 深层思考验证
++- [ ] **逻辑自洽性**：论证过程逻辑严密
++- [ ] **证据支撑**：有充分的证据支持观点
++- [ ] **反驳能力**：能有效反驳质疑和批评
++- [ ] **创新思维**：展现了独特的见解或创新
++
++### 防御质量评估
++- [ ] **论据充分**：提供了有力的支撑证据
++- [ ] **逻辑严密**：推理过程环环相扣
++- [ ] **应变灵活**：能适应不同角度的质疑
++- [ ] **承认局限**：诚实面对知识的边界
++
++---
++
++## 🤝 角色三：实战搭档验证
++
++### 场景应用能力
++- [ ] **需求理解**：准确理解实际业务需求
++- [ ] **方案设计**：设计出可行的解决方案
++- [ ] **约束处理**：在现实约束下找到最优解
++- [ ] **风险控制**：识别并规避主要风险
++
++### 技术实现质量
++- [ ] **架构合理性**：技术架构清晰合理
++- [ ] **可扩展性**：考虑了未来的扩展需求
++- [ ] **可维护性**：方案易于维护和升级
++- [ ] **性能优化**：关注了性能和效率问题
++
++### 业务价值验证
++- [ ] **问题解决度**：有效解决了实际问题
++- [ ] **用户体验**：考虑了最终用户的体验
++- [ ] **商业可行性**：具有明确的商业价值
++- [ ] **可操作性**：方案具体可执行
++
++### 协作沟通能力
++- [ ] **技术表达**：能清楚表达技术方案
++- [ ] **业务理解**：理解业务逻辑和需求
++- [ ] **团队协作**：考虑了团队协作因素
++- [ ] **知识传播**：能有效传播知识和经验
++
++---
++
++## 📊 总体验证评估
++
++### 掌握深度评级
++- [ ] **🟢 精通级**：能教授他人，能创新应用
++- [ ] **🟡 熟练级**：能独立应用，理解原理
++- [ ] **🔴 了解级**：知道概念，需要指导应用
++- [ ] **⚫ 入门级**：概念模糊，无法独立应用
++
++### 验证完成度
++- [ ] **100% 完成**：所有关键知识点都通过验证
++- [ ] **80-99% 完成**：主要知识点通过，少数细节待完善
++- [ ] **60-79% 完成**：基础扎实，部分高级概念需加强
++- [ ] **< 60% 完成**：需要重新学习和验证
++
++### 学习效果确认
++- [ ] **理论掌握**：核心概念和原理清楚明确
++- [ ] **实践能力**：能在实际场景中正确应用
++- [ ] **迁移能力**：能将知识应用到新的场景
++- [ ] **创新潜力**：具备基于现有知识创新的可能
++
++---
++
++## 📝 后续行动计划
++
++### 立即行动（验证完成后）
++- [ ] **生成学习报告**：使用模板整理完整的学习记录
++- [ ] **识别薄弱环节**：标记需要进一步加强的知识点
++- [ ] **制定复习计划**：安排定期复习和实践机会
++- [ ] **分享学习成果**：将有价值的内容分享给团队
++
++### 持续学习（未来1-2周）
++- [ ] **深化薄弱点**：针对验证中发现的问题进行专项学习
++- [ ] **实践应用**：在实际项目中应用学到的知识
++- [ ] **关注前沿**：追踪相关领域的最新发展
++- [ ] **建立联系**：将新知识与已有知识建立关联
++
++---
++
++**检查完成时间**：_____________
++**验证总评**：_____________
++**下次复查计划**：_____________
+\ No newline at end of file
+diff --git a/references/beginner_questions.md b/references/beginner_questions.md
+new file mode 100644
+index 0000000..ccb7e00
+--- /dev/null
++++ b/references/beginner_questions.md
+@@ -0,0 +1,53 @@
++# 小白角色提问模板
++
++## 提问策略
++
++### 基础概念验证
++- 什么是 [核心概念]？用最简单的话解释
++- [概念A] 和 [概念B] 有什么本质区别？
++- 为什么需要 [技术/方法]？它解决了什么问题？
++
++### 原理机制探询
++- [系统/框架] 是如何工作的？
++- 背后的核心原理是什么？
++- 整个流程分为哪几个步骤？
++
++### 场景应用理解
++- 什么情况下会用到 [技术]？
++- 有哪些典型的使用场景？
++- 不适用的情况有哪些？
++
++### 细节实现验证
++- 具体是怎么实现的？
++- 关键的技术点有哪些？
++- 常见的坑点是什么？
++
++## 提问技巧
++
++### 递进式提问
++1. 先问大方向概念
++2. 再问具体实现
++3. 最后问边界情况
++
++### 类比式提问
++"能否用 [熟悉领域] 来类比解释 [新概念]？"
++
++### 举例式提问
++"请给出一个具体的例子来说明 [概念]"
++
++### 对比式提问
++"[方案A] 和 [方案B] 的优缺点分别是什么？"
++
++## 评估标准
++
++### ✅ 通过条件
++- 解释清晰准确
++- 能举出恰当例子
++- 理解概念边界
++- 识别关键差异
++
++### ❌ 需要重新解释
++- 概念混淆
++- 举例不当
++- 逻辑不清
++- 遗漏关键点
+\ No newline at end of file
+diff --git a/references/expert_challenges.md b/references/expert_challenges.md
+new file mode 100644
+index 0000000..e67dcbb
+--- /dev/null
++++ b/references/expert_challenges.md
+@@ -0,0 +1,74 @@
++# 专家质疑模板
++
++## 质疑策略
++
++### 理论基础质疑
++- 你确定 [基础假设] 是正确的吗？
++- [理论] 在 [特殊场景] 下还适用吗？
++- 有没有更简单/更直接的解决方案？
++
++### 实践可行性挑战
++- 这种方案在生产环境真的可行吗？
++- 性能/扩展性/维护性如何？
++- 成本收益比合理吗？
++
++### 边界条件测试
++- 极端情况下会发生什么？
++- 失败模式有哪些？
++- 如何处理异常情况？
++
++### 架构设计质疑
++- 为什么不用 [替代方案]？
++- 这种设计是过度工程化吗？
++- 有什么潜在的技术债务？
++
++## 具体质疑技巧
++
++### 假设挑战
++"你的分析基于 [假设X]，但如果 [假设X] 不成立呢？"
++
++### 反例举证
++"我有一个反例：[具体场景]，你的方案在这里行得通吗？"
++
++### 权衡质疑
++"你考虑了优点，但 [缺点Y] 不是更严重的问题吗？"
++
++### 替代方案对比
++"为什么不直接用 [更简单的方案]？"
++
++### 实际约束考虑
++"在 [资源限制/时间压力/团队技能] 的约束下，这还现实吗？"
++
++## 评估标准
++
++### ✅ 成功防御
++- 提供有力反驳证据
++- 承认局限性但说明权衡理由
++- 能适应不同场景调整方案
++- 展现深层思考
++
++### ❌ 防御失败
++- 无法回应核心质疑
++- 避重就轻
++- 固执己见不承认问题
++- 逻辑自相矛盾
++
++## 常见质疑领域
++
++### 技术架构
++- 扩展性问题
++- 单点故障
++- 性能瓶颈
++- 兼容性风险
++
++### 工程实践
++- 测试覆盖
++- 部署复杂度
++- 监控观测
++- 故障恢复
++
++### 业务价值
++- ROI 分析
++- 用户体验
++- 市场竞争力
++- 长期维护成本
+\ No newline at end of file
+diff --git a/references/practical_scenarios.md b/references/practical_scenarios.md
+new file mode 100644
+index 0000000..7e89e69
+--- /dev/null
++++ b/references/practical_scenarios.md
+@@ -0,0 +1,87 @@
++# 实战场景模板
++
++## 场景设计原则
++
++### 真实性
++- 基于实际业务需求
++- 包含真实的约束条件
++- 反映现实的复杂性
++
++### 综合性
++- 需要运用多个知识点
++- 考验系统性思维
++- 测试知识迁移能力
++
++### 挑战性
++- 有一定技术难度
++- 需要权衡取舍
++- 存在多种可行方案
++
++## 常用场景模板
++
++### 技术选型场景
++**背景**：公司要开发 [具体项目]，需要选择 [技术栈]
++**约束**：
++- 团队技能水平：[描述]
++- 时间压力：[具体时间线]
++- 预算限制：[资源约束]
++- 性能要求：[具体指标]
++
++**任务**：运用学习的知识进行技术方案设计
++
++### 系统故障场景
++**背景**：生产环境出现 [具体问题]
++**现象**：[症状描述]
++**压力**：[业务影响和时间压力]
++
++**任务**：运用学习的知识进行故障诊断和解决
++
++### 架构升级场景
++**背景**：现有系统需要支撑 [新业务需求]
++**现状**：[当前架构描述]
++**挑战**：[技术债务和约束]
++
++**任务**：设计升级方案并评估风险
++
++### 团队协作场景
++**背景**：作为技术负责人，需要向 [目标受众] 推广 [技术]
++**挑战**：
++- 不同技能水平的团队成员
++- 既有系统的兼容性
++- 学习成本和推广阻力
++
++**任务**：制定推广策略和实施计划
++
++## 评估维度
++
++### 方案质量
++- 技术可行性
++- 架构合理性
++- 风险评估完整性
++- 实施路径清晰
++
++### 思维过程
++- 问题分析深度
++- 多角度思考
++- 权衡取舍能力
++- 创新性解决方案
++
++### 沟通表达
++- 逻辑结构清晰
++- 重点突出
++- 技术深度与易懂性平衡
++- 说服力
++
++## 场景生成策略
++
++### 基于学习主题
++从学习的核心概念出发，设计需要运用这些概念的实际问题
++
++### 基于行业特点
++结合具体行业（金融、电商、IoT等）的典型挑战
++
++### 基于技术演进
++模拟技术发展过程中的关键决策点
++
++### 基于团队协作
++设计需要跨团队协作解决的复杂问题
+\ No newline at end of file
+diff --git a/scripts/extract_knowledge_points.py b/scripts/extract_knowledge_points.py
+new file mode 100644
+index 0000000..58c668d
+--- /dev/null
++++ b/scripts/extract_knowledge_points.py
+@@ -0,0 +1,281 @@
++#!/usr/bin/env python3
++"""
++学习知识点提取工具
++从对话记录中自动提取和分类核心知识点
++"""
++
++import re
++import json
++from typing import List, Dict, Set
++from dataclasses import dataclass, asdict
++from collections import defaultdict
++
++@dataclass
++class KnowledgePoint:
++    concept: str
++    category: str
++    description: str
++    examples: List[str]
++    confidence: float
++    mentioned_count: int
++
++class KnowledgeExtractor:
++    def __init__(self):
++        self.technical_patterns = [
++            # 概念定义模式
++            r'(\w+)是(.{10,100})',
++            r'什么是(\w+)',
++            r'(\w+)的定义',
++
++            # 工作原理模式
++            r'(\w+)如何工作',
++            r'(\w+)的工作原理',
++            r'(\w+)的机制',
++
++            # 特征描述模式
++            r'(\w+)具有(.{5,50})特点',
++            r'(\w+)的优点是(.{10,100})',
++            r'(\w+)的缺点是(.{10,100})',
++
++            # 应用场景模式
++            r'使用(\w+)来(.{5,50})',
++            r'(\w+)适用于(.{5,50})',
++            r'什么时候用(\w+)',
++        ]
++
++        self.category_keywords = {
++            'architecture': ['架构', '设计', '模式', '结构', '组件'],
++            'implementation': ['实现', '代码', '编程', '开发', '脚本'],
++            'process': ['流程', '步骤', '方法', '过程', 'workflow'],
++            'concept': ['概念', '原理', '理论', '定义', '本质'],
++            'tool': ['工具', '框架', 'skill', 'agent', '技术'],
++            'practice': ['实践', '应用', '场景', '案例', '经验']
++        }
++
++    def extract_knowledge_points(self, conversation_text: str,
++                                learning_topic: str) -> List[KnowledgePoint]:
++        """从对话文本中提取知识点"""
++        knowledge_points = []
++        mentioned_concepts = defaultdict(int)
++
++        # 预处理：移除特殊字符，分句
++        sentences = self._preprocess_text(conversation_text)
++
++        for sentence in sentences:
++            # 跳过太短的句子
++            if len(sentence) < 10:
++                continue
++
++            # 提取概念
++            concepts = self._extract_concepts_from_sentence(sentence, learning_topic)
++
++            for concept, description, examples in concepts:
++                mentioned_concepts[concept] += 1
++
++                # 分类
++                category = self._categorize_concept(sentence, concept)
++
++                # 计算置信度
++                confidence = self._calculate_confidence(sentence, concept, learning_topic)
++
++                knowledge_points.append(KnowledgePoint(
++                    concept=concept,
++                    category=category,
++                    description=description,
++                    examples=examples,
++                    confidence=confidence,
++                    mentioned_count=mentioned_concepts[concept]
++                ))
++
++        # 去重和合并相似概念
++        knowledge_points = self._deduplicate_and_merge(knowledge_points)
++
++        # 按重要性排序
++        knowledge_points.sort(key=lambda x: (x.confidence * x.mentioned_count), reverse=True)
++
++        return knowledge_points
++
++    def _preprocess_text(self, text: str) -> List[str]:
++        """文本预处理"""
++        # 移除特殊字符
++        text = re.sub(r'[^\u4e00-\u9fff\w\s\.\?\!]', ' ', text)
++
++        # 分句
++        sentences = re.split(r'[。？！\.\?\!]', text)
++
++        return [s.strip() for s in sentences if s.strip()]
++
++    def _extract_concepts_from_sentence(self, sentence: str, topic: str) -> List[tuple]:
++        """从单句中提取概念"""
++        concepts = []
++
++        for pattern in self.technical_patterns:
++            matches = re.finditer(pattern, sentence, re.IGNORECASE)
++            for match in matches:
++                if len(match.groups()) >= 2:
++                    concept = match.group(1).strip()
++                    description = match.group(2).strip() if len(match.groups()) > 1 else ""
++
++                    # 过滤噪音
++                    if self._is_valid_concept(concept, topic):
++                        examples = self._extract_examples_for_concept(sentence, concept)
++                        concepts.append((concept, description, examples))
++
++        return concepts
++
++    def _is_valid_concept(self, concept: str, topic: str) -> bool:
++        """验证概念的有效性"""
++        # 长度检查
++        if len(concept) < 2 or len(concept) > 30:
++            return False
++
++        # 是否与主题相关
++        topic_keywords = topic.lower().split()
++        if not any(keyword in concept.lower() for keyword in topic_keywords):
++            # 检查是否是技术相关术语
++            tech_indicators = ['技术', '方法', '模式', '架构', 'skill', 'agent', '工具']
++            if not any(indicator in concept.lower() for indicator in tech_indicators):
++                return False
++
++        return True
++
++    def _categorize_concept(self, sentence: str, concept: str) -> str:
++        """概念分类"""
++        sentence_lower = sentence.lower()
++
++        for category, keywords in self.category_keywords.items():
++            if any(keyword in sentence_lower for keyword in keywords):
++                return category
++
++        return 'general'
++
++    def _calculate_confidence(self, sentence: str, concept: str, topic: str) -> float:
++        """计算概念提取的置信度"""
++        confidence = 0.5  # 基础置信度
++
++        # 主题相关性
++        if topic.lower() in concept.lower():
++            confidence += 0.3
++
++        # 句子质量
++        if len(sentence) > 20:
++            confidence += 0.1
++
++        # 是否有明确定义
++        if any(indicator in sentence for indicator in ['是', '定义为', '指的是']):
++            confidence += 0.1
++
++        return min(confidence, 1.0)
++
++    def _extract_examples_for_concept(self, sentence: str, concept: str) -> List[str]:
++        """为概念提取例子"""
++        examples = []
++
++        # 寻找例子模式
++        example_patterns = [
++            rf'{concept}.*?例如(.{{5,50}})',
++            rf'{concept}.*?比如(.{{5,50}})',
++            rf'例子.*{concept}.*?(.{{10,50}})'
++        ]
++
++        for pattern in example_patterns:
++            matches = re.finditer(pattern, sentence, re.IGNORECASE)
++            for match in matches:
++                example = match.group(1).strip()
++                if example:
++                    examples.append(example)
++
++        return examples
++
++    def _deduplicate_and_merge(self, knowledge_points: List[KnowledgePoint]) -> List[KnowledgePoint]:
++        """去重和合并相似概念"""
++        unique_points = {}
++
++        for point in knowledge_points:
++            key = point.concept.lower()
++
++            if key in unique_points:
++                # 合并信息
++                existing = unique_points[key]
++                existing.mentioned_count += point.mentioned_count
++                existing.confidence = max(existing.confidence, point.confidence)
++                existing.examples.extend(point.examples)
++                existing.examples = list(set(existing.examples))  # 去重
++
++                # 取更详细的描述
++                if len(point.description) > len(existing.description):
++                    existing.description = point.description
++            else:
++                unique_points[key] = point
++
++        return list(unique_points.values())
++
++    def export_to_json(self, knowledge_points: List[KnowledgePoint],
++                      filename: str) -> None:
++        """导出为JSON格式"""
++        data = {
++            'knowledge_points': [asdict(point) for point in knowledge_points],
++            'summary': {
++                'total_concepts': len(knowledge_points),
++                'categories': list(set(point.category for point in knowledge_points)),
++                'high_confidence': len([p for p in knowledge_points if p.confidence > 0.8])
++            }
++        }
++
++        with open(filename, 'w', encoding='utf-8') as f:
++            json.dump(data, f, ensure_ascii=False, indent=2)
++
++def main():
++    import argparse
++
++    parser = argparse.ArgumentParser(description='从对话中提取知识点')
++    parser.add_argument('conversation_file', help='对话记录文件')
++    parser.add_argument('--topic', required=True, help='学习主题')
++    parser.add_argument('--output', '-o', help='输出文件路径')
++    parser.add_argument('--format', choices=['json', 'markdown'],
++                       default='json', help='输出格式')
++
++    args = parser.parse_args()
++
++    # 读取对话文件
++    with open(args.conversation_file, 'r', encoding='utf-8') as f:
++        conversation_text = f.read()
++
++    # 提取知识点
++    extractor = KnowledgeExtractor()
++    knowledge_points = extractor.extract_knowledge_points(conversation_text, args.topic)
++
++    # 输出结果
++    if args.format == 'json':
++        output_file = args.output or f'{args.topic}_knowledge_points.json'
++        extractor.export_to_json(knowledge_points, output_file)
++        print(f"知识点已导出到: {output_file}")
++
++    elif args.format == 'markdown':
++        output_file = args.output or f'{args.topic}_knowledge_points.md'
++        with open(output_file, 'w', encoding='utf-8') as f:
++            f.write(f"# {args.topic} 学习知识点\n\n")
++
++            for point in knowledge_points:
++                f.write(f"## {point.concept}\n")
++                f.write(f"**分类**: {point.category}\n")
++                f.write(f"**描述**: {point.description}\n")
++                f.write(f"**置信度**: {point.confidence:.1%}\n")
++                f.write(f"**提及次数**: {point.mentioned_count}\n")
++
++                if point.examples:
++                    f.write("**例子**:\n")
++                    for example in point.examples:
++                        f.write(f"- {example}\n")
++                f.write("\n")
++
++        print(f"知识点已导出到: {output_file}")
++
++    # 打印摘要
++    print(f"\n提取摘要:")
++    print(f"总概念数: {len(knowledge_points)}")
++    print(f"高置信度概念: {len([p for p in knowledge_points if p.confidence > 0.8])}")
++    print(f"涉及分类: {set(point.category for point in knowledge_points)}")
++
++if __name__ == '__main__':
++    main()
+\ No newline at end of file
+diff --git a/scripts/generate_learning_summary.py b/scripts/generate_learning_summary.py
+new file mode 100644
+index 0000000..7675889
+--- /dev/null
++++ b/scripts/generate_learning_summary.py
+@@ -0,0 +1,203 @@
++#!/usr/bin/env python3
++"""
++学习报告自动生成工具
++基于知识点提取结果和验证记录生成结构化学习报告
++"""
++
++import json
++import re
++from datetime import datetime
++from typing import Dict, List, Any
++from pathlib import Path
++
++class LearningReportGenerator:
++    def __init__(self, template_path: str):
++        self.template_path = Path(template_path)
++        self.template_content = self._load_template()
++
++    def _load_template(self) -> str:
++        """加载报告模板"""
++        with open(self.template_path, 'r', encoding='utf-8') as f:
++            return f.read()
++
++    def generate_report(self,
++                       learning_data: Dict[str, Any],
++                       output_path: str) -> None:
++        """生成学习报告"""
++
++        # 准备模板变量
++        template_vars = self._prepare_template_variables(learning_data)
++
++        # 替换模板变量
++        report_content = self._replace_template_variables(template_vars)
++
++        # 写入报告文件
++        with open(output_path, 'w', encoding='utf-8') as f:
++            f.write(report_content)
++
++        print(f"学习报告已生成: {output_path}")
++
++    def _prepare_template_variables(self, data: Dict[str, Any]) -> Dict[str, str]:
++        """准备模板变量"""
++        variables = {}
++
++        # 基础信息
++        variables['LEARNING_DATE'] = data.get('learning_date', datetime.now().strftime('%Y-%m-%d'))
++        variables['LEARNING_TOPIC'] = data.get('topic', '未指定')
++        variables['LEARNING_DURATION'] = data.get('duration', '未记录')
++        variables['GENERATION_TIMESTAMP'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
++
++        # 学习目标和范围
++        variables['LEARNING_OBJECTIVES'] = self._format_list(data.get('objectives', []))
++        variables['INCLUDED_SCOPE'] = data.get('included_scope', '待补充')
++        variables['EXCLUDED_SCOPE'] = data.get('excluded_scope', '待补充')
++        variables['DEPTH_REQUIREMENT'] = data.get('depth_requirement', '待补充')
++
++        # 知识点掌握矩阵
++        variables.update(self._generate_knowledge_matrix(data.get('knowledge_points', [])))
++
++        # 三重角色验证记录
++        variables.update(self._generate_verification_summary(data.get('verification_records', {})))
++
++        # 学习效果评估
++        variables.update(self._generate_evaluation_summary(data.get('evaluation', {})))
++
++        # 核心洞察
++        variables['KEY_INSIGHTS'] = self._format_list(data.get('key_insights', []))
++        variables['MINDSET_SHIFTS'] = self._format_list(data.get('mindset_shifts', []))
++        variables['PRACTICAL_METHODOLOGIES'] = self._format_list(data.get('methodologies', []))
++
++        # 可复用知识资产
++        variables['TRANSFERABLE_PRINCIPLES'] = self._format_list(data.get('transferable_principles', []))
++        variables['REUSABLE_PATTERNS'] = self._format_list(data.get('reusable_patterns', []))
++        variables['BEST_PRACTICES'] = self._format_list(data.get('best_practices', []))
++
++        # 延伸学习计划
++        variables['SHORT_TERM_PLAN'] = self._format_list(data.get('short_term_plan', []))
++        variables['MEDIUM_TERM_PLAN'] = self._format_list(data.get('medium_term_plan', []))
++        variables['LONG_TERM_PLAN'] = self._format_list(data.get('long_term_plan', []))
++        variables['LEARNING_RESOURCES'] = self._format_list(data.get('learning_resources', []))
++
++        # 标签与分类
++        variables['TECH_DOMAIN'] = data.get('tech_domain', '待分类')
++        variables['DIFFICULTY_LEVEL'] = data.get('difficulty_level', '中等')
++        variables['APPLICATION_SCENARIOS'] = ', '.join(data.get('application_scenarios', []))
++        variables['RELATED_TECHNOLOGIES'] = ', '.join(data.get('related_technologies', []))
++
++        # 学习过程反思
++        variables['LEARNING_METHOD_EFFECTIVENESS'] = data.get('method_effectiveness', '待评估')
++        variables['VERIFICATION_VALUE'] = data.get('verification_value', '待评估')
++        variables['PROCESS_IMPROVEMENTS'] = self._format_list(data.get('process_improvements', []))
++        variables['NEXT_REVIEW_PLAN'] = data.get('next_review', '一个月后')
++
++        return variables
++
++    def _generate_knowledge_matrix(self, knowledge_points: List[Dict]) -> Dict[str, str]:
++        """生成知识点掌握矩阵"""
++        variables = {}
++
++        if not knowledge_points:
++            variables['KNOWLEDGE_POINT_1'] = '待补充'
++            variables['DEPTH_LEVEL'] = '待评估'
++            variables['MASTERY_LEVEL'] = '待评估'
++            variables['VERIFICATION_METHOD'] = '待补充'
++            variables['NOTES'] = '待补充'
++            return variables
++
++        # 取前三个重要知识点
++        for i, point in enumerate(knowledge_points[:3], 1):
++            variables[f'KNOWLEDGE_POINT_{i}'] = point.get('concept', f'知识点{i}')
++
++        # 设置默认值（应该从验证过程中获取）
++        variables['DEPTH_LEVEL'] = '深入理解'
++        variables['MASTERY_LEVEL'] = '🟡 熟练'
++        variables['VERIFICATION_METHOD'] = '三重角色验证'
++        variables['NOTES'] = '已通过验证'
++
++        return variables
++
++    def _generate_verification_summary(self, verification_records: Dict) -> Dict[str, str]:
++        """生成验证过程摘要"""
++        variables = {}
++
++        # 小白角色验证
++        beginner_phase = verification_records.get('beginner', {})
++        variables['BASIC_CONCEPTS_COVERED'] = '✅ ' + ', '.join(beginner_phase.get('concepts_covered', ['待补充']))
++        variables['MECHANISM_COVERED'] = '✅ ' + ', '.join(beginner_phase.get('mechanisms_covered', ['待补充']))
++        variables['SCENARIOS_COVERED'] = '✅ ' + ', '.join(beginner_phase.get('scenarios_covered', ['待补充']))
++        variables['IMPLEMENTATION_COVERED'] = '✅ ' + ', '.join(beginner_phase.get('implementation_covered', ['待补充']))
++        variables['BEGINNER_QA_SUMMARY'] = beginner_phase.get('qa_summary', '待补充')
++        variables['KNOWLEDGE_GAPS'] = self._format_list(beginner_phase.get('knowledge_gaps', []))
++
++        # 专家质疑验证
++        expert_phase = verification_records.get('expert', {})
++        variables['THEORY_CHALLENGES'] = expert_phase.get('theory_challenges', '待补充')
++        variables['PRACTICE_CHALLENGES'] = expert_phase.get('practice_challenges', '待补充')
++        variables['BOUNDARY_CHALLENGES'] = expert_phase.get('boundary_challenges', '待补充')
++        variables['DESIGN_CHALLENGES'] = expert_phase.get('design_challenges', '待补充')
++        variables['SUCCESSFUL_DEFENSES'] = self._format_list(expert_phase.get('successful_defenses', []))
++        variables['FURTHER_LEARNING_NEEDED'] = self._format_list(expert_phase.get('further_learning', []))
++
++        # 实战搭档验证
++        practical_phase = verification_records.get('practical', {})
++        variables['PRACTICAL_SCENARIOS'] = practical_phase.get('scenarios', '待补充')
++        variables['TECHNICAL_FEASIBILITY'] = practical_phase.get('technical_feasibility', '良好')
++        variables['SOLUTION_COMPLETENESS'] = practical_phase.get('solution_completeness', '完整')
++        variables['INNOVATION_LEVEL'] = practical_phase.get('innovation_level', '中等')
++        variables['PRACTICAL_VALUE'] = practical_phase.get('practical_value', '高')
++        variables['PRACTICAL_INSIGHTS'] = self._format_list(practical_phase.get('insights', []))
++
++        return variables
++
++    def _generate_evaluation_summary(self, evaluation: Dict) -> Dict[str, str]:
++        """生成评估摘要"""
++        variables = {}
++
++        scores = evaluation.get('scores', {})
++        variables['THEORY_SCORE'] = str(scores.get('theory', 8))
++        variables['PRACTICE_SCORE'] = str(scores.get('practice', 8))
++        variables['ADAPTABILITY_SCORE'] = str(scores.get('adaptability', 7))
++        variables['INNOVATION_SCORE'] = str(scores.get('innovation', 7))
++
++        variables['LEARNING_HIGHLIGHTS'] = self._format_list(evaluation.get('highlights', []))
++        variables['IMPROVEMENT_AREAS'] = self._format_list(evaluation.get('improvement_areas', []))
++
++        return variables
++
++    def _format_list(self, items: List[str]) -> str:
++        """格式化列表为markdown"""
++        if not items:
++            return '待补充'
++
++        return '\n'.join([f'- {item}' for item in items])
++
++    def _replace_template_variables(self, variables: Dict[str, str]) -> str:
++        """替换模板中的变量"""
++        content = self.template_content
++
++        for var_name, var_value in variables.items():
++            placeholder = f'{{{{{var_name}}}}}'
++            content = content.replace(placeholder, str(var_value))
++
++        return content
++
++def main():
++    import argparse
++
++    parser = argparse.ArgumentParser(description='生成学习报告')
++    parser.add_argument('--template', required=True, help='报告模板文件路径')
++    parser.add_argument('--data', required=True, help='学习数据JSON文件')
++    parser.add_argument('--output', '-o', required=True, help='输出报告文件路径')
++
++    args = parser.parse_args()
++
++    # 加载学习数据
++    with open(args.data, 'r', encoding='utf-8') as f:
++        learning_data = json.load(f)
++
++    # 生成报告
++    generator = LearningReportGenerator(args.template)
++    generator.generate_report(learning_data, args.output)
++
++if __name__ == '__main__':
++    main()
+\ No newline at end of file

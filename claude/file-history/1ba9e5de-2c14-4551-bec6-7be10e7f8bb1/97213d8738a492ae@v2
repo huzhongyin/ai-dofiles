@@ -1,0 +1,10 @@
+# Spec 产物归属元数据
+scope:
+  - submodule/XPVehicleSDK
+  - submodule/XPBLEDataProcessor
+level: L4
+note: >
+  BLE V3 协议新增 RtAuth/RtNotification 消息类型。
+  涉及 XPBLEDataProcessor (C++ 数据解析) + XPVehicleSDK (Swift 事件路由)。
+  产物物理位置保留在 L1 .ai-knowledge/specs/，逻辑归属 L4。
+  未来三件套支持 --scope 后，新增的同类 spec 应直接输出到 submodule 的 .ai-knowledge/specs/ 下。

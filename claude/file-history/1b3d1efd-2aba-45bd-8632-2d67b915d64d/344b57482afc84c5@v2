@@ -1,0 +1,179 @@
+# 模块名: XPCarControlCore
+
+## 模块职责
+车控业务核心层（App 侧），负责将底层 SDK（XPVehicleSDK/XPMQTTLibrary）的能力封装为 App 可直接调用的业务接口。核心功能包括：远程车控指令发送（门锁/车窗/空调/充电/摄像头等）、数字钥匙全生命周期管理（创建/注销/鉴权/分享）、车辆权限管理（多用户授权/切车）、车态数据模型适配（CarState 宏映射兼容层）、车控相关埋点统计、以及通过 CTMediator 提供的模块间路由中间件。
+
+## 语言构成
+- OC 文件数: ~241（.m）+ ~263（.h）
+- Swift 文件数: 0
+- C++ 文件数: 0（XPCarSDK 子模块有少量 .mm 混编）
+- 混编说明: **纯 OC 模块**，通过 Bridging-Header 与 Swift 层（XPVehicleSDK）互操作。XPCarSDK 子模块包含少量 OC/C++ 混编（.mm 文件）用于 ANR 监控和初始化流程。
+
+## 核心 API
+
+### CarControlManager（远程车控指令管理，单例）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+instance` | OC | 获取单例 | `[CarControlManager instance]` |
+| `-lockDoor:style:successBlock:failBlock:timeoutBlock:` | OC | 车锁控制（上锁/解锁） | `[[CarControlManager instance] lockDoor:YES style:CarControlStyleReal ...]` |
+| `-openAirConditioner:style:successBlock:failBlock:timeoutBlock:` | OC | 空调开关控制 | 同上模式 |
+| `-adjustAirConditionerTemperature:style:...` | OC | 调整空调温度 | 同上模式 |
+| `-closeWindowWithStyle:...` | OC | 关闭车窗 | 同上模式 |
+| `-unlockTrunkWithSuccessBlockWithStyle:...` | OC | 解锁后备箱 | 同上模式 |
+| `-flashLightWithStyle:...` | OC | 闪灯（寻车） | 同上模式 |
+| `-trumpetWithStyle:...` | OC | 鸣笛（寻车） | 同上模式 |
+| `-openTopCameraWithStyle:` | OC | 打开车顶摄像头 | 同上模式 |
+| `-requestPushStreamWithStyle:` | OC | 请求远程推流 | 同上模式 |
+| `+cancelControlMessageWithId:` | OC | 取消车控指令（防内存泄漏） | `[CarControlManager cancelControlMessageWithId:msgId]` |
+
+### XPBLEKeyManager（数字钥匙管理，单例）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+instance` | OC | 获取单例 | `[XPBLEKeyManager instance]` |
+| `-start` | OC | 启动钥匙管理 | `[[XPBLEKeyManager instance] start]` |
+| `-cardForVin:` | OC | 获取指定 VIN 的钥匙卡信息 | `[manager cardForVin:@"LVXXX"]` |
+| `-defaultCard` | OC | 获取主车钥匙卡 | `[manager defaultCard]` |
+| `.destoryBLEKeyCommand` | OC | 注销钥匙命令（RACCommand） | 通过 ReactiveCocoa 执行 |
+| `.verifyCommand` | OC | 鉴权认证命令（解锁/上锁/蓝牙泊车） | 通过 ReactiveCocoa 执行 |
+| `-isSafeKeyOrCertKeyExisted` | OC | 检查是否存在有效钥匙 | `[manager isSafeKeyOrCertKeyExisted]` |
+
+### CarPermissionManager（车辆权限管理，单例）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `+shareInstance` | OC | 获取单例 | `[CarPermissionManager shareInstance]` |
+| `-defaultCarInfo` | OC | 获取当前主车信息 | `[[CarPermissionManager shareInstance] defaultCarInfo]` |
+| `-defaultCarVin` | OC | 获取当前主车 VIN | `[manager defaultCarVin]` |
+| `-defaultCarSwitchedSignal` | OC | 切车信号（RACSignal） | `[manager defaultCarSwitchedSignal]` |
+| `-refreshMyCarInfos` | OC | 刷新车辆列表 | `[manager refreshMyCarInfos]` |
+| `-pickCarInfoAsDefaultCarInfo:` | OC | 选定主车 | `[manager pickCarInfoAsDefaultCarInfo:carInfo]` |
+| `-addPermissionPermanentlyWithVin:uid:` | OC | 永久授权 | 返回 RACSignal |
+| `-cancelPermissionWithVin:uid:` | OC | 取消授权 | 返回 RACSignal |
+
+### XPBLEChecker（蓝牙车旁检测）
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `-startCheckBesideTheCar` | OC | 发起车旁检测（30 秒超时） | `[checker startCheckBesideTheCar]` |
+| `-isBesideTheCar` | OC | 判断是否在车旁 | `[checker isBesideTheCar]` |
+
+## 参数说明
+- `CarControlStyle`: 枚举 — `CarControlStyleReal`(真实模式) / `CarControlStyleExperience`(体验模式)
+- `MQTTSuccessCallbackBlock`: 车控成功回调 Block
+- `MQTTFailCallbackBlock`: 车控失败回调 Block
+- `MQTTTimeoutCallbackBlock`: 车控超时回调 Block
+- `JRCarControlIndex`: 枚举 — 车控操作索引（Lock/Unlock/Trunk/Window/充电口/剪刀门/侧滑门等）
+- `ERR_XPBLEKey`: 蓝牙钥匙错误码枚举（0x8734-0x8757 区间）
+
+## 关键协议
+- `JRCarControlCellDelegate`: 车控 Cell 操作回调（发送各类车控指令：门锁/车窗/后备箱/充电口/剪刀门/侧滑门/闪灯/鸣笛等）
+- `XPCarControlProtocal`: 车控协议（空协议，标记用途）
+- `XPToDoCenterProtocol`: 待办中心协议（refresh/getTopTipsList/hideTodo）
+- `XPLoginSDKBridgeInterface`: 登录 SDK 桥接协议（提供用户信息、token、MQTT 配置等接口给车控模块调用）
+
+## 依赖关系
+- **上游依赖**:
+  - `XPVehicleSDK` — 底层车控 SDK（车态/连接/指令）
+  - `XPVehicleExt` — 车端扩展
+  - `XPMQTTLibrary` — MQTT 通信（`MQTTPublisher` 底层连接）
+  - `ReactiveObjC` — 响应式编程（RACCommand/RACSignal）
+  - `IFAASDK` — 一砂 SDK（数字钥匙安全鉴权）
+  - `XPLocalAuthentication` — 本地认证（Face ID/Touch ID）
+  - `XPCategory` — OC 分类扩展
+  - `XPNetwork` — 网络请求封装
+  - `XPBucket/BaseTool` — 基础工具
+  - `XPAppBiz` — App 级业务组件（Alert/Control/Mediator/Service/Theme）
+  - `XPCarControlUtils` — 车控工具
+  - `lottie-ios` — 动画
+  - `SocketRocket` — WebSocket
+- **下游被依赖**:
+  - `XiaoPengQiChe`（主 App）— 通过 CTMediator 路由调用各车控业务模块
+
+## 架构层次
+```
+XiaoPengQiChe (主 App)
+    ↓ 通过 CTMediator 路由
+XPCarControlCore (车控业务核心层)
+    ├── Modules/           — 业务 UI 层（ViewModel/Model）
+    │   ├── Home/          — 车主首页（车态展示）
+    │   ├── BLEKey/        — 蓝牙钥匙（创建/分享/管理）
+    │   ├── AutoParking/   — 自动泊车
+    │   ├── Hvac/          — 空调控制
+    │   ├── CarPermission/ — 车辆权限管理
+    │   └── UserCenter/    — 用户中心（我的车辆）
+    ├── Services/          — 服务层
+    │   ├── CarControlManager/    — 远程车控指令封装
+    │   ├── DigitalKey/           — 数字钥匙全流程
+    │   ├── CarResourceManager/   — 车辆图片资源
+    │   ├── CarStatisticsManager/ — 埋点统计
+    │   ├── XPBLEHandler/         — 蓝牙辅助（车旁检测/扫描）
+    │   ├── PrivacyPermission/    — 隐私权限
+    │   ├── VerifyCode/           — 车辆验证码
+    │   └── XPLoginSDKBridge      — 登录 SDK 桥接
+    ├── XPAppBiz/          — App 业务中间件
+    │   ├── BizMediator/   — CTMediator 路由扩展
+    │   ├── BizService/    — 业务服务（API/CarState）
+    │   └── XPAppSettingBiz/ — App 设置
+    ├── Bridge/            — 跨模块桥接
+    ├── Define/            — 常量/枚举定义
+    ├── Protocal/          — 协议定义
+    ├── Deprecated/        — 废弃代码
+    └── Unstable/          — 实验性代码（通知/日志 Tag/埋点宏定义）
+    ↓ 调用
+XPVehicleSDK / XPMQTTLibrary / IFAASDK (底层 SDK)
+```
+
+## 子模块说明
+
+### Core（主子模块 — podspec 中的 `Core` subspec）
+包含 `XPCarControlCore/Sources/` 下所有源码，是模块的主体。
+
+### Entrance（入口子模块 — podspec 中的 `Entrance` subspec）
+包含 `XPCarSDK/` 目录，提供：
+- `XPCarSDK.h/.mm` — SDK 入口（含 C++ 混编）
+- `XPCarSDK_InitProcess.h/.mm` — SDK 初始化流程
+- `AnrMonitor` — ANR（Application Not Responding）监控
+
+## 常见用法
+
+### 发送车控指令（真实模式）
+```objc
+[[CarControlManager instance] lockDoor:YES
+                                 style:CarControlStyleReal
+                          successBlock:^(id response) {
+    NSLog(@"上锁成功: %@", response);
+} failBlock:^(NSError *error) {
+    NSLog(@"上锁失败: %@", error);
+} timeoutBlock:^{
+    NSLog(@"上锁超时");
+}];
+```
+
+### 查询主车钥匙
+```objc
+XPBLEKeyCard *card = [[XPBLEKeyManager instance] defaultCard];
+if (card) {
+    // 有有效钥匙
+}
+```
+
+### 监听切车信号
+```objc
+[[[CarPermissionManager shareInstance] defaultCarSwitchedSignal] subscribeNext:^(MyCarInfo *carInfo) {
+    // 车辆已切换，carInfo 为新主车信息（可能为 nil）
+}];
+```
+
+## 关键机制
+- **体验模式 vs 真实模式**: `CarControlManager` 通过 `CarControlStyle` 区分体验模式（模拟数据）和真实模式（下发指令到车端），体验模式用于未购车用户
+- **CTMediator 路由**: `XPAppBiz/BizMediator/` 中通过 CTMediator 扩展提供车控各模块的路由入口（AITrip/Air/AutoParking/BLEKey/Camera/CarOwnerHome/Charge/GuardMode 等）
+- **CarState 宏映射**: `CarState.h` 通过大量 `#define` 将旧属性名映射到 `XPCarState` 的新属性名，兼容历史代码
+- **一砂 SDK 集成**: 数字钥匙通过 IFAASDK 实现安全鉴权（Etas 系列 Session：Register/Verify/GetToken/GetAuthData/Unregister）
+- **双通道闭锁**: `JRCarControlCellDelegate` 支持蓝牙通道（带回调）和 MQTT 通道（带鉴权 Token）两种闭锁方式
+
+## 已知限制/陷阱
+- `CarControlManager` 所有车控方法都需传入 `CarControlStyle`，遗漏会导致体验模式数据污染真实车态
+- 数字钥匙错误码范围 `0x8734-0x8757`，新增错误需在 `ERR_XPBLEKey` 枚举中追加
+- `CarState.h` 中的宏映射是历史兼容层，新代码应直接使用 `XPCarState` 的原生属性名
+- `XPBLEChecker.isBesideTheCar` 有 30 秒有效期，超时后自动变为 NO
+- 模块大量使用 `ReactiveObjC`（RACCommand/RACSignal），修改接口时需保持响应式链路完整
+- `CarPermissionManager.defaultCarSwitchedSignal` 会暂存最后一次选定的车辆信息，订阅时会立即收到当前值
+- `Deprecated/` 和 `Unstable/` 目录中的代码不稳定，引用时需确认是否仍在使用

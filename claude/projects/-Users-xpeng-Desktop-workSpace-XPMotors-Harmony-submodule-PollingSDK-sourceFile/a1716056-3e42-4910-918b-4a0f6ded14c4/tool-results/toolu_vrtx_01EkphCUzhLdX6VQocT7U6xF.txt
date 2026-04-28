@@ -1,0 +1,1113 @@
+63661-[I][2026-03-05 +8.0 07:34:21.502][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Notify set successfully on 0000ED28-ABAB-9C8C-2802-D3DF573FF530
+63662-[I][2026-03-05 +8.0 07:34:21.505][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][蓝牙已经可用
+63663-[I][2026-03-05 +8.0 07:34:21.506][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][BLE State Changed: AVAILABLE
+63664:[I][2026-03-05 +8.0 07:34:21.510][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][开始BLE认证流程
+63665-[I][2026-03-05 +8.0 07:34:21.521][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][sendAuthDataStep1: EF01041AE348F7, rand0=4148749082
+63666-[I][2026-03-05 +8.0 07:34:21.528][28095, 28095][BleCommandQueue/车控][XPLogBridge:61, _log][Sending data: device: AVAILABLE data: 239,1,4,26,227,72,247
+63667-[I][2026-03-05 +8.0 07:34:21.530][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][ready to send data: EF01041AE348F7
+--
+65110-[I][2026-03-05 +8.0 07:34:35.412][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingEnableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+65111-[I][2026-03-05 +8.0 07:34:35.413][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+65112-[I][2026-03-05 +8.0 07:34:35.413][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingEnableTrunkUnlock executed successfully.
+65113:[I][2026-03-05 +8.0 07:34:35.414][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_enableleftCertCount: 361
+65114-[I][2026-03-05 +8.0 07:34:35.414][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+65115-[I][2026-03-05 +8.0 07:34:35.414][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 361
+65116-[E][2026-03-05 +8.0 07:34:35.438][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+65251-[I][2026-03-05 +8.0 07:34:36.060][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+65252-[I][2026-03-05 +8.0 07:34:36.061][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+65253-[I][2026-03-05 +8.0 07:34:36.061][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+65254:[I][2026-03-05 +8.0 07:34:36.062][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 360
+65255-[I][2026-03-05 +8.0 07:34:36.062][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+65256-[I][2026-03-05 +8.0 07:34:36.062][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 360
+65257-[E][2026-03-05 +8.0 07:34:36.067][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+65548-[I][2026-03-05 +8.0 07:34:39.979][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:302 pollingUnlock] <PA>predict result: unlock, extension: 决策rssi:当前窗口数据:
+65549-[-67 -54 -73 -48 ]
+65550-[I][2026-03-05 +8.0 07:34:39.995][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:371 pollingUnlock] pollingUnlockIfNeed: polling_action_error_code_none
+65551:[I][2026-03-05 +8.0 07:34:39.995][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock
+65552-[I][2026-03-05 +8.0 07:34:39.996][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:328 predictDoorLockRevertAction] pollingLockNotRevertIfNeed: polling_action_error_code_door_not_unlock
+65553-[I][2026-03-05 +8.0 07:34:40.018][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 2.572916, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+65554-[I][2026-03-05 +8.0 07:34:40.019][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:371 pollingUnlock] pollingUnlockIfNeed: polling_action_error_code_command_interval_limit
+--
+65671-[I][2026-03-05 +8.0 07:34:44.667][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][predictWithRssi: [{"name":"BLE","rssi":-63},{"name":"BLEFL","rssi":-57},{"name":"BLEFR","rssi":-71},{"name":"BLER","rssi":-46}]
+65672-[I][2026-03-05 +8.0 07:34:44.685][28095, 28095][报文/车控][XPLogBridge:61, _log][vin = L1NNSGHB7PB013058, 总数: 359
+65673-[I][2026-03-05 +8.0 07:34:44.688][28095, 28095][报文/车控][XPLogBridge:61, _log][vin = L1NNSGHB7PB013058, 总数: 359
+65674:[I][2026-03-05 +8.0 07:34:44.731][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][即将发送车控指令执行[PollingUnlock]...
+65675:[I][2026-03-05 +8.0 07:34:44.761][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest init command:PollingUnlock vcrId:727587915
+65676:[I][2026-03-05 +8.0 07:34:44.762][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest sendVehicleCommand:PollingUnlock vcrId:727587915
+65677:[W][2026-03-05 +8.0 07:34:44.765][28095, 28095][车控指令基类/车控][XPLogBridge:55, _log][准备执行车控指令[PollingUnlock] by BLE... vcrId:727587915
+65678:[I][2026-03-05 +8.0 07:34:44.766][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][准备发送BLE指令[PollingUnlock]... vcrId:727587915
+65679-[I][2026-03-05 +8.0 07:34:45.515][28095, 28095][2 | 车控数据库/车控][XPLogBridge:61, _log][XPDatabase tableName:SelfKeyMessage 查询数据记录 condition:vin = 'L1NNSGHB7PB013058' ORDER BY id ASC LIMIT 1 isMainThread:true
+65680-[I][2026-03-05 +8.0 07:34:45.525][28095, 28095][000002/车控数据库/车控][DBService:398, query][DBService query:SELECT * FROM SelfKeyMessage WHERE vin = 'L1NNSGHB7PB013058' ORDER BY id ASC LIMIT 1
+65681:[I][2026-03-05 +8.0 07:34:45.558][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest makeBleBeanToSend command:PollingUnlock vcrId:727587915
+65682-[W][2026-03-05 +8.0 07:34:46.282][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+65683-[I][2026-03-05 +8.0 07:34:46.303][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][收到polling回调: Unlock
+65684-[I][2026-03-05 +8.0 07:34:46.304][28095, 28095][PL_SER/车控][XPLogBridge:61, _log][onPollingAction:action: 1
+--
+65687-[I][2026-03-05 +8.0 07:34:46.305][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:778 _predictWithRssi] interval more 300ms,last:Rssi:-62, Name:BLE, Date:2026-03-05 07:34:39.887, rssiCounter:0,current:Rssi:-65, Name:BLE, Date:2026-03-05 07:34:41.039, rssiCounter:0
+65688-[I][2026-03-05 +8.0 07:34:46.306][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 1.881791, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+65689-[I][2026-03-05 +8.0 07:34:46.306][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:371 pollingUnlock] pollingUnlockIfNeed: polling_action_error_code_none
+65690:[I][2026-03-05 +8.0 07:34:46.307][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock
+65691-[I][2026-03-05 +8.0 07:34:46.307][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:778 _predictWithRssi] interval more 300ms,last:Rssi:-57, Name:BLE, Date:2026-03-05 07:34:41.279, rssiCounter:0,current:Rssi:-65, Name:BLE, Date:2026-03-05 07:34:42.056, rssiCounter:0
+65692-[I][2026-03-05 +8.0 07:34:46.644][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:778 _predictWithRssi] interval more 300ms,last:Rssi:-66, Name:BLE, Date:2026-03-05 07:34:42.244, rssiCounter:0,current:Rssi:-67, Name:BLE, Date:2026-03-05 07:34:43.105, rssiCounter:0
+65693-[I][2026-03-05 +8.0 07:34:46.674][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 1.360643, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+65694:[I][2026-03-05 +8.0 07:34:46.674][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock
+65695-[I][2026-03-05 +8.0 07:34:46.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-59, Name:BLE, Date:2026-03-05 07:34:43.658, rssiCounter:0,current:Rssi:-62, Name:BLE, Date:2026-03-05 07:34:43.667, rssiCounter:0
+65696-[I][2026-03-05 +8.0 07:34:46.678][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 1.062383, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+65697-[I][2026-03-05 +8.0 07:34:46.678][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:371 pollingUnlock] pollingUnlockIfNeed: polling_action_error_code_try_count_limit
+--
+66464-[I][2026-03-05 +8.0 07:34:49.957][28095, 28095][报文/车控][XPLogBridge:61, _log][vin = L1NNSGHB7PB013058, 总数: 359
+66465-[I][2026-03-05 +8.0 07:34:49.957][28095, 28095][报文/车控][XPLogBridge:61, _log][vin = L1NNSGHB7PB013058, 总数: 359
+66466-[I][2026-03-05 +8.0 07:34:49.957][28095, 28095][BLEConnection/车控][XPLogBridge:61, _log][fetchKeyMessage success: WFBCS1RIAQAAg2mngX0AKktJABCjJkkOrHTCYeN8ki/J1+C4RUQAEP55jS/2R7BcHGh/gDmw4nhTTgBHMEUCID9EQN6jXEyNro5kRnyTKLtgl3+0O1jaohERqgDOFY9EAiEAuKhrrGcbfOB/mZs2oMZQzGdm+DbafDNR6aAtk6Ir+qU=
+66467:[I][2026-03-05 +8.0 07:34:49.957][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][即将发送车控指令执行[PollingUnlock]...
+66468:[I][2026-03-05 +8.0 07:34:49.958][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest init command:PollingUnlock vcrId:1021000049
+66469:[I][2026-03-05 +8.0 07:34:49.958][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest sendVehicleCommand:PollingUnlock vcrId:1021000049
+66470:[W][2026-03-05 +8.0 07:34:49.958][28095, 28095][车控指令基类/车控][XPLogBridge:55, _log][准备执行车控指令[PollingUnlock] by BLE... vcrId:1021000049
+66471:[I][2026-03-05 +8.0 07:34:49.959][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][准备发送BLE指令[PollingUnlock]... vcrId:1021000049
+66472:[I][2026-03-05 +8.0 07:34:49.959][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][即将发送车控指令执行[PollingUnlock]...
+66473:[I][2026-03-05 +8.0 07:34:49.960][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest init command:PollingUnlock vcrId:1029415906
+66474:[I][2026-03-05 +8.0 07:34:49.960][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest sendVehicleCommand:PollingUnlock vcrId:1029415906
+66475:[W][2026-03-05 +8.0 07:34:49.960][28095, 28095][车控指令基类/车控][XPLogBridge:55, _log][准备执行车控指令[PollingUnlock] by BLE... vcrId:1029415906
+66476:[I][2026-03-05 +8.0 07:34:49.960][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][准备发送BLE指令[PollingUnlock]... vcrId:1029415906
+66477-[I][2026-03-05 +8.0 07:34:49.964][28095, 28095][BleSendDataBuilder/车控][XPLogBridge:61, _log][rkeControlData cmd: 后备箱允许打开, data: 5850424B54480100008369A7817D002A4B490010A326490EAC74C261E37C922FC9D7E0B845440010FE798D2FF647B05C1C687F8039B0E278534E0047304502203F4440DEA35C4C8DAE8E64467C9328BB60977FB43B58DAA21111AA00CE158F44022100B8A86BAC671B7CE07F999B36A0C650CC6766F836DA7C3351E9A02D93A22BFAA520
+66478:[I][2026-03-05 +8.0 07:34:49.965][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest makeBleBeanToSend command:PollingUnlock vcrId:1021000049
+66479:[I][2026-03-05 +8.0 07:34:49.966][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest makeBleBeanToSend command:PollingUnlock vcrId:1029415906
+66480-[I][2026-03-05 +8.0 07:34:49.967][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[BleControlIdCreate]排队锁 SingleLock 排队等待 0 秒
+66481-[I][2026-03-05 +8.0 07:34:49.967][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[BleControlIdCreate]排队锁 SingleLock 队列占用历时 0.001 秒
+66482-[I][2026-03-05 +8.0 07:34:49.968][28095, 28095][BleSendDataBuilder/车控][XPLogBridge:61, _log][buildData payload: 5850424B54480100008369A7817D002A4B490010A326490EAC74C261E37C922FC9D7E0B845440010FE798D2FF647B05C1C687F8039B0E278534E0047304502203F4440DEA35C4C8DAE8E64467C9328BB60977FB43B58DAA21111AA00CE158F44022100B8A86BAC671B7CE07F999B36A0C650CC6766F836DA7C3351E9A02D93A22BFAA520, controlId: 18, vehicleTypeCode: EA, msgType: DATA, controlType: DEFAULT
+--
+66484-[W][2026-03-05 +8.0 07:34:49.970][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyEventFilter(Ble waitForResponse) this.resolve = resolve
+66485-[I][2026-03-05 +8.0 07:34:49.971][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][Sending data to BLE device: [[...]]
+66486-[I][2026-03-05 +8.0 07:34:49.972][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[Request.PollingEnableTrunkUnlock]排队锁 SingleLock 队列占用历时 9.11 秒
+66487:[I][2026-03-05 +8.0 07:34:49.972][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[Request.PollingUnlock]排队锁 SingleLock 排队等待 3.699 秒
+66488-[I][2026-03-05 +8.0 07:34:49.973][28095, 28095][BleSendDataBuilder/车控][XPLogBridge:61, _log][buildControlCommandData cmd: Polling解锁车门（不上电）, timeout: 8000, delayTime: 50
+66489-[Omitted long context line]
+66490-[I][2026-03-05 +8.0 07:34:49.974][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][ready to send data: ED118B008425270D2F125850424B54480100008369A7817D002A4B490010A326490EAC74C261E37C922FC9D7E0B845440010FE798D2FF647B05C1C687F8039B0E278534E0047304502203F4440DEA35C4C8DAE8E64467C9328BB60977FB43B58DAA21111AA00CE158F44022100B8A86BAC671B7CE07F999B36A0C650CC6766F836DA7C3351E9A02D93A22BFAA520
+--
+66614-[I][2026-03-05 +8.0 07:34:50.149][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[BleControlIdCreate]排队锁 SingleLock 排队等待 0 秒
+66615-[I][2026-03-05 +8.0 07:34:50.150][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[BleControlIdCreate]排队锁 SingleLock 队列占用历时 0 秒
+66616-[I][2026-03-05 +8.0 07:34:50.150][28095, 28095][BleSendDataBuilder/车控][XPLogBridge:61, _log][buildData payload: 5850424B54480100008469A7817D002B4B490010A326490EAC74C261E37C922FC9D7E0B84544001082BE48120BC4FC24437B980334E13AD8534E00483046022100FDA205A67855F76AEEC479A2C1E5DCB62A5F894A5CC23F9D9EA15E9F078E51E0022100F39FD3403341E1B4286C467C196BAD130871562BE7BC27F215FE592F7CCCBF0D21, controlId: 19, vehicleTypeCode: EA, msgType: DATA, controlType: DEFAULT
+66617:[I][2026-03-05 +8.0 07:34:50.152][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][PollingUnlock: makeBleBean 构建蓝牙数据结果：tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null vcrId:727587915
+66618-[W][2026-03-05 +8.0 07:34:50.152][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyEventFilter(Ble waitForResponse) this.resolve = resolve
+66619-[I][2026-03-05 +8.0 07:34:50.153][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][Sending data to BLE device: [[...]]
+66620:[I][2026-03-05 +8.0 07:34:50.153][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[Request.PollingUnlock]排队锁 SingleLock 队列占用历时 3.88 秒
+66621:[I][2026-03-05 +8.0 07:34:50.154][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[Request.PollingUnlock]排队锁 SingleLock 排队等待 0.187 秒
+66622-[I][2026-03-05 +8.0 07:34:50.154][28095, 28095][BleSendDataBuilder/车控][XPLogBridge:61, _log][buildControlCommandData cmd: Polling解锁车门（不上电）, timeout: 8000, delayTime: 50
+66623-[I][2026-03-05 +8.0 07:34:50.155][28095, 28095][XPBleInfoData/车控][XPLogBridge:61, _log][fetchKeyMessage skipBioAuth1: true
+66624-[I][2026-03-05 +8.0 07:34:50.155][28095, 28095][BLEConnection/车控][XPLogBridge:61, _log][fetchKeyMessage start
+--
+66670-[I][2026-03-05 +8.0 07:34:50.212][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[BleControlIdCreate]排队锁 SingleLock 排队等待 0 秒
+66671-[I][2026-03-05 +8.0 07:34:50.213][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[BleControlIdCreate]排队锁 SingleLock 队列占用历时 0 秒
+66672-[I][2026-03-05 +8.0 07:34:50.213][28095, 28095][BleSendDataBuilder/车控][XPLogBridge:61, _log][buildData payload: 5850424B54480100008369A7817D002C4B490010A326490EAC74C261E37C922FC9D7E0B845440010E05B61562A3D136C82EE45EFBD08CA1B534E0047304502207187FF35C0645322212710C4B96ABC45F5D19F8BFA2176CEC0294CF10A0217D0022100DDB31BACA99A8FD1C698B6E90F2F24AB72036AA9F91A017C812E593F38804B6C21, controlId: 20, vehicleTypeCode: EA, msgType: DATA, controlType: DEFAULT
+66673:[I][2026-03-05 +8.0 07:34:50.214][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][PollingUnlock: makeBleBean 构建蓝牙数据结果：tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null vcrId:1021000049
+66674-[W][2026-03-05 +8.0 07:34:50.215][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyEventFilter(Ble waitForResponse) this.resolve = resolve
+66675-[I][2026-03-05 +8.0 07:34:50.215][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][Sending data to BLE device: [[...]]
+66676:[I][2026-03-05 +8.0 07:34:50.216][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[Request.PollingUnlock]排队锁 SingleLock 队列占用历时 0.249 秒
+66677:[I][2026-03-05 +8.0 07:34:50.216][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[Request.PollingUnlock]排队锁 SingleLock 排队等待 0.248 秒
+66678-[I][2026-03-05 +8.0 07:34:50.217][28095, 28095][BleSendDataBuilder/车控][XPLogBridge:61, _log][buildControlCommandData cmd: Polling解锁车门（不上电）, timeout: 8000, delayTime: 50
+66679-[I][2026-03-05 +8.0 07:34:50.217][28095, 28095][XPBleInfoData/车控][XPLogBridge:61, _log][fetchKeyMessage skipBioAuth1: true
+66680-[I][2026-03-05 +8.0 07:34:50.217][28095, 28095][BLEConnection/车控][XPLogBridge:61, _log][fetchKeyMessage start
+--
+66696-[I][2026-03-05 +8.0 07:34:50.240][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[BleControlIdCreate]排队锁 SingleLock 排队等待 0 秒
+66697-[I][2026-03-05 +8.0 07:34:50.240][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[BleControlIdCreate]排队锁 SingleLock 队列占用历时 0 秒
+66698-[I][2026-03-05 +8.0 07:34:50.241][28095, 28095][BleSendDataBuilder/车控][XPLogBridge:61, _log][buildData payload: 5850424B54480100008469A7817D002D4B490010A326490EAC74C261E37C922FC9D7E0B84544001078FEEE7E746FFE24C67485148CD9B9C0534E00483046022100AFEB9F4DF67BDF77FDA4A23B1784D18231C3F89576060528CCB6165DFDD701C1022100E0D9C156DC464B21824122EDA1B8FC48E11DB326949F492FCF9D1458277C6E1C21, controlId: 21, vehicleTypeCode: EA, msgType: DATA, controlType: DEFAULT
+66699:[I][2026-03-05 +8.0 07:34:50.242][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][PollingUnlock: makeBleBean 构建蓝牙数据结果：tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null vcrId:1029415906
+66700-[W][2026-03-05 +8.0 07:34:50.242][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyEventFilter(Ble waitForResponse) this.resolve = resolve
+66701-[I][2026-03-05 +8.0 07:34:50.242][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][Sending data to BLE device: [[...]]
+66702:[I][2026-03-05 +8.0 07:34:50.243][28095, 28095][排队锁/车控][XPLogBridge:61, _log][[Request.PollingUnlock]排队锁 SingleLock 队列占用历时 0.275 秒
+66703-[I][2026-03-05 +8.0 07:34:50.476][28095, 28095][[HttpDnsManager]][HttpDnsManager:343, dnsRules][handleRcpDns host:apps.xiaopeng.com, port:443
+66704-[I][2026-03-05 +8.0 07:34:50.476][28095, 28095][[HttpDnsManager]][HttpDnsManager:254, resolveSyncNonBlocking][resolveSyncNonBlocking domain:apps.xiaopeng.com
+66705-[I][2026-03-05 +8.0 07:34:50.479][28095, 28095][[HttpDnsManager]][HttpDnsManager:323, resolveSyncNonBlocking][resolveSyncNonBlocking: domain=apps.xiaopeng.com, vin:L1NNSGHB7PB013058 ,ip= ["101.37.161.75"] 
+--
+66947-[I][2026-03-05 +8.0 07:34:51.065][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingEnableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+66948-[I][2026-03-05 +8.0 07:34:51.065][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+66949-[I][2026-03-05 +8.0 07:34:51.066][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingEnableTrunkUnlock executed successfully.
+66950:[I][2026-03-05 +8.0 07:34:51.066][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_enableleftCertCount: 359
+66951-[I][2026-03-05 +8.0 07:34:51.066][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+66952-[I][2026-03-05 +8.0 07:34:51.066][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 359
+66953-[E][2026-03-05 +8.0 07:34:51.106][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+67476-[I][2026-03-05 +8.0 07:34:51.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:284 resetAllPollingCommandLimit] resetAllPollingCommandLimit
+67477-[I][2026-03-05 +8.0 07:34:51.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+67478-[I][2026-03-05 +8.0 07:34:51.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_no_command
+67479:[I][2026-03-05 +8.0 07:34:51.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+67480:[I][2026-03-05 +8.0 07:34:51.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_disable
+67481-[I][2026-03-05 +8.0 07:34:51.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+67482-[I][2026-03-05 +8.0 07:34:51.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+67483-[I][2026-03-05 +8.0 07:34:51.675][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_ble_polling_unlock
+--
+67661-[Omitted long context line]
+67662-[I][2026-03-05 +8.0 07:34:51.994][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble waitForResponse matches filter: [object Object]
+67663-[I][2026-03-05 +8.0 07:34:51.994][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble control result: 200
+67664:[W][2026-03-05 +8.0 07:34:51.994][28095, 28095][车控指令基类/车控][XPLogBridge:55, _log][BLE [PollingUnlock]指令发送返回耗时:1.842 秒 res:VehicleResponse(channel=BLE, msg=null, data=null) vcrId:727587915
+67665-[W][2026-03-05 +8.0 07:34:51.994][28095, 28095][车控指令基类/车控][XPLogBridge:55, _log][MonitoringChecking startMonitoringCheckingVehicleState... vcrId:727587915
+67666-[W][2026-03-05 +8.0 07:34:51.995][28095, 28095][车控指令基类/车控][XPLogBridge:55, _log][MonitoringChecking 开始监听并检查车态... vcrId:727587915
+67667:[W][2026-03-05 +8.0 07:34:51.995][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyEventFilter(PollingUnlock 车态监听) this.resolve = resolve
+67668-[W][2026-03-05 +8.0 07:34:51.995][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyEventFilter(Ble waitForResponse) 匹配成功
+67669-[W][2026-03-05 +8.0 07:34:51.996][28095, 28095][KMCancellableSet/车控][XPLogBridge:55, _log][取消所有关联的监听器 cancelAll
+67670-[I][2026-03-05 +8.0 07:34:51.996][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble waitForResponse matches finish
+--
+67688-[I][2026-03-05 +8.0 07:34:52.003][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Received data on 0000ED28-ABAB-9C8C-2801-B1A015E46D6E: 088005C0CEBECC24
+67689-[I][2026-03-05 +8.0 07:34:52.003][28095, 28095][蓝牙模块 XPBleDataParser/车控][XPLogBridge:61, _log][parseRssiData: 088005C0CEBECC24 , result: [{"name":"BLE","rssi":-64},{"name":"BLEFL","rssi":-50},{"name":"BLEFR","rssi":-66},{"name":"BLER","rssi":-52}]
+67690-[I][2026-03-05 +8.0 07:34:52.003][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][predictWithRssi: [{"name":"BLE","rssi":-64},{"name":"BLEFL","rssi":-50},{"name":"BLEFR","rssi":-66},{"name":"BLER","rssi":-52}]
+67691:[W][2026-03-05 +8.0 07:34:52.004][28095, 28095][车控指令基类/车控][XPLogBridge:55, _log][PollingUnlockRequest checkVehicleState ^_^ 车态匹配成功 driverLockSt:UNLOCKED
+67692:[W][2026-03-05 +8.0 07:34:52.005][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyCurrentEventFilter(PollingUnlock 车态监听) 匹配成功
+67693-[W][2026-03-05 +8.0 07:34:52.005][28095, 28095][KMCancellableSet/车控][XPLogBridge:55, _log][取消所有关联的监听器 cancelAll
+67694-[I][2026-03-05 +8.0 07:34:52.005][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][MonitoringChecking wait VehicleState 成功 vcrId:727587915
+67695:[W][2026-03-05 +8.0 07:34:52.005][28095, 28095][车控指令基类/车控][XPLogBridge:55, _log][BLE [PollingUnlock]wait VehicleState 成功 vcrId:727587915
+67696:[I][2026-03-05 +8.0 07:34:52.005][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][成功执行车控指令[PollingUnlock] by BLE，VehicleResponse(channel=BLE, msg=null, data=null) vcrId:727587915
+67697:[I][2026-03-05 +8.0 07:34:52.005][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+67698-[I][2026-03-05 +8.0 07:34:52.006][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+67699-[I][2026-03-05 +8.0 07:34:52.006][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Vibrating device for action: Unlock
+67700:[I][2026-03-05 +8.0 07:34:52.007][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingUnlock executed successfully.
+67701-[E][2026-03-05 +8.0 07:34:52.007][28095, 28095][LoginBigScreenManager/车控][XPLogBridge:58, _log][用户已打开大屏联登功能
+67702-[I][2026-03-05 +8.0 07:34:52.007][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][即将发送车控指令执行[LoginVehicle]...
+67703-[I][2026-03-05 +8.0 07:34:52.008][28095, 28095][车控指令基类/车控][XPLogBridge:61, _log][XiaopengVehicleControlRequest init command:LoginVehicle vcrId:3602892196
+--
+67713-[I][2026-03-05 +8.0 07:34:52.018][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][Sending data to BLE device: [[...]]
+67714-[I][2026-03-05 +8.0 07:34:52.019][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-64, Name:BLE, Date:2026-03-05 07:34:52.000, rssiCounter:0,current:Rssi:-64, Name:BLE, Date:2026-03-05 07:34:52.002, rssiCounter:0
+67715-[I][2026-03-05 +8.0 07:34:52.019][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-64, Name:BLE, Date:2026-03-05 07:34:52.002, rssiCounter:0,current:Rssi:-64, Name:BLE, Date:2026-03-05 07:34:52.004, rssiCounter:0
+67716:[I][2026-03-05 +8.0 07:34:52.019][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlockleftCertCount: 359
+67717-[I][2026-03-05 +8.0 07:34:52.020][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+67718-[I][2026-03-05 +8.0 07:34:52.020][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 359
+67719-[I][2026-03-05 +8.0 07:34:52.120][28095, 28095][mqtt模块 MQTTPublish/车控][XPLogBridge:61, _log][Connecting with timeout: 15 s
+--
+67878-[Omitted long context line]
+67879-[I][2026-03-05 +8.0 07:34:52.659][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble waitForResponse matches filter: [object Object]
+67880-[I][2026-03-05 +8.0 07:34:52.659][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble control result: 10901
+67881:[E][2026-03-05 +8.0 07:34:52.664][28095, 28095][车控指令基类/车控][XPLogBridge:58, _log][BLE [PollingUnlock]指令发送失败: VehicleError<code=10901, channel=1, msg=解锁失败, desc=BLE 指令发送失败，code: 10901> vcrId:1021000049
+67882:[E][2026-03-05 +8.0 07:34:52.665][28095, 28095][车控指令基类/车控][XPLogBridge:58, _log][失败执行车控指令[PollingUnlock] by BLE，VehicleError<code=10901, channel=1, msg=解锁失败, desc=BLE 指令发送失败，code: 10901> vcrId:1021000049
+67883:[I][2026-03-05 +8.0 07:34:52.666][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行失败[PollingUnlock] VehicleError<code=10901, channel=1, msg=解锁失败, desc=BLE 指令发送失败，code: 10901>
+67884-[I][2026-03-05 +8.0 07:34:52.666][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+67885:[E][2026-03-05 +8.0 07:34:52.666][28095, 28095][XP车控实例/车控][XPLogBridge:58, _log][Failed to execute polling action PollingUnlock: VehicleError<code=10901, channel=1, msg=解锁失败, desc=BLE 指令发送失败，code: 10901>
+67886-[W][2026-03-05 +8.0 07:34:52.667][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyEventFilter(Ble waitForResponse) 匹配成功
+67887-[W][2026-03-05 +8.0 07:34:52.667][28095, 28095][KMCancellableSet/车控][XPLogBridge:55, _log][取消所有关联的监听器 cancelAll
+67888-[I][2026-03-05 +8.0 07:34:52.667][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble waitForResponse matches finish
+--
+67892-[I][2026-03-05 +8.0 07:34:52.669][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Received data on 0000ED28-ABAB-9C8C-2801-B1A015E46D6E: 088005BDC8B8D229
+67893-[I][2026-03-05 +8.0 07:34:52.669][28095, 28095][蓝牙模块 XPBleDataParser/车控][XPLogBridge:61, _log][parseRssiData: 088005BDC8B8D229 , result: [{"name":"BLE","rssi":-67},{"name":"BLEFL","rssi":-56},{"name":"BLEFR","rssi":-72},{"name":"BLER","rssi":-46}]
+67894-[I][2026-03-05 +8.0 07:34:52.670][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][predictWithRssi: [{"name":"BLE","rssi":-67},{"name":"BLEFL","rssi":-56},{"name":"BLEFR","rssi":-72},{"name":"BLER","rssi":-46}]
+67895:[I][2026-03-05 +8.0 07:34:52.674][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_unlockleftCertCount: 359
+67896-[I][2026-03-05 +8.0 07:34:52.674][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+67897-[I][2026-03-05 +8.0 07:34:52.674][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 359
+67898-[E][2026-03-05 +8.0 07:34:52.685][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+68134-[Omitted long context line]
+68135-[I][2026-03-05 +8.0 07:34:53.201][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble waitForResponse matches filter: [object Object]
+68136-[I][2026-03-05 +8.0 07:34:53.201][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble control result: 10901
+68137:[E][2026-03-05 +8.0 07:34:53.202][28095, 28095][车控指令基类/车控][XPLogBridge:58, _log][BLE [PollingUnlock]指令发送失败: VehicleError<code=10901, channel=1, msg=解锁失败, desc=BLE 指令发送失败，code: 10901> vcrId:1029415906
+68138:[E][2026-03-05 +8.0 07:34:53.202][28095, 28095][车控指令基类/车控][XPLogBridge:58, _log][失败执行车控指令[PollingUnlock] by BLE，VehicleError<code=10901, channel=1, msg=解锁失败, desc=BLE 指令发送失败，code: 10901> vcrId:1029415906
+68139:[I][2026-03-05 +8.0 07:34:53.202][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行失败[PollingUnlock] VehicleError<code=10901, channel=1, msg=解锁失败, desc=BLE 指令发送失败，code: 10901>
+68140-[I][2026-03-05 +8.0 07:34:53.202][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+68141:[E][2026-03-05 +8.0 07:34:53.203][28095, 28095][XP车控实例/车控][XPLogBridge:58, _log][Failed to execute polling action PollingUnlock: VehicleError<code=10901, channel=1, msg=解锁失败, desc=BLE 指令发送失败，code: 10901>
+68142-[W][2026-03-05 +8.0 07:34:53.203][28095, 28095][EventFilter/车控][XPLogBridge:55, _log][XPPromiseOnlyEventFilter(Ble waitForResponse) 匹配成功
+68143-[W][2026-03-05 +8.0 07:34:53.203][28095, 28095][KMCancellableSet/车控][XPLogBridge:55, _log][取消所有关联的监听器 cancelAll
+68144-[I][2026-03-05 +8.0 07:34:53.203][28095, 28095][BLEConnection 指令发送流程/车控][XPLogBridge:61, _log][tBoxCommand=Polling解锁车门（不上电）, parkingHeartCommand=null: Ble waitForResponse matches finish
+68145-[Omitted long context line]
+68146:[I][2026-03-05 +8.0 07:34:53.203][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_unlockleftCertCount: 359
+68147-[I][2026-03-05 +8.0 07:34:53.203][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+68148-[I][2026-03-05 +8.0 07:34:53.203][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 359
+68149-[E][2026-03-05 +8.0 07:34:53.219][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+68327-[W][2026-03-05 +8.0 07:34:54.087][28095, 28095][ObjectDbUtils/车控][XPLogBridge:55, _log][数据序列化 modelToDbDict 耗时:0.023 秒，size:28
+68328-[Omitted long context line]
+68329-[I][2026-03-05 +8.0 07:34:54.088][28095, 28095][2 | 车控数据库/车控][XPLogBridge:61, _log][nkReleaseState":0,"powerMode":1,"driverSeatOccupied":0,"slowChargePortReleaseState":null,"fastChargePortReleaseState":null,"monaErrorCode":null,"monaLockSource":null,"monaUnlockSource":null}, protectMode={"protect_mode_status":0}, fuelTank={"fuel_tank_remain_percent":0,"fuel_tank_cap_status":0}}
+68330:[I][2026-03-05 +8.0 07:34:54.089][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_disableleftCertCount: 355
+68331-[I][2026-03-05 +8.0 07:34:54.089][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+68332-[I][2026-03-05 +8.0 07:34:54.089][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 355
+68333-[E][2026-03-05 +8.0 07:34:54.090][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+69526-[I][2026-03-05 +8.0 07:35:08.783][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:955 stopLockRevrtTimer] XPBlePollingHandlerV2 stopLockRevrtTimer
+69527-[I][2026-03-05 +8.0 07:35:08.784][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 1.074979, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+69528-[I][2026-03-05 +8.0 07:35:08.784][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:955 stopLockRevrtTimer] XPBlePollingHandlerV2 stopLockRevrtTimer
+69529:[I][2026-03-05 +8.0 07:35:08.784][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 354
+69530-[I][2026-03-05 +8.0 07:35:08.784][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+69531-[I][2026-03-05 +8.0 07:35:08.785][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 354
+69532-[I][2026-03-05 +8.0 07:35:08.787][28095, 28095][000002/车控数据库/车控][DBService:486, queryCount][DBService queryCount 耗时:0.198 秒 querySql sql:SELECT COUNT(*) FROM SelfKeyMessage WHERE vin = 'L1NNSGHB7PB013058'}
+--
+69811-[I][2026-03-05 +8.0 07:35:09.955][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:955 stopLockRevrtTimer] XPBlePollingHandlerV2 stopLockRevrtTimer
+69812-[I][2026-03-05 +8.0 07:35:09.955][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-65, Name:BLE, Date:2026-03-05 07:35:09.753, rssiCounter:0,current:Rssi:-61, Name:BLE, Date:2026-03-05 07:35:09.760, rssiCounter:0
+69813-[I][2026-03-05 +8.0 07:35:09.955][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-61, Name:BLE, Date:2026-03-05 07:35:09.760, rssiCounter:0,current:Rssi:-60, Name:BLE, Date:2026-03-05 07:35:09.764, rssiCounter:0
+69814:[I][2026-03-05 +8.0 07:35:09.955][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 354
+69815-[I][2026-03-05 +8.0 07:35:09.956][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+69816-[I][2026-03-05 +8.0 07:35:09.956][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 354
+69817-[W][2026-03-05 +8.0 07:35:09.959][28095, 28095][KXDB/车控][XPLogBridge:55, _log][removeRecords SelfKeyMessage condition = "id = '647'" 耗时:0.13 秒
+--
+69904-[I][2026-03-05 +8.0 07:35:10.205][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:61, _log][current id: 1687, getBleDescriptors from cache
+69905-[E][2026-03-05 +8.0 07:35:10.205][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][current id: 1687, getBleDescriptors is [object Object]
+69906-[Omitted long context line]
+69907:[I][2026-03-05 +8.0 07:35:10.209][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_disableleftCertCount: 354
+69908-[I][2026-03-05 +8.0 07:35:10.209][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+69909-[I][2026-03-05 +8.0 07:35:10.210][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 354
+69910-[E][2026-03-05 +8.0 07:35:10.278][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+70037-[I][2026-03-05 +8.0 07:35:11.283][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-52, Name:BLE, Date:2026-03-05 07:35:11.217, rssiCounter:0,current:Rssi:-51, Name:BLE, Date:2026-03-05 07:35:11.222, rssiCounter:0
+70038-[I][2026-03-05 +8.0 07:35:11.285][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 0.245627, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+70039-[I][2026-03-05 +8.0 07:35:11.285][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:955 stopLockRevrtTimer] XPBlePollingHandlerV2 stopLockRevrtTimer
+70040:[I][2026-03-05 +8.0 07:35:11.285][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 354
+70041-[I][2026-03-05 +8.0 07:35:11.286][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+70042-[I][2026-03-05 +8.0 07:35:11.286][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 354
+70043-[E][2026-03-05 +8.0 07:35:11.287][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+70077-[I][2026-03-05 +8.0 07:35:11.335][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingEnableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+70078-[I][2026-03-05 +8.0 07:35:11.335][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+70079-[I][2026-03-05 +8.0 07:35:11.336][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingEnableTrunkUnlock executed successfully.
+70080:[I][2026-03-05 +8.0 07:35:11.337][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_enableleftCertCount: 354
+70081-[I][2026-03-05 +8.0 07:35:11.337][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+70082-[I][2026-03-05 +8.0 07:35:11.337][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 354
+70083-[E][2026-03-05 +8.0 07:35:11.338][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+70578-[I][2026-03-05 +8.0 07:35:15.029][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:61, _log][current id: 1687, getBleDescriptors from cache
+70579-[E][2026-03-05 +8.0 07:35:15.030][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][current id: 1687, getBleDescriptors is [object Object]
+70580-[Omitted long context line]
+70581:[I][2026-03-05 +8.0 07:35:15.033][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 352
+70582-[I][2026-03-05 +8.0 07:35:15.033][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+70583-[I][2026-03-05 +8.0 07:35:15.033][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 352
+70584-[E][2026-03-05 +8.0 07:35:15.035][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+70730-[I][2026-03-05 +8.0 07:35:15.650][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+70731-[I][2026-03-05 +8.0 07:35:15.674][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+70732-[I][2026-03-05 +8.0 07:35:15.675][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+70733:[I][2026-03-05 +8.0 07:35:15.676][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 352
+70734-[I][2026-03-05 +8.0 07:35:15.684][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+70735-[I][2026-03-05 +8.0 07:35:15.684][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 352
+70736-[E][2026-03-05 +8.0 07:35:15.685][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+70990-[I][2026-03-05 +8.0 07:35:17.303][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1060 handleDoorLockSource] XPBlePollingHandlerV2 lockSourcedoor_lock_source_ble_polling_lock
+70991-[I][2026-03-05 +8.0 07:35:17.303][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:778 _predictWithRssi] interval more 300ms,last:Rssi:-79, Name:BLE, Date:2026-03-05 07:35:16.397, rssiCounter:0,current:Rssi:-79, Name:BLE, Date:2026-03-05 07:35:16.768, rssiCounter:0
+70992-[I][2026-03-05 +8.0 07:35:17.303][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-79, Name:BLE, Date:2026-03-05 07:35:16.768, rssiCounter:0,current:Rssi:-73, Name:BLE, Date:2026-03-05 07:35:16.775, rssiCounter:0
+70993:[I][2026-03-05 +8.0 07:35:17.304][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_lockleftCertCount: 351
+70994-[I][2026-03-05 +8.0 07:35:17.304][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+70995-[I][2026-03-05 +8.0 07:35:17.304][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 351
+70996-[E][2026-03-05 +8.0 07:35:17.312][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+71107-[-72 -61 -74 -63 ]
+71108-[I][2026-03-05 +8.0 07:35:17.830][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:473 pollingUnlockEnable] pollingUnlockEnableIfNeed: polling_action_error_code_none
+71109-[I][2026-03-05 +8.0 07:35:17.831][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:965 startUnlockEnableTimer] XPBlePollingHandlerV2 startUnlockEnableTimer
+71110:[I][2026-03-05 +8.0 07:35:17.832][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_enable
+71111-[I][2026-03-05 +8.0 07:35:17.833][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-67, Name:BLE, Date:2026-03-05 07:35:17.672, rssiCounter:0,current:Rssi:-63, Name:BLE, Date:2026-03-05 07:35:17.679, rssiCounter:0
+71112-[I][2026-03-05 +8.0 07:35:17.833][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-63, Name:BLE, Date:2026-03-05 07:35:17.679, rssiCounter:0,current:Rssi:-73, Name:BLE, Date:2026-03-05 07:35:17.684, rssiCounter:0
+71113-[I][2026-03-05 +8.0 07:35:17.836][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 2.771862, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+--
+71416-[I][2026-03-05 +8.0 07:35:19.151][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 1.764789, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+71417-[I][2026-03-05 +8.0 07:35:19.152][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:473 pollingUnlockEnable] pollingUnlockEnableIfNeed: polling_action_error_code_none
+71418-[I][2026-03-05 +8.0 07:35:19.152][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:965 startUnlockEnableTimer] XPBlePollingHandlerV2 startUnlockEnableTimer
+71419:[I][2026-03-05 +8.0 07:35:19.154][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_enable
+71420-[E][2026-03-05 +8.0 07:35:19.155][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+71421-[E][2026-03-05 +8.0 07:35:19.155][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, serviceUuid is 0000ED28-ABAB-406D-832D-7AD799B479F7, charUuid is 0000ED28-ABAB-9C8C-2802-D3DF573FF530, data is 02810010000000000000
+71422-[E][2026-03-05 +8.0 07:35:19.155][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData callback key:0000ED28-ABAB-9C8C-2802-D3DF573FF530
+--
+71599-[I][2026-03-05 +8.0 07:35:20.459][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:529 pressUnlock] XPBlePollingHandlerV2 pressUnlock
+71600-[I][2026-03-05 +8.0 07:35:20.459][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:533 pressUnlock] pressUnlockIfNeed: polling_action_error_code_none
+71601-[I][2026-03-05 +8.0 07:35:20.460][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:778 _predictWithRssi] interval more 300ms,last:Rssi:-87, Name:BLE, Date:2026-03-05 07:35:19.463, rssiCounter:0,current:Rssi:-66, Name:BLE, Date:2026-03-05 07:35:19.901, rssiCounter:0
+71602:[I][2026-03-05 +8.0 07:35:20.460][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_enableleftCertCount: 349
+71603-[I][2026-03-05 +8.0 07:35:20.461][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+71604-[I][2026-03-05 +8.0 07:35:20.461][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 349
+71605-[I][2026-03-05 +8.0 07:35:20.463][28095, 28095][000002/车控数据库/车控][DBService:486, queryCount][DBService queryCount 耗时:0.533 秒 querySql sql:SELECT COUNT(*) FROM SelfKeyMessage WHERE vin = 'L1NNSGHB7PB013058'}
+--
+71922-[I][2026-03-05 +8.0 07:35:21.574][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 1.158313, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+71923-[I][2026-03-05 +8.0 07:35:21.574][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:473 pollingUnlockEnable] pollingUnlockEnableIfNeed: polling_action_error_code_none
+71924-[I][2026-03-05 +8.0 07:35:21.574][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:965 startUnlockEnableTimer] XPBlePollingHandlerV2 startUnlockEnableTimer
+71925:[I][2026-03-05 +8.0 07:35:21.575][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_enable
+71926-[I][2026-03-05 +8.0 07:35:21.575][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-71, Name:BLE, Date:2026-03-05 07:35:21.403, rssiCounter:0,current:Rssi:-79, Name:BLE, Date:2026-03-05 07:35:21.413, rssiCounter:0
+71927:[I][2026-03-05 +8.0 07:35:21.575][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_enableleftCertCount: 349
+71928-[I][2026-03-05 +8.0 07:35:21.575][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+71929-[I][2026-03-05 +8.0 07:35:21.576][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 349
+71930-[I][2026-03-05 +8.0 07:35:21.577][28095, 28095][000002/车控数据库/车控][DBService:486, queryCount][DBService queryCount 耗时:0.113 秒 querySql sql:SELECT COUNT(*) FROM SelfKeyMessage WHERE vin = 'L1NNSGHB7PB013058'}
+--
+72162-[E][2026-03-05 +8.0 07:35:22.131][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][current id: 1687, getBleDescriptors is [object Object]
+72163-[Omitted long context line]
+72164-[I][2026-03-05 +8.0 07:35:22.135][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 2.818999, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+72165:[I][2026-03-05 +8.0 07:35:22.136][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 347
+72166-[I][2026-03-05 +8.0 07:35:22.136][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+72167-[I][2026-03-05 +8.0 07:35:22.137][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 347
+72168-[E][2026-03-05 +8.0 07:35:22.179][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+72391-[I][2026-03-05 +8.0 07:35:23.059][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingEnableDoorUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+72392-[I][2026-03-05 +8.0 07:35:23.059][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+72393-[I][2026-03-05 +8.0 07:35:23.060][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingEnableDoorUnlock executed successfully.
+72394:[I][2026-03-05 +8.0 07:35:23.061][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_enableleftCertCount: 347
+72395-[I][2026-03-05 +8.0 07:35:23.061][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+72396-[I][2026-03-05 +8.0 07:35:23.062][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 347
+72397-[E][2026-03-05 +8.0 07:35:23.062][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+72582-[I][2026-03-05 +8.0 07:35:23.982][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-52, Name:BLE, Date:2026-03-05 07:35:23.937, rssiCounter:0,current:Rssi:-52, Name:BLE, Date:2026-03-05 07:35:23.941, rssiCounter:0
+72583-[I][2026-03-05 +8.0 07:35:23.983][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-52, Name:BLE, Date:2026-03-05 07:35:23.941, rssiCounter:0,current:Rssi:-53, Name:BLE, Date:2026-03-05 07:35:23.945, rssiCounter:0
+72584-[I][2026-03-05 +8.0 07:35:23.983][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-53, Name:BLE, Date:2026-03-05 07:35:23.945, rssiCounter:0,current:Rssi:-61, Name:BLE, Date:2026-03-05 07:35:23.950, rssiCounter:0
+72585:[I][2026-03-05 +8.0 07:35:23.983][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_enableleftCertCount: 347
+72586-[I][2026-03-05 +8.0 07:35:23.983][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+72587-[I][2026-03-05 +8.0 07:35:23.984][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 347
+72588-[E][2026-03-05 +8.0 07:35:24.053][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+72822-[I][2026-03-05 +8.0 07:35:25.918][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+72823-[I][2026-03-05 +8.0 07:35:25.918][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+72824-[I][2026-03-05 +8.0 07:35:25.919][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+72825:[I][2026-03-05 +8.0 07:35:25.919][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 345
+72826-[I][2026-03-05 +8.0 07:35:25.919][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+72827-[I][2026-03-05 +8.0 07:35:25.919][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 345
+72828-[W][2026-03-05 +8.0 07:35:25.973][28095, 28095][JsonHelper/车控][XPLogBridge:55, _log][modelToMap 数据序列化 encodeToJsonElement 耗时:0.007 秒，jsonObjectToMap 耗时:0.014 秒
+--
+73126-[I][2026-03-05 +8.0 07:35:26.994][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:284 resetAllPollingCommandLimit] resetAllPollingCommandLimit
+73127-[I][2026-03-05 +8.0 07:35:26.994][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+73128-[I][2026-03-05 +8.0 07:35:26.994][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_no_command
+73129:[I][2026-03-05 +8.0 07:35:26.994][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+73130:[I][2026-03-05 +8.0 07:35:26.994][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_disable
+73131-[I][2026-03-05 +8.0 07:35:26.994][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+73132-[I][2026-03-05 +8.0 07:35:26.994][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+73133-[I][2026-03-05 +8.0 07:35:26.994][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_ble_unlock
+--
+73294-[I][2026-03-05 +8.0 07:35:27.541][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[DisablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+73295-[I][2026-03-05 +8.0 07:35:27.541][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+73296-[I][2026-03-05 +8.0 07:35:27.541][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action DisablePollingLockRevert executed successfully.
+73297:[I][2026-03-05 +8.0 07:35:27.541][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_disableleftCertCount: 343
+73298-[I][2026-03-05 +8.0 07:35:27.541][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+73299-[I][2026-03-05 +8.0 07:35:27.541][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 343
+73300-[E][2026-03-05 +8.0 07:35:27.542][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+73401-[I][2026-03-05 +8.0 07:35:28.188][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableDoorUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+73402-[I][2026-03-05 +8.0 07:35:28.188][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+73403-[I][2026-03-05 +8.0 07:35:28.188][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableDoorUnlock executed successfully.
+73404:[I][2026-03-05 +8.0 07:35:28.189][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_disableleftCertCount: 344
+73405-[I][2026-03-05 +8.0 07:35:28.189][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+73406-[I][2026-03-05 +8.0 07:35:28.189][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 344
+73407-[E][2026-03-05 +8.0 07:35:28.231][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+75666-[I][2026-03-05 +8.0 07:35:41.446][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[BleKeyInCar] VehicleResponse(channel=BLE, msg=null, data=null)
+75667-[I][2026-03-05 +8.0 07:35:41.446][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+75668-[I][2026-03-05 +8.0 07:35:41.446][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action BleKeyInCar executed successfully.
+75669:[I][2026-03-05 +8.0 07:35:41.446][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_in_carleftCertCount: 343
+75670-[I][2026-03-05 +8.0 07:35:41.446][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+75671-[I][2026-03-05 +8.0 07:35:41.446][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 343
+75672-[E][2026-03-05 +8.0 07:35:41.470][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+75781-[I][2026-03-05 +8.0 07:35:41.831][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:609 pauseBlePollingService] pauseBlePollingService
+75782-[I][2026-03-05 +8.0 07:35:41.831][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:68 pause] pollingManager pause
+75783-[I][2026-03-05 +8.0 07:35:41.831][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+75784:[I][2026-03-05 +8.0 07:35:41.831][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+75785-[I][2026-03-05 +8.0 07:35:41.831][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+75786-[I][2026-03-05 +8.0 07:35:41.831][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+75787-[I][2026-03-05 +8.0 07:35:41.831][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+75963-[I][2026-03-05 +8.0 07:35:42.485][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+75964-[I][2026-03-05 +8.0 07:35:42.485][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+75965-[I][2026-03-05 +8.0 07:35:42.485][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+75966:[I][2026-03-05 +8.0 07:35:42.486][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 342
+75967-[I][2026-03-05 +8.0 07:35:42.486][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+75968-[I][2026-03-05 +8.0 07:35:42.486][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 342
+75969-[E][2026-03-05 +8.0 07:35:42.521][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+76945-[I][2026-03-05 +8.0 07:35:51.752][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1057 handleDoorLockSource] XPBlePollingHandlerV2 handleDoorLockSource
+76946-[I][2026-03-05 +8.0 07:35:51.752][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1060 handleDoorLockSource] XPBlePollingHandlerV2 lockSourcedoor_lock_source_speed_lock
+76947-[I][2026-03-05 +8.0 07:35:51.752][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+76948:[I][2026-03-05 +8.0 07:35:51.752][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+76949-[I][2026-03-05 +8.0 07:35:51.752][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+76950-[I][2026-03-05 +8.0 07:35:51.752][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+76951-[I][2026-03-05 +8.0 07:35:51.752][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+77231-[I][2026-03-05 +8.0 07:35:52.778][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[DisableChargePortUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+77232-[I][2026-03-05 +8.0 07:35:52.778][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+77233-[I][2026-03-05 +8.0 07:35:52.778][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action DisableChargePortUnlock executed successfully.
+77234:[I][2026-03-05 +8.0 07:35:52.778][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_charge_port_disableleftCertCount: 341
+77235-[I][2026-03-05 +8.0 07:35:52.779][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+77236-[I][2026-03-05 +8.0 07:35:52.779][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 341
+77237-[E][2026-03-05 +8.0 07:35:52.805][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+77369-[I][2026-03-05 +8.0 07:35:53.419][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+77370-[I][2026-03-05 +8.0 07:35:53.419][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+77371-[I][2026-03-05 +8.0 07:35:53.419][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+77372:[I][2026-03-05 +8.0 07:35:53.419][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 341
+77373-[I][2026-03-05 +8.0 07:35:53.419][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+77374-[I][2026-03-05 +8.0 07:35:53.419][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 341
+77375-[E][2026-03-05 +8.0 07:35:53.420][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+79338-[I][2026-03-05 +8.0 07:36:13.319][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:609 pauseBlePollingService] pauseBlePollingService
+79339-[I][2026-03-05 +8.0 07:36:13.319][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:68 pause] pollingManager pause
+79340-[I][2026-03-05 +8.0 07:36:13.319][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+79341:[I][2026-03-05 +8.0 07:36:13.319][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+79342-[I][2026-03-05 +8.0 07:36:13.319][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+79343-[I][2026-03-05 +8.0 07:36:13.319][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+79344-[I][2026-03-05 +8.0 07:36:13.320][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+79663-[I][2026-03-05 +8.0 07:36:14.371][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[DisableChargePortUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+79664-[I][2026-03-05 +8.0 07:36:14.371][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+79665-[I][2026-03-05 +8.0 07:36:14.371][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action DisableChargePortUnlock executed successfully.
+79666:[I][2026-03-05 +8.0 07:36:14.371][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_charge_port_disableleftCertCount: 339
+79667-[I][2026-03-05 +8.0 07:36:14.372][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+79668-[I][2026-03-05 +8.0 07:36:14.372][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 339
+79669-[E][2026-03-05 +8.0 07:36:14.386][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+79773-[I][2026-03-05 +8.0 07:36:15.031][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+79774-[I][2026-03-05 +8.0 07:36:15.032][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+79775-[I][2026-03-05 +8.0 07:36:15.032][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+79776:[I][2026-03-05 +8.0 07:36:15.032][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 339
+79777-[I][2026-03-05 +8.0 07:36:15.032][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+79778-[I][2026-03-05 +8.0 07:36:15.032][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 339
+79779-[E][2026-03-05 +8.0 07:36:15.057][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+80200-[I][2026-03-05 +8.0 07:36:18.766][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:609 pauseBlePollingService] pauseBlePollingService
+80201-[I][2026-03-05 +8.0 07:36:18.766][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:68 pause] pollingManager pause
+80202-[I][2026-03-05 +8.0 07:36:18.766][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+80203:[I][2026-03-05 +8.0 07:36:18.766][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+80204-[I][2026-03-05 +8.0 07:36:18.766][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+80205-[I][2026-03-05 +8.0 07:36:18.766][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+80206-[I][2026-03-05 +8.0 07:36:18.766][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+80539-[I][2026-03-05 +8.0 07:36:20.154][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+80540-[I][2026-03-05 +8.0 07:36:20.154][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+80541-[I][2026-03-05 +8.0 07:36:20.154][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+80542:[I][2026-03-05 +8.0 07:36:20.154][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 337
+80543-[I][2026-03-05 +8.0 07:36:20.155][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+80544-[I][2026-03-05 +8.0 07:36:20.155][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 337
+80545-[E][2026-03-05 +8.0 07:36:20.239][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+80585-[I][2026-03-05 +8.0 07:36:20.385][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[DisableChargePortUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+80586-[I][2026-03-05 +8.0 07:36:20.385][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+80587-[I][2026-03-05 +8.0 07:36:20.385][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action DisableChargePortUnlock executed successfully.
+80588:[I][2026-03-05 +8.0 07:36:20.385][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_charge_port_disableleftCertCount: 337
+80589-[I][2026-03-05 +8.0 07:36:20.386][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+80590-[I][2026-03-05 +8.0 07:36:20.386][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 337
+80591-[E][2026-03-05 +8.0 07:36:20.443][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+139723-[I][2026-03-05 +8.0 07:49:15.803][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:284 resetAllPollingCommandLimit] resetAllPollingCommandLimit
+139724-[I][2026-03-05 +8.0 07:49:15.803][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+139725-[I][2026-03-05 +8.0 07:49:15.803][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_no_command
+139726:[I][2026-03-05 +8.0 07:49:15.804][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+139727-[I][2026-03-05 +8.0 07:49:15.804][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+139728-[I][2026-03-05 +8.0 07:49:15.804][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+139729-[I][2026-03-05 +8.0 07:49:15.804][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_door_open_unlock
+--
+141675-[I][2026-03-05 +8.0 07:49:41.326][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1057 handleDoorLockSource] XPBlePollingHandlerV2 handleDoorLockSource
+141676-[I][2026-03-05 +8.0 07:49:41.326][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1060 handleDoorLockSource] XPBlePollingHandlerV2 lockSourcedoor_lock_source_speed_lock
+141677-[I][2026-03-05 +8.0 07:49:41.327][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+141678:[I][2026-03-05 +8.0 07:49:41.327][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+141679-[I][2026-03-05 +8.0 07:49:41.327][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+141680-[I][2026-03-05 +8.0 07:49:41.327][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+141681-[I][2026-03-05 +8.0 07:49:41.328][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+141962-[I][2026-03-05 +8.0 07:49:42.482][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+141963-[I][2026-03-05 +8.0 07:49:42.483][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+141964-[I][2026-03-05 +8.0 07:49:42.485][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+141965:[I][2026-03-05 +8.0 07:49:42.486][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 335
+141966-[I][2026-03-05 +8.0 07:49:42.486][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+141967-[I][2026-03-05 +8.0 07:49:42.487][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 335
+141968-[E][2026-03-05 +8.0 07:49:42.541][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+142117-[Omitted long context line]
+142118-[I][2026-03-05 +8.0 07:49:43.652][28095, 28095][2 | 车控数据库/车控][XPLogBridge:61, _log][unkReleaseState":0,"powerMode":1,"driverSeatOccupied":1,"slowChargePortReleaseState":null,"fastChargePortReleaseState":null,"monaErrorCode":null,"monaLockSource":null,"monaUnlockSource":null}, protectMode={"protect_mode_status":0}, fuelTank={"fuel_tank_remain_percent":0,"fuel_tank_cap_status":0}}
+142119-[I][2026-03-05 +8.0 07:49:43.654][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-41, Name:BLE, Date:2026-03-05 07:49:43.349, rssiCounter:0,current:Rssi:-40, Name:BLE, Date:2026-03-05 07:49:43.353, rssiCounter:0
+142120:[I][2026-03-05 +8.0 07:49:43.654][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_charge_port_disableleftCertCount: 335
+142121-[I][2026-03-05 +8.0 07:49:43.655][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+142122-[I][2026-03-05 +8.0 07:49:43.655][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 335
+142123-[E][2026-03-05 +8.0 07:49:43.657][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+242267-[I][2026-03-05 +8.0 08:14:07.768][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:284 resetAllPollingCommandLimit] resetAllPollingCommandLimit
+242268-[I][2026-03-05 +8.0 08:14:07.769][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+242269-[I][2026-03-05 +8.0 08:14:07.769][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_no_command
+242270:[I][2026-03-05 +8.0 08:14:07.769][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+242271-[I][2026-03-05 +8.0 08:14:07.769][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+242272-[I][2026-03-05 +8.0 08:14:07.770][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+242273-[I][2026-03-05 +8.0 08:14:07.770][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_parking_unlock
+--
+244264-[I][2026-03-05 +8.0 08:14:27.498][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:61, _log][current id: 1687, getBleDescriptors from cache
+244265-[E][2026-03-05 +8.0 08:14:27.499][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][current id: 1687, getBleDescriptors is [object Object]
+244266-[Omitted long context line]
+244267:[I][2026-03-05 +8.0 08:14:27.506][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 333
+244268-[I][2026-03-05 +8.0 08:14:27.508][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+244269-[I][2026-03-05 +8.0 08:14:27.508][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 333
+244270-[I][2026-03-05 +8.0 08:14:27.512][28095, 28095][000002/车控数据库/车控][DBService:486, queryCount][DBService queryCount 耗时:0.044 秒 querySql sql:SELECT COUNT(*) FROM SelfKeyMessage WHERE vin = 'L1NNSGHB7PB013058'}
+--
+244628-[I][2026-03-05 +8.0 08:14:29.777][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-93, Name:BLE, Date:2026-03-05 08:14:29.511, rssiCounter:0,current:Rssi:-83, Name:BLE, Date:2026-03-05 08:14:29.517, rssiCounter:0
+244629-[I][2026-03-05 +8.0 08:14:29.777][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-83, Name:BLE, Date:2026-03-05 08:14:29.517, rssiCounter:0,current:Rssi:-85, Name:BLE, Date:2026-03-05 08:14:29.522, rssiCounter:0
+244630-[I][2026-03-05 +8.0 08:14:29.777][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-85, Name:BLE, Date:2026-03-05 08:14:29.522, rssiCounter:0,current:Rssi:-75, Name:BLE, Date:2026-03-05 08:14:29.527, rssiCounter:0
+244631:[I][2026-03-05 +8.0 08:14:29.779][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_lockleftCertCount: 332
+244632-[I][2026-03-05 +8.0 08:14:29.779][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+244633-[I][2026-03-05 +8.0 08:14:29.780][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 332
+244634:[I][2026-03-05 +8.0 08:14:29.780][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 333
+244635-[I][2026-03-05 +8.0 08:14:29.780][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+244636-[I][2026-03-05 +8.0 08:14:29.781][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 333
+244637-[E][2026-03-05 +8.0 08:14:29.806][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+244873-[I][2026-03-05 +8.0 08:14:30.369][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:483 pollingUnlockDisable] <PA>predict result: disable unlock, extension: 决策rssi:当前窗口数据:
+244874-[-82 -75 -90 -76 ]
+244875-[I][2026-03-05 +8.0 08:14:30.369][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:489 pollingUnlockDisable] pollingUnlockDisableIfNeed: polling_action_error_code_none
+244876:[I][2026-03-05 +8.0 08:14:30.369][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+244877-[I][2026-03-05 +8.0 08:14:30.369][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+244878-[I][2026-03-05 +8.0 08:14:30.369][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-82, Name:BLE, Date:2026-03-05 08:14:30.353, rssiCounter:0,current:Rssi:-83, Name:BLE, Date:2026-03-05 08:14:30.359, rssiCounter:0
+244879-[E][2026-03-05 +8.0 08:14:30.369][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+245061-[I][2026-03-05 +8.0 08:14:32.183][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+245062-[I][2026-03-05 +8.0 08:14:32.183][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+245063-[I][2026-03-05 +8.0 08:14:32.184][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+245064:[I][2026-03-05 +8.0 08:14:32.184][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+245065-[I][2026-03-05 +8.0 08:14:32.184][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+245066-[I][2026-03-05 +8.0 08:14:32.184][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+245067-[E][2026-03-05 +8.0 08:14:32.473][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+245079-[I][2026-03-05 +8.0 08:14:32.506][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][predictWithRssi: [{"name":"BLE","rssi":-85},{"name":"BLEFL","rssi":-82},{"name":"BLEFR","rssi":-84},{"name":"BLER","rssi":-80}]
+245080-[I][2026-03-05 +8.0 08:14:32.510][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 28.132713, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+245081-[I][2026-03-05 +8.0 08:14:32.510][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:489 pollingUnlockDisable] pollingUnlockDisableIfNeed: polling_action_error_code_none
+245082:[I][2026-03-05 +8.0 08:14:32.511][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+245083-[I][2026-03-05 +8.0 08:14:32.511][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+245084-[E][2026-03-05 +8.0 08:14:32.536][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+245085-[E][2026-03-05 +8.0 08:14:32.536][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, serviceUuid is 0000ED28-ABAB-406D-832D-7AD799B479F7, charUuid is 0000ED28-ABAB-9C8C-2801-B1A015E46D6E, data is 088005a7b1aebb20
+--
+245208-[I][2026-03-05 +8.0 08:14:34.366][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][predictWithRssi: [{"name":"BLE","rssi":-89},{"name":"BLEFL","rssi":-73},{"name":"BLEFR","rssi":-81},{"name":"BLER","rssi":-76}]
+245209-[I][2026-03-05 +8.0 08:14:34.368][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 24.405575, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+245210-[I][2026-03-05 +8.0 08:14:34.368][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:489 pollingUnlockDisable] pollingUnlockDisableIfNeed: polling_action_error_code_none
+245211:[I][2026-03-05 +8.0 08:14:34.369][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+245212-[I][2026-03-05 +8.0 08:14:34.369][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+245213-[E][2026-03-05 +8.0 08:14:34.370][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+245214-[E][2026-03-05 +8.0 08:14:34.370][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, serviceUuid is 0000ED28-ABAB-406D-832D-7AD799B479F7, charUuid is 0000ED28-ABAB-9C8C-2801-B1A015E46D6E, data is 088005acafa8b134
+--
+245417-[I][2026-03-05 +8.0 08:14:36.969][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+245418-[I][2026-03-05 +8.0 08:14:36.970][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+245419-[I][2026-03-05 +8.0 08:14:36.971][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+245420:[I][2026-03-05 +8.0 08:14:36.972][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+245421-[I][2026-03-05 +8.0 08:14:36.973][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+245422-[I][2026-03-05 +8.0 08:14:36.974][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+245423-[W][2026-03-05 +8.0 08:14:36.976][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+--
+245777-[I][2026-03-05 +8.0 08:14:41.954][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+245778-[I][2026-03-05 +8.0 08:14:41.955][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+245779-[I][2026-03-05 +8.0 08:14:41.956][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+245780:[I][2026-03-05 +8.0 08:14:41.957][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+245781-[I][2026-03-05 +8.0 08:14:41.958][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+245782-[I][2026-03-05 +8.0 08:14:41.958][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+245783-[W][2026-03-05 +8.0 08:14:41.979][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+--
+246147-[I][2026-03-05 +8.0 08:14:46.954][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+246148-[I][2026-03-05 +8.0 08:14:46.955][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+246149-[I][2026-03-05 +8.0 08:14:46.957][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+246150:[I][2026-03-05 +8.0 08:14:46.959][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+246151-[I][2026-03-05 +8.0 08:14:46.959][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+246152-[I][2026-03-05 +8.0 08:14:46.959][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+246153-[W][2026-03-05 +8.0 08:14:46.990][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+--
+246524-[I][2026-03-05 +8.0 08:14:52.389][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+246525-[I][2026-03-05 +8.0 08:14:52.389][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+246526-[I][2026-03-05 +8.0 08:14:52.390][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+246527:[I][2026-03-05 +8.0 08:14:52.390][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+246528-[I][2026-03-05 +8.0 08:14:52.391][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+246529-[I][2026-03-05 +8.0 08:14:52.391][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+246530-[E][2026-03-05 +8.0 08:14:52.392][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+246885-[I][2026-03-05 +8.0 08:14:57.227][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+246886-[I][2026-03-05 +8.0 08:14:57.228][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+246887-[I][2026-03-05 +8.0 08:14:57.229][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+246888:[I][2026-03-05 +8.0 08:14:57.230][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+246889-[I][2026-03-05 +8.0 08:14:57.230][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+246890-[I][2026-03-05 +8.0 08:14:57.230][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+246891-[E][2026-03-05 +8.0 08:14:57.231][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+247239-[I][2026-03-05 +8.0 08:15:02.028][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+247240-[I][2026-03-05 +8.0 08:15:02.028][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+247241-[I][2026-03-05 +8.0 08:15:02.029][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+247242:[I][2026-03-05 +8.0 08:15:02.030][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+247243-[I][2026-03-05 +8.0 08:15:02.031][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+247244-[I][2026-03-05 +8.0 08:15:02.031][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+247245-[W][2026-03-05 +8.0 08:15:02.032][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+--
+247610-[I][2026-03-05 +8.0 08:15:07.155][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+247611-[I][2026-03-05 +8.0 08:15:07.155][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+247612-[I][2026-03-05 +8.0 08:15:07.156][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+247613:[I][2026-03-05 +8.0 08:15:07.156][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+247614-[I][2026-03-05 +8.0 08:15:07.157][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+247615-[I][2026-03-05 +8.0 08:15:07.157][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+247616-[E][2026-03-05 +8.0 08:15:07.173][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+247953-[I][2026-03-05 +8.0 08:15:11.853][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+247954-[I][2026-03-05 +8.0 08:15:11.854][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+247955-[I][2026-03-05 +8.0 08:15:11.855][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+247956:[I][2026-03-05 +8.0 08:15:11.856][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+247957-[I][2026-03-05 +8.0 08:15:11.857][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+247958-[I][2026-03-05 +8.0 08:15:11.858][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+247959-[E][2026-03-05 +8.0 08:15:12.004][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+248328-[I][2026-03-05 +8.0 08:15:16.979][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+248329-[I][2026-03-05 +8.0 08:15:16.979][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+248330-[I][2026-03-05 +8.0 08:15:16.980][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+248331:[I][2026-03-05 +8.0 08:15:16.981][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+248332-[I][2026-03-05 +8.0 08:15:16.981][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+248333-[I][2026-03-05 +8.0 08:15:16.981][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+248334-[E][2026-03-05 +8.0 08:15:16.985][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+248699-[I][2026-03-05 +8.0 08:15:19.275][28095, 28095][PL_SER/车控][XPLogBridge:61, _log][onPollingAction:action: 3
+248700-[I][2026-03-05 +8.0 08:15:19.276][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][收到polling回调: TruckEnable
+248701-[I][2026-03-05 +8.0 08:15:19.276][28095, 28095][PL_SER/车控][XPLogBridge:61, _log][onPollingAction:action: 5
+248702:[I][2026-03-05 +8.0 08:15:19.276][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_enable
+248703-[I][2026-03-05 +8.0 08:15:19.277][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_enable
+248704-[I][2026-03-05 +8.0 08:15:19.287][28095, 28095][2 | 车控数据库/车控][XPLogBridge:61, _log][XPDatabase 查询记录总数 tableName:SelfKeyMessage condition:vin = 'L1NNSGHB7PB013058'
+248705-[I][2026-03-05 +8.0 08:15:19.415][28095, 28095][000002/车控数据库/车控][DBService:472, queryCount][DBService queryCount querySql:SELECT COUNT(*) FROM SelfKeyMessage WHERE vin = 'L1NNSGHB7PB013058'
+--
+248817-[I][2026-03-05 +8.0 08:15:22.158][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 1.942392, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+248818-[I][2026-03-05 +8.0 08:15:22.158][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:473 pollingUnlockEnable] pollingUnlockEnableIfNeed: polling_action_error_code_none
+248819-[I][2026-03-05 +8.0 08:15:22.158][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:965 startUnlockEnableTimer] XPBlePollingHandlerV2 startUnlockEnableTimer
+248820:[I][2026-03-05 +8.0 08:15:22.159][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_enable
+248821-[I][2026-03-05 +8.0 08:15:22.159][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-75, Name:BLE, Date:2026-03-05 08:15:21.210, rssiCounter:0,current:Rssi:-54, Name:BLE, Date:2026-03-05 08:15:21.217, rssiCounter:0
+248822-[I][2026-03-05 +8.0 08:15:22.159][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_revert_lock_enable
+248823-[I][2026-03-05 +8.0 08:15:22.165][28095, 28095][000002/车控数据库/车控][DBService:486, queryCount][DBService queryCount 耗时:0.013 秒 querySql sql:SELECT COUNT(*) FROM SelfKeyMessage WHERE vin = 'L1NNSGHB7PB013058'}
+--
+249108-[I][2026-03-05 +8.0 08:15:23.462][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 0.564856, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+249109-[I][2026-03-05 +8.0 08:15:23.462][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:473 pollingUnlockEnable] pollingUnlockEnableIfNeed: polling_action_error_code_none
+249110-[I][2026-03-05 +8.0 08:15:23.467][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:965 startUnlockEnableTimer] XPBlePollingHandlerV2 startUnlockEnableTimer
+249111:[I][2026-03-05 +8.0 08:15:23.467][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_enable
+249112-[I][2026-03-05 +8.0 08:15:23.468][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-53, Name:BLE, Date:2026-03-05 08:15:23.277, rssiCounter:0,current:Rssi:-53, Name:BLE, Date:2026-03-05 08:15:23.279, rssiCounter:0
+249113-[I][2026-03-05 +8.0 08:15:23.468][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-58, Name:BLE, Date:2026-03-05 08:15:23.411, rssiCounter:0,current:Rssi:-60, Name:BLE, Date:2026-03-05 08:15:23.421, rssiCounter:0
+249114-[I][2026-03-05 +8.0 08:15:23.476][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 0.406864, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+--
+249159-[I][2026-03-05 +8.0 08:15:23.679][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:61, _log][current id: 1687, getBleDescriptors from cache
+249160-[E][2026-03-05 +8.0 08:15:23.680][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][current id: 1687, getBleDescriptors is [object Object]
+249161-[Omitted long context line]
+249162:[I][2026-03-05 +8.0 08:15:23.683][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 330
+249163-[I][2026-03-05 +8.0 08:15:23.684][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+249164-[I][2026-03-05 +8.0 08:15:23.689][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+249165-[W][2026-03-05 +8.0 08:15:23.691][28095, 28095][KXDB/车控][XPLogBridge:55, _log][removeRecords SelfKeyMessage condition = "id = '672'" 耗时:0.158 秒
+--
+249851-[I][2026-03-05 +8.0 08:15:24.462][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingEnableDoorUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+249852-[I][2026-03-05 +8.0 08:15:24.462][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+249853-[I][2026-03-05 +8.0 08:15:24.462][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingEnableDoorUnlock executed successfully.
+249854:[I][2026-03-05 +8.0 08:15:24.463][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_enableleftCertCount: 330
+249855-[I][2026-03-05 +8.0 08:15:24.463][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+249856-[I][2026-03-05 +8.0 08:15:24.463][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+249857-[I][2026-03-05 +8.0 08:15:24.470][28095, 28095][[TokenProcessor]][TokenProcessor:85, ivAes][genSymKeyByData symKey
+--
+250083-[I][2026-03-05 +8.0 08:15:25.208][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingEnableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+250084-[I][2026-03-05 +8.0 08:15:25.208][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+250085-[I][2026-03-05 +8.0 08:15:25.208][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingEnableTrunkUnlock executed successfully.
+250086:[I][2026-03-05 +8.0 08:15:25.208][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_enableleftCertCount: 330
+250087-[I][2026-03-05 +8.0 08:15:25.208][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+250088-[I][2026-03-05 +8.0 08:15:25.208][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+250089-[E][2026-03-05 +8.0 08:15:25.211][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+250276-[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingEnableDoorUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+250277-[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+250278-[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingEnableDoorUnlock executed successfully.
+250279:[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_enableleftCertCount: 330
+250280-[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+250281-[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 330
+250282:[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_enableleftCertCount: 329
+250283-[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+250284-[I][2026-03-05 +8.0 08:15:25.901][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 329
+250285-[E][2026-03-05 +8.0 08:15:25.925][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+250438-[I][2026-03-05 +8.0 08:15:26.842][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+250439-[I][2026-03-05 +8.0 08:15:26.843][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+250440-[I][2026-03-05 +8.0 08:15:26.843][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+250441:[I][2026-03-05 +8.0 08:15:26.843][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 326
+250442-[I][2026-03-05 +8.0 08:15:26.843][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+250443-[I][2026-03-05 +8.0 08:15:26.843][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 326
+250444-[Omitted long context line]
+--
+250811-[I][2026-03-05 +8.0 08:15:28.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:284 resetAllPollingCommandLimit] resetAllPollingCommandLimit
+250812-[I][2026-03-05 +8.0 08:15:28.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+250813-[I][2026-03-05 +8.0 08:15:28.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_no_command
+250814:[I][2026-03-05 +8.0 08:15:28.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+250815:[I][2026-03-05 +8.0 08:15:28.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_disable
+250816-[I][2026-03-05 +8.0 08:15:28.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+250817-[I][2026-03-05 +8.0 08:15:28.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1101 handleHandHandler] XPBlePollingHandlerV2 handleHandHandler: active
+250818-[I][2026-03-05 +8.0 08:15:28.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:529 pressUnlock] XPBlePollingHandlerV2 pressUnlock
+--
+250965-[I][2026-03-05 +8.0 08:15:28.984][28095, 28095][BulkProviderImpl][BulkTask:165, uploadData][bulk upload onComplete -> getBody : {"message":"上报成功","code":200}
+250966-[I][2026-03-05 +8.0 08:15:28.984][28095, 28095][BulkProviderImpl][BulkTask:168, uploadData][bulk upload success
+250967-[I][2026-03-05 +8.0 08:15:28.985][28095, 28095][bulk_upload][BulkUploader:77, anonymous][BulkUploader finish
+250968:[I][2026-03-05 +8.0 08:15:28.986][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_cdcu_login_uidleftCertCount: 326
+250969-[I][2026-03-05 +8.0 08:15:28.986][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+250970-[I][2026-03-05 +8.0 08:15:28.986][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 326
+250971-[E][2026-03-05 +8.0 08:15:29.022][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+251052-[I][2026-03-05 +8.0 08:15:29.157][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:61, _log][current id: 1687, getBleDescriptors from cache
+251053-[E][2026-03-05 +8.0 08:15:29.158][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][current id: 1687, getBleDescriptors is [object Object]
+251054-[Omitted long context line]
+251055:[I][2026-03-05 +8.0 08:15:29.159][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_disableleftCertCount: 326
+251056-[I][2026-03-05 +8.0 08:15:29.159][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+251057-[I][2026-03-05 +8.0 08:15:29.159][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 326
+251058-[E][2026-03-05 +8.0 08:15:29.223][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+251390-[I][2026-03-05 +8.0 08:15:30.340][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableDoorUnlock executed successfully.
+251391-[I][2026-03-05 +8.0 08:15:30.340][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1101 handleHandHandler] XPBlePollingHandlerV2 handleHandHandler: active
+251392-[I][2026-03-05 +8.0 08:15:30.341][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:529 pressUnlock] XPBlePollingHandlerV2 pressUnlock
+251393:[I][2026-03-05 +8.0 08:15:30.341][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_unlock_disableleftCertCount: 326
+251394-[I][2026-03-05 +8.0 08:15:30.341][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+251395-[I][2026-03-05 +8.0 08:15:30.341][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 326
+251396-[E][2026-03-05 +8.0 08:15:30.426][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+252497-[I][2026-03-05 +8.0 08:15:37.083][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-46, Name:BLE, Date:2026-03-05 08:15:36.981, rssiCounter:0,current:Rssi:-48, Name:BLE, Date:2026-03-05 08:15:36.987, rssiCounter:0
+252498-[I][2026-03-05 +8.0 08:15:37.091][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 0.020643, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+252499-[I][2026-03-05 +8.0 08:15:37.092][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:955 stopLockRevrtTimer] XPBlePollingHandlerV2 stopLockRevrtTimer
+252500:[I][2026-03-05 +8.0 08:15:37.098][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_in_carleftCertCount: 325
+252501-[I][2026-03-05 +8.0 08:15:37.101][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+252502-[I][2026-03-05 +8.0 08:15:37.114][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 325
+252503-[E][2026-03-05 +8.0 08:15:37.124][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+252821-[I][2026-03-05 +8.0 08:15:38.901][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:609 pauseBlePollingService] pauseBlePollingService
+252822-[I][2026-03-05 +8.0 08:15:38.902][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:68 pause] pollingManager pause
+252823-[I][2026-03-05 +8.0 08:15:38.902][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+252824:[I][2026-03-05 +8.0 08:15:38.903][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+252825-[I][2026-03-05 +8.0 08:15:38.903][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+252826-[I][2026-03-05 +8.0 08:15:38.903][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+252827-[I][2026-03-05 +8.0 08:15:38.903][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+253418-[I][2026-03-05 +8.0 08:15:44.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1057 handleDoorLockSource] XPBlePollingHandlerV2 handleDoorLockSource
+253419-[I][2026-03-05 +8.0 08:15:44.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1060 handleDoorLockSource] XPBlePollingHandlerV2 lockSourcedoor_lock_source_speed_lock
+253420-[I][2026-03-05 +8.0 08:15:44.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+253421:[I][2026-03-05 +8.0 08:15:44.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+253422-[I][2026-03-05 +8.0 08:15:44.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+253423-[I][2026-03-05 +8.0 08:15:44.863][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+253424-[I][2026-03-05 +8.0 08:15:44.863][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:935 stopTrunkEnableTimer] XPBlePollingHandlerV2 stopTrunkEnableTimer
+--
+253438-[I][2026-03-05 +8.0 08:15:44.868][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-52, Name:BLE, Date:2026-03-05 08:15:44.657, rssiCounter:0,current:Rssi:-53, Name:BLE, Date:2026-03-05 08:15:44.662, rssiCounter:0
+253439-[I][2026-03-05 +8.0 08:15:44.868][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-53, Name:BLE, Date:2026-03-05 08:15:44.662, rssiCounter:0,current:Rssi:-41, Name:BLE, Date:2026-03-05 08:15:44.667, rssiCounter:0
+253440-[I][2026-03-05 +8.0 08:15:44.869][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-41, Name:BLE, Date:2026-03-05 08:15:44.667, rssiCounter:0,current:Rssi:-42, Name:BLE, Date:2026-03-05 08:15:44.676, rssiCounter:0
+253441:[I][2026-03-05 +8.0 08:15:44.869][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 324
+253442-[I][2026-03-05 +8.0 08:15:44.870][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+253443-[I][2026-03-05 +8.0 08:15:44.870][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 324
+253444-[E][2026-03-05 +8.0 08:15:44.874][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+330163-[I][2026-03-05 +8.0 08:34:35.490][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:609 pauseBlePollingService] pauseBlePollingService
+330164-[I][2026-03-05 +8.0 08:34:35.491][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:68 pause] pollingManager pause
+330165-[I][2026-03-05 +8.0 08:34:35.491][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+330166:[I][2026-03-05 +8.0 08:34:35.491][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+330167-[I][2026-03-05 +8.0 08:34:35.492][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+330168-[I][2026-03-05 +8.0 08:34:35.492][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+330169-[I][2026-03-05 +8.0 08:34:35.492][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+330484-[I][2026-03-05 +8.0 08:34:37.010][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-40, Name:BLE, Date:2026-03-05 08:34:36.896, rssiCounter:0,current:Rssi:-42, Name:BLE, Date:2026-03-05 08:34:36.900, rssiCounter:0
+330485-[I][2026-03-05 +8.0 08:34:37.011][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-38, Name:BLE, Date:2026-03-05 08:34:36.921, rssiCounter:0,current:Rssi:-40, Name:BLE, Date:2026-03-05 08:34:36.927, rssiCounter:0
+330486-[I][2026-03-05 +8.0 08:34:37.011][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-40, Name:BLE, Date:2026-03-05 08:34:36.927, rssiCounter:0,current:Rssi:-40, Name:BLE, Date:2026-03-05 08:34:36.932, rssiCounter:0
+330487:[I][2026-03-05 +8.0 08:34:37.012][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 323
+330488-[I][2026-03-05 +8.0 08:34:37.012][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+330489-[I][2026-03-05 +8.0 08:34:37.012][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 323
+330490-[E][2026-03-05 +8.0 08:34:37.013][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+330680-[I][2026-03-05 +8.0 08:34:38.131][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-42, Name:BLE, Date:2026-03-05 08:34:38.103, rssiCounter:0,current:Rssi:-41, Name:BLE, Date:2026-03-05 08:34:38.110, rssiCounter:0
+330681-[I][2026-03-05 +8.0 08:34:38.131][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-41, Name:BLE, Date:2026-03-05 08:34:38.110, rssiCounter:0,current:Rssi:-45, Name:BLE, Date:2026-03-05 08:34:38.116, rssiCounter:0
+330682-[I][2026-03-05 +8.0 08:34:38.131][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-45, Name:BLE, Date:2026-03-05 08:34:38.116, rssiCounter:0,current:Rssi:-46, Name:BLE, Date:2026-03-05 08:34:38.121, rssiCounter:0
+330683:[I][2026-03-05 +8.0 08:34:38.131][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_charge_port_disableleftCertCount: 323
+330684-[I][2026-03-05 +8.0 08:34:38.132][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+330685-[I][2026-03-05 +8.0 08:34:38.132][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 323
+330686-[I][2026-03-05 +8.0 08:34:38.176][28095, 28095][[CloudConfigMng]][CloudConfigMng:235, getValueFromCache][getValueFromCache uniqueKey is Bulk.Core.enableTrack
+--
+330761-[I][2026-03-05 +8.0 08:34:38.638][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:609 pauseBlePollingService] pauseBlePollingService
+330762-[I][2026-03-05 +8.0 08:34:38.639][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:68 pause] pollingManager pause
+330763-[I][2026-03-05 +8.0 08:34:38.639][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+330764:[I][2026-03-05 +8.0 08:34:38.639][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+330765-[I][2026-03-05 +8.0 08:34:38.639][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+330766-[I][2026-03-05 +8.0 08:34:38.640][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+330767-[I][2026-03-05 +8.0 08:34:38.640][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+330969-[I][2026-03-05 +8.0 08:34:39.471][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+330970-[I][2026-03-05 +8.0 08:34:39.472][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+330971-[I][2026-03-05 +8.0 08:34:39.472][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+330972:[I][2026-03-05 +8.0 08:34:39.473][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 321
+330973-[I][2026-03-05 +8.0 08:34:39.473][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+330974-[I][2026-03-05 +8.0 08:34:39.473][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 321
+330975-[E][2026-03-05 +8.0 08:34:39.512][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+331115-[I][2026-03-05 +8.0 08:34:40.204][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[DisableChargePortUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+331116-[I][2026-03-05 +8.0 08:34:40.204][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+331117-[I][2026-03-05 +8.0 08:34:40.206][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action DisableChargePortUnlock executed successfully.
+331118:[I][2026-03-05 +8.0 08:34:40.206][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_charge_port_disableleftCertCount: 321
+331119-[I][2026-03-05 +8.0 08:34:40.206][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+331120-[I][2026-03-05 +8.0 08:34:40.207][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 321
+331121-[E][2026-03-05 +8.0 08:34:40.209][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+331270-[I][2026-03-05 +8.0 08:34:41.938][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:609 pauseBlePollingService] pauseBlePollingService
+331271-[I][2026-03-05 +8.0 08:34:41.938][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:68 pause] pollingManager pause
+331272-[I][2026-03-05 +8.0 08:34:41.938][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+331273:[I][2026-03-05 +8.0 08:34:41.939][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+331274-[I][2026-03-05 +8.0 08:34:41.939][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+331275-[I][2026-03-05 +8.0 08:34:41.939][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+331276-[I][2026-03-05 +8.0 08:34:41.939][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+331560-[I][2026-03-05 +8.0 08:34:42.982][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+331561-[I][2026-03-05 +8.0 08:34:42.983][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+331562-[I][2026-03-05 +8.0 08:34:42.984][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+331563:[I][2026-03-05 +8.0 08:34:42.984][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 319
+331564-[I][2026-03-05 +8.0 08:34:42.985][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+331565-[I][2026-03-05 +8.0 08:34:42.985][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 319
+331566-[E][2026-03-05 +8.0 08:34:43.001][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+331712-[I][2026-03-05 +8.0 08:34:43.840][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+331713-[I][2026-03-05 +8.0 08:34:43.841][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action DisableChargePortUnlock executed successfully.
+331714-[I][2026-03-05 +8.0 08:34:43.842][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-43, Name:BLE, Date:2026-03-05 08:34:43.831, rssiCounter:0,current:Rssi:-41, Name:BLE, Date:2026-03-05 08:34:43.836, rssiCounter:0
+331715:[I][2026-03-05 +8.0 08:34:43.842][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_charge_port_disableleftCertCount: 319
+331716-[I][2026-03-05 +8.0 08:34:43.842][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+331717-[I][2026-03-05 +8.0 08:34:43.843][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 319
+331718-[E][2026-03-05 +8.0 08:34:43.932][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+342270-[I][2026-03-05 +8.0 08:36:48.329][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:284 resetAllPollingCommandLimit] resetAllPollingCommandLimit
+342271-[I][2026-03-05 +8.0 08:36:48.329][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+342272-[I][2026-03-05 +8.0 08:36:48.329][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_no_command
+342273:[I][2026-03-05 +8.0 08:36:48.329][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+342274-[I][2026-03-05 +8.0 08:36:48.330][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+342275-[I][2026-03-05 +8.0 08:36:48.330][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1068 handleDoorUnlockSource] XPBlePollingHandlerV2 handleDoorUnlockSource
+342276-[I][2026-03-05 +8.0 08:36:48.330][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:1071 handleDoorUnlockSource] XPBlePollingHandlerV2 unlockSourcedoor_unlock_source_parking_unlock
+--
+347644-[W][2026-03-05 +8.0 08:37:52.655][28095, 28095][ObjectDbUtils/车控][XPLogBridge:55, _log][数据序列化 modelToDbDict 耗时:0.09 秒，size:28
+347645-[Omitted long context line]
+347646-[I][2026-03-05 +8.0 08:37:52.658][28095, 28095][2 | 车控数据库/车控][XPLogBridge:61, _log][e":0,"powerMode":1,"driverSeatOccupied":0,"slowChargePortReleaseState":null,"fastChargePortReleaseState":null,"monaErrorCode":null,"monaLockSource":null,"monaUnlockSource":null}, protectMode={"protect_mode_status":0}, fuelTank={"fuel_tank_remain_percent":0,"fuel_tank_cap_status":0}}
+347647:[I][2026-03-05 +8.0 08:37:52.660][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 317
+347648-[I][2026-03-05 +8.0 08:37:52.660][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+347649-[I][2026-03-05 +8.0 08:37:52.661][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 317
+347650-[E][2026-03-05 +8.0 08:37:52.663][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+347894-[I][2026-03-05 +8.0 08:37:53.518][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[PollingDisableTrunkUnlock] VehicleResponse(channel=BLE, msg=null, data=null)
+347895-[I][2026-03-05 +8.0 08:37:53.518][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+347896-[I][2026-03-05 +8.0 08:37:53.519][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingDisableTrunkUnlock executed successfully.
+347897:[I][2026-03-05 +8.0 08:37:53.520][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_truck_disableleftCertCount: 317
+347898-[I][2026-03-05 +8.0 08:37:53.520][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+347899-[I][2026-03-05 +8.0 08:37:53.520][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 317
+347900-[E][2026-03-05 +8.0 08:37:53.522][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+348026-[I][2026-03-05 +8.0 08:37:54.039][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:483 pollingUnlockDisable] <PA>predict result: disable unlock, extension: 决策rssi:当前窗口数据:
+348027-[-88 -81 -80 -86 ]
+348028-[I][2026-03-05 +8.0 08:37:54.039][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:489 pollingUnlockDisable] pollingUnlockDisableIfNeed: polling_action_error_code_none
+348029:[I][2026-03-05 +8.0 08:37:54.039][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+348030-[I][2026-03-05 +8.0 08:37:54.039][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+348031-[W][2026-03-05 +8.0 08:37:54.129][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+348032-[E][2026-03-05 +8.0 08:37:54.140][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+348064-[I][2026-03-05 +8.0 08:37:54.169][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Playing sound for action: Lock
+348065-[I][2026-03-05 +8.0 08:37:54.173][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Vibrating device for action: Lock
+348066-[I][2026-03-05 +8.0 08:37:54.175][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action PollingLock executed successfully.
+348067:[I][2026-03-05 +8.0 08:37:54.176][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_lockleftCertCount: 316
+348068-[I][2026-03-05 +8.0 08:37:54.176][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+348069-[I][2026-03-05 +8.0 08:37:54.176][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 316
+348070-[E][2026-03-05 +8.0 08:37:54.202][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+348361-[I][2026-03-05 +8.0 08:37:56.408][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:778 _predictWithRssi] interval more 300ms,last:Rssi:-92, Name:BLE, Date:2026-03-05 08:37:55.878, rssiCounter:0,current:Rssi:-96, Name:BLE, Date:2026-03-05 08:37:56.348, rssiCounter:0
+348362-[I][2026-03-05 +8.0 08:37:56.410][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 41.275433, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+348363-[I][2026-03-05 +8.0 08:37:56.410][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:489 pollingUnlockDisable] pollingUnlockDisableIfNeed: polling_action_error_code_none
+348364:[I][2026-03-05 +8.0 08:37:56.410][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+348365-[I][2026-03-05 +8.0 08:37:56.410][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+348366-[I][2026-03-05 +8.0 08:37:56.411][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-96, Name:BLE, Date:2026-03-05 08:37:56.348, rssiCounter:0,current:Rssi:-95, Name:BLE, Date:2026-03-05 08:37:56.353, rssiCounter:0
+348367-[I][2026-03-05 +8.0 08:37:56.411][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:784 _predictWithRssi] interval less 10 ms,last:Rssi:-95, Name:BLE, Date:2026-03-05 08:37:56.353, rssiCounter:0,current:Rssi:-95, Name:BLE, Date:2026-03-05 08:37:56.357, rssiCounter:0
+--
+348483-[I][2026-03-05 +8.0 08:37:58.126][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][predictWithRssi: [{"name":"BLE","rssi":-98},{"name":"BLEFL","rssi":-86},{"name":"BLEFR","rssi":-78},{"name":"BLER","rssi":-93}]
+348484-[I][2026-03-05 +8.0 08:37:58.128][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 70.948898, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+348485-[I][2026-03-05 +8.0 08:37:58.129][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:489 pollingUnlockDisable] pollingUnlockDisableIfNeed: polling_action_error_code_none
+348486:[I][2026-03-05 +8.0 08:37:58.129][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+348487-[I][2026-03-05 +8.0 08:37:58.129][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+348488-[E][2026-03-05 +8.0 08:37:58.165][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+348489-[E][2026-03-05 +8.0 08:37:58.166][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, serviceUuid is 0000ED28-ABAB-406D-832D-7AD799B479F7, charUuid is 0000ED28-ABAB-9C8C-2801-B1A015E46D6E, data is 0880059da5b2a505
+--
+348533-[I][2026-03-05 +8.0 08:37:58.377][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+348534-[I][2026-03-05 +8.0 08:37:58.378][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+348535-[I][2026-03-05 +8.0 08:37:58.378][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+348536:[I][2026-03-05 +8.0 08:37:58.379][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 314
+348537-[I][2026-03-05 +8.0 08:37:58.379][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+348538-[I][2026-03-05 +8.0 08:37:58.380][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+348539-[E][2026-03-05 +8.0 08:37:58.393][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+348866-[I][2026-03-05 +8.0 08:38:02.780][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+348867-[I][2026-03-05 +8.0 08:38:02.781][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+348868-[I][2026-03-05 +8.0 08:38:02.782][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:369 operator()] predict result: ble_location_error_none, distance: 69.552879, distanceLevel: ble_distance_level_init, direction: vehicle_direction_left
+348869:[I][2026-03-05 +8.0 08:38:02.783][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 314
+348870-[I][2026-03-05 +8.0 08:38:02.783][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+348871-[I][2026-03-05 +8.0 08:38:02.783][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+348872-[E][2026-03-05 +8.0 08:38:02.796][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+349222-[I][2026-03-05 +8.0 08:38:08.280][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+349223-[I][2026-03-05 +8.0 08:38:08.281][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+349224-[I][2026-03-05 +8.0 08:38:08.282][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+349225:[I][2026-03-05 +8.0 08:38:08.283][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 314
+349226-[I][2026-03-05 +8.0 08:38:08.283][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+349227-[I][2026-03-05 +8.0 08:38:08.283][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+349228-[E][2026-03-05 +8.0 08:38:08.284][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+349591-[I][2026-03-05 +8.0 08:38:12.897][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+349592-[I][2026-03-05 +8.0 08:38:12.898][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+349593-[I][2026-03-05 +8.0 08:38:12.898][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+349594:[I][2026-03-05 +8.0 08:38:12.899][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 314
+349595-[I][2026-03-05 +8.0 08:38:12.899][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+349596-[I][2026-03-05 +8.0 08:38:12.899][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+349597-[E][2026-03-05 +8.0 08:38:12.902][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+349954-[I][2026-03-05 +8.0 08:38:17.613][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+349955-[I][2026-03-05 +8.0 08:38:17.613][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+349956-[I][2026-03-05 +8.0 08:38:17.614][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+349957:[I][2026-03-05 +8.0 08:38:17.615][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 314
+349958-[I][2026-03-05 +8.0 08:38:17.615][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+349959-[I][2026-03-05 +8.0 08:38:17.615][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+349960-[E][2026-03-05 +8.0 08:38:17.616][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+350327-[I][2026-03-05 +8.0 08:38:23.338][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+350328-[I][2026-03-05 +8.0 08:38:23.338][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+350329-[I][2026-03-05 +8.0 08:38:23.339][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+350330:[I][2026-03-05 +8.0 08:38:23.340][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 314
+350331-[I][2026-03-05 +8.0 08:38:23.340][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+350332-[I][2026-03-05 +8.0 08:38:23.341][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+350333-[E][2026-03-05 +8.0 08:38:23.342][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+350690-[I][2026-03-05 +8.0 08:38:28.718][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行成功[EnablePollingLockRevert] VehicleResponse(channel=BLE, msg=null, data=null)
+350691-[I][2026-03-05 +8.0 08:38:28.719][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+350692-[I][2026-03-05 +8.0 08:38:28.719][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][Polling action EnablePollingLockRevert executed successfully.
+350693:[I][2026-03-05 +8.0 08:38:28.720][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: success, action: polling_action_revert_lock_enableleftCertCount: 314
+350694-[I][2026-03-05 +8.0 08:38:28.720][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+350695-[I][2026-03-05 +8.0 08:38:28.720][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+350696-[E][2026-03-05 +8.0 08:38:28.748][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:58, _log][onReceiveBleData, deviceId is 86:8A:E0:EE:7F:82 , id is 1687
+--
+350946-[I][2026-03-05 +8.0 08:38:34.353][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:197 bleConnectStateIsChanged] bleConnectStateIsChanged: disconnect
+350947-[I][2026-03-05 +8.0 08:38:34.354][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:233 bleDisconnectClean] bleDisconnectClean
+350948-[I][2026-03-05 +8.0 08:38:34.354][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:197 bleConnectStateIsChanged] bleConnectStateIsChanged: disconnect
+350949:[I][2026-03-05 +8.0 08:38:34.354][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_revert_lock_enableleftCertCount: 314
+350950-[I][2026-03-05 +8.0 08:38:34.354][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+350951-[I][2026-03-05 +8.0 08:38:34.355][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+350952-[I][2026-03-05 +8.0 08:38:34.355][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:197 bleConnectStateIsChanged] bleConnectStateIsChanged: disconnect
+--
+350975-[I][2026-03-05 +8.0 08:38:39.178][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行失败[EnablePollingLockRevert] VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+350976-[I][2026-03-05 +8.0 08:38:39.180][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+350977-[E][2026-03-05 +8.0 08:38:39.181][28095, 28095][XP车控实例/车控][XPLogBridge:58, _log][Failed to execute polling action EnablePollingLockRevert: VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+350978:[I][2026-03-05 +8.0 08:38:39.182][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_revert_lock_enableleftCertCount: 314
+350979-[I][2026-03-05 +8.0 08:38:39.183][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:404 pollingActionResult] blePollingManager is not null
+350980-[I][2026-03-05 +8.0 08:38:39.183][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingManager.cpp:104 syncLeftCertMessageCount] syncLeftCertMessageCount: 314
+350981-[W][2026-03-05 +8.0 08:38:39.334][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+--
+350994-[I][2026-03-05 +8.0 08:38:41.335][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:137 destroyListener] XPBlePollingHandlerV2 destroyListener
+350995-[I][2026-03-05 +8.0 08:38:41.336][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:255 destroyListener] destroyListener
+350996-[I][2026-03-05 +8.0 08:38:41.336][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+350997:[I][2026-03-05 +8.0 08:38:41.337][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+350998-[I][2026-03-05 +8.0 08:38:41.338][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+350999-[I][2026-03-05 +8.0 08:38:41.338][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+351000-[I][2026-03-05 +8.0 08:38:41.339][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+351111-[I][2026-03-05 +8.0 08:38:43.415][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行失败[DisableChargePortUnlock] VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+351112-[I][2026-03-05 +8.0 08:38:43.416][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+351113-[E][2026-03-05 +8.0 08:38:43.417][28095, 28095][XP车控实例/车控][XPLogBridge:58, _log][Failed to execute polling action DisableChargePortUnlock: VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+351114:[I][2026-03-05 +8.0 08:38:43.418][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_truck_disableleftCertCount: 314
+351115:[I][2026-03-05 +8.0 08:38:43.419][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_charge_port_disableleftCertCount: 314
+351116-[W][2026-03-05 +8.0 08:38:44.355][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+351117-[I][2026-03-05 +8.0 08:38:46.368][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:61, _log][checkConnected MQTTSwitchCheck is disabled, skip connecting
+351118-[W][2026-03-05 +8.0 08:38:49.360][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+--
+352025-[I][2026-03-05 +8.0 08:40:05.258][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Notify set successfully on 0000ED28-ABAB-9C8C-2802-D3DF573FF530
+352026-[I][2026-03-05 +8.0 08:40:05.261][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][蓝牙已经可用
+352027-[I][2026-03-05 +8.0 08:40:05.262][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][BLE State Changed: AVAILABLE
+352028:[I][2026-03-05 +8.0 08:40:05.263][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][开始BLE认证流程
+352029-[I][2026-03-05 +8.0 08:40:05.270][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][sendAuthDataStep1: EF01046D487CB1, rand0=2977712237
+352030-[I][2026-03-05 +8.0 08:40:05.273][28095, 28095][BleCommandQueue/车控][XPLogBridge:61, _log][Sending data: device: AVAILABLE data: 239,1,4,109,72,124,177
+352031-[I][2026-03-05 +8.0 08:40:05.274][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][ready to send data: EF01046D487CB1
+--
+360178-[I][2026-03-05 +8.0 08:42:13.370][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:137 destroyListener] XPBlePollingHandlerV2 destroyListener
+360179-[I][2026-03-05 +8.0 08:42:13.370][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:255 destroyListener] destroyListener
+360180-[I][2026-03-05 +8.0 08:42:13.371][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+360181:[I][2026-03-05 +8.0 08:42:13.371][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+360182:[I][2026-03-05 +8.0 08:42:13.371][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_disable
+360183-[I][2026-03-05 +8.0 08:42:13.371][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+360184-[I][2026-03-05 +8.0 08:42:13.372][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+360185-[I][2026-03-05 +8.0 08:42:13.372][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+360236-[I][2026-03-05 +8.0 08:42:15.457][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行失败[PollingDisableDoorUnlock] VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+360237-[I][2026-03-05 +8.0 08:42:15.458][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+360238-[E][2026-03-05 +8.0 08:42:15.459][28095, 28095][XP车控实例/车控][XPLogBridge:58, _log][Failed to execute polling action PollingDisableDoorUnlock: VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+360239:[I][2026-03-05 +8.0 08:42:15.460][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_unlock_disableleftCertCount: 314
+360240-[W][2026-03-05 +8.0 08:42:15.461][28095, 28095][KMCancellableSet/车控][XPLogBridge:55, _log][取消所有关联的监听器 cancelAll
+360241-[W][2026-03-05 +8.0 08:42:15.462][28095, 28095][BLEConnection/车控][XPLogBridge:55, _log][BLE waitAvailable(timeout: 2000) 超时
+360242-[E][2026-03-05 +8.0 08:42:15.465][28095, 28095][车控指令基类/车控][XPLogBridge:58, _log][失败执行车控指令[PollingDisableTrunkUnlock] by BLE，VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用> vcrId:830952570
+--
+360249-[I][2026-03-05 +8.0 08:42:15.490][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行失败[DisableChargePortUnlock] VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+360250-[I][2026-03-05 +8.0 08:42:15.491][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+360251-[E][2026-03-05 +8.0 08:42:15.492][28095, 28095][XP车控实例/车控][XPLogBridge:58, _log][Failed to execute polling action DisableChargePortUnlock: VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+360252:[I][2026-03-05 +8.0 08:42:15.493][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_truck_disableleftCertCount: 314
+360253:[I][2026-03-05 +8.0 08:42:15.493][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_charge_port_disableleftCertCount: 314
+360254-[I][2026-03-05 +8.0 08:42:15.538][28095, 28095][0 | XPBlePeripheralBridge/车控][XPLogBridge:61, _log][deviceId:86:8A:E0:EE:7F:82onBleConnectStateChange, connect state is 2
+360255-[I][2026-03-05 +8.0 08:42:15.540][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Connected to XPED-A06C65073555
+360256-[I][2026-03-05 +8.0 08:42:15.540][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][蓝牙连接耗时: scan 0 ms, connect 3513 ms
+--
+360281-[I][2026-03-05 +8.0 08:42:17.366][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Notify set successfully on 0000ED28-ABAB-9C8C-2802-D3DF573FF530
+360282-[I][2026-03-05 +8.0 08:42:17.368][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][蓝牙已经可用
+360283-[I][2026-03-05 +8.0 08:42:17.368][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][BLE State Changed: AVAILABLE
+360284:[I][2026-03-05 +8.0 08:42:17.369][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][开始BLE认证流程
+360285-[I][2026-03-05 +8.0 08:42:17.371][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][sendAuthDataStep1: EF0104137EE24E, rand0=1323466259
+360286-[I][2026-03-05 +8.0 08:42:17.374][28095, 28095][BleCommandQueue/车控][XPLogBridge:61, _log][Sending data: device: AVAILABLE data: 239,1,4,19,126,226,78
+360287-[I][2026-03-05 +8.0 08:42:17.374][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][ready to send data: EF0104137EE24E
+--
+364632-[I][2026-03-05 +8.0 08:43:30.580][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:137 destroyListener] XPBlePollingHandlerV2 destroyListener
+364633-[I][2026-03-05 +8.0 08:43:30.581][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:255 destroyListener] destroyListener
+364634-[I][2026-03-05 +8.0 08:43:30.581][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+364635:[I][2026-03-05 +8.0 08:43:30.582][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+364636:[I][2026-03-05 +8.0 08:43:30.583][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_disable
+364637-[I][2026-03-05 +8.0 08:43:30.583][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+364638-[I][2026-03-05 +8.0 08:43:30.584][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+364639-[I][2026-03-05 +8.0 08:43:30.585][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+364767-[I][2026-03-05 +8.0 08:43:32.706][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行失败[DisableChargePortUnlock] VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+364768-[I][2026-03-05 +8.0 08:43:32.707][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+364769-[E][2026-03-05 +8.0 08:43:32.707][28095, 28095][XP车控实例/车控][XPLogBridge:58, _log][Failed to execute polling action DisableChargePortUnlock: VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+364770:[I][2026-03-05 +8.0 08:43:32.709][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_unlock_disableleftCertCount: 314
+364771:[I][2026-03-05 +8.0 08:43:32.709][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_truck_disableleftCertCount: 314
+364772:[I][2026-03-05 +8.0 08:43:32.710][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_charge_port_disableleftCertCount: 314
+364773-[I][2026-03-05 +8.0 08:43:32.791][28095, 28095][139810 | [NetworkMonitor]/车控][XPLogBridge:61, _log][netLost : {"netId":129}
+364774-[I][2026-03-05 +8.0 08:43:32.792][28095, 28095][022222/[NetworkMonitor]/车控][NetworkMonitor:70, anonymous][netLost : {"netId":129}
+364775-[I][2026-03-05 +8.0 08:43:32.794][28095, 28095][[initEventHub]][index:178, anonymous][netLost
+--
+369140-[I][2026-03-05 +8.0 09:10:26.877][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Notify set successfully on 0000ED28-ABAB-9C8C-2802-D3DF573FF530
+369141-[I][2026-03-05 +8.0 09:10:26.880][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][蓝牙已经可用
+369142-[I][2026-03-05 +8.0 09:10:26.883][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][BLE State Changed: AVAILABLE
+369143:[I][2026-03-05 +8.0 09:10:26.887][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][开始BLE认证流程
+369144-[I][2026-03-05 +8.0 09:10:26.912][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][sendAuthDataStep1: EF0104FB4734D2, rand0=3526641659
+369145-[I][2026-03-05 +8.0 09:10:26.918][28095, 28095][BleCommandQueue/车控][XPLogBridge:61, _log][Sending data: device: AVAILABLE data: 239,1,4,251,71,52,210
+369146-[I][2026-03-05 +8.0 09:10:26.919][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][ready to send data: EF0104FB4734D2
+--
+370303-[I][2026-03-05 +8.0 09:10:48.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:137 destroyListener] XPBlePollingHandlerV2 destroyListener
+370304-[I][2026-03-05 +8.0 09:10:48.772][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:255 destroyListener] destroyListener
+370305-[I][2026-03-05 +8.0 09:10:48.773][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+370306:[I][2026-03-05 +8.0 09:10:48.774][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+370307:[I][2026-03-05 +8.0 09:10:48.775][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_disable
+370308-[I][2026-03-05 +8.0 09:10:48.776][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:925 stopUnlockEnableTimer] XPBlePollingHandlerV2 stopUnlockEnableTimer
+370309-[I][2026-03-05 +8.0 09:10:48.777][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:901 forceStopPollingTrunkEnable] XPBlePollingHandlerV2 forceStopPollingTrunkEnable
+370310-[I][2026-03-05 +8.0 09:10:48.778][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_truck_disable
+--
+370441-[I][2026-03-05 +8.0 09:10:50.886][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][车控指令执行失败[DisableChargePortUnlock] VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+370442-[I][2026-03-05 +8.0 09:10:50.887][28095, 28095][KMPollingService_JS/车控][XPLogBridge:61, _log][pollingActionResult
+370443-[E][2026-03-05 +8.0 09:10:50.887][28095, 28095][XP车控实例/车控][XPLogBridge:58, _log][Failed to execute polling action DisableChargePortUnlock: VehicleError<code=-9, channel=1, msg=null, desc=BLE蓝牙连接不可用>
+370444:[I][2026-03-05 +8.0 09:10:50.899][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_unlock_disableleftCertCount: 314
+370445:[I][2026-03-05 +8.0 09:10:50.899][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_truck_disableleftCertCount: 314
+370446:[I][2026-03-05 +8.0 09:10:50.899][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_charge_port_disableleftCertCount: 314
+370447-[W][2026-03-05 +8.0 09:10:51.095][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:55, _log][MQTT is not connected, checking connection...
+370448-[I][2026-03-05 +8.0 09:10:53.112][28095, 28095][mqtt模块 MqttServiceManager/车控][XPLogBridge:61, _log][checkConnected MQTTSwitchCheck is disabled, skip connecting
+370449-[I][2026-03-05 +8.0 09:10:56.104][28095, 28095][bulk_upload][BulkUploader:77, anonymous][BulkUploader finish
+--
+372110-[I][2026-03-05 +8.0 09:18:25.437][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Notify set successfully on 0000ED28-ABAB-9C8C-2802-D3DF573FF530
+372111-[I][2026-03-05 +8.0 09:18:25.439][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][蓝牙已经可用
+372112-[I][2026-03-05 +8.0 09:18:25.439][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][BLE State Changed: AVAILABLE
+372113:[I][2026-03-05 +8.0 09:18:25.441][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][开始BLE认证流程
+372114-[I][2026-03-05 +8.0 09:18:25.448][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][sendAuthDataStep1: EF0104DDB7B25A, rand0=1521661917
+372115-[I][2026-03-05 +8.0 09:18:25.452][28095, 28095][BleCommandQueue/车控][XPLogBridge:61, _log][Sending data: device: AVAILABLE data: 239,1,4,221,183,178,90
+372116-[I][2026-03-05 +8.0 09:18:25.453][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][ready to send data: EF0104DDB7B25A
+--
+377401-[I][2026-03-05 +8.0 09:42:39.357][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Notify set successfully on 0000ED28-ABAB-9C8C-2802-D3DF573FF530
+377402-[I][2026-03-05 +8.0 09:42:39.360][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][蓝牙已经可用
+377403-[I][2026-03-05 +8.0 09:42:39.376][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][BLE State Changed: AVAILABLE
+377404:[I][2026-03-05 +8.0 09:42:39.385][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][开始BLE认证流程
+377405-[I][2026-03-05 +8.0 09:42:39.403][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][sendAuthDataStep1: EF0104B3C81842, rand0=1108920499
+377406-[I][2026-03-05 +8.0 09:42:39.427][28095, 28095][BleCommandQueue/车控][XPLogBridge:61, _log][Sending data: device: AVAILABLE data: 239,1,4,179,200,24,66
+377407-[I][2026-03-05 +8.0 09:42:39.431][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][ready to send data: EF0104B3C81842
+--
+378173-[I][2026-03-05 +8.0 09:44:31.182][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][Notify set successfully on 0000ED28-ABAB-9C8C-2802-D3DF573FF530
+378174-[I][2026-03-05 +8.0 09:44:31.184][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][蓝牙已经可用
+378175-[I][2026-03-05 +8.0 09:44:31.184][28095, 28095][蓝牙模块 BleHandler/车控][XPLogBridge:61, _log][BLE State Changed: AVAILABLE
+378176:[I][2026-03-05 +8.0 09:44:31.185][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][开始BLE认证流程
+378177-[I][2026-03-05 +8.0 09:44:31.188][28095, 28095][蓝牙模块 XPBleAuthFlowV2/车控][XPLogBridge:61, _log][sendAuthDataStep1: EF0104F4B10546, rand0=1174778356
+378178-[I][2026-03-05 +8.0 09:44:31.190][28095, 28095][BleCommandQueue/车控][XPLogBridge:61, _log][Sending data: device: AVAILABLE data: 239,1,4,244,177,5,70
+378179-[I][2026-03-05 +8.0 09:44:31.191][28095, 28095][蓝牙模块 BleDevice_XPED-A06C65073555/车控][XPLogBridge:61, _log][ready to send data: EF0104F4B10546
+--
+386564-[I][2026-03-05 +8.0 09:46:44.766][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:137 destroyListener] XPBlePollingHandlerV2 destroyListener
+386565-[I][2026-03-05 +8.0 09:46:44.767][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:255 destroyListener] destroyListener
+386566-[I][2026-03-05 +8.0 09:46:44.767][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:894 forceStopAllEnableCmd] XPBlePollingHandlerV2 forceStopAllEnableCmd
+386567:[I][2026-03-05 +8.0 09:46:44.768][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandlerV2.cpp:882 forceStopPollingUnlockEnable] XPBlePollingHandlerV2 forceStopPollingUnlockEnable
+386568:[I][2026-03-05 +8.0 09:46:44.768][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingHandler.cpp:351 sendPollingAction] sendPollingAction: polling_action_unlock_disable
+386569-[I][2026-03-05 +8.0 09:46:44.769][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][收到polling回调: UnlockDisable
+386570-[I][2026-03-05 +8.0 09:46:44.771][28095, 28095][PL_SER/车控][XPLogBridge:61, _log][onPollingAction:action: 4
+386571-[I][2026-03-05 +8.0 09:46:44.771][28095, 28095][XP车控实例/车控][XPLogBridge:61, _log][收到polling回调: TruckDisable
+--
+386674-[I][2026-03-05 +8.0 09:46:46.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:301 enterAppForeground] enterAppForeground 
+386675-[I][2026-03-05 +8.0 09:46:46.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:575 remuseBlePollingService] remuseBlePollingService
+386676-[I][2026-03-05 +8.0 09:46:46.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:259 systemBleSwitchIsChanged] systemBleSwitchIsChanged: on
+386677:[I][2026-03-05 +8.0 09:46:46.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_unlock_disableleftCertCount: 314
+386678:[I][2026-03-05 +8.0 09:46:46.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_truck_disableleftCertCount: 314
+386679:[I][2026-03-05 +8.0 09:46:46.862][28095, 28095][plSerTag/车控][XPLogBridge:61, _log][[XPBlePollingService.cpp:398 pollingActionResult] pollingActionResult: failed, action: polling_action_charge_port_disableleftCertCount: 314
+386680-[E][2026-03-05 +8.0 09:46:46.985][28095, 28095][[BBEnv]][BBEnv:71, getValue][getValue empty. componentName:XPNetwork, moduleName:core, configurationName:https://apps.xiaopeng.com/, subConfigurationName:client_crt
+386681-[I][2026-03-05 +8.0 09:46:46.986][28095, 28095][[XpSession]][XpSession:26, handleResult][--> POST https://apps.xiaopeng.com/biz/v5/message/category 
+386682-  headers: undefined

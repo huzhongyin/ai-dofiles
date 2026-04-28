@@ -1,0 +1,36 @@
+2026-04-20T13:22:34.035Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:34.043Z [DEBUG] MDM settings load completed in 1684ms
+2026-04-20T13:22:34.894Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:34.894Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:35.229Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:35.229Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:22:35.229Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:35.229Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:36.621Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-20T13:22:36.635Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-20T13:22:36.635Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-20T13:22:36.636Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-20T13:22:38.449Z [DEBUG] Error log sink initialized
+2026-04-20T13:22:40.356Z [DEBUG] Lock acquisition took longer than expected - another Claude instance may be running
+2026-04-20T13:22:42.818Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:42.899Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:43.867Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:43.873Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Users/xpeng/.claude/settings.local.json
+2026-04-20T13:22:43.883Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:43.883Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:43.944Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'userSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:22:43.974Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'userSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:22:43.979Z [DEBUG] Applying permission update: Adding 12 allow rule(s) to destination 'projectSettings': ["Bash","Read","Edit","Write","Glob","Grep","MultiEdit","NotebookEdit","TodoWrite","WebFetch","WebSearch","mcp__*"]
+2026-04-20T13:22:43.979Z [DEBUG] Applying permission update: Adding 3 deny rule(s) to destination 'projectSettings': ["Bash(sudo *)","Bash(rm -rf /)","Bash(chmod -R 777 *)"]
+2026-04-20T13:22:44.008Z [DEBUG] Git remote URL: null
+2026-04-20T13:22:44.008Z [DEBUG] No git remote URL found
+2026-04-20T13:22:45.337Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-04-20T13:22:46.536Z [DEBUG] [claudeai-mcp] Checking gate (cached)...
+2026-04-20T13:22:46.536Z [DEBUG] [claudeai-mcp] Gate returned: false
+2026-04-20T13:22:46.536Z [DEBUG] [claudeai-mcp] Disabled via gate
+2026-04-20T13:22:46.558Z [DEBUG] [ToolSearch:optimistic] mode=tst, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-04-20T13:22:46.567Z [DEBUG] [STARTUP] Running setup()...
+2026-04-20T13:22:46.577Z [DEBUG] detectFileEncoding failed for expected reason: ENOENT
+2026-04-20T13:22:46.577Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json
+2026-04-20T13:22:46.598Z [DEBUG] Loading skills from: managed=/Library/Application Support/ClaudeCode/.claude/skills, user=/Users/xpeng/.claude/skills, project=[]
+2026-04-20T13:22:46.605Z [DEBUG] Error log sink initialized

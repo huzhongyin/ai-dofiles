@@ -1,0 +1,18 @@
+# 文件传输走 TCP Socket 不走 BLE/MQTT
+
+## 元信息
+- 触发关键词: ["FileTransfer", "文件传输", "TCP Socket", "车端相机", "XPVehicleFileTransferManager"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+车端文件传输（相机照片等）使用独立的 **TCP Socket 直连**，不走 BLE 或 MQTT 通道：
+
+- **实现**: 纯 OC（`XPVehicleFileTransferManager` + `XPCarFileTransferTcpSocket`）
+- **协议**: TCP Socket 直连车端
+- **用途**: 大文件传输（车端相机照片下载到手机）
+
+**核心规则**: 不要尝试将文件传输改为 BLE 或 MQTT 通道，带宽和延迟不满足大文件需求。
+
+**代码位置**: `submodule/XPVehicleExt/XPVehicleExt/FileTransfer/`

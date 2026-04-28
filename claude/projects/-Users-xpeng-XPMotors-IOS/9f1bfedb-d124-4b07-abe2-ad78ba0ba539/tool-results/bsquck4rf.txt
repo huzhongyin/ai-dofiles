@@ -1,0 +1,300 @@
+251320:[I][2026-03-23 +8.0 13:20:58.344][0, 357227][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -55
+251321:[I][2026-03-23 +8.0 13:20:58.344][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -55 name: BLEFR
+251322:[I][2026-03-23 +8.0 13:20:58.577][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -71
+251323:[I][2026-03-23 +8.0 13:20:58.577][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -71 name: BLEFL
+251324:[I][2026-03-23 +8.0 13:20:58.581][0, 357227][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251325:[I][2026-03-23 +8.0 13:20:58.581][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251326:[I][2026-03-23 +8.0 13:20:58.582][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251328:[I][2026-03-23 +8.0 13:20:58.582][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251329:[I][2026-03-23 +8.0 13:20:58.671][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251330:[I][2026-03-23 +8.0 13:20:58.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251331:[I][2026-03-23 +8.0 13:20:58.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251332:[I][2026-03-23 +8.0 13:20:58.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251333:[I][2026-03-23 +8.0 13:20:58.672][0, 383515][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251334:[I][2026-03-23 +8.0 13:20:58.672][0, 383515][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251335:[I][2026-03-23 +8.0 13:20:58.672][0, 383515][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251336:[I][2026-03-23 +8.0 13:20:58.672][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251337:[I][2026-03-23 +8.0 13:20:59.378][0, 357227][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251338:[I][2026-03-23 +8.0 13:20:59.378][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -54 name: BLEFR
+251339:[I][2026-03-23 +8.0 13:20:59.631][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -70
+251340:[I][2026-03-23 +8.0 13:20:59.631][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -70 name: BLEFL
+251341:[I][2026-03-23 +8.0 13:20:59.636][0, 357227][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251342:[I][2026-03-23 +8.0 13:20:59.636][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251343:[I][2026-03-23 +8.0 13:20:59.636][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251345:[I][2026-03-23 +8.0 13:20:59.636][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251346:[I][2026-03-23 +8.0 13:20:59.742][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251347:[I][2026-03-23 +8.0 13:20:59.743][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251348:[I][2026-03-23 +8.0 13:20:59.743][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251349:[I][2026-03-23 +8.0 13:20:59.743][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251350:[I][2026-03-23 +8.0 13:20:59.743][0, 383515][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251351:[I][2026-03-23 +8.0 13:20:59.743][0, 383515][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251352:[I][2026-03-23 +8.0 13:20:59.743][0, 383515][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251353:[I][2026-03-23 +8.0 13:20:59.751][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251354:[I][2026-03-23 +8.0 13:21:00.410][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251355:[I][2026-03-23 +8.0 13:21:00.410][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -54 name: BLEFR
+251356:[E][2026-03-23 +8.0 13:21:00.607][0, 270579][BleHeartbeatAlive<PA>][XPBleHeartbeatAlive.m:281, -[XPBleHeartbeatAlive innerSendHeartbeatByBlueIndex:]][Error:使用 BLE 蓝牙发送心跳
+251357:[I][2026-03-23 +8.0 13:21:00.608][0, 270579][BleHeartbeatAlive<PA>][XPBleHeartbeatAlive.m:157, -[XPBleHeartbeatAlive initTimerConfig]_block_invoke][Info:initTimerConfig 占用内存:362M 可用内存:410M CPU:8.40% 电量:35.00%  平均耗电:5.32%/小时 unity状态:0 保活:0小时18分钟6秒 后台持续:10小时20分钟46秒 后台保活累计:0小时19分钟38秒 后台休眠:10小时1分钟8秒 保活区间记录：[0:1:32(03:00:13 ~ 03:01:46), 0:18:6(13:02:54 ~ 13:21:00)]
+251358:[I][2026-03-23 +8.0 13:21:00.645][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -69
+251359:[I][2026-03-23 +8.0 13:21:00.645][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -69 name: BLEFL
+251360:[I][2026-03-23 +8.0 13:21:00.649][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251361:[I][2026-03-23 +8.0 13:21:00.650][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251362:[I][2026-03-23 +8.0 13:21:00.650][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251364:[I][2026-03-23 +8.0 13:21:00.650][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251365:[I][2026-03-23 +8.0 13:21:00.671][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251366:[I][2026-03-23 +8.0 13:21:00.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251367:[I][2026-03-23 +8.0 13:21:00.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251368:[I][2026-03-23 +8.0 13:21:00.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251369:[I][2026-03-23 +8.0 13:21:00.671][0, 383515][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251370:[I][2026-03-23 +8.0 13:21:00.672][0, 383515][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251371:[I][2026-03-23 +8.0 13:21:00.672][0, 383515][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251372:[I][2026-03-23 +8.0 13:21:00.672][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251373:[I][2026-03-23 +8.0 13:21:00.704][0, 259*][XiaopengBLEConnection+Heartbeat][XiaopengBLEConnection+Heartbeat.swift:43, sendHeartbeat()][Info: [BLE心跳] BLE心跳开始发送
+251374:[I][2026-03-23 +8.0 13:21:00.704][0, 259*][MuiltBleManager][MuiltBleManager.swift:184, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] BLE心跳开始发送
+251375:[I][2026-03-23 +8.0 13:21:00.704][0, 259*][XPBLEDataMake][XPBLEDataProcessor.m:57, +[XPBLEDataProcessor generateBleData:controlId:vehicleTypeCode:msgType:controlType:]][Info:提取单元测试：
+251384:[I][2026-03-23 +8.0 13:21:00.705][0, 259*][BleDevice+SendData][BleDevice+SendData.swift:28, sendData(data:writeType:timeOut:success:failed:)][Info: [蓝牙写数据] 写数据开始 eb000800012d02ef8d00ff
+251385:[I][2026-03-23 +8.0 13:21:00.705][0, 259*][BluetoothData][Peripheral+Live.swift:55, init(cbperipheral:)][Info: _writeValueForCharacteristic: 11 bytes <CBCharacteristic: 0x15e278420, UUID = 0000ED28-ABAB-9C8C-2801-B1A015E46D6C, properties = 0xC, value = (null), notifying = NO>  CBCharacteristicWriteType(rawValue: 0)
+251386:[I][2026-03-23 +8.0 13:21:00.705][0, 259*][MuiltBleManager][MuiltBleManager.swift:193, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] 心跳构包 completion: finished
+251387:[I][2026-03-23 +8.0 13:21:00.751][0, 270579][BluetoothData][Peripheral+Live.swift:131, peripheral(_:didWriteValueFor:error:)][Info: 写数据 peripheral: XPED-DC0D30B0B1FA didWriteValueForCharacteristic <CBCharacteristic: 0x15e278420, UUID = 0000ED28-ABAB-9C8C-2801-B1A015E46D6C, properties = 0xC, value = (null), notifying = NO>
+251388:[I][2026-03-23 +8.0 13:21:00.751][0, 259*][BleDevice+SendData][BleDevice+SendData.swift:47, sendData(data:writeType:timeOut:success:failed:)][Info: [蓝牙写数据] 写数据成功 eb000800012d02ef8d00ff
+251389:[I][2026-03-23 +8.0 13:21:00.751][0, 259*][MuiltBleManager][MuiltBleManager.swift:210, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] BLE心跳发送成功
+251390:[I][2026-03-23 +8.0 13:21:00.751][0, 259*][XiaopengBLEConnection+Heartbeat][XiaopengBLEConnection+Heartbeat.swift:50, sendHeartbeat()][Info: [BLE心跳] BLE心跳发送成功 - 从蓝牙
+251391:[I][2026-03-23 +8.0 13:21:01.442][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -55
+251392:[I][2026-03-23 +8.0 13:21:01.442][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -55 name: BLEFR
+251393:[I][2026-03-23 +8.0 13:21:01.671][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251394:[I][2026-03-23 +8.0 13:21:01.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251395:[I][2026-03-23 +8.0 13:21:01.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251396:[I][2026-03-23 +8.0 13:21:01.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251397:[I][2026-03-23 +8.0 13:21:01.672][0, 357227][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251398:[I][2026-03-23 +8.0 13:21:01.672][0, 357227][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251399:[I][2026-03-23 +8.0 13:21:01.672][0, 357227][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251400:[I][2026-03-23 +8.0 13:21:01.672][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251401:[I][2026-03-23 +8.0 13:21:01.678][0, 357227][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -69
+251402:[I][2026-03-23 +8.0 13:21:01.678][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -69 name: BLEFL
+251403:[I][2026-03-23 +8.0 13:21:01.683][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -52
+251404:[I][2026-03-23 +8.0 13:21:01.683][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -52 name: BLE
+251405:[I][2026-03-23 +8.0 13:21:01.683][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251407:[I][2026-03-23 +8.0 13:21:01.683][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251408:[I][2026-03-23 +8.0 13:21:02.476][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -55
+251409:[I][2026-03-23 +8.0 13:21:02.477][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -55 name: BLEFR
+251410:[I][2026-03-23 +8.0 13:21:02.704][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251411:[I][2026-03-23 +8.0 13:21:02.704][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251412:[I][2026-03-23 +8.0 13:21:02.704][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251413:[I][2026-03-23 +8.0 13:21:02.704][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251414:[I][2026-03-23 +8.0 13:21:02.705][0, 357227][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251415:[I][2026-03-23 +8.0 13:21:02.705][0, 357227][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251416:[I][2026-03-23 +8.0 13:21:02.705][0, 357227][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251417:[I][2026-03-23 +8.0 13:21:02.705][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251418:[I][2026-03-23 +8.0 13:21:02.709][0, 357227][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -70
+251419:[I][2026-03-23 +8.0 13:21:02.709][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -70 name: BLEFL
+251420:[I][2026-03-23 +8.0 13:21:02.714][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -53
+251421:[I][2026-03-23 +8.0 13:21:02.714][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -53 name: BLE
+251422:[I][2026-03-23 +8.0 13:21:02.714][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251424:[I][2026-03-23 +8.0 13:21:02.714][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251425:[I][2026-03-23 +8.0 13:21:03.511][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -55
+251426:[I][2026-03-23 +8.0 13:21:03.511][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -55 name: BLEFR
+251427:[I][2026-03-23 +8.0 13:21:03.670][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251428:[I][2026-03-23 +8.0 13:21:03.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251429:[I][2026-03-23 +8.0 13:21:03.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251430:[I][2026-03-23 +8.0 13:21:03.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251431:[I][2026-03-23 +8.0 13:21:03.671][0, 357227][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251432:[I][2026-03-23 +8.0 13:21:03.671][0, 357227][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251433:[I][2026-03-23 +8.0 13:21:03.671][0, 357227][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251434:[I][2026-03-23 +8.0 13:21:03.672][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251435:[I][2026-03-23 +8.0 13:21:03.744][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -70
+251436:[I][2026-03-23 +8.0 13:21:03.745][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -70 name: BLEFL
+251437:[I][2026-03-23 +8.0 13:21:03.749][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -53
+251438:[I][2026-03-23 +8.0 13:21:03.749][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -53 name: BLE
+251439:[I][2026-03-23 +8.0 13:21:03.749][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251441:[I][2026-03-23 +8.0 13:21:03.749][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251442:[I][2026-03-23 +8.0 13:21:04.544][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -55
+251443:[I][2026-03-23 +8.0 13:21:04.544][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -55 name: BLEFR
+251444:[I][2026-03-23 +8.0 13:21:04.737][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251445:[I][2026-03-23 +8.0 13:21:04.737][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251446:[I][2026-03-23 +8.0 13:21:04.738][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251447:[I][2026-03-23 +8.0 13:21:04.738][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251448:[I][2026-03-23 +8.0 13:21:04.738][0, 383515][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251449:[I][2026-03-23 +8.0 13:21:04.738][0, 383515][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251450:[I][2026-03-23 +8.0 13:21:04.738][0, 383515][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251451:[I][2026-03-23 +8.0 13:21:04.745][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251452:[I][2026-03-23 +8.0 13:21:04.778][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -69
+251453:[I][2026-03-23 +8.0 13:21:04.778][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -69 name: BLEFL
+251454:[I][2026-03-23 +8.0 13:21:04.783][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251455:[I][2026-03-23 +8.0 13:21:04.783][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251456:[I][2026-03-23 +8.0 13:21:04.783][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251458:[I][2026-03-23 +8.0 13:21:04.783][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251459:[I][2026-03-23 +8.0 13:21:05.591][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251460:[I][2026-03-23 +8.0 13:21:05.591][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -54 name: BLEFR
+251461:[E][2026-03-23 +8.0 13:21:05.594][0, 270579][BleHeartbeatAlive<PA>][XPBleHeartbeatAlive.m:281, -[XPBleHeartbeatAlive innerSendHeartbeatByBlueIndex:]][Error:使用 BLE 蓝牙发送心跳
+251462:[I][2026-03-23 +8.0 13:21:05.595][0, 270579][BleHeartbeatAlive<PA>][XPBleHeartbeatAlive.m:157, -[XPBleHeartbeatAlive initTimerConfig]_block_invoke][Info:initTimerConfig 占用内存:362M 可用内存:409M CPU:0.70% 电量:35.00%  平均耗电:5.32%/小时 unity状态:0 保活:0小时18分钟11秒 后台持续:10小时20分钟51秒 后台保活累计:0小时19分钟43秒 后台休眠:10小时1分钟8秒 保活区间记录：[0:1:32(03:00:13 ~ 03:01:46), 0:18:11(13:02:54 ~ 13:21:05)]
+251463:[I][2026-03-23 +8.0 13:21:05.670][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251464:[I][2026-03-23 +8.0 13:21:05.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251465:[I][2026-03-23 +8.0 13:21:05.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251466:[I][2026-03-23 +8.0 13:21:05.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251467:[I][2026-03-23 +8.0 13:21:05.671][0, 180627][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251468:[I][2026-03-23 +8.0 13:21:05.671][0, 180627][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251469:[I][2026-03-23 +8.0 13:21:05.671][0, 180627][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251470:[I][2026-03-23 +8.0 13:21:05.671][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251471:[I][2026-03-23 +8.0 13:21:05.704][0, 259*][XiaopengBLEConnection+Heartbeat][XiaopengBLEConnection+Heartbeat.swift:43, sendHeartbeat()][Info: [BLE心跳] BLE心跳开始发送
+251472:[I][2026-03-23 +8.0 13:21:05.704][0, 259*][MuiltBleManager][MuiltBleManager.swift:184, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] BLE心跳开始发送
+251473:[I][2026-03-23 +8.0 13:21:05.704][0, 259*][XPBLEDataMake][XPBLEDataProcessor.m:57, +[XPBLEDataProcessor generateBleData:controlId:vehicleTypeCode:msgType:controlType:]][Info:提取单元测试：
+251482:[I][2026-03-23 +8.0 13:21:05.704][0, 259*][BleDevice+SendData][BleDevice+SendData.swift:28, sendData(data:writeType:timeOut:success:failed:)][Info: [蓝牙写数据] 写数据开始 eb000800012d02ef8d00ff
+251483:[I][2026-03-23 +8.0 13:21:05.705][0, 259*][BluetoothData][Peripheral+Live.swift:55, init(cbperipheral:)][Info: _writeValueForCharacteristic: 11 bytes <CBCharacteristic: 0x15e278420, UUID = 0000ED28-ABAB-9C8C-2801-B1A015E46D6C, properties = 0xC, value = (null), notifying = NO>  CBCharacteristicWriteType(rawValue: 0)
+251484:[I][2026-03-23 +8.0 13:21:05.705][0, 259*][MuiltBleManager][MuiltBleManager.swift:193, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] 心跳构包 completion: finished
+251485:[I][2026-03-23 +8.0 13:21:05.761][0, 270579][BluetoothData][Peripheral+Live.swift:131, peripheral(_:didWriteValueFor:error:)][Info: 写数据 peripheral: XPED-DC0D30B0B1FA didWriteValueForCharacteristic <CBCharacteristic: 0x15e278420, UUID = 0000ED28-ABAB-9C8C-2801-B1A015E46D6C, properties = 0xC, value = (null), notifying = NO>
+251486:[I][2026-03-23 +8.0 13:21:05.761][0, 259*][BleDevice+SendData][BleDevice+SendData.swift:47, sendData(data:writeType:timeOut:success:failed:)][Info: [蓝牙写数据] 写数据成功 eb000800012d02ef8d00ff
+251487:[I][2026-03-23 +8.0 13:21:05.761][0, 259*][MuiltBleManager][MuiltBleManager.swift:210, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] BLE心跳发送成功
+251488:[I][2026-03-23 +8.0 13:21:05.761][0, 259*][XiaopengBLEConnection+Heartbeat][XiaopengBLEConnection+Heartbeat.swift:50, sendHeartbeat()][Info: [BLE心跳] BLE心跳发送成功 - 从蓝牙
+251489:[I][2026-03-23 +8.0 13:21:05.822][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -70
+251490:[I][2026-03-23 +8.0 13:21:05.822][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -70 name: BLEFL
+251491:[I][2026-03-23 +8.0 13:21:05.827][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251492:[I][2026-03-23 +8.0 13:21:05.827][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251493:[I][2026-03-23 +8.0 13:21:05.827][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251495:[I][2026-03-23 +8.0 13:21:05.827][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251496:[I][2026-03-23 +8.0 13:21:06.609][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251497:[I][2026-03-23 +8.0 13:21:06.609][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -54 name: BLEFR
+251498:[I][2026-03-23 +8.0 13:21:06.670][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251499:[I][2026-03-23 +8.0 13:21:06.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251500:[I][2026-03-23 +8.0 13:21:06.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251501:[I][2026-03-23 +8.0 13:21:06.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251502:[I][2026-03-23 +8.0 13:21:06.671][0, 180627][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251503:[I][2026-03-23 +8.0 13:21:06.671][0, 180627][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251504:[I][2026-03-23 +8.0 13:21:06.671][0, 180627][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251505:[I][2026-03-23 +8.0 13:21:06.672][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251506:[I][2026-03-23 +8.0 13:21:06.842][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -69
+251507:[I][2026-03-23 +8.0 13:21:06.842][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -69 name: BLEFL
+251508:[I][2026-03-23 +8.0 13:21:06.847][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251509:[I][2026-03-23 +8.0 13:21:06.847][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251510:[I][2026-03-23 +8.0 13:21:06.847][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251512:[I][2026-03-23 +8.0 13:21:06.847][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251513:[I][2026-03-23 +8.0 13:21:07.644][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251514:[I][2026-03-23 +8.0 13:21:07.645][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -54 name: BLEFR
+251515:[I][2026-03-23 +8.0 13:21:07.703][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251516:[I][2026-03-23 +8.0 13:21:07.703][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251517:[I][2026-03-23 +8.0 13:21:07.703][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251518:[I][2026-03-23 +8.0 13:21:07.704][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251519:[I][2026-03-23 +8.0 13:21:07.704][0, 180627][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251520:[I][2026-03-23 +8.0 13:21:07.704][0, 180627][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251521:[I][2026-03-23 +8.0 13:21:07.704][0, 180627][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251522:[I][2026-03-23 +8.0 13:21:07.704][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251523:[I][2026-03-23 +8.0 13:21:07.876][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -69
+251524:[I][2026-03-23 +8.0 13:21:07.876][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -69 name: BLEFL
+251525:[I][2026-03-23 +8.0 13:21:07.881][0, 357227][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251526:[I][2026-03-23 +8.0 13:21:07.881][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251527:[I][2026-03-23 +8.0 13:21:07.882][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251529:[I][2026-03-23 +8.0 13:21:07.882][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251530:[I][2026-03-23 +8.0 13:21:08.671][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251531:[I][2026-03-23 +8.0 13:21:08.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251532:[I][2026-03-23 +8.0 13:21:08.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251533:[I][2026-03-23 +8.0 13:21:08.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251534:[I][2026-03-23 +8.0 13:21:08.671][0, 357227][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251535:[I][2026-03-23 +8.0 13:21:08.672][0, 357227][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251536:[I][2026-03-23 +8.0 13:21:08.672][0, 357227][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251537:[I][2026-03-23 +8.0 13:21:08.672][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251538:[I][2026-03-23 +8.0 13:21:08.676][0, 357227][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -55
+251539:[I][2026-03-23 +8.0 13:21:08.676][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -55 name: BLEFR
+251540:[I][2026-03-23 +8.0 13:21:08.911][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -69
+251541:[I][2026-03-23 +8.0 13:21:08.911][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -69 name: BLEFL
+251542:[I][2026-03-23 +8.0 13:21:08.916][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251543:[I][2026-03-23 +8.0 13:21:08.916][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251544:[I][2026-03-23 +8.0 13:21:08.916][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251546:[I][2026-03-23 +8.0 13:21:08.916][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251547:[I][2026-03-23 +8.0 13:21:09.737][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251548:[I][2026-03-23 +8.0 13:21:09.738][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251549:[I][2026-03-23 +8.0 13:21:09.738][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251550:[I][2026-03-23 +8.0 13:21:09.738][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251551:[I][2026-03-23 +8.0 13:21:09.738][0, 180627][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251552:[I][2026-03-23 +8.0 13:21:09.738][0, 180627][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251553:[I][2026-03-23 +8.0 13:21:09.739][0, 180627][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251554:[I][2026-03-23 +8.0 13:21:09.744][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -55
+251555:[I][2026-03-23 +8.0 13:21:09.746][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251556:[I][2026-03-23 +8.0 13:21:09.747][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -55 name: BLEFR
+251557:[I][2026-03-23 +8.0 13:21:09.945][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -69
+251558:[I][2026-03-23 +8.0 13:21:09.945][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -69 name: BLEFL
+251559:[I][2026-03-23 +8.0 13:21:09.950][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251560:[I][2026-03-23 +8.0 13:21:09.950][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251561:[I][2026-03-23 +8.0 13:21:09.950][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251563:[I][2026-03-23 +8.0 13:21:09.950][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251564:[E][2026-03-23 +8.0 13:21:10.607][0, 180627][BleHeartbeatAlive<PA>][XPBleHeartbeatAlive.m:281, -[XPBleHeartbeatAlive innerSendHeartbeatByBlueIndex:]][Error:使用 BLE 蓝牙发送心跳
+251565:[I][2026-03-23 +8.0 13:21:10.608][0, 180627][BleHeartbeatAlive<PA>][XPBleHeartbeatAlive.m:157, -[XPBleHeartbeatAlive initTimerConfig]_block_invoke][Info:initTimerConfig 占用内存:362M 可用内存:410M CPU:0.30% 电量:35.00%  平均耗电:5.31%/小时 unity状态:0 保活:0小时18分钟16秒 后台持续:10小时20分钟56秒 后台保活累计:0小时19分钟48秒 后台休眠:10小时1分钟8秒 保活区间记录：[0:1:32(03:00:13 ~ 03:01:46), 0:18:16(13:02:54 ~ 13:21:10)]
+251566:[I][2026-03-23 +8.0 13:21:10.670][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251567:[I][2026-03-23 +8.0 13:21:10.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251568:[I][2026-03-23 +8.0 13:21:10.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251569:[I][2026-03-23 +8.0 13:21:10.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251570:[I][2026-03-23 +8.0 13:21:10.671][0, 383515][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251571:[I][2026-03-23 +8.0 13:21:10.671][0, 383515][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251572:[I][2026-03-23 +8.0 13:21:10.671][0, 383515][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251573:[I][2026-03-23 +8.0 13:21:10.671][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251574:[I][2026-03-23 +8.0 13:21:10.704][0, 259*][XiaopengBLEConnection+Heartbeat][XiaopengBLEConnection+Heartbeat.swift:43, sendHeartbeat()][Info: [BLE心跳] BLE心跳开始发送
+251575:[I][2026-03-23 +8.0 13:21:10.704][0, 259*][MuiltBleManager][MuiltBleManager.swift:184, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] BLE心跳开始发送
+251576:[I][2026-03-23 +8.0 13:21:10.704][0, 259*][XPBLEDataMake][XPBLEDataProcessor.m:57, +[XPBLEDataProcessor generateBleData:controlId:vehicleTypeCode:msgType:controlType:]][Info:提取单元测试：
+251585:[I][2026-03-23 +8.0 13:21:10.704][0, 259*][BleDevice+SendData][BleDevice+SendData.swift:28, sendData(data:writeType:timeOut:success:failed:)][Info: [蓝牙写数据] 写数据开始 eb000800012d02ef8d00ff
+251586:[I][2026-03-23 +8.0 13:21:10.705][0, 259*][BluetoothData][Peripheral+Live.swift:55, init(cbperipheral:)][Info: _writeValueForCharacteristic: 11 bytes <CBCharacteristic: 0x15e278420, UUID = 0000ED28-ABAB-9C8C-2801-B1A015E46D6C, properties = 0xC, value = (null), notifying = NO>  CBCharacteristicWriteType(rawValue: 0)
+251587:[I][2026-03-23 +8.0 13:21:10.705][0, 259*][MuiltBleManager][MuiltBleManager.swift:193, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] 心跳构包 completion: finished
+251588:[I][2026-03-23 +8.0 13:21:10.770][0, 383515][BluetoothData][Peripheral+Live.swift:131, peripheral(_:didWriteValueFor:error:)][Info: 写数据 peripheral: XPED-DC0D30B0B1FA didWriteValueForCharacteristic <CBCharacteristic: 0x15e278420, UUID = 0000ED28-ABAB-9C8C-2801-B1A015E46D6C, properties = 0xC, value = (null), notifying = NO>
+251589:[I][2026-03-23 +8.0 13:21:10.770][0, 259*][BleDevice+SendData][BleDevice+SendData.swift:47, sendData(data:writeType:timeOut:success:failed:)][Info: [蓝牙写数据] 写数据成功 eb000800012d02ef8d00ff
+251590:[I][2026-03-23 +8.0 13:21:10.770][0, 259*][MuiltBleManager][MuiltBleManager.swift:210, sendHeartBeat(index:retryCount:completion:)][Info: [BLE心跳] BLE心跳发送成功
+251591:[I][2026-03-23 +8.0 13:21:10.770][0, 259*][XiaopengBLEConnection+Heartbeat][XiaopengBLEConnection+Heartbeat.swift:50, sendHeartbeat()][Info: [BLE心跳] BLE心跳发送成功 - 从蓝牙
+251592:[I][2026-03-23 +8.0 13:21:10.775][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251593:[I][2026-03-23 +8.0 13:21:10.778][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -54 name: BLEFR
+251594:[I][2026-03-23 +8.0 13:21:10.974][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -69
+251595:[I][2026-03-23 +8.0 13:21:10.974][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -69 name: BLEFL
+251596:[I][2026-03-23 +8.0 13:21:10.979][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -53
+251597:[I][2026-03-23 +8.0 13:21:10.979][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -53 name: BLE
+251598:[I][2026-03-23 +8.0 13:21:10.979][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251600:[I][2026-03-23 +8.0 13:21:10.979][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251601:[I][2026-03-23 +8.0 13:21:11.670][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251602:[I][2026-03-23 +8.0 13:21:11.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251603:[I][2026-03-23 +8.0 13:21:11.671][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251604:[I][2026-03-23 +8.0 13:21:11.671][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251605:[I][2026-03-23 +8.0 13:21:11.671][0, 180627][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251606:[I][2026-03-23 +8.0 13:21:11.671][0, 180627][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251607:[I][2026-03-23 +8.0 13:21:11.671][0, 180627][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251608:[I][2026-03-23 +8.0 13:21:11.673][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251609:[I][2026-03-23 +8.0 13:21:11.829][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251610:[I][2026-03-23 +8.0 13:21:11.829][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -54 name: BLEFR
+251611:[I][2026-03-23 +8.0 13:21:12.027][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -68
+251612:[I][2026-03-23 +8.0 13:21:12.027][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -68 name: BLEFL
+251613:[I][2026-03-23 +8.0 13:21:12.032][0, 383515][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -54
+251614:[I][2026-03-23 +8.0 13:21:12.032][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -54 name: BLE
+251615:[I][2026-03-23 +8.0 13:21:12.032][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251617:[I][2026-03-23 +8.0 13:21:12.032][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251618:[I][2026-03-23 +8.0 13:21:12.159][0, 270579][BluetoothData][Peripheral+Live.swift:126, peripheral(_:didUpdateValueFor:error:)][Info: 数据更新 peripheral: KW36-BLE didUpdateValueForCharacteristic <CBCharacteristic: 0x15e2799e0, UUID = 0000ED28-ABAB-9C8C-2802-D3DF573FF530, properties = 0x20, value = {length = 10, bytes = 0x02252f02555500302f02}, notifying = YES>
+251619:[I][2026-03-23 +8.0 13:21:12.159][0, 259*][Optional(XPVehicleSDK.BLEPostionName.main)蓝牙连接][BleDevice.swift:306, observeIndicate()][Info: 蓝牙订阅数据 收到数据: data: Optional(10 bytes)
+251620:[I][2026-03-23 +8.0 13:21:12.159][0, 259*][BLESelfKeyHandler][BLESelfKeyHandler.swift:120, addDeviceObserver()][Info: 蓝牙BLE 收到数据 data[10]:  02252f02555500302f02
+251621:[I][2026-03-23 +8.0 13:21:12.159][0, 259*][XPBLEDataMake][XPBLEDataProcessor.m:113, +[XPBLEDataProcessor parseMessageWithVehicleCode:bleData:]][Info:parseMessageWithVehicleCode result:[{
+251630:[I][2026-03-23 +8.0 13:21:12.160][0, 259*][XPBLEDataMake][XPBLEDataProcessor.m:119, +[XPBLEDataProcessor parseMessageWithVehicleCode:bleData:]][Info:提取单元测试：
+251635:[I][2026-03-23 +8.0 13:21:12.160][0, 259*][cppParser][BLEDataParser+cpp.swift:13, handleParserData(_:)][Info: ble parse result str: Optional("[{\n\t\t\"type\":\t\"vehicleState\",\n\t\t\"vehicleState\":\t{\n\t\t\t\"charge\":\t{\n\t\t\t\t\"slow_charge_port_status\":\t0,\n\t\t\t\t\"fast_charge_port_status\":\t0\n\t\t\t}\n\t\t}\n\t}]")
+251636:[I][2026-03-23 +8.0 13:21:12.161][0, 259*][XiaopengBLEConnection+CanEvent][XiaopengBLEConnection+CanEvent.swift:54, didReceiveVehicleState(state:)][Info: 蓝牙 XP车控 收到车态变化 车态增量数据:  ["charge": {
+251640:[I][2026-03-23 +8.0 13:21:12.161][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:591, vehicleStateChanged(diffState:connectionType:)][Info: XP车控 收到车态变化: BLE
+251641:[I][2026-03-23 +8.0 13:21:12.161][0, 259*][XiaopengVehicleStateModel][XiaopengVehicleStateModel.swift:60, receivedDiffState(diffState:fromBLE:)][Info: 车态Model 收到车态变化  来自BLE  diffState: ["timestamp": 795936072.161381, "vin": L1NSPGH99NA133819, "bleTimestamp": 795936072.161381, "charge": {
+251645:[I][2026-03-23 +8.0 13:21:12.166][0, 259*][BLEKeyTagPolling][PLXPPollingManager.mm:585, -[PLXPPollingManager setBeforeDisconnectDoorLockState:]][Error: <PA>设置了beforeDisconnectDoorLockState 1
+251646:[I][2026-03-23 +8.0 13:21:12.166][0, 259*][CarHome][XPCarStateViewModel.m:400, -[XPCarStateViewModel start]_block_invoke_6][Info:收到车态变化消息：VehicleStateNotiObject:<channel:BLE, diffVehicleDict:{
+251655:[I][2026-03-23 +8.0 13:21:12.210][0, 259*][CarHome][XPCarOwnerHomeViewController.m:3743, -[XPCarOwnerHomeViewController updateCellItemWithCarState:]][Info:Mona启动按钮状态更新：熄灭
+251656:[I][2026-03-23 +8.0 13:21:12.215][0, 259*][BLEKeySettingTag][XPKeySettingSyncTool.m:657, -[XPKeySettingSyncTool getUnlockLogin]][Info:获取用户设置大屏解锁联登状态:1
+251657:[W][2026-03-23 +8.0 13:21:12.215][0, 259*][MyCarInfo][MyCarExtInfo.m:54, -[MyCarExtInfo isCDUVersionLessThanVersion:]][Warning:VIN = L1NSPGH99NA133819的大屏版本3.7.2小于版本5.0.0
+251658:[E][2026-03-23 +8.0 13:21:12.215][0, 383515][Watch][XPWatchManager.m:354, -[XPWatchManager init]_block_invoke_3][Error:Update appliation context fail with not paried
+251659:[I][2026-03-23 +8.0 13:21:12.215][0, 259*][CarHome][XPRemoteViewModel.m:188, -[XPRemoteViewModel handleInstantCarInfo:]][Info:维修模式数据 carState.ext.repairMode:0
+251660:[I][2026-03-23 +8.0 13:21:12.216][0, 383515][CarStateViewModel][CarStateViewModel.m:77, +[CarStateViewModel saveEndurance:batterySoc:time:]_block_invoke][Info:保存续航数据
+251661:[I][2026-03-23 +8.0 13:21:12.216][0, 259*][CarHome][XPRemoteViewModel.m:223, -[XPRemoteViewModel handleIntervalCarInfo:]][Info:收到MQTT发来的车辆信息，信息为{
+251701:[I][2026-03-23 +8.0 13:21:12.217][0, 259*][CarHome][XPRemoteViewModel.m:225, -[XPRemoteViewModel handleIntervalCarInfo:]][Info:收到MQTT发来的车辆信息，发送CarDriveStateChangedNotification通知，信息为{
+251741:[I][2026-03-23 +8.0 13:21:12.217][0, 259*][CarHome][XPCarEnduranceView.m:206, -[XPCarEnduranceView startChangeRoundedEndurance:]][Info:续航初始值: 272, text: 272
+251742:[I][2026-03-23 +8.0 13:21:12.319][0, 259*][CarHome][XPCarStateViewModel.m:164, -[XPCarStateViewModel init]_block_invoke][Info:use location from dvState lat:28.241707 lon:113.035164 angle:71.877701
+251743:[I][2026-03-23 +8.0 13:21:12.319][0, 259*][CarHome][XPCarStateViewModel.m:982, -[XPCarStateViewModel updateLocationWithVin:coordinate:]][Info:regeocode search skip with same coordinate lat: 28.241707, lon: 113.035164, vin: L1NSPGH99NA133819
+251744:[I][2026-03-23 +8.0 13:21:12.704][0, 259*][多蓝牙管理][MuiltBleManager.swift:138, connectIfneed()][Info: 发现所有设备，开始连接
+251745:[I][2026-03-23 +8.0 13:21:12.704][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251746:[I][2026-03-23 +8.0 13:21:12.704][0, 259*][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251747:[I][2026-03-23 +8.0 13:21:12.704][0, 259*][XiaopengVehicle][XiaopengVehicle.swift:553, sendCommandResponse(_:extParams:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi ...
+251748:[I][2026-03-23 +8.0 13:21:12.704][0, 270579][RssiRequest][RssiRequest.swift:14, send(success:failed:)][Info: ReadRssiRequest开始
+251749:[I][2026-03-23 +8.0 13:21:12.705][0, 270579][BluetoothData][Peripheral+Live.swift:30, init(cbperipheral:)][Info: _readRSSI
+251750:[I][2026-03-23 +8.0 13:21:12.705][0, 270579][RssiRequest][RssiRequest.swift:23, send(success:failed:)][Info: ReadRssiRequest结束
+251751:[I][2026-03-23 +8.0 13:21:12.705][0, 259*][VehicleControlRequestManager][VehicleControlRequestManager.swift:79, _sendCommand(vehicleCommunication:vehicleTypeCode:extParams:command:success:failed:)][Info: XP车控 sendVehicleCmd: VehicleCommand:(93) .ReadRssi 成功
+251752:[I][2026-03-23 +8.0 13:21:12.878][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -56
+251753:[I][2026-03-23 +8.0 13:21:12.878][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:b1:fa rssi: -56 name: BLEFR
+251754:[I][2026-03-23 +8.0 13:21:13.074][0, 270579][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -67
+251755:[I][2026-03-23 +8.0 13:21:13.074][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: dc:0d:30:b0:76:47 rssi: -67 name: BLEFL
+251756:[I][2026-03-23 +8.0 13:21:13.080][0, 180627][BluetoothData][Peripheral+Live.swift:105, peripheral(_:didReadRSSI:error:)][Info: 读数据 didReadRSSI success -52
+251757:[I][2026-03-23 +8.0 13:21:13.080][0, 259*][rssi][RssiManager.swift:156, updateRssi(_:rssi:name:)][Info: macAddress: 00:60:37:7b:ef:19 rssi: -52 name: BLE
+251758:[I][2026-03-23 +8.0 13:21:13.080][0, 89875][input][PLXPPollingFirstPredictModel.mm:163, -[PLXPPollingFirstPredictModel predictWithRssi:]][Info:input array:
+251760:[I][2026-03-23 +8.0 13:21:13.080][0, 89875][BLEKeyTagPolling][PLXPPollingFirstPollingHandler.mm:186, -[PLXPPollingFirstPollingHandler predictInCar]][Info: 定位在车内，不执行任何动作
+251761:[I][2026-03-23 +8.0 13:21:13.479][0, 383515][BluetoothData][Peripheral+Live.swift:126, peripheral(_:didUpdateValueFor:error:)][Info: 数据更新 peripheral: KW36-BLE didUpdateValueForCharacteristic <CBCharacteristic: 0x15e2799e0, UUID = 0000ED28-ABAB-9C8C-2802-D3DF573FF530, properties = 0x20, value = {length = 10, bytes = 0x02252f02555500302f00}, notifying = YES>
+251762:[I][2026-03-23 +8.0 13:21:13.479][0, 259*][Optional(XPVehicleSDK.BLEPostionName.main)蓝牙连接][BleDevice.swift:306, observeIndicate()][Info: 蓝牙订阅数据 收到数据: data: Optional(10 bytes)

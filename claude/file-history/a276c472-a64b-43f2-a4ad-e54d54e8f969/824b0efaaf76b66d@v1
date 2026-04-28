@@ -1,0 +1,381 @@
+//
+//  CarKeyPassManager.swift
+//  XPVehicleSDK
+//
+//  Created by XPENG on 2025/7/23.
+//
+
+import Foundation
+import PassKit
+
+
+@objc(XPCarKeyPairType)
+public enum CarKeyPairType: UInt {
+    case none       = 0x00
+    case nfc        = 0x01
+    case ble        = 0x02
+    case bleAndNfc  = 0x03
+}
+
+@objc(XPCarKeyInfoConstants)
+public class CarKeyInfoConstants: NSObject {
+    @objc public static let kCarKeyVehicleIdKey: String = "carKeyVehicleId"
+    @objc public static let kCarKeyKeyIdKey: String =  "carKeyKeyId"
+    @objc public static let kCarKeyStateKey: String =   "carKeyState"
+    @objc public static let kCarKeyLocalNameKey: String =  "carKeyLocalName"
+    @objc public static let kCarKeyDeviceNameKey: String =  "carKeyDeviceName"
+    @objc public static let kCarKeyUserInfoKey: String =  "carKeyUserInfo"
+}
+
+@objc(XPCarKeyPassEventError)
+public enum CarKeyPassEventError: Int, Error, Codable, CustomStringConvertible {
+    case None = 0;
+    case NoPassword
+    case carKeyIsExist
+    case SystemNotSupport
+    case ConfigNotSupport
+    case HadPaired
+    case LocalPassNotFound
+    case RequiresActivation
+    case Activating
+    case Suspended
+    case Deactivated
+    case ShareCanceled
+    case ShareFailed
+    case Unknown
+    case TaskTimeout
+    case Timeout
+    
+    public var description: String {
+        switch self {
+        case .None:
+            return "None"
+        case .NoPassword:
+            return "NoPassword"
+        case .carKeyIsExist:
+            return "carKeyIsExist"
+        case .SystemNotSupport:
+            return "SystemNotSupport"
+        case .ConfigNotSupport:
+            return "ConfigNotSupport"
+        case .HadPaired:
+            return "HadPaired"
+        case .LocalPassNotFound:
+            return "LocalPassNotFound"
+        case .RequiresActivation:
+            return "RequiresActivation"
+        case .Activating:
+            return "Activating"
+        case .Suspended:
+            return "Suspended"
+        case .Deactivated:
+            return "Deactivated"
+        case .ShareCanceled:
+            return "ShareCanceled"
+        case .ShareFailed:
+            return "ShareFailed"
+        case .TaskTimeout:
+            return "TaskTimeout"
+        case .Timeout:
+            return "Timeout"
+        case .Unknown:
+            return "Unknown"
+        }
+    }
+};
+
+
+@objc(XPCarKeyPassState)
+public enum CarKeyPassState:Int, Error, CustomStringConvertible  {
+    case activated = 0
+    
+    case requiresActivation = 1
+    
+    case activating = 2
+    
+    case suspended = 3
+    
+    case deactivated = 4
+    
+    public var description: String {
+        switch self {
+        case .activated:
+            return "Activated"
+        case .requiresActivation:
+            return "Requires Activation"
+        case .activating:
+            return "Activating"
+        case .suspended:
+            return "Suspended"
+        case .deactivated:
+            return "Deactivated"
+        }
+    }
+};
+
+protocol CarKeyPassDelegate: NSObjectProtocol {
+    func carKeyAddPassResult(error: CarKeyPassEventError)
+    func carKeySharePassResult(error: CarKeyPassEventError)
+    func carKeyShareDidCreateShare(universalShareURL: NSURL?, activationCode: NSString?)
+    func reportBlockingException(data: CarKeyExceptionObj)
+}
+
+protocol CarKeyPassManageProtocol: NSObjectProtocol {
+    func startCarKeyPair(password: String, autoMakerId: String, profileTemplateId: String, brandName: String, supportedRadioTechnologies: UInt, complete: @escaping (CarKeyPassEventError, UIViewController?) -> Void)
+    func startCarKeyShare(isPromptToShareUrl: Bool, complete: @escaping (CarKeyPassEventError, UIViewController?) -> Void)
+}
+
+@available(iOS 18.0, *)
+class CarKeyPassManager: NSObject {
+    
+    static func withTimeout<R>(
+        seconds: TimeInterval,
+        operation: @escaping () async throws -> R
+    ) async throws -> R {
+        try await withThrowingTaskGroup(of: R.self) { group in
+            group.addTask { try await operation() }
+            
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw CarKeyPassEventError.TaskTimeout
+            }
+            
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+    }
+    
+    var cccVid: String
+    var localPass: PKSecureElementPass?
+    weak var delegate: CarKeyPassDelegate?
+    var exceptionCount: Int = 0
+    let semaphore = DispatchSemaphore(value: 1)
+    var mockExcpetionType: CarKeyExceptionType = .None
+    
+    init(cccVid: String, delegate: CarKeyPassDelegate?) {
+        self.cccVid = cccVid
+        self.delegate = delegate
+        super.init()
+        self.addObserver()
+    }
+    
+    deinit {
+        Log.i("CarKeyPassManager is being deinitialized")
+    }
+    
+    private func addObserver() {
+        NotificationCenter.default.addObserver(self, selector: #selector(mockPassExcepTypeChanged), name: NSNotification.Name(rawValue: "CarKeyPassMockExceptionTypeChanged"), object: nil)
+    }
+    
+    @objc func mockPassExcepTypeChanged(noti: Notification) {
+        let exceptionType: Int = noti.userInfo?["exceptionType"] as? Int ?? 0
+        self.mockExcpetionType = CarKeyExceptionType.init(rawValue: exceptionType) ?? .None
+        if self.mockExcpetionType == .None {
+            exceptionCount = 0
+        }
+    }
+    
+    private func _getLocalSecurePass() async throws -> PKSecureElementPass? {
+        let passLibrary = PKPassLibrary()
+        var canFoundPass: Bool = false
+        var localPass: PKSecureElementPass? = nil
+        for pass in passLibrary.passes(of: PKPassType.secureElement) {
+            if let secureElementPass = pass.secureElementPass {
+                if secureElementPass.pairedTerminalIdentifier == self.cccVid {
+                    localPass = secureElementPass
+                    break
+                }
+            }
+        }
+//        try await Task.sleep(nanoseconds: 2_000_000_000)
+        return localPass
+    }
+    
+    private func currentPhoneConfigIsAvailable(password: String, autoMakerId: String, profileTemplateId: String, brandName: String, supportedRadioTechnologies: UInt) async throws -> (CarKeyPassEventError, UIViewController?) {
+        let configuration = PKAddCarKeyPassConfiguration()
+        configuration.manufacturerIdentifier = autoMakerId
+        configuration.issuerIdentifier = brandName
+        configuration.password = password
+        configuration.provisioningTemplateIdentifier = profileTemplateId
+        configuration.supportedRadioTechnologies = PKRadioTechnology(rawValue: supportedRadioTechnologies)
+        let canAddPass = PKAddSecureElementPassViewController.canAddSecureElementPass(configuration: configuration)
+        if (!canAddPass) {
+            return (.ConfigNotSupport, nil);
+        }
+        let vc = PKAddSecureElementPassViewController.init(configuration: configuration, delegate: self)
+        return (.None, vc)
+    }
+    
+    func getLocalPasses(_ complete: @escaping (CarKeyCard?, CarKeyPassEventError) -> Void) {
+        Log.i("carKeyPass", "get local passes")
+        self.getLocalSecurePassWithTimeout(complete)
+    }
+    
+    private func getLocalSecurePassWithTimeout(timeout: TimeInterval = 3, _ complete: @escaping ((CarKeyCard?, CarKeyPassEventError) -> Void)) {
+        semaphore.wait()
+        if self.exceptionCount >= 1 {
+            semaphore.signal()
+            return complete(nil, .Timeout)
+        }
+        let semaphore = self.semaphore
+        let monitorTask = Task.detached { [weak self] in
+            guard let self = self else {
+                semaphore.signal()
+                return
+            }
+            try await Task.sleep(nanoseconds: UInt64((timeout + 3.0) * 1_000_000_000))
+            // 如果执行到这里，说明内层阻塞了
+            Log.i(tag: "carKeyPass", "block exception occurred！")
+            self.exceptionCount += 1
+            semaphore.signal()
+            complete(nil, .Timeout)
+            self.delegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.cccVid, exceptionType: .Block, passError: .Timeout))
+        }
+        Task.detached(priority: .userInitiated) {
+            do {
+                Log.i(tag: "carKeyPass", "do getLocalPass start")
+                var observeTimeOut: TimeInterval = timeout
+                if self.mockExcpetionType == .Block {
+                    observeTimeOut = 10000
+                }
+                let result = try await CarKeyPassManager.withTimeout(seconds: observeTimeOut) { [self] in
+                    if self.mockExcpetionType == .Block {
+                        try await Task.sleep(nanoseconds: UInt64(observeTimeOut * 1_000_000_000))
+                    } else if self.mockExcpetionType == .Timeout {
+                        try await Task.sleep(nanoseconds: UInt64((observeTimeOut + 2) * 1_000_000_000))
+                    } else if self.mockExcpetionType == .Error {
+                        throw CarKeyPassEventError.Unknown
+                    }
+                    return try await self._getLocalSecurePass()
+                }
+                Log.i("carKeyPass", "getLocalSecurePass result: \(result)")
+                self.localPass = result
+                monitorTask.cancel()
+                guard let pass = result else {
+                    self.semaphore.signal()
+                    complete(nil, .None)
+                    self.delegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.cccVid))
+                    return
+                }
+                var card = CarKeyCard()
+                card.cardNo = pass.devicePassIdentifier
+                card.cccVid = pass.pairedTerminalIdentifier
+                card.nickName = pass.localizedName
+                card.deviceName = pass.deviceName
+                switch pass.passActivationState {
+                case .activated:
+                    card.status = .XPBLEKeyCardStatusNormal
+                    break
+                case .suspended:
+                    card.status = .XPBLEKeyCardStatusReportLost
+                    break
+                case .activating:
+                    card.status = .XPBLEKeyCardStatusActivated
+                    break
+                case .deactivated:
+                    card.status = .XPBLEKeyCardStatusReportLost
+                    break
+                case .requiresActivation:
+                    card.status = .XPBLEKeyCardStatusToBeActivated
+                    break
+                    
+                default:
+                    card.status = .XPBLEKeyCardStatusNormal
+                }
+                self.semaphore.signal()
+                complete(card, .None)
+                self.delegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.cccVid))
+            } catch CarKeyPassEventError.TaskTimeout {
+                self.semaphore.signal()
+                complete(nil, .Timeout)
+                Log.i("carKeyPass", "getLocalSecurePass timeout")
+                monitorTask.cancel()
+                self.delegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.cccVid, exceptionType: .Timeout, passError: .TaskTimeout))
+            } catch {
+                self.semaphore.signal()
+                complete(nil, .Unknown)
+                Log.i("carKeyPass", "getLocalSecurePass error: \(error)")
+                monitorTask.cancel()
+                self.delegate?.reportBlockingException(data: CarKeyExceptionObj(cccVid: self.cccVid, exceptionType: .Error, passError: .Unknown))
+            }
+        }
+    }
+    
+}
+
+@available(iOS 18.0, *)
+extension CarKeyPassManager: CarKeyPassManageProtocol {
+    
+    func startCarKeyPair(password: String, autoMakerId: String, profileTemplateId: String, brandName: String, supportedRadioTechnologies: UInt, complete: @escaping (CarKeyPassEventError, UIViewController?) -> Void) {
+        Task.detached(priority: .userInitiated) {
+            do {
+                let result = try await CarKeyPassManager.withTimeout(seconds: 3) {
+                    try await self.currentPhoneConfigIsAvailable(password: password, autoMakerId: autoMakerId, profileTemplateId: profileTemplateId, brandName: brandName, supportedRadioTechnologies: supportedRadioTechnologies)
+                }
+                await MainActor.run {
+                    complete(result.0, result.1)
+                }
+            } catch CarKeyPassEventError.Timeout {
+                await MainActor.run {
+                    complete(CarKeyPassEventError.Timeout, nil)
+                }
+            } catch {
+                await MainActor.run {
+                    complete(CarKeyPassEventError.Unknown, nil)
+                }
+                Log.i("carKeyPass", "carkey pair error: \(error)")
+            }
+        }
+        
+    }
+
+    func startCarKeyShare(isPromptToShareUrl: Bool, complete: @escaping (CarKeyPassEventError, UIViewController?) -> Void) {
+        Log.i("carKeyPass", "carkey share,cccVid: \(self.cccVid), isPromptToShareUrl: \(isPromptToShareUrl)")
+        guard let localPass = self.localPass else {
+            complete(.LocalPassNotFound, nil)
+            return
+        }
+        if localPass.passActivationState == PKSecureElementPass.PassActivationState.activated {
+            let shareVC = PKShareSecureElementPassViewController.init(secureElementPass: localPass, delegate: self)
+            shareVC.promptToShareURL = isPromptToShareUrl;
+            complete(.None, shareVC)
+        } else {
+            complete(.Deactivated, nil)
+        }
+    }
+    
+}
+
+@available(iOS 18.0, *)
+extension CarKeyPassManager: PKAddSecureElementPassViewControllerDelegate {
+    func addSecureElementPassViewController(_ controller: PKAddSecureElementPassViewController, didFinishAddingSecureElementPasses passes: [PKSecureElementPass]?, error: Error?) {
+        Log.i("carKeyPass", "carkey pair result:  \(error)")
+        guard let passes = passes else {
+            self.delegate?.carKeyAddPassResult(error: .LocalPassNotFound)
+            return
+        }
+        self.delegate?.carKeyAddPassResult(error: .None)
+    }
+}
+
+@available(iOS 18.0, *)
+extension CarKeyPassManager: PKShareSecureElementPassViewControllerDelegate {
+    func shareSecureElementPassViewController(_ controller: PKShareSecureElementPassViewController, didFinishWith result: PKShareSecureElementPassResult) {
+        Log.i("carKeyPass", "carkey share result:  \(result)")
+        var error: CarKeyPassEventError = .None
+        if result == .shared {
+            error = .None
+        } else if result == .canceled {
+            error = .ShareCanceled
+        } else {
+            error = .ShareFailed
+        }
+        self.delegate?.carKeySharePassResult(error: error)
+    }
+    
+    func shareSecureElementPassViewController(_ controller: PKShareSecureElementPassViewController, didCreateShare universalShareURL: URL?, activationCode: String?) {
+        self.delegate?.carKeyShareDidCreateShare(universalShareURL: universalShareURL as NSURL?, activationCode: activationCode as NSString?)
+    }
+    
+}

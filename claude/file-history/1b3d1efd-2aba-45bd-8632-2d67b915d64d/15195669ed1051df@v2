@@ -1,0 +1,442 @@
+# 技术方案: Apple CarKey 冻结场景下私有钥匙连接策略优化
+
+> 阶段: Design (How)
+> 基于: proposal.md (已审批)
+> 创建日期: 2026-04-09
+> 状态: Draft
+
+---
+
+## 方案概述
+
+将 `DigitalKeyManager.vaildBleKeyCategory()` 中的 CarKey 判断逻辑从"状态正常"改为"存在性检查"，同时清理 `passIsAvailable()` 的对外接口，统一上层调用方使用 `getCurrentCarKeyId() != nil` 判断。核心改动仅 3 处方法体（`vaildBleKeyCategory()`、`CarKeyPassAccessProtocol`、`localKeyIsAvailable()`），但语义变化影响 27+ 个消费者调用点，需审查 UI 侧关联逻辑。
+
+## 调用链路
+
+### 正向链路 1: 钥匙类型决策（核心修改点）
+
+```
+✅ XiaopengBLEConnection.controlBleHandlerLife(address:cccVid:isResuce:)
+│  文件: submodule/XPVehicleSDK/.../BLEConnection/XiaopengBLEConnection.swift L142
+│  触发时机: BLE 连接初始化 / didLoadKey() / MAC 地址变化 / cccVid 变化 / 救援模式
+│
+├→ ✅ BLEHandlerFactory.bleCreateCategory(presenter:)
+│  文件: submodule/XPVehicleSDK/.../BLE/BLEHandlerFactory.swift L11-13
+│  作用: 调用 presenter.digitalKeyManager?.vaildBleKeyCategory() ?? .PHONE_BLE_KEY
+│
+├→ ✅ DigitalKeyManager.vaildBleKeyCategory()  ← ★ 核心修改点
+│  文件: submodule/XPVehicleSDK/.../DigitalKey/DigitalKeyManager.swift L494-510
+│  当前逻辑: carKeyManager.passIsAvailable() == .None ? .PHONE_UWB_KEY : fallbackCategory
+│  新逻辑:   carKeyManager.getCurrentCarKeyId() != nil ? .PHONE_UWB_KEY : fallbackCategory
+│  │
+│  ├→ ✅ CarKeyPassAccesser.passIsAvailable() → 内部保留，从协议中移除
+│  │  文件: submodule/XPVehicleSDK/.../Tools/CarKeyPassAccesser.swift L224-246
+│  │  逻辑: 读取 localCarKeyCard.status，映射为 CarKeyPassEventError
+│  │
+│  └→ ✅ CarKeyPassAccesser.getCurrentCarKeyId() → 新判断依据
+│     文件: submodule/XPVehicleSDK/.../Tools/CarKeyPassAccesser.swift L248
+│     逻辑: 返回 localCarKeyCard?.cardNo（CarKey 存在则非 nil）
+│
+├→ ✅ BLEHandlerFactory.createBleKeyHandler(macAddress:cccVid:bleCategory:...)
+│  文件: submodule/XPVehicleSDK/.../BLE/BLEHandlerFactory.swift L15-34
+│  分支:
+│  ├── .PHONE_UWB_KEY → createCarKeyKeyBleHandler() → BLEKeyCarKeySessionHandler
+│  └── 其他 → createSelfKeyBleHandler() → BLESelfKeyHandler
+│
+└→ ✅ XiaopengBLEConnection.createNewBleHandler(bleHandler:bleCategory:presenter:)
+   文件: submodule/XPVehicleSDK/.../BLEConnection/XiaopengBLEConnection.swift L219-254
+   作用: 绑定 BLE 状态监听 + 连接
+```
+
+### 正向链路 2: `localKeyIsAvailable` 语义变化传播
+
+```
+✅ CarKeyPassInteractionFlow.localKeyIsAvailable() → Bool  ← ★ 修改点
+│  文件: submodule/XPVehicleExt/.../CarKeyPassInteractionFlow.swift L118-120
+│  当前逻辑: self.carKeyPassFlowAccesser?.passIsAvailable() == .None
+│  新逻辑:   self.carKeyPassFlowAccesser?.getCurrentCarKeyId() != nil
+│
+├→ ✅ CarKeyPassInteraction 协议声明
+│  文件: submodule/XPVehicleExt/.../CarKeyPassInteraction.swift L30
+│  协议: localKeyIsAvailable() -> Bool（保持，语义变为"CarKey 存在"）
+│
+└→ ✅ XPCarKeyHelp.localCarKeyIsVaild  (OC getter)
+   文件: submodule/XPCarControlCore/.../XPCarKeyHelp.m L60-64
+   实现: return [self.carKeyPassInteraction localKeyIsAvailable]
+   │
+   ├→ ✅ XPKeyManageBleHeaderCell
+   │  文件: XiaoPengQiChe/Modules/Home/DigitalKey3/View/XPKeyManageBleHeaderCell.m
+   │  L361: vaildBleKeyCategory (直接调用，非 localCarKeyIsVaild)
+   │  L387: localCarKeyIsVaild && !hasBindedCarkey → "请绑定帐号"
+   │  L429: localCarKeyIsVaild → 进入数字钥匙3.0分支
+   │
+   └→ ✅ XPKeyThreeManageViewController
+      文件: XiaoPengQiChe/Modules/Home/DigitalKey3/Controller/XPKeyThreeManageViewController.m
+      L205: localCarKeyIsVaild && !isBLECardValid → "静默激活"  ← ⚠️ 需确认
+      L631: localCarKeyIsVaild → 查找本地 CarKey 卡片
+      L1370: localCarKeyIsVaild → UWB/NFC 判断  ← ⚠️ 需确认
+      L1372,1980,1999: vaildBleKeyCategory 直接调用
+      L122,207,271,372,378: getCurrentCarKeyId (via XPCarKeyFunctionTool)
+```
+
+### 正向链路 3: `vaildBleKeyCategory()` 的 27+ 只读消费者
+
+以下调用点全部只读检查 `vaildBleKeyCategory() == .PHONE_UWB_KEY`。修改 `vaildBleKeyCategory()` 内部逻辑后，这些调用点**不需要代码修改**，但**语义行为会变化**（CarKey 冻结时现在返回 `.PHONE_UWB_KEY` 而不是 fallback）：
+
+#### XPVehicleSDK 内部 (4 个文件)
+```
+✅ BLEHandlerFactory.swift L12               — 钥匙创建路由
+✅ DigitalKeyManager.swift L489              — existValidBleKey() 内部
+✅ XiaopengBLEConnection+Connect.swift L594  — CarKey detect guard
+✅ XiaopengBLEConnection.swift L148          — controlBleHandlerLife 内部
+```
+
+#### XPCarControlCore (3 个文件, 12+ 调用)
+```
+✅ XPMultiBleManager.m L144,210,218,226,234,245,255,266,371,379
+   — 全部用于 Polling Settings 路由: CarKey 走 Wallet 配置，私有走 BLE 配置
+   — 语义影响: CarKey 冻结时仍走 Wallet 配置路径 ← 合理，CarKey 存在即使用 Wallet 配置
+✅ XPCSecondPollingDataHandler.m L22         — defaultMode 判断
+✅ XPBLEKeyManager.m L622                   — isExistKeyConnectByBle 判断
+```
+
+#### 主工程 (4 个文件, 11+ 调用)
+```
+✅ XPCarOwnerHomeViewController.m L835,1991,2133,5068,7528,8559
+   — 全部用于 UI 路由: CarKey → 3.0 管理页面，私有 → 旧管理页面
+   — 语义影响: CarKey 冻结时仍路由到 3.0 页面 ← 合理
+✅ XPKeyCheckViewController.m L390           — 钥匙检测路由
+✅ XPKeyManageBleHeaderCell.m L361          — 蓝牙状态展示分支
+✅ XPKeyThreeManageViewController.m L1372,1980,1999 — 钥匙管理逻辑
+```
+
+### 反向链路: CarKey 状态变化回调传播
+
+```
+Apple 系统 → PKSecureElementPass.passActivationState 变化
+│
+├→ ⚠️ 系统回调（运行时动态派发，具体触发路径不可 grep 追踪）
+│
+├→ ✅ CarKeyPassManager.getLocalPasses() 定期查询
+│  文件: submodule/XPVehicleSDK/.../CarKey/CarKeyPassManager.swift L252-339
+│  状态映射 (L309-328):
+│    .activated   → XPBLEKeyCardStatusNormal      → passIsAvailable() = .None
+│    .suspended   → XPBLEKeyCardStatusReportLost   → passIsAvailable() = .Suspended  ← 冻结
+│    .activating  → XPBLEKeyCardStatusActivated    → passIsAvailable() = .Activating
+│    .deactivated → XPBLEKeyCardStatusReportLost   → passIsAvailable() = .Suspended
+│    .requiresActivation → XPBLEKeyCardStatusToBeActivated → passIsAvailable() = .RequiresActivation
+│    default      → XPBLEKeyCardStatusNormal       → passIsAvailable() = .None
+│
+├→ ✅ CarKeyPassAccesser.getLocalPasses() 接收结果
+│  文件: submodule/XPVehicleSDK/.../Tools/CarKeyPassAccesser.swift L156-191
+│  更新: self.localCarKeyCard = card → CarKeyPassAccesser.saveCarKeyCard(card)
+│  通知: self.delegate?.localPassDidRefresh()
+│  刷新触发: CarKeyNeedRefesh 通知 / initConfigure() / 回前台
+│
+├→ ✅ DigitalKeyManager.localPassDidRefresh()  (CarKeyPassManageDelegate)
+│  文件: submodule/XPVehicleSDK/.../DigitalKey/DigitalKeyManager.swift L1296-1301
+│  传播:
+│  ├── self.delegate?.didLoadKeys?(vin:)  → DigitalKeyManagerDelegate
+│  └── self.communication?.bleConnection?.didLoadKey()  → BLEConnection
+│
+├→ ✅ XiaopengVehicle.didLoadKeys(vin:)  (DigitalKeyManagerDelegate 实现)
+│  文件: submodule/XPVehicleSDK/.../Presenter/Xiaopeng/XiaopengVehicle.swift L648-652
+│  传播:
+│  ├── self.digitalKeyChangedEvent.send(.Load)  → Combine Publisher
+│  └── NotificationCenter.post(DigitalKeyStateChanged)  → 全局通知
+│
+├→ ✅ XiaopengBLEConnection.didLoadKey()  (BLEConnection override)
+│  文件: submodule/XPVehicleSDK/.../BLEConnection/XiaopengBLEConnection.swift L277-279
+│  传播: self.controlBleHandlerLife(address:cccVid:isResuce:)  → ★ 重新评估钥匙类型
+│  → 此处调用 vaildBleKeyCategory() → 新逻辑下 CarKey 存在即返回 PHONE_UWB_KEY
+│
+└→ 主工程 UI 响应
+   ├→ ✅ XPCarOwnerHomeViewController.m L3943 — digitalKeyChangedEvent 订阅
+   ├→ ✅ XPKeySettingViewController.m L133 — DigitalKeyStateChanged 通知
+   ├→ ✅ XPKeyManageBleHeaderCell.m L295 — DigitalKeyStateChanged 通知
+   └→ ✅ XPKeyThreeManageViewController.m L306 — DigitalKeyStateChanged 通知
+```
+
+### 反向链路关键点: CarKey Session 异常触发刷新
+
+```
+✅ BLEKeyCarKeySessionHandler (CarKeySessionEventDelegate 实现)
+│  文件: submodule/XPVehicleSDK/.../BLE/BLEKeyCarKeySessionHandler.swift L148-153
+│  carKeyFunctionExceptionError(error:) 
+│    → NotificationCenter.post(CarKeyNeedRefesh)
+│    → CarKeyPassAccesser 收到通知 → carKeyNeedRefesh() → getLocalPasses()
+│    → 重新查询本地 CarKey 状态 → 更新 localCarKeyCard → 触发 didLoadKey
+│    → controlBleHandlerLife() 重新评估
+```
+
+## 数据模型变更
+
+### 无新增模型
+
+本方案不需要新增数据模型。
+
+### 修改模型
+
+| 模型/协议 | 变更 | 说明 |
+|----------|------|------|
+| `CarKeyPassAccessProtocol` | 移除 `passIsAvailable()` 方法声明 | 上层不再通过协议访问状态检查 |
+| `CarKeyPassAccesser` | `passIsAvailable()` 从 `public` 改为 `internal` | 仅供内部使用（如异常上报） |
+| `vaildBleKeyCategory()` 返回值语义 | CarKey 冻结时返回 `.PHONE_UWB_KEY`（原返回 fallback） | 核心行为变更 |
+| `localKeyIsAvailable()` 返回值语义 | "CarKey 存在"（原为"CarKey 状态正常"） | 影响 `localCarKeyIsVaild` 的所有消费者 |
+
+## API 接口变更
+
+### 协议方法变更
+
+#### `CarKeyPassAccessProtocol`（submodule/XPVehicleSDK/.../Tools/CarKeyPassAccesser.swift L13-23）
+
+```swift
+// 当前协议
+public protocol CarKeyPassAccessProtocol: NSObjectProtocol {
+    func setCarkeyEventDelegate(delegate: CarKeyPassEventDelegate?)
+    func passIsAvailable() -> CarKeyPassEventError  // ← 移除
+    func getCurrentCarKeyId() -> String?
+    func getCurrentCarKeyInfo() -> Dictionary<String, Any>?
+    func remoteCarKeyChanged(keyIdList: [String]?, uid: UInt64) -> Void
+    func startCarKeyPair(password:autoMakerId:profileTemplateId:brandName:supportedRadioTechnologies:complete:)
+    func startCarKeyShare(isPromptToShareUrl:complete:)
+    func handleAppRunState(isInBackground: Bool)
+}
+
+// 新协议
+public protocol CarKeyPassAccessProtocol: NSObjectProtocol {
+    func setCarkeyEventDelegate(delegate: CarKeyPassEventDelegate?)
+    // passIsAvailable() 已移除 — 改用 getCurrentCarKeyId() != nil 判断 CarKey 存在性
+    func getCurrentCarKeyId() -> String?
+    func getCurrentCarKeyInfo() -> Dictionary<String, Any>?
+    func remoteCarKeyChanged(keyIdList: [String]?, uid: UInt64) -> Void
+    func startCarKeyPair(password:autoMakerId:profileTemplateId:brandName:supportedRadioTechnologies:complete:)
+    func startCarKeyShare(isPromptToShareUrl:complete:)
+    func handleAppRunState(isInBackground: Bool)
+}
+```
+
+### 无新增 HTTP 接口
+
+## 状态管理
+
+### CarKey 状态 → BLE 连接类型映射变更
+
+```
+CarKey 状态流转:
+
+      [CarKey 不存在]              [CarKey 存在]
+           │                    ┌───────────────────────┐
+           │                    │ .activated (正常)     │
+           │                    │ .suspended (冻结)     │
+           │                    │ .activating (激活中)  │
+           │                    │ .deactivated (已停用) │
+           │                    │ .requiresActivation   │
+           │                    └───────────────────────┘
+           │                           │
+           ▼                           ▼
+   vaildBleKeyCategory()        vaildBleKeyCategory()
+         │                             │
+         ▼                             ▼
+  fallbackCategory            .PHONE_UWB_KEY (新逻辑)
+  (私有钥匙/NONE)             (无论状态，只要 getCurrentCarKeyId() != nil)
+         │                             │
+         ▼                             ▼
+  createSelfKeyBleHandler     createCarKeyKeyBleHandler
+  (BLESelfKeyHandler)         (BLEKeyCarKeySessionHandler)
+```
+
+**关键变化**: 冻结/停用状态下 CarKey Session 连接会自然失败，但不会回退到私有钥匙。依赖 `CarKeyPassAccesser.getLocalPasses()` 刷新机制（回前台 / CarKeyNeedRefesh 通知）在 CarKey 解冻后自动恢复。
+
+### 持久化方案
+- [x] 不需要新增持久化 — `localCarKeyCard` 已通过 `CarKeyPassAccesser.saveCarKeyCard()` 持久化
+
+## 车型适配
+
+| 车型 | 是否受影响 | 说明 |
+|------|----------|------|
+| 小鹏系（支持 CarKey） | ✅ 受影响 | `CCC_DK_THIRD == true`、`cccVid` 有值、iOS 18+ 设备 |
+| 小鹏系（不支持 CarKey） | ❌ 不受影响 | `carKeyPlugin == nil`，`vaildBleKeyCategory()` 走 `fallbackCategory` 分支（L500-503 guard 提前返回） |
+| Mona | ❌ 不受影响 | `CCC_DK_THIRD == false`，`carKeyPlugin` 计算属性返回 nil |
+
+✅ 代码验证: `carKeyPlugin` 在 `!CCC_DK_THIRD` 时返回 nil，guard 提前返回 fallbackCategory，Mona 永远不会走到 `passIsAvailable()` / `getCurrentCarKeyId()` 分支。
+
+## 多通道适配
+
+| 操作 | BLE 通道 | TCP/MQTT 通道 | 说明 |
+|------|---------|-------------|------|
+| 钥匙类型决策 | ✅ 受影响 | ❌ 不涉及 | 仅 BLE 连接使用 `vaildBleKeyCategory()` 决策 |
+| Polling 配置路由 | ✅ 行为变化 | ❌ 不涉及 | XPMultiBleManager 10 处调用，CarKey 冻结时仍走 Wallet 配置 |
+| CarKey Session | ✅ 受影响 | ❌ 不涉及 | 冻结时 Session 连接失败，不回退 |
+| TCP 车态请求 | ❌ 不涉及 | ❌ 不涉及 | TCP 通道不依赖 CarKey 状态 |
+
+## 冲突风险标注 (Phase 2.5)
+
+### 风险 1: `vaildBleKeyCategory()` 语义变化对 Polling 的影响
+
+**冲突来源**: `XPMultiBleManager.m` 有 10 处调用 `vaildBleKeyCategory == PHONE_UWB_KEY`，用于 Polling Settings 路由（Wallet Key 配置 vs BLE Key 配置）。
+
+**当前行为**: CarKey 冻结时返回 fallback（私有钥匙）→ 走 BLE Key 的 Polling 配置
+**新行为**: CarKey 冻结时返回 `.PHONE_UWB_KEY` → 走 Wallet Key 的 Polling 配置
+
+**推荐方案 A（采用）**: 保持新行为，CarKey 冻结时走 Wallet 配置。
+- 理由: Polling 配置仅影响数据轮询格式，不影响连接本身。CarKey 存在时使用 Wallet 配置是正确的，因为解冻后需要无缝恢复。
+- 风险: 冻结期间 Polling 数据可能不可用（Session 未连接），但这是预期行为。
+
+**备选方案 B**: 在 Polling 入口增加 CarKey 连接状态检查，仅在已连接时才发送 Polling。
+- 适用: 如果冻结期间 Polling 异常导致了额外的错误日志或性能问题。
+
+### 风险 2: `XPKeyThreeManageViewController` 行 205 "静默激活"逻辑
+
+**冲突来源**: `localCarKeyIsVaild && !isBLECardValid → 静默激活`。语义变化后，CarKey 冻结时 `localCarKeyIsVaild = true`。
+
+**当前行为**: CarKey 冻结时 `localCarKeyIsVaild = false` → 不触发静默激活
+**新行为**: CarKey 冻结时 `localCarKeyIsVaild = true` → 可能触发静默激活 ← ⚠️
+
+**推荐方案 A**: 不需要额外处理。
+- 理由: `isBLECardValid` 是另一个独立判断，`!isBLECardValid` 检查的是私有 BLE 钥匙是否有效。冻结场景下如果用户有私有 BLE 钥匙则 `isBLECardValid = true`（不触发），如果没有私有钥匙则"静默激活"CCC CarKey 卡——冻结状态下激活操作应该被系统拒绝（CarKey 框架控制）。
+
+**备选方案 B**: 在静默激活前增加 `passIsAvailable() != .Suspended` 检查。
+- 适用: 如果冻结状态下静默激活导致了异常 UI 或错误弹窗。
+
+### 风险 3: `XPKeyThreeManageViewController` 行 1370 UWB/NFC 判断
+
+**冲突来源**: `localCarKeyIsVaild → UWB/NFC 能力判断`。
+
+**当前行为**: CarKey 冻结时 `localCarKeyIsVaild = false` → 跳过 UWB/NFC 判断
+**新行为**: CarKey 冻结时 `localCarKeyIsVaild = true` → 进入 UWB/NFC 判断逻辑
+
+**推荐方案 A**: 保持新行为。
+- 理由: UWB/NFC 能力判断是展示性信息，冻结时展示"设备支持 UWB"不会产生副作用。用户看到 CarKey 信息有助于理解当前状态。
+
+**备选方案 B**: 在 UWB/NFC 判断中额外检查 CarKey 状态。
+- 适用: 仅在冻结时 UWB 硬件行为异常的情况下需要。
+
+## 具体修改方案
+
+### 修改 1: `DigitalKeyManager.vaildBleKeyCategory()` ★
+
+**文件**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Function/DigitalKey/DigitalKeyManager.swift`
+**行**: 494-510
+**验证状态**: ✅ 代码验证 — grep 确认方法存在、调用链完整
+
+```swift
+// 当前 (L509)
+return carKeyManager.passIsAvailable() == .None ? .PHONE_UWB_KEY : fallbackCategory
+
+// 修改为
+return carKeyManager.getCurrentCarKeyId() != nil ? .PHONE_UWB_KEY : fallbackCategory
+```
+
+### 修改 2: `CarKeyPassAccessProtocol` 移除 `passIsAvailable()` ★
+
+**文件**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeyPassAccesser.swift`
+**行**: L15 (协议声明)
+**验证状态**: ✅ 代码验证 — grep 确认协议声明在 L15，实现在 L224
+
+```swift
+// 当前 (L15)
+func passIsAvailable() -> CarKeyPassEventError
+
+// 删除此行。CarKeyPassAccesser.passIsAvailable() 实现保留，访问级别改为 internal
+```
+
+### 修改 3: `CarKeyPassAccesser.passIsAvailable()` 降级 ★
+
+**文件**: `submodule/XPVehicleSDK/XPVehicleSDK/VehicleControl/Utilities/Tools/CarKeyPassAccesser.swift`
+**行**: L224
+**验证状态**: ✅ 代码验证 — 当前标记为 `public`
+
+```swift
+// 当前 (L224)
+public func passIsAvailable() -> CarKeyPassEventError {
+
+// 修改为
+internal func passIsAvailable() -> CarKeyPassEventError {
+```
+
+### 修改 4: `CarKeyPassInteractionFlow.localKeyIsAvailable()` ★
+
+**文件**: `submodule/XPVehicleExt/XPVehicleExt/CarKey/CarKeyPassInteractionFlow.swift`
+**行**: L118-120
+**验证状态**: ✅ 代码验证 — grep 确认实现在 L118
+
+```swift
+// 当前 (L118-120)
+func localKeyIsAvailable() -> Bool {
+    return self.carKeyPassFlowAccesser?.passIsAvailable() == .None
+}
+
+// 修改为
+func localKeyIsAvailable() -> Bool {
+    return self.carKeyPassFlowAccesser?.getCurrentCarKeyId() != nil
+}
+```
+
+### 审查点（不需要代码修改，需确认语义正确性）
+
+| 审查点 | 文件 | 行号 | 当前语义 → 新语义 | 结论 |
+|--------|------|------|------------------|------|
+| XPMultiBleManager 10 处调用 | XPCarControlCore/.../XPMultiBleManager.m | L144等 | CarKey 正常→Wallet配置; 冻结→BLE配置 → CarKey 存在→Wallet配置 | ✅ 合理 — Wallet 配置应跟随 CarKey 存在性 |
+| XPCarOwnerHomeVC 6 处调用 | Modules/Home/.../XPCarOwnerHomeViewController.m | L835等 | CarKey 正常→3.0页面; 冻结→旧页面 → CarKey 存在→3.0页面 | ✅ 合理 — 冻结时也应在 3.0 页面管理 |
+| XPKeyManageBleHeaderCell L387 | Modules/Home/DigitalKey3/View/... | L387 | CarKey 正常+未绑定→提示绑定 → CarKey 存在+未绑定→提示绑定 | ✅ 合理 |
+| XPKeyManageBleHeaderCell L429 | 同上 | L429 | CarKey 正常→3.0分支 → CarKey 存在→3.0分支 | ✅ 合理 |
+| XPKeyThreeManageVC L631 | Modules/Home/DigitalKey3/Controller/... | L631 | CarKey 正常→查找卡片 → CarKey 存在→查找卡片 | ✅ 合理 — 冻结卡也应展示 |
+| XPKeyCheckVC L390 | Modules/KeyCheck/... | L390 | CarKey 正常→检测路由 → CarKey 存在→检测路由 | ✅ 合理 |
+| XPCSecondPollingDataHandler L22 | XPCarControlCore/... | L22 | defaultMode 路由 | ✅ 合理 — 跟随 Polling 配置 |
+| XPBLEKeyManager L622 | XPCarControlCore/... | L622 | isExistKeyConnectByBle 判断 | ✅ 合理 — 存在 CarKey 即可 |
+| XPKeyThreeManageVC L205 | Modules/Home/DigitalKey3/Controller/... | L205 | 静默激活 | ⚠️ 见冲突风险 2 |
+| XPKeyThreeManageVC L1370 | 同上 | L1370 | UWB/NFC 判断 | ⚠️ 见冲突风险 3 |
+
+## Constitution 检查
+
+> 对照 constitution.md 逐项确认
+
+- [x] **不跨层调用** — 所有修改均在 SDK 层内部（DigitalKeyManager、CarKeyPassAccesser）和 VehicleExt 扩展层（CarKeyPassInteractionFlow）。主工程仅审查，不修改。
+- [x] **submodule 边界正确** — 修改涉及 3 个 submodule：XPVehicleSDK（修改 2 个文件）、XPVehicleExt（修改 1 个文件）、XPCarControlCore（仅审查，不修改）。各 submodule 需独立提交。
+- [x] **语言策略正确** — 修改的 3 个文件均为 Swift 存量代码，保持 Swift 风格。不涉及新建文件或语言迁移。
+- [x] **指令下发链路完整** — 本方案不修改指令下发路径（VehiclePresenter → VehicleControlRequestManager → VehicleConnection）。仅影响 BLE 连接层的钥匙类型决策。
+- [x] **状态回调链路完整** — 回调链路 CarKeyPassManager → CarKeyPassAccesser → DigitalKeyManager → XiaopengVehicle → UI 保持不变。`localPassDidRefresh()` → `didLoadKey()` → `controlBleHandlerLife()` 路径完整。
+- [x] **不影响其他车型** — Mona 不支持 CarKey（`CCC_DK_THIRD == false`），`carKeyPlugin` 返回 nil，guard 提前返回 fallbackCategory。不支持 CarKey 的小鹏车型同理。
+- [x] **共版设计** — 通过 `CCC_DK_THIRD` 能力配置控制 CarKey 逻辑是否生效，不硬编码车型判断。
+
+## 风险评估与应对
+
+| 风险 | 影响 | 应对策略 | 验证方式 |
+|------|------|---------|---------|
+| CarKey 冻结期间无蓝牙连接 | 中 | 预期行为 — 车端不响应私有钥匙，保持不连接更安全 | 冻结 CarKey → 确认不启动私有钥匙连接 |
+| CarKey 解冻后连接恢复延迟 | 低 | 依赖 `getLocalPasses()` 回前台刷新 + CarKeyNeedRefesh 通知 | 解冻 CarKey → 确认自动恢复连接 |
+| Polling 路由变化（冻结时走 Wallet 配置） | 低 | 冻结时 Session 未连接，Polling 数据不可用是预期 | 冻结期间确认无异常崩溃/错误弹窗 |
+| 移除 `passIsAvailable()` 协议方法编译失败 | 低 | grep 已确认 3 处调用均在同一 submodule 内部，可控 | 编译验证 |
+| `localCarKeyIsVaild` 语义变化影响 UI | 中 | 冻结风险 2/3 分析结论: 影响可控 | 冻结状态下测试钥匙管理 UI |
+
+## 疑问点解答
+
+> 从 proposal.md 继承
+
+- **Q1** → Mona 不支持 CarKey（✅ 代码验证确认）
+- **Q2** → CarKey 冻结状态下需审查关联 if-else 逻辑（本 design 已完成 27+ 调用点审查）
+- **Q3** → 让 CarKey Session 连接自然失败，依赖现有重连机制（✅ 方案 A 已确认）
+- **Q4** → 修改 `vaildBleKeyCategory()` + 删除 `passIsAvailable()` 对外接口 + 改 `localKeyIsAvailable()` + 审查关联逻辑（✅ 全部体现在本方案中）
+
+## 设计决策需确认项（⚠️ 级）
+
+以下决策项通过代码分析有初步结论，但涉及用户体验和业务逻辑判断，需用户确认：
+
+### D1: CarKey 冻结时"静默激活"逻辑
+
+`XPKeyThreeManageViewController` L205: `localCarKeyIsVaild && !isBLECardValid → 静默激活`
+
+语义变化后，CarKey 冻结时 `localCarKeyIsVaild = true`，若用户无私有 BLE 钥匙 (`!isBLECardValid = true`)，可能触发静默激活。
+
+- **方案 A（推荐）**: 不做额外处理。冻结状态下系统 CarKey 框架会拒绝激活操作，不会产生副作用。
+- **方案 B**: 增加 `passIsAvailable() != .Suspended` 前置检查。
+
+### D2: CarKey 冻结时 UWB/NFC 展示信息
+
+`XPKeyThreeManageViewController` L1370: `localCarKeyIsVaild → UWB/NFC 判断`
+
+语义变化后，CarKey 冻结时也会展示 UWB/NFC 能力信息。
+
+- **方案 A（推荐）**: 保持展示。UWB/NFC 是硬件能力，与 CarKey 冻结状态无关，展示不会误导用户。
+- **方案 B**: 冻结时隐藏 UWB/NFC 信息。

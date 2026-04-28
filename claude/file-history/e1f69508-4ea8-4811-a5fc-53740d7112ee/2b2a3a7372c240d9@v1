@@ -1,0 +1,689 @@
+# XPMotors iOS - 工程化 AI-Coding 进阶路径
+
+> 创建日期: 2026-04-08
+> 版本: v1.0
+> 适用团队: XPMotors iOS 团队（中大型团队）
+> 当前阶段: L1 工具链基建（准备中）
+
+---
+
+## 一、背景与现状分析
+
+### 1.1 团队画像
+
+| 维度 | 现状 |
+|---|---|
+| **AI-Coding 阶段** | 辅助编程（L2），有初步 Claude Code 经验 |
+| **项目类型** | iOS 原生（Swift/OC 混编），中等偏复杂架构 |
+| **团队规模** | 中大型团队，需要标准化和知识传递 |
+| **需求形态** | 70% 存量迭代 / 20% 小新功能 / 10% 大模块开发 |
+| **工具基础** | Claude Code 为主 + Copilot，有初级 Skills 经验 |
+| **期望目标** | 长期平台化建设 |
+
+### 1.2 核心痛点
+
+1. **存量工程理解幻觉** — AI 不理解项目已有封装和架构，经常重复造轮子或调用错误 API
+2. **知识无法沉淀** — 每次和 AI 协作都是即兴发挥，经验无法复用，质量不稳定
+3. **生成代码可用性低** — AI 生成的代码需要大量人工修改才能用
+4. **跨 Agent 一致性差** — 生成的 Skill 换一个 Agent 结果差距太大
+5. **上下文缺失** — AI 不清楚工程与模块的调用和功能设计的上下文
+
+### 1.3 AI-Coding 四阶段演进模型（参考）
+
+```
+阶段一：智能代码补全（2018-2020）→ 局部优化，单行补全
+阶段二：辅助编程（2021-2023）    → Copilot，函数级生成 ← 当前位置
+阶段三：Vibe Coding（2025初）    → 自然语言驱动，即兴编程
+阶段四：范式编程（2025至今）      → Spec 驱动，规范化工程 ← 目标方向
+```
+
+---
+
+## 二、进阶路径总览
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  L5: 平台化建设 — 评测体系 + 自动化验证 + 知识飞轮          │
+│  时间: 第 9 个月+                                           │
+├─────────────────────────────────────────────────────────────┤
+│  L4: 范式编程 — Spec 规约 (proposal/design/tasks)           │
+│  时间: 第 6-9 个月                                          │
+├─────────────────────────────────────────────────────────────┤
+│  L3: 知识体系 — 领域知识库 + 知识点 + 双路召回               │
+│  时间: 第 3-6 个月                                          │
+├─────────────────────────────────────────────────────────────┤
+│  L2: AI 友好型工程 — Context 文档 + Rules + Skills           │
+│  时间: 第 2-3 个月                                          │
+├─────────────────────────────────────────────────────────────┤
+│  L1: 工具链基建 — Claude Code 深度配置 + 工具协同             │
+│  时间: 当前 → 第 1 个月                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 时间线甘特图
+
+```
+时间线    L1工具基建    L2工程改造    L3知识体系    L4范式编程    L5平台化
+─────────────────────────────────────────────────────────────────
+Month 1   ████████
+Month 2                ████████
+Month 3                ████████     ████████
+Month 4                             ████████
+Month 5                             ████████
+Month 6                             ████████     ████████
+Month 7                                          ████████
+Month 8                                          ████████
+Month 9                                          ████████     ████████
+Month 10+                                                     ████████
+```
+
+---
+
+## 三、参考方法论与来源
+
+| # | 参考源 | 核心贡献 | 路径影响层级 | 来源链接 |
+|---|---|---|---|---|
+| 1 | **Anthropic 官方 Best Practices** | CLAUDE.md 编写标准、Skills/Hooks/SubAgent 设计模式、上下文管理策略、Plan Mode 工作流 | L1, L4 | [code.claude.com/docs/en/best-practices](https://code.claude.com/docs/en/best-practices) |
+| 2 | **Anthropic SubAgent + Agent Teams** | 多 Agent 并行、Writer/Reviewer 模式、知识库生成用 SubAgent | L3, L5 | [code.claude.com/docs/en/sub-agents](https://code.claude.com/docs/en/sub-agents) |
+| 3 | **搜狗输入法 Kuikly AI 工程化** | AI 友好型工程改造、GAN 对抗式文档生成（准确率+114%）、框架级 Rules/Skills、渐进式披露 | L2 | [mp.weixin.qq.com/s/eAHKIh77Vz5OV4bJ3rYmiQ](https://mp.weixin.qq.com/s/eAHKIh77Vz5OV4bJ3rYmiQ) |
+| 4 | **淘系交易 Spec 平台** | 知识库+知识点双层体系、双路召回、Spec 规约（proposal/design/tasks）、评测体系（F1-doc/F1-code）、渐进式披露 | L3, L4, L5 | [mp.weixin.qq.com/s/s4IVundC5cj61iY8rahA0A](https://mp.weixin.qq.com/s/s4IVundC5cj61iY8rahA0A) |
+| 5 | **OpenSpec** | Delta 变更格式、三阶段工作流（提案→实现→归档）、20+ 工具兼容、成熟项目迭代 | L4 | [github.com/codeintegrity-ai/openspec](https://github.com/codeintegrity-ai/openspec) |
+| 6 | **SpecKit** | 七阶段完整生命周期、Constitution（项目宪法）概念、模板驱动 | L4（借鉴） | Spec-Kit 框架 |
+| 7 | **BMAD Method** | 多 Agent 角色协作（需求分析/架构/开发/QA/文档）、完整交付链 | L5（远期） | [github.com/bmadcode/BMAD-METHOD](https://github.com/bmadcode/BMAD-METHOD) |
+
+---
+
+## 四、各层详细方案
+
+---
+
+### L1: 工具链基建（当前 → 第 1 个月）
+
+**核心理念**: 把 Claude Code 从"个人聊天工具"变成"团队工程化基座"
+
+**选择依据**: 
+- Anthropic 官方: "Most best practices are based on one constraint: Claude's context window fills up fast, and performance degrades as it fills."
+- 搜狗文章: "影响最大的往往是工程本身的质量……与其研究高级提示词技巧，不如先回头看看自己的工程"
+
+#### 1.1 CLAUDE.md 体系化
+
+**层级结构**:
+```
+~/.claude/CLAUDE.md                    → 全局级：个人偏好和通用规则
+项目根目录/CLAUDE.md                   → 项目级：架构红线 + 模块地图 + 命名规范（Git 提交，团队共享）
+项目根目录/CLAUDE.local.md             → 个人项目级：个人特化配置（.gitignore）
+子目录/CLAUDE.md                       → 模块级：模块特化规则（按需加载）
+```
+
+**编写原则**（来源: Anthropic 官方）:
+1. **精简原则**: 对每一行问——"删掉它 Claude 会犯错吗？" 如果不会，删掉
+2. **可测试原则**: 观察 Claude 行为变化来验证规则有效性
+3. **排除原则**: 不写 Claude 能从代码推断出的内容、不写标准语言规范、不写会频繁变化的内容
+4. **强调原则**: 关键规则用 "IMPORTANT" 或 "YOU MUST" 提升遵循度
+
+**CLAUDE.md 内容模板**:
+```markdown
+# 代码规范
+- 使用 Swift 5.9+，最低支持 iOS 15.0
+- ViewModel 使用 @Observable 宏（非 ObservableObject）
+- 网络请求必须通过 XPNetworking 模块，禁止直接使用 URLSession
+- OC/Swift 互操作必须通过 Bridge 层
+
+# 架构约束
+- MVVM 架构，禁止在 ViewController 中直接操作数据库
+- 新功能必须放在 Modules/ 对应子目录下
+- 公共组件放在 LocalPods/ 对应 Pod 中
+
+# 工作流
+- 修改代码后运行单个相关测试，不要跑全量测试套件
+- 提交前确保通过 SwiftLint 检查
+- 优先使用项目已有封装，不要重复造轮子
+
+# 模块地图
+- XiaoPengQiChe/Modules/ — 业务模块根目录
+- LocalPods/ — 内部组件库
+- submodule/ — 子模块依赖
+```
+
+#### 1.2 Skills 标准化
+
+**痛点解决**: "生成的 Skill 换一个 Agent 结果差距太大"
+
+**根因分析**: 
+- Skill 描述过于自由格式，缺乏结构化的输入/输出/约束声明
+- 缺少触发关键词机制，导致不相关场景也加载
+
+**Skill 标准模板**:
+```yaml
+# .claude/skills/<skill-name>/SKILL.md
+---
+name: <skill-name>
+description: <一句话描述 Skill 用途>
+disable-model-invocation: <true|false>  # 有副作用的 Skill 设为 true
+---
+
+## 触发条件
+当任务涉及以下关键词时自动激活: [关键词1, 关键词2, ...]
+
+## 输入
+- $ARGUMENTS: <参数说明>
+- 必需上下文: <需要的前置信息>
+
+## 输出
+- 格式: <输出格式说明>
+- 位置: <输出文件路径>
+
+## 约束
+- <约束条件1>
+- <约束条件2>
+
+## 执行步骤
+1. <步骤1>
+2. <步骤2>
+...
+```
+
+**首批必建 Skills**:
+| Skill | 用途 | 触发关键词 |
+|---|---|---|
+| `oc-to-swift` | OC 代码转 Swift | "转Swift", "OC迁移", "@objc" |
+| `new-viewmodel` | 创建标准 ViewModel | "新建VM", "ViewModel", "新页面" |
+| `module-context` | 生成模块 Context 文档 | "模块文档", "Context", "文档生成" |
+| `knowledge-recall` | 匹配和加载知识点 | 自动触发 |
+| `code-review-ios` | iOS 代码审查 | "审查", "Review", "检查" |
+
+#### 1.3 Hooks 自动化
+
+**选择依据**: 
+- Anthropic 官方: "Unlike CLAUDE.md instructions which are advisory, hooks are deterministic and guarantee the action happens"
+- 搜狗文章: "Hooks 保证关键动作一定被触发"
+
+**首批 Hooks 配置**:
+```json
+// .claude/settings.json
+{
+  "hooks": {
+    "PostFileEdit": [
+      {
+        "matcher": "*.swift",
+        "command": "swiftlint lint --path $FILE --quiet"
+      }
+    ],
+    "PreCommit": [
+      {
+        "command": "swiftlint lint --strict"
+      }
+    ]
+  }
+}
+```
+
+#### 1.4 Copilot 角色定位
+
+| 工具 | 定位 | 使用场景 | 选择依据 |
+|---|---|---|---|
+| **Claude Code** | 主力 Agent（L3） | 所有需要理解上下文的任务：功能开发、Bug 修复、代码审查、重构 | 淘系文章: 命令行 Agent 具有"无与伦比的集成自由度和执行深度" |
+| **Copilot** | 补全工具（L1） | 行内补全、简单代码片段、语法提示 | 降级为纯补全角色，避免工具职责混乱 |
+
+#### L1 交付物清单
+
+- [ ] 项目级 CLAUDE.md（含架构分层、命名规范、模块地图）
+- [ ] CLAUDE.local.md 模板
+- [ ] 5-10 个标准化 Skills（覆盖高频操作）
+- [ ] Hooks 配置（PostFileEdit、PreCommit）
+- [ ] 团队 Claude Code 使用规范文档
+- [ ] Copilot 使用边界说明
+
+---
+
+### L2: AI 友好型工程改造（第 2-3 个月）
+
+**核心理念**: 让 AI "看得懂" 你的工程
+
+**选择依据**: 
+- 搜狗文章: AI 编码准确率提升 114%，新人上手提速 50%，理解模块功能提速 107%
+- Anthropic 官方: "Claude works within certain constraints you need to understand"
+
+#### 2.1 模块 Context 文档生成
+
+**文档生成方式**: Claude Code + SubAgent（渐进迭代）
+
+**选择依据**（来源: 淘系文章三方案对比）:
+| 方案 | 时间成本 | 覆盖范围 | 可定制性 | 跨仓库 | 推荐度 |
+|---|---|---|---|---|---|
+| 手工编写 | 高 | 有限 | 高 | 支持 | ❌ |
+| DeepWiki 自动生成 | 低 | 全量 | 低 | 不支持 | ❌ |
+| **Claude Code + SubAgent** | **低** | **可指定核心入口** | **高** | **支持** | **✅** |
+
+**文档标准模板**:
+```markdown
+# 模块名: [ModuleName]
+
+## 模块职责
+[一段话描述该模块的核心职责]
+
+## 核心 API
+| 方法/类 | 语言 | 用途 | 示例 |
+|---------|------|------|------|
+| `ClassName.method()` | Swift | 描述 | `ClassName.method(param: value)` |
+
+## 参数说明
+- `param1`: [类型] — [含义]
+- `param2`: [类型] — [含义]
+
+## 依赖关系
+- **上游依赖**: [该模块依赖谁]
+- **下游被依赖**: [谁依赖该模块]
+
+## OC/Swift 互操作
+- Swift 入口: `ClassName.swift`
+- OC 桥接: `ClassNameBridge.h`
+- 注意事项: [互操作特殊约束]
+
+## 常见用法
+[代码片段示例]
+
+## 已知限制/陷阱
+- [坑1]
+- [坑2]
+```
+
+**优先生成文档的模块**（按依赖频次排序）:
+1. 网络层 (XPNetworking)
+2. 数据层 (数据库/缓存)
+3. UI 基础组件
+4. 认证/登录
+5. 路由/导航
+6. 埋点/监控
+
+#### 2.2 iOS 特化 Rules
+
+```markdown
+# .claude/rules/ios-architecture.md
+
+## 架构规则
+- MVVM 架构，严禁 MVC 式的 ViewController 膨胀
+- 所有 UI 组件继承自 XPBaseView/XPBaseViewController
+- 网络请求必须通过 XPNetworking 模块
+- 数据持久化统一使用项目封装的存储模块
+- OC 与 Swift 互操作必须通过 Bridge 层
+
+## 编码规则
+- Model 层使用 Codable 协议，禁止手写 JSON 解析
+- 异步操作优先使用 async/await（Swift 5.5+）
+- 避免强引用循环，closure 中使用 [weak self]
+- 字符串国际化使用项目统一的 Localizable 方案
+
+## 测试规则
+- 新增 ViewModel 必须编写对应的单元测试
+- 网络层测试使用 Mock，不依赖真实 API
+- UI 测试覆盖核心交互流程
+```
+
+#### 2.3 业务术语 → 代码位置映射
+
+**选择依据**: 淘系文章发现"告诉模型具体代码位置后，模型可以快速定位到代码，代码修改准确率显著提升"
+
+```markdown
+# .ai-knowledge/term-mapping.md
+
+| 业务术语 | 代码位置 | 语言 | 说明 |
+|---------|---------|------|------|
+| 车辆列表 | XiaoPengQiChe/Modules/Vehicle/... | Swift | 车辆管理主页面 |
+| 充电桩地图 | XiaoPengQiChe/Modules/Charge/... | Swift | 充电桩查找与导航 |
+| 用户登录 | XiaoPengQiChe/Modules/Auth/... | Swift/OC | 登录/注册流程 |
+| 订单详情 | XiaoPengQiChe/Modules/Order/... | Swift | 订单管理 |
+| 远程控车 | XiaoPengQiChe/Modules/Remote/... | Swift | 远程车辆控制 |
+| OTA 升级 | XiaoPengQiChe/Modules/OTA/... | Swift | 固件升级 |
+```
+
+#### L2 交付物清单
+
+- [ ] 15-20 个核心模块的 Context 文档
+- [ ] iOS 项目 Rules 集合（架构/命名/编码/测试）
+- [ ] 业务术语 → 代码位置映射表
+- [ ] 模块 Context 文档生成 Skill（后续新模块可自动生成）
+- [ ] SubAgent 配置文件（文档生成专用）
+
+---
+
+### L3: 领域知识体系构建（第 3-6 个月）
+
+**核心理念**: 从 "知识随人走" 变成 "知识留在组织"
+
+**选择依据**: 
+- 淘系文章: "每一次使用都是对知识库的投资，每一次沉淀都让下一次生成更精准——复利效应"
+- 解决核心痛点: 跨 Agent 一致性差、知识无法沉淀
+
+#### 3.1 知识库目录结构
+
+```
+.ai-knowledge/
+├── modules/                    # 模块 Context 文档（L2 已建设）
+│   ├── networking.md
+│   ├── ui-framework.md
+│   ├── data-layer.md
+│   └── ...
+├── knowledge-points/           # 知识点（细粒度认知校正）
+│   ├── oc-swift-bridge.kp.md
+│   ├── networking-patterns.kp.md
+│   ├── thread-safety.kp.md
+│   ├── memory-management.kp.md
+│   └── ...
+├── pitfalls/                   # 踩坑记录
+│   ├── memory-leak-patterns.md
+│   ├── thread-safety-rules.md
+│   ├── oc-swift-gotchas.md
+│   └── ...
+├── specs/                      # Spec 模板（为 L4 准备）
+│   ├── proposal-template.md
+│   ├── design-template.md
+│   └── tasks-template.md
+├── term-mapping.md             # 术语映射（L2 已建设）
+└── index.md                    # 全局索引导航
+```
+
+#### 3.2 知识点规范
+
+**知识点 vs 知识库的关系**（来源: 淘系文章）:
+
+| 维度 | 知识点 | 知识库 |
+|---|---|---|
+| 粒度 | 细粒度，一句话/简短描述 | 粗粒度，完整文档 |
+| 用途 | 概念澄清、认知校正 | 专有知识补全 |
+| 召回方式 | 触发关键词精准匹配 | 语义检索 / 索引导航 |
+| 维护成本 | 低 | 中 |
+| 典型场景 | "OC 调 Swift 必须用 Bridge" | "XPNetworking 完整 API 文档" |
+
+**知识点标准格式**:
+```markdown
+# .ai-knowledge/knowledge-points/oc-swift-bridge.kp.md
+
+## 元信息
+- 触发关键词: ["OC调用Swift", "Swift调用OC", "桥接", "@objc", "Bridging-Header"]
+- 分类: 工程规范
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+项目 OC/Swift 互操作规范:
+1. Swift 暴露给 OC: 必须添加 @objc 和 public 修饰符
+2. OC 暴露给 Swift: 通过 Bridging-Header，路径: Config/XPMotors-Bridging-Header.h
+3. 禁止在 Swift 中直接 import OC 的 .h 文件
+4. 复杂数据结构互传: 使用 XPBridgeModel 中间层
+5. 枚举类型: OC 枚举需要标记为 NS_ENUM 才能在 Swift 中使用
+```
+
+#### 3.3 召回策略（渐进式）
+
+**阶段 A（第 3-4 月）: 纯本地文档 + Skills 按需加载**
+```
+用户任务 → Skills 匹配触发关键词 → 加载对应知识点 → 注入上下文
+```
+
+**阶段 B（第 5-6 月）: 引入 MCP Server + 向量索引**
+```
+用户任务 → MCP 语义检索(广度) + 关键词匹配(精度) → 双路召回
+```
+
+**阶段 C（第 6 月+）: 完整双路召回**
+```
+语义检索(KBase) → 候选知识片段（广度）
+索引导航 → 精确代码定位（精度）
+两者配合: 前者解决"不知道该看什么"，后者解决"如何准确找到代码位置"
+```
+
+**选择依据**: 淘系文章验证了单纯 chunk 召回有"盲检索"和"断语义"两个问题，双路召回已证明有效
+
+#### 3.4 知识沉淀 SOP
+
+**每次需求完成后的标准操作**:
+1. 回顾: 哪些决策是关键的？哪些问题是之前没遇到过的？
+2. 提炼: 抽象为结构化知识点
+3. 分类: 个人级 / 项目级 / 全局级
+4. 打标: 最佳实践 / 约束规则 / 领域知识 / 踩坑记录
+5. 存储: 写入 `.ai-knowledge/` 对应目录
+6. 索引: 更新 `index.md`
+
+#### L3 交付物清单
+
+- [ ] 完整的 `.ai-knowledge/` 知识库目录结构
+- [ ] 30+ 条知识点（含触发关键词）
+- [ ] 踩坑记录库（持续沉淀）
+- [ ] 知识召回 Skill（根据需求自动匹配知识点）
+- [ ] 知识沉淀 SOP 文档
+- [ ] 索引导航文件 `index.md`
+
+---
+
+### L4: 范式编程 / Spec 驱动开发（第 6-9 个月）
+
+**核心理念**: 从 "人写代码 + AI 辅助" 到 "人写 Spec + AI 执行"
+
+**选择依据**: 
+- 淘系文章: "规范(Spec)置于开发流程核心，代码是 Spec 的自动渲染产物"
+- 你的场景: 70% 存量迭代适合 OpenSpec，20% 新功能适合 SpecKit 风格
+
+#### 4.1 Spec 框架选型
+
+| 框架 | 适合场景 | 你的适配度 | 用途 |
+|---|---|---|---|
+| **OpenSpec** | 成熟项目迭代更新 | ★★★★★ (70% 存量迭代) | **主推** |
+| **SpecKit** | 从零构建新项目 | ★★ | 借鉴 Constitution 概念 |
+| **BMAD** | 多 Agent 角色协作 | ★★★ | 远期 Multi-Agent 参考 |
+
+**核心选型依据**: 
+- 淘系文章总结: "OpenSpec 更适合成熟稳定项目的迭代更新，但可以结合 SpecKit 的部分特性"
+- OpenSpec 的 Delta 变更格式天然适合存量代码的迭代修改
+
+#### 4.2 与 Anthropic Plan Mode 的对接
+
+```
+Anthropic 官方工作流         对应 Spec 阶段           操作
+────────────────────────────────────────────────────────
+Explore (Plan 模式)        → proposal.md 生成       → 读文件、理解需求
+Plan (Plan 模式)           → design.md 生成         → 生成技术方案
+Implement (正常模式)       → tasks.md 执行          → 写代码
+Commit (正常模式)          → 提交 + 归档            → Git 操作
+```
+
+#### 4.3 Spec 三件套模板
+
+**proposal.md — Why & What**:
+```markdown
+# 变更提案: [需求名称]
+
+## 变更背景
+[PRD 链接 / 需求描述]
+
+## 影响范围
+- 涉及模块: [模块列表]
+- 涉及文件数: [预估]
+- 影响平台: iOS
+
+## 变更目标
+- [ ] 目标1
+- [ ] 目标2
+
+## 疑问点
+- Q1: [AI 识别的不确定因素]
+  建议: [参考方案]
+- Q2: ...
+```
+
+**design.md — How（技术方案）**:
+```markdown
+# 技术方案: [需求名称]
+
+## 调用链路
+[VC → VM → Service → Network 的调用链]
+
+## 数据模型变更
+[Model 定义]
+
+## API 接口变更
+[接口说明]
+
+## 状态管理
+[状态流转说明]
+
+## 风险评估
+- [风险1]: [应对策略]
+```
+
+**tasks.md — 执行清单**:
+```markdown
+# 任务清单: [需求名称]
+
+## 前置条件
+- [ ] 知识点已加载: [相关知识点列表]
+- [ ] Context 文档已确认: [相关模块列表]
+
+## 实施步骤
+- [ ] Task 1: [具体任务描述]
+  - 文件: [涉及文件路径]
+  - 约束: [特殊约束]
+- [ ] Task 2: ...
+
+## 验证步骤
+- [ ] 单元测试通过
+- [ ] SwiftLint 检查通过
+- [ ] 功能自测
+```
+
+#### 4.4 渐进式披露 Skills
+
+**选择依据**: 
+- 淘系文章: "一次性加载全部提示词，模型注意力分散" → 改用 Skills 懒加载，核心指令精简到 50 行
+- Anthropic 官方: Skills "Claude loads them on demand without bloating every conversation"
+
+```
+Skill 1: spec-proposal  → 只加载 proposal 模板 + 需求分析指令
+Skill 2: spec-design    → 加载 design 模板 + 知识库召回指令
+Skill 3: spec-tasks     → 加载 tasks 模板 + 代码生成约束
+```
+
+#### 4.5 疑问点机制
+
+**选择依据**: 淘系文章创新设计——将 "生成后返工" 前置为 "生成前对齐"
+
+**在 Claude Code 本地模式下的实现**:
+```
+1. Claude 生成 proposal.md 时，同步输出 [疑问点] 部分
+2. 通过 AskUserQuestion 交互式询问用户
+3. 用户确认/补充后，疑问点答案注入 design.md 生成阶段
+4. 确保 "假设显性化"，避免 AI 盲目猜测
+```
+
+#### L4 交付物清单
+
+- [ ] OpenSpec 规范体系（含 constitution.md 项目宪法）
+- [ ] Spec 三件套模板（iOS 特化: proposal/design/tasks）
+- [ ] 疑问点生成与消费流程
+- [ ] 渐进式披露 Skills（3 个阶段）
+- [ ] 3-5 个真实需求的 Spec 驱动开发案例
+
+---
+
+### L5: 平台化建设（第 9 个月+）
+
+**核心理念**: "评测-归因-优化" 闭环，知识飞轮自转
+
+**选择依据**: 
+- 淘系文章: 已验证的评测框架（F1-doc / F1-code）
+- Anthropic 官方: Writer/Reviewer 双会话模式用于代码审查
+- BMAD Method: 远期 Multi-Agent 框架参考
+
+#### 5.1 评测体系
+
+| 指标 | 定义 | 目标值 | 来源 |
+|---|---|---|---|
+| **F1-doc** | Spec 中召回的入口/协议/依赖的准确率 | ≥ 85% | 淘系 |
+| **F1-code** | AI 生成代码被最终保留的比例（行级 → 语义级演进） | ≥ 60% | 淘系 |
+| **端到端耗时** | 从需求输入到可用代码的总时长 | ≤ 2h | 自定 |
+| **研发效率提升比** | (传统耗时 - 平台耗时) / 传统耗时 × 100% | ≥ 50% | 淘系 |
+
+**评测演进**:
+- 阶段 1: 行级 diff 的 F1-code（快速上线）
+- 阶段 2: AST 解析的语义级评测（淘系文章规划方向: "剥离格式差异对评分的干扰"）
+- 阶段 3: 意图对齐评测（PRD 功能点覆盖率）
+
+#### 5.2 知识飞轮
+
+```
+需求开发 → AI 生成 → 人工 Review → 差异归因
+    ↑                                       ↓
+知识库进化 ← 知识点沉淀 ← 经验提炼 ←──────┘
+```
+
+**四圈正向循环**（来源: 淘系文章）:
+1. **需求开发**: 自动检索知识库，召回相关知识
+2. **知识沉淀**: 需求完成后提炼结构化知识点
+3. **知识库进化**: 分类、打标、纳入检索范围
+4. **方案质量提升**: 下次生成更精准，形成复利效应
+
+#### 5.3 自动化验证闭环
+
+```
+CI 集成:
+AI commit → 自动识别 → 触发评测流水线 → 结果回写
+                                            ↓
+                            低分 case → 自动归因分析
+                                            ↓
+                            知识库缺失 / PRD 模糊 / 模型偏差
+                                            ↓
+                            知识库补全 / Prompt 调优
+```
+
+#### 5.4 远期: Multi-Agent 框架（BMAD 参考）
+
+当团队规模进一步扩大时，参考 BMAD Method 的多 Agent 角色分工:
+- 需求分析 Agent
+- 架构设计 Agent
+- 开发 Agent
+- QA/测试 Agent
+- 文档 Agent
+
+#### L5 交付物清单
+
+- [ ] 评测脚本（F1-doc + F1-code）
+- [ ] 知识沉淀标准流程（需求完成后自动触发）
+- [ ] 团队级 Dashboard（覆盖率、准确率、效率提升比）
+- [ ] Writer/Reviewer 双会话工作流
+- [ ] Multi-Agent 框架设计文档（远期）
+
+---
+
+## 五、关键决策记录
+
+| # | 决策点 | 选择 | 依据 |
+|---|---|---|---|
+| 1 | Agent 部署模式 | 本地 CLI 协作模式 | 零服务端成本、快速落地、灵活调试 |
+| 2 | 知识库形态 | 渐进式（本地 → RAG） | 先验证价值再投入基建 |
+| 3 | 主力工具 | Claude Code | L3 执行深度和集成自由度最优 |
+| 4 | Copilot 角色 | 降级为补全工具 | 避免职责混乱 |
+| 5 | Spec 框架 | OpenSpec 为主 + SpecKit 借鉴 | 70% 存量迭代场景匹配 |
+| 6 | 文档生成方式 | Claude Code + SubAgent | 可定制+跨仓库支持 |
+| 7 | Skills 一致性 | 标准化模板 + 触发关键词 | 解决跨 Agent 结果差异 |
+
+---
+
+## 六、变更日志
+
+| 日期 | 版本 | 变更内容 |
+|---|---|---|
+| 2026-04-08 | v1.0 | 初始版本，完成五层路径规划 |
+
+---
+
+## 七、参考链接
+
+1. [Anthropic Claude Code Best Practices](https://code.claude.com/docs/en/best-practices)
+2. [Anthropic Claude Code Memory (CLAUDE.md)](https://code.claude.com/docs/en/memory)
+3. [Anthropic SubAgents](https://code.claude.com/docs/en/sub-agents)
+4. [Anthropic Skills](https://code.claude.com/docs/en/skills)
+5. [Anthropic Hooks](https://code.claude.com/docs/en/hooks)
+6. [搜狗输入法 Kuikly AI 工程化: Spec coding 的探索与落地](https://mp.weixin.qq.com/s/eAHKIh77Vz5OV4bJ3rYmiQ)
+7. [淘系交易 Spec 平台: 从 Vibe Coding 到范式编程](https://mp.weixin.qq.com/s/s4IVundC5cj61iY8rahA0A)
+8. [OpenSpec - GitHub](https://github.com/codeintegrity-ai/openspec)
+9. [BMAD Method - GitHub](https://github.com/bmadcode/BMAD-METHOD)

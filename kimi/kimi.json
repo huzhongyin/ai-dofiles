@@ -1,0 +1,24 @@
+{
+  "work_dirs": [
+    {
+      "path": "/Users/xpeng/testbench",
+      "kaos": "local",
+      "last_session_id": null
+    },
+    {
+      "path": "/Users/xpeng/Desktop/workSpace/XPMotors_IOS",
+      "kaos": "local",
+      "last_session_id": null
+    },
+    {
+      "path": "/Users/xpeng/XPMotors_IOS",
+      "kaos": "local",
+      "last_session_id": null
+    },
+    {
+      "path": "/Users/xpeng",
+      "kaos": "local",
+      "last_session_id": null
+    }
+  ]
+}

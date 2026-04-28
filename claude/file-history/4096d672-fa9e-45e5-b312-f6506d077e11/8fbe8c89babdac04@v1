@@ -1,0 +1,218 @@
+//
+//  XPRouter+DigitalKey.m
+//  XiaoPengQiChe
+//
+//  Created by liangxuan on 2019/11/5.
+//  Copyright © 2019 xiaopeng.com. All rights reserved.
+//
+
+#import "XPRouter+DigitalKey.h"
+#import "XPRouterURL.h"
+#import "XPBLEKeyManager.h"
+#import "XPRouterUtil.h"
+#import <CTMediator+Login.h>
+#import <CTMediator+CarState.h>
+#import <UIViewController+Display.h>
+#import <CTMediator+TabBarCenter.h>
+#import "CTMediator+Account.h"
+#import <CTMediator+CarState.h>
+#import "CTMediator+BLEKey.h"
+#import "UIViewController+Display.h"
+#import "UIViewController+Navigation.h"
+#import "MyCarInfo.h"
+#import "XPKeyThreeManageViewController.h"
+#import "CTMediator+Account.h"
+
+@implementation XPRouter (DigitalKey)
+
+#pragma mark - register
++ (void)regiseterDigitalKeyRouters
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        [self internalRegiseterDigitalKeyRouters];
+    });
+}
+
++ (void)internalRegiseterDigitalKeyRouters {
+    [XPRouter registerURLPattern:XPRouterURL_Digital_Key_Card_Auth_Cancel routerHandler:^(NSDictionary *params) {
+        //DO NOTTHING.
+        DLogTagDebug(kBLEKeyTag, @"处理非车主数字钥匙授权过期/被取消授权推送消息，目前没定义消息跳转");
+    }];
+    
+    [XPRouter registerURLPattern:XPRouterURL_Digital_Key_Receive_Card routerHandler:^(NSDictionary *params) {
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [self digitalKeyReceiveCard:params];
+         });
+     }];
+    
+    [XPRouter registerURLPattern:XPRouterURL_Digital_Key_Activate_Card routerHandler:^(NSDictionary *params) {
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [self digitalKeyActiveCard:params];
+         });
+     }];
+    
+    [XPRouter registerURLPattern:XPRouterURL_Digital_Key_Card_Manager routerHandler:^(NSDictionary *params) {
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [self digitalKeyOwnCardNotification:params];
+         });
+     }];
+    
+    [XPRouter registerURLPattern:XPRouterURL_Digital_Key_All_Card_List routerHandler:^(NSDictionary *params) {
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [self digitalKeyAllCardList:params];
+         });
+     }];
+    
+    [XPRouter registerURLPattern:XPRouterURL_digital_key_generate_token routerHandler:^(NSDictionary *params) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self digitalKeyAllCardList:params];
+        });
+    }];
+    
+    [XPRouter registerURLPattern:XPRouterURL_digital_key_card_check routerHandler:^(NSDictionary *params) {
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [self digitalKeyAllCardList:params];
+         });
+     }];
+
+    [XPRouter registerURLPattern:XPRouterURL_Digital_Key_Ble_Key_Check routerHandler:^(NSDictionary *routerParameters) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self digitalKeyBleKeyCheck:routerParameters];
+        });
+    }];
+}
+
+/*
+ 车主发出钥匙授权消息
+ 车主变更有效期
+ 授权凭证失效提醒
+ 钥匙有效期到期提醒
+ */
++ (void)digitalKeyReceiveCard:(NSDictionary*)params {
+    __CHECK(CTMediator.isLogin)
+    __CHECK(0!=CTMediator.defaultCarVin.length)
+    NSString* vin = [params objectForKey:@"vin"];
+    MyCarInfo* carInfo = [CTMediator carInfoForVin:vin];
+    if(carInfo) {
+        [CTMediator pickCarInfoAsDefaultCarInfo:carInfo];
+        UIViewController *vc = [CTMediator createXPNewCarAuthorizedDetailViewController:@{@"vin":vin? : @""}];
+        [UIViewController.currentFrontViewController safePushViewController:vc animated:YES];
+    }
+}
+/*
+钥匙激活成功
+*/
++ (void)digitalKeyActiveCard:(NSDictionary*)params {
+    __CHECK(CTMediator.isLogin)
+    __CHECK(0!=CTMediator.defaultCarVin.length)
+    NSString* vin = [params objectForKey:@"vin"];
+    MyCarInfo* carInfo = [CTMediator carInfoForVin:vin];
+    if(carInfo) {
+        [CTMediator pickCarInfoAsDefaultCarInfo:carInfo];
+        DLogTagInfo(kBLEKeyTag, @"carInfo存在，跳转到接收者钥匙页面");
+        UIViewController *vc = [CTMediator createXPNewCarAuthorizedDetailViewController:@{@"vin":vin? : @""}];
+        [UIViewController.currentFrontViewController safePushViewController:vc animated:YES];
+    } else {
+        DLogTagInfo(kBLEKeyTag, @"carInfo不存在，toast提示不拥有该车辆");
+        [XPToast showMessage:@"该车辆的授权已被解除"];
+    }
+}
+/*
+ 接受者删除钥匙
+ 授权钥匙过期
+ 钥匙到期提醒
+ */
++ (void)digitalKeyOwnCardNotification:(NSDictionary*)params {
+    __CHECK(CTMediator.isLogin)
+    __CHECK(0!=CTMediator.defaultCarVin.length)
+
+    NSString* vin = [params objectForKey:@"vin"];
+    MyCarInfo* carInfo = [CTMediator carInfoForVin:vin];
+    if(carInfo) {
+        const uint64_t uid = [[params objectForKey:@"uid"] longLongValue];
+        UIViewController *vc = [CTMediator createWarrantyDetailViewController:@{@"vin":vin?:@"",
+                                                                                @"uid":@(uid),}];
+        [UIViewController.currentFrontViewController safePushViewController:vc animated:YES];
+    }
+}
+
+//数字钥匙管理界面
++ (void)digitalKeyAllCardList:(NSDictionary*)params {
+    __CHECK(CTMediator.isLogin)
+    __CHECK(0!=CTMediator.defaultCarVin.length)
+    if(![CTMediator.defaultCarInfo isMyOwnerCar]) {
+        DLogTagInfo(kBLEKeyTag, @"试驾员不能创建华米NFC钥匙");
+        return;
+    }
+    
+    if(![CTMediator isCurrentPageCreateWatchKeyPage]) {
+        DLogTagInfo(kBLEKeyTag, @"当前页面不是创建华米钥匙页面");
+        [CTMediator.tabBarController switchToTab:XPTabBarIndexCar];
+        UIViewController *vc = [CTMediator createKeySettingViewController:@{}];
+        if(![UIViewController.currentFrontViewController isKindOfClass:vc.class]) {
+            DLogTagInfo(kBLEKeyTag, @"当前页面不是创建华米钥匙页面或钥匙管理页面，跳转到钥匙管理页面");
+            [UIViewController.currentFrontViewController safePushViewController:vc animated:YES];
+        }
+    } else {
+        DLogTagInfo(kBLEKeyTag, @"创建华米钥匙页面展示倒计时");
+        [CTMediator showSeconds];
+    }
+}
+
++ (void)digitalKeyBleKeyCheck:(NSDictionary *)params{
+    XPCompletion completion = params[XPRouter_Completion];
+    
+    if(!CTMediator.isLogin){
+        [XPToast showMessage:@"请先登录"];
+        [CTMediator jumpToLoginWithCompletion:nil cancelAction:nil];
+        if (completion) completion(nil);
+        return;
+    }
+    
+    if(CTMediator.defaultCarVin.length == 0){
+        [XPToast showMessage:@"App未绑定车辆，请绑定后重试"];
+        if (completion) completion(nil);
+        return;
+    }
+
+    NSString *vin = [params objectForKey:@"vin"];
+    if(vin.length > 0 && ![vin isEqualToString:CTMediator.vin]){
+        MyCarInfo *carInfo = [CTMediator carInfoForVin:vin];
+        if(!carInfo){
+            DLogTagInfo(kBLEKeyTag, @"carInfo不存在，toast提示不拥有该车辆");
+            [XPToast showMessage:@"该车辆的授权已被解除"];
+            if (completion) completion(nil);
+            return;
+        }
+        DLogTagInfo(kBLEKeyTag, @"切换到指定车辆");
+        [CTMediator pickCarInfoAsDefaultCarInfo:carInfo];
+    }
+    
+    XPTabBarController *tabBarController = [CTMediator tabBarController];
+    [tabBarController switchToTab:XPTabBarIndexCar];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        
+        MyCarInfo *carInfo = CTMediator.defaultCarInfo;
+        if(!(carInfo.hasBleAbility && !carInfo.carFunction.WITHOUT_BLE)){
+            DLogTagInfo(kBLEKeyTag, @"车辆不支持蓝牙钥匙");
+            [XPToast showMessage:@"当前车辆不支持手机钥匙"];
+            if (completion) completion(nil);
+            return;
+        }
+        
+        UIViewController *vc = [CTMediator createBleCheckViewController:@{@"command": @(1), @"skipAlert": @YES, @"from": @(1)}];
+        
+        if(![UIViewController.currentFrontViewController isKindOfClass:vc.class]) {
+            DLogTagInfo(kBLEKeyTag, @"当前页面不是钥匙检查页面，跳转到钥匙检查页面");
+            [UIViewController.currentFrontViewController safePushViewController:vc animated:YES];
+        }else{
+            DLogTagInfo(kBLEKeyTag, @"当前页面是钥匙检查页面，不跳转");
+        }
+        
+        if (completion) completion(nil);
+    });
+}
+
+@end

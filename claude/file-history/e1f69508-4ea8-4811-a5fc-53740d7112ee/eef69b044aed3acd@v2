@@ -1,0 +1,23 @@
+# BLE 消息类型说明
+
+## 元信息
+- 触发关键词: ["BLEKeyMessageType", "消息类型", "0xEF", "0xED", "0xEC", "Control消息", "Data消息"]
+- 分类: 业务逻辑
+- 优先级: 中
+- 最后更新: 2026-04-08
+
+## 内容
+BLE 消息分四种类型（`BLEKeyMessageType` 枚举）：
+
+| 类型 | 值 | 用途 |
+|------|---|------|
+| Control | 0xEF | 车控指令消息 |
+| Data | 0xED | 带校验的数据消息 |
+| DataNoVerify | 0xEC | 无校验的数据消息 |
+| Resp | — | 响应消息 |
+
+**子类型**（`BLEKeyMsgControlHeaderMessageType`）：Auth / Wakeup / Parking / Default
+
+组装时需正确传入 `msgType` 和 `controlType`，否则车端无法正确解析。
+
+**代码位置**: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/XPBLEDataProcessor.h`

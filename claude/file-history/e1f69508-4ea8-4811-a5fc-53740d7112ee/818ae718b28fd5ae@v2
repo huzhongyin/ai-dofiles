@@ -1,0 +1,25 @@
+# 切车流程与安全
+
+## 元信息
+- 触发关键词: ["切车", "switchVehicle", "vehicleSwitchedEvent", "vehicleWillSwitchEvent", "切车流程", "切车安全"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+切车是车控 SDK 中最关键的生命周期操作，7 步严格顺序：
+
+1. `vehicleWillSwitchEvent.send(vin)` — 通知"将要切车"
+2. `closeCurrentVehicle()` — **停止当前车服务，断开所有连接**
+3. 在 `switchVehicleQueue`（后台线程）创建新车控实例
+4. 根据 `isMona()` 选择 `MonaVehicle` 或 `XiaopengVehicle`
+5. `vehicleInstance = 新实例`
+6. `vehicleInstance.startService()` — 启动新车服务
+7. `vehicleSwitchedEvent.send()` — 通知"切车完成"
+
+**关键约束**:
+- 创建车控实例有**耗时操作**，必须在子线程执行
+- 业务层收到 `vehicleSwitchedEvent` 后才能安全使用新 presenter
+- 大多数业务只需监听 `vehicleInfoUpdatedEvent`，不需要监听切车事件
+
+**代码位置**: `submodule/XPVehicleSDK/Core/VehicleManager.swift`

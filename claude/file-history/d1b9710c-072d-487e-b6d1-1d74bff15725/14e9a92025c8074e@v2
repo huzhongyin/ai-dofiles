@@ -1,0 +1,124 @@
+# 模块名: XPCarAbilityConfig
+
+## 模块职责
+差异化能力配置层，负责管理不同车型（D22/D55/E28/E38/F30/F57/H93/Mona 等 15+ 车型）的功能开关和 UI 差异化配置。通过基类 + 子类继承 + 字典覆盖的模式，将车型差异从业务代码中抽离为统一的配置查询接口。支持本地静态配置 + OCM 远程动态配置的双重模式。
+
+## 语言构成
+- OC .h 文件数: ~20（基类 + 各车型配置子类头文件 + Define + Tools）
+- OC .m 文件数: ~20（各车型配置实现）
+- Swift 文件数: 0
+- 混编说明: 纯 OC 实现，通过 Bridging-Header 暴露给 Swift 层
+
+## 核心 API
+
+### XPCarAbilityConfig（配置数据类，100+ 属性）
+| 属性分类 | 典型属性 | 类型 | 用途 |
+|---------|---------|------|------|
+| 基础能力 | `isSupportCarControl` | BOOL | 是否支持车辆控制 |
+| 蓝牙钥匙 | `isSupportBleKey` / `bleKeyVersion` / `bleSsidPrefix` | BOOL/Enum/NSString | 蓝牙钥匙相关能力 |
+| 充电口 | `isSupportOneChargePort` / `isSupportChargePortControl` | BOOL | 充电口数量和控制能力 |
+| 空调座椅 | `isSupportSeatFrontHeat` / `isSupportSeatFrontWind` / ... | BOOL | 空调座椅加热/通风能力 |
+| 泊车 | `remoteParkingImagePostfix` / `parkingCarImageName` | NSString | 泊车功能 UI 资源 |
+| Polling | `isSupportPollingV1/V2/V3` / `pollingLocationVersion` | BOOL/Enum | Polling 版本支持 |
+| 数字钥匙 | `isSupportXpKey` / `digitalKeyCarImageName` | BOOL/NSString | 自研钥匙能力 |
+| UI 资源 | 各类 `*ImageName` / `*ImagePostfix` 属性 | NSString | 车型特化 UI 图片名 |
+| 滑门/拖车钩 | `isSupportSlideDoor` / `isSupportTrailerHook` | BOOL | 特殊车型功能 |
+
+### XPCarAbilityConfigManager（配置管理器）
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `+carConfigWithCode:vehicleTypeName:uid:vin:` | OC | 获取车型配置（优先缓存） | `[XPCarAbilityConfigManager carConfigWithCode:@"E28" vehicleTypeName:@"P7" uid:uid vin:vin]` |
+| `+requestOCMVehicleAbilityConfig:uid:vehicleTypeCode:vehicleTypeName:callback:` | OC | 从 OCM 远程拉取配置 | 见下方常见用法 |
+
+### XPBaseCarAbilityConfig（基类，各车型子类继承）
+| 方法 | 语言 | 用途 | 示例 |
+|------|------|------|------|
+| `-getCarAbilityConfigDictionary` | OC | 返回车型配置字典（子类重写） | — |
+| `-expandConfigDictionary:` | OC | 返回扩展车型配置（如 D55A, E28B） | — |
+| `-baseCarAbilityConfigDictionary` | OC | 返回基础默认值字典 | — |
+
+## 参数说明
+- `vehicleTypeCode`: (NSString) — 车型编码，如 "D22", "D55", "E28", "F30", "H93" 等
+- `vehicleTypeName`: (NSString) — 车型名称，如 "P5", "P7", "G6", "G9" 等
+- `uid`: (uint64_t) — 用户 ID
+- `vin`: (NSString) — 车辆 VIN 码
+
+## 关键枚举
+- `BleKeyProtocolVesion`: 蓝牙钥匙协议版本（V1/V2/V3）
+- `BleLocationVersion`: 蓝牙定位版本（NotSupport/V1/V2/V3/V4）
+- `ConfigShortcutsTypePort`: 快捷方式充电口类型（Slow/Fast/Default）
+- `ConfigBLEDataHanderType`: BLE 数据处理器类型（E28/D22D55/E38）
+- `ConfigUnityCarType`: Unity 3D 车模类型
+
+## 车型配置子类映射
+| 车型编码 | 子类 | 代表车型 |
+|---------|------|---------|
+| D22 | `XPD22CarAbilityConfig` | P5 |
+| D55 | `XPD55CarAbilityConfig` | G3i |
+| E28 | `XPE28CarAbilityConfig` | P7 |
+| E28A | `XPE28ACarAbilityConfig` | P7i |
+| E38 | `XPE38CarAbilityConfig` | G9 |
+| E38B | `XPE38BCarAbilityConfig` | — |
+| F30 | `XPF30CarAbilityConfig` | G6 |
+| F30B | `XPF30BCarAbilityConfig` | G6E |
+| F57 | `XPF57CarAbilityConfig` | P7+ |
+| H93 | `XPH93CarAbilityConfig` | X9 |
+| Mona | `XPMonaCarAbilityConfig` | Mona M03 |
+| G3 | `XPG3CarAbilityConfig` | G3 |
+| DavidOne | `XPDavidOneCarAbilityConfig` | — |
+| 扩展子型 | XPF01S / XPF30BS / XPF57A / XPH93AE / XPH93AS / XPE29 | 子型号变体 |
+
+## 依赖关系
+- **上游依赖**: OCM 远程配置服务（动态下发能力开关）
+- **下游被依赖**: 
+  - `VehicleManager` / `BaseVehicle` — 根据配置决定功能行为
+  - `VehicleConnection` — 根据 `bleKeyVersion` 决定蓝牙协议版本
+  - App 层各业务模块（充电/泊车/蓝牙钥匙/空调等）— 读取能力开关和 UI 资源名
+
+## 架构模式
+```
+XPBaseCarAbilityConfig (基类，提供默认值字典)
+    ↓ 继承
+XPE28CarAbilityConfig / XPF30CarAbilityConfig / XPMonaCarAbilityConfig / ...
+    ↓ 覆盖 getCarAbilityConfigDictionary
+字典合并（base → 车型 → 扩展车型 → OCM 远程覆盖）
+    ↓ 赋值到
+XPCarAbilityConfig (最终配置数据对象，100+ 属性)
+    ↓ 由 XPCarAbilityConfigManager 管理
+```
+
+## 常见用法
+
+### 获取当前车辆配置
+```objc
+XPCarAbilityConfig *config = [XPCarAbilityConfigManager carConfigWithCode:vehicleTypeCode
+                                                          vehicleTypeName:vehicleTypeName
+                                                                      uid:uid
+                                                                      vin:vin];
+if (config.isSupportBleKey) {
+    // 显示蓝牙钥匙入口
+}
+if (config.bleKeyVersion == BleKeyProtocolVesionV3) {
+    // 使用 V3 协议鉴权
+}
+```
+
+### 远程更新配置
+```objc
+[XPCarAbilityConfigManager requestOCMVehicleAbilityConfig:vin
+                                                      uid:uid
+                                          vehicleTypeCode:vehicleTypeCode
+                                          vehicleTypeName:vehicleTypeName
+                                                 callback:^(uint64_t uid, NSString *vin, BOOL isChanged, XPCarAbilityConfig *config) {
+    if (isChanged) {
+        // 配置发生变化，刷新 UI
+    }
+}];
+```
+
+## 已知限制/陷阱
+- 新增车型必须同时创建对应的 `XP<型号>CarAbilityConfig` 子类并在工厂方法中注册
+- 配置覆盖优先级：OCM 远程 > 扩展车型字典 > 车型字典 > 基础默认值，修改时需注意层级
+- 属性数量超过 100 个且持续增长，修改基类属性影响所有车型
+- 扩展车型（如 D55A, E28B）通过 `expandConfigDictionary:` 叠加差异，不要直接修改基础车型配置
+- OC 实现，新增属性需确保在 Swift 侧可正常访问

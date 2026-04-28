@@ -1,0 +1,22 @@
+# V3 蓝牙鉴权两步流程
+
+## 元信息
+- 触发关键词: ["Auth0", "Auth1", "V3鉴权", "sessionKey", "hmacKey", "蓝牙鉴权", "BleKeyV3"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+V3 蓝牙协议鉴权分严格的两步：
+
+1. **Auth0**: App 发送 `generateAuth0DataIndictor:uid:hexKeyId:rand0:...` → 车端返回 `Auth0ResponseMessage`（含 rand01, rand1）
+2. **Auth1**: App 用 Auth0 响应数据生成 sessionKey（`generateSessionKey:hexKeyId:rand0:rand1:`），再完成鉴权
+
+**密钥说明**:
+- `sessionKey`: 通信加密密钥，Auth0 成功后生成
+- `hmacKey`: HMAC 签名密钥，用于 V3 消息完整性校验
+- `authKey`: 鉴权密钥
+
+**关键约束**: Auth0 和 Auth1 **必须按序执行**，不能跳过或乱序。sessionKey 生成依赖 Auth0 返回的 rand1。
+
+**代码位置**: `submodule/XPBLEDataProcessor/iOS/XPDataProcessor/XPBleKeyV3DataProcessor.h`

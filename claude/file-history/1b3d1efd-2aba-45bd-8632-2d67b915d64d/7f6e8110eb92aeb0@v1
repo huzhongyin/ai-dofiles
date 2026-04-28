@@ -1,0 +1,2072 @@
+//
+//  XPKeyThreeManageViewController.m
+//  XiaoPengQiChe
+//
+//  Created by Xpeng on 2024/6/7.
+//  Copyright © 2024 xiaopeng.com. All rights reserved.
+//
+
+#import "XPKeyThreeManageViewController.h"
+#import "XPCardKeyTableViewCell.h"
+#import "XPCardKeySwitchCell.h"
+#import "XPCardKeyClickCell.h"
+#import "XPThemeManager.h"
+#import "XPDigitalKeyManageViewModel.h"
+#import "XPBLEKeyManager.h"
+#import "CTMediator+CarState.h"
+#import "MMKV+CarValue.h"
+#import "XPPollingDefined.h"
+#import "XPAPIRequestManager+BLEKey.h"
+#import "XPStatisticsKit.h"
+#import "XPCarStatisticsManager.h"
+#import "XPAlertViewControllerCommonly.h"
+#import "JRCarPopChooseLoginView.h"
+#import "XPAnimationPopView+Application.h"
+#import "XPRouterUtil.h"
+#import "XPKeyThreePollingMoreSettingViewController.h"
+#import "JRDeleteCertKeyViewController.h"
+#import "NetworkMonitorManager.h"
+#import "XPCreateSelfKeyViewController.h"
+#import "XPKeyThreeBindingViewController.h"
+#import "XPKeyOtherDeviceViewController.h"
+#import "XPCarKeyHelp.h"
+#import "CTMediator+Login.h"
+#import "XPAPIRequestManager+BLEKey.h"
+#import "CTMediator+BLEKey.h"
+#import "XPMultiBleManager.h"
+#import "JRPermissionViewController.h"
+#import "XPBLEInfoManager.h"
+#import "PollingEffectDataManager.h"
+
+#import "XPPrivacyPermissionPopupView.h"
+#import "CTMediator+Community.h"
+#import "XPCSelfConfigVCHandler.h"
+#import "XPSelfConfigPollingViewController.h"
+#import "XPDispatchQueue.h"
+#import "XPAutoUnlockPermissionPopupView.h"
+#import "XPKeyManageBleHeaderCell.h"
+#import "XPBLEHandlerManager.h"
+#import "JRCreateWatchKeyViewController.h"
+#import "JRDeleteKeyViewController.h"
+#import "XPDeleteAppleWatchKeyViewController.h"
+#import "XPDeleteMonaKeyViewController.h"
+#import "CTMediator+QRCode.h"
+#import "XPKeyManageHelp.h"
+#import "XPCPollingSettingViewController.h"
+#import "XPCommonNavigationBar.h"
+#import "XPWatchManager.h"
+#import "XPCreateAppleWatchKeyViewController.h"
+#import "XPCarKeyHelp.h"
+#import "XPCarControlUtils.h"
+#import "XPAPIRequestManager+BLEKey.h"
+#import "XPLoginSDKBridge.h"
+#import "MyCarInfo.h"
+#import "XPUseVehicleModeViewController.h"
+#import "XPLoginScreenSwitchViewController.h"
+#import "NewAuthListModel.h"
+#import "XPMultiBleManager+Mona.h"
+#import "XPCarKeyBleTipAlertVC.h"
+#import "KeyValueStore.h"
+#import <XPCarControlUtils/XPAppSettings.h>
+#import <XPUI_IOS/XPUITips.h>
+
+@import XPVehicleSDK;
+@import XPVehicleExt;
+typedef NS_ENUM(NSInteger, XPKeyManageSection) {
+    XPKeyManageSectionBleHeader              = 0, //蓝牙头部
+    XPKeyManageSectionCardList               = 1, //钥匙列表
+    XPKeyManageSectionOtherDeviceList        = 2, //其他设备钥匙
+    XPKeyManageSectionPollingSetting         = 3, //polling设置 数字钥匙1.0支持polling；数字钥匙2.0；数字钥匙3.0
+    XPKeyManageSectionBleLocation            = 4, //蓝牙位置优化
+    XPKeyManageSectionNFCCarkey              = 5, //NFC钥匙
+    XPKeyManageSectionLoginScreen            = 6, //大屏联登 -数字钥匙1.0；数字钥匙2.0
+    XPKeyManageSectionInstruction            = 7, //使用说明
+};
+
+typedef NS_ENUM(NSInteger, PollingSettingStyle){
+    PollingSettingStyleShow     = 0, //显示入口不能切换
+    PollingSettingStyleSwitch   = 1, //显示入口可切换
+};
+
+#define kBleConnectHeight 202
+#define kBleNotConnectHeight 233
+
+const static CGFloat kKeyThreeManageSideSpace = 16.0f;
+const static CGFloat kFooterMinTextHeight = 32.0f;
+const static CGFloat kFooterAdditionalHeight = 20.0f;
+NSString * const kHasShowBleSwitchAlertView = @"com.xiaopeng.carownerhome.hasShowBleSwitchAlertView";
+
+@interface XPKeyThreeManageViewController ()<UITableViewDataSource, UITableViewDelegate,XPCardKeySwitchCellDelegate,XPCardKeyTableViewCellDelegate,XPCarKeyPassEventDelegate,XPKeyManageBleHeaderCellDelegate>
+
+@property (nonatomic, strong) XPDigitalKeyManageViewModel *keyViewModel;
+@property (nonatomic, strong) NSMutableArray<XPBLEKeyCard*> *cardList; //显示用的
+
+@property (nonatomic, strong) NSArray<XPBLEKeyCard*> *downloadCardList; //下载下来的
+@property (nonatomic, strong) NSMutableArray *otherDeviceList;
+
+
+
+@property (nonatomic, assign) BOOL trySwitchAutoUnlock;
+@property (nonatomic, strong) XPCSelfConfigVCHandler *vcHandler;
+
+//各种奇奇怪怪的卡
+@property (nonatomic, strong) XPBLEKeyCard *bleKeyCard;
+@property (nonatomic, strong) XPBLEKeyCard *nfcWatchKeyCard;
+@property (nonatomic, strong) XPBLEKeyCard *appleWatchKeyCard;
+
+//Carkey的卡
+@property (nonatomic, strong) XPBLEKeyCard *carKeyCard;
+
+@property (nonatomic, strong) XPCreateDigitalKeyViewModel *createKeyViewModel;
+
+// polling开关-数字钥匙3.0用
+@property (nonatomic, assign) BOOL isPollingOn;
+
+// private key
+@property (nonatomic, assign) BOOL doorHandleLockUnlockOn;
+@property (nonatomic, assign) BOOL autoUnlockOn;
+@property (nonatomic, assign) BOOL autoLockOn;
+
+//车端是否支持数字钥匙3.0解闭锁开关设置
+@property (nonatomic, assign) BOOL isDK3;
+
+//大屏联登
+@property (nonatomic, assign) BOOL bleLoginScreen;
+@property (nonatomic, strong) RACCommand *transferBigScreenLoginCodeCommand;
+
+// 获取授权人列表
+@property (nonatomic, assign) BOOL isPendingAuthList;
+@property (nonatomic, assign) NSInteger authListCount;
+
+// 钱包钥匙是否开启舒适进入
+@property (nonatomic, assign) XPCarKeyPollingSwitchState state;
+// 钥匙卡片展示的钥匙
+@property (nonatomic, strong) XPBLEKeyCard *currentCard;
+@property (nonatomic, assign) BOOL isShowBleLocation;
+@end
+
+@implementation XPKeyThreeManageViewController
+
+- (void)loadView {
+    [super loadView];
+    self.fd_prefersNavigationBarHidden = YES;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.isShowBleLocation = NO;
+    self.state = XPCarKeyPollingSwitchStateUnknown;
+    self.cardList = [NSMutableArray new];
+    self.otherDeviceList = [NSMutableArray new];
+    
+    [self.contentView addSubview:self.tableView];
+    
+    [self getPollingSetting];
+    if ([CTMediator.defaultCarInfo.capabilities containsObject:KCarDK3LockAndUnlockSetting]) {
+        self.isDK3 = true;
+    } else {
+        self.isDK3 = false;
+    }
+    DLogTagInfo(kBLECarKeyTag, @"钥匙开关 初始化 doorHandle:%d 解锁：%d，闭锁：%d 支持数字钥匙3.0：%d", self.doorHandleLockUnlockOn, self.autoLockOn, self.autoUnlockOn, self.isDK3);
+    [self.tableView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.bottom.mas_equalTo(0);
+    }];
+    self.title = @"数字钥匙";
+    XPCommonNavigationBar *textBar = [[XPCommonNavigationBar alloc] initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, kTopBarHeight)];
+    textBar.layer.zPosition = 999;
+    [textBar setTitle:self.title];
+    textBar.titleLabel.font = [UIFont xp_titleRegularFont];
+    [self.view addSubview:textBar];
+    textBar.backgroundColor = UIColor.xp_baseBackgroundColor;
+    NSMutableArray<XPCommonNavigationBarRightItem *> *textItems = [NSMutableArray array];
+    XPCommonNavigationBarRightItem *item = [XPCommonNavigationBarRightItem new];
+    item.text = @"钥匙检查";
+    @weakify(self)
+    item.clickBlock = ^{
+        @strongify(self)
+        [self rightButtonClick];
+    };
+    [textItems addObject:item];
+    textBar.rightItems = textItems;
+    
+    self.keyViewModel = [XPBLEKeyManager.instance viewModelWithVin:CTMediator.defaultCarVin];
+    [self updateCardsData];
+    
+    [self addObserver];
+    
+    //埋点而已
+    [self checkForStatic];
+    
+    [self getAuthList];
+}
+
+- (void)createKey{
+    if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+        if ([XPCarKeyHelp.shared localCarKeyIsVaild] && ![self isBLECardValid]) {
+            DLogTagInfo(kBLECarKeyTag, @"钱包钥匙生效，没私有钥匙，需要静默激活");
+            //静默激活
+            @weakify(self);
+            if (CTMediator.isSDK2ndCar) {
+                [[XPVehicleSDK.shared.vehicleManager currentVehicle].digitalKeyManager createKeyWithSuccess:^{
+                    @strongify(self);
+                    DLogTagInfo(kBLECarKeyTag, @"3.0车型走SDK，创建钥匙成功");
+                    [XPToast showMessage:@"已激活钥匙"];
+                    [self refreshData];
+                } failed:^(XPVehicleError * _Nonnull error) {
+                    DLogTagInfo(kBLECarKeyTag, @"3.0车型走SDK，创建钥匙失败%@", error.description);
+                    [XPToast showMessage:@"激活失败，请在有网环境重试"];
+                }];
+            } else {
+                [[XPAPIRequestManager.sharedManager createBleKeyV3PrivateKey:CTMediator.vin deviceType:XPBLEKeyDeviceTypePhone] subscribeNext:^(Response * _Nullable x) {
+                    if(x.isSuccess){
+                        XPBLEKeyCard *card = [XPBLEKeyCard yy_modelWithJSON:x.data[@"keyInfo"]];
+                        [XPBLEKeyManager.instance deleteCertKeyWithVin:CTMediator.vin];
+                        [XPBLEHandlerManager.manager deleteMyBleKeyEvent];
+                        [XPBLEKeyManager.instance saveIsCertKeyCreatedWithVin:CTMediator.vin isCreated:YES];
+                        [self refreshData];
+                        [NSNotificationCenter.defaultCenter postNotificationName:BLEKeyButtonUpdateNotification object:nil];
+                        [XPToast showMessage:@"已激活钥匙"];
+                        
+                        
+                        [XPBLEKeyManager.instance requestGetCertKeyAuthDataWithVin:CTMediator.vin cardNo:card.cardNo successBlock:^{
+                                DLogTagInfo(kBLECarKeyTag, @"获取证书钥匙报文成功:%@",x);
+                        } failBlock:^(NSError * _Nullable error) {
+                            DLogTagInfo(kBLECarKeyTag, @"获取证书钥匙报文失败:%@", error);
+                        }];
+                        
+                        DLogTagInfo(kBLECarKeyTag, @"创建私有钥匙成功:%@", x);
+                    } else {
+                        [XPToast showMessage:@"激活失败，请在有网环境重试"];
+                    }
+                }];
+            }
+        }
+    }
+}
+
+- (void)checkForStatic{
+    if ([XPBLEHandlerManager.manager getCommuicateBLEConnectState] == XPBLEHanderConnectStateAuthorized) {
+        NSDictionary *data = @{@"connect_status":@(1)};
+        [XPStatisticsMgr sendEvent:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_CONNECT module:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_MODULE data:data];
+    }else{
+        NSDictionary *data = @{@"connect_status":@(0)};
+        [XPStatisticsMgr sendEvent:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_CONNECT module:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_MODULE data:data];
+    }
+    
+    //标定值埋点
+    if (CTMediator.isDigitalKeySecondVersion || XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+        NSInteger type = 0;
+        if ([[PollingEffectDataManager sharedManager].keySettingTool getSelfCalibrationIsUse]) {
+            type = 2;
+        } else {
+            if ([PollingEffectDataManager sharedManager].isGuanfangConfig) {
+                type = 0;
+            } else {
+                type = 1;
+            }
+        }
+        if (type == 1 && XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+            type = 3;
+            NSDictionary *data = @{@"type":@(type)};
+            [XPStatisticsMgr sendEvent:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_POLLING_VALUE_STYLE module:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_MODULE data:data];
+        } else {
+             NSDictionary *data = @{@"type":@(type)};
+            [XPStatisticsMgr sendEvent:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_POLLING_VALUE_STYLE module:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_MODULE data:data];
+        }
+    }
+    
+    if (CTMediator.isMona) {
+        NSInteger type = 0;
+        if (![XPMonaSDKSpecialManager.shared getOfficial]) {
+            type = 1;
+        }
+        NSDictionary *data = @{@"type":@(type)};
+        [XPStatisticsMgr sendEvent:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_POLLING_VALUE_STYLE module:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_MODULE data:data];
+    }
+}
+
+- (void)addObserver{
+    @weakify(self)
+    [self.rac_deallocDisposable addDisposable:[RACObserve(self.keyViewModel, myCardList).deliverOnMainThread subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        self.downloadCardList = x;
+        [self updateCardsData];
+        
+    }]];
+    
+    [self.rac_deallocDisposable addDisposable:[RACObserve(self.keyViewModel, sharedCardList).deliverOnMainThread subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        
+        // 4，处理其他设备的钥匙：过滤条件是不是私有，不是本地的keyid
+        [self updateCardsData];
+        
+    }]];
+    
+    
+    [self.rac_deallocDisposable addDisposable:[[NSNotificationCenter.defaultCenter rac_addObserverForName:XPVehicleNotification.DigitalKeyStateChanged object:nil].deliverOnMainThread subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self)
+        [self updateCardsData];
+    }]];
+    
+    [[XPBLEHandlerManager.manager.sendBleConnectStateSingal.deliverOnMainThread takeUntil:self.rac_willDeallocSignal] subscribeNext:^(NSNumber*  _Nullable x) {
+        @strongify(self);
+        [self.tableView reloadData];
+    }];
+    
+    [self.rac_deallocDisposable addDisposable:[[NSNotificationCenter.defaultCenter rac_addObserverForName:UIApplicationWillEnterForegroundNotification object:nil].deliverOnMainThread subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self)
+        
+        DLogTagInfo(kBLECarKeyTag, @"回到前台刷新");
+        [self refreshData];
+    }]];
+    
+    //监听车辆能力变更通知，是否拥有数字钥匙3.0能力
+    RACSignal *notificationSignal = [[NSNotificationCenter defaultCenter]
+                                     rac_addObserverForName:CarCapabilitiesUpdateNotification
+                                     object:nil];
+    [self.rac_deallocDisposable addDisposable:[[notificationSignal deliverOnMainThread]
+                                               subscribeNext:^(NSNotification * _Nullable notification) {
+        @strongify(self);
+        self.isDK3 = [CTMediator.defaultCarInfo.capabilities containsObject:KCarDK3LockAndUnlockSetting] ? true : false;
+        DLogTagInfo(kBLECarKeyTag,[NSString stringWithFormat:@"车辆能力变更通知:%@",notification.userInfo]);
+    }error:^(NSError * _Nullable error) {
+        DLogTagInfo(kBLECarKeyTag,[NSString stringWithFormat:@"车辆能力变更通知error:%@",error]);
+    }]];
+    
+    [[XPVehicleSDK.shared.vehicleManager.carkeyEntryStateChangedEvent onImmediately:^(id _Nonnull value ) {
+        @strongify(self);
+        XPCarKeyPollingSwitchState state = [value integerValue];
+        self.state = state;
+        DLogTagInfo(kBLECarKeyTag, @"舒适进入状态改变:%ld",self.state);
+        [self.tableView reloadData];
+    }] bind:self];
+}
+
+- (void)rightButtonClick{
+    UIViewController *vc = [CTMediator createBleCheckViewController:@{}];
+    [self safePushViewController:vc animated:YES];
+}
+
+- (void)updateCardsData{
+    DLogTagInfo(kBLECarKeyTag, @"刷新卡片信息");
+    [self getPollingSetting];
+    //寻找其他设备钥匙
+    [self getOtherDeviceList];
+    [self.cardList removeAllObjects];
+    XPBLEKeyCard *bleCard = [self findBLECard];
+    if (!bleCard) {
+        XPBLEKeyCard *activeCard = [XPBLEKeyCard new];
+        if (CTMediator.isMona) {
+            activeCard.cardType = XPBLEKeyCardType_BLEMonaKey;
+        }else{
+            activeCard.cardType = XPBLEKeyCardType_BLESelfKey;
+        }
+        activeCard.status = XPBLEKeyCardStatusInvalid;
+        if ([self isBLECardValid]) {
+            activeCard.status = XPBLEKeyCardStatusNormal;
+        }
+        
+        if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+            XPBLEKeyCard *carKeyCard = [self findLocalCarkeyCard];
+            if (carKeyCard) {
+                XPCarKeyHelp.shared.bindType = XPCarKeyBindTypeBinded;
+                [self.cardList addObject:carKeyCard];
+                if ([XPDigitalKeyManageViewModel remoteCurrentDeviceCarKeyCard] == nil) {
+                    [self getLocalKeyPhone];
+                }
+            } else {
+                [self.cardList addObject:activeCard];
+            }
+            [self.tableView reloadData];
+            return;
+        }
+        [self.cardList addObject:activeCard];
+    }else{
+        //数字钥匙3.0 Carkey特殊处理：有carkey卡就没有私有钥匙卡
+        if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+            XPBLEKeyCard *carKeyCard = [self findLocalCarkeyCard];
+            if (carKeyCard) {
+                XPCarKeyHelp.shared.bindType = XPCarKeyBindTypeBinded;
+                [self.cardList addObject:carKeyCard];
+                if ([XPDigitalKeyManageViewModel remoteCurrentDeviceCarKeyCard] == nil) {
+                    [self getLocalKeyPhone];
+                }
+            } else {
+                [self.cardList addObject:bleCard];
+            }
+        }else{
+            [self.cardList addObject:bleCard];
+        }
+    }
+    self.appleWatchKeyCard = [self findAppleWatchCard];
+    
+    MyCarInfo *carInfo = CTMediator.defaultCarInfo;
+    if(carInfo.watchSupported && carInfo.hasBleAbility && carInfo.carAbilityConfig.bleKeyVersion < BleKeyProtocolVesionV3) {
+        NSString *watchIdfv = [XPWatchManager.sharedInstance watchIdfv];
+        if(watchIdfv.length > 0 && ![self.appleWatchKeyCard.deviceId isEqualToString:watchIdfv]){
+            XPBLEKeyCard *activeWatchCard = [XPBLEKeyCard new];
+            activeWatchCard.cardType = XPBLEKeyCardType_WatchCertKey;
+            activeWatchCard.status = XPBLEKeyCardStatusInvalid;
+            activeWatchCard.deviceId = watchIdfv;
+            [self.cardList addObject:activeWatchCard];
+        }
+    }
+    
+    if (self.appleWatchKeyCard) {
+        [self.cardList addObject:self.appleWatchKeyCard];
+    }
+    
+    BOOL nfcOld = ![CTMediator isSDK2ndCar] && (CTMediator.defaultCarInfo.isE28 && CTMediator.defaultCarInfo.isSupportNFCKey == XPNFCKeySupportState_Support && CTMediator.defaultCarInfo.isMyOwnerCar);
+    BOOL nfcNew = [CTMediator isSDK2ndCar] && XPVehicleSDK.shared.vehicleManager.currentVehicle.vehiclePreference.function.NFC_WATCH_KEY && XPVehicleSDK.shared.vehicleManager.currentVehicle.vehiclePreference.extInfo.nfcKeyFunState == XPNFCKeyFunctionStateSupported && XPVehicleSDK.shared.vehicleManager.currentVehicle.vehiclePreference.hasOwnerPermissions;
+    if (nfcOld || nfcNew) {
+        self.nfcWatchKeyCard = [self findCardWithType:XPBLEKeyCardType_NFCWatchKey];
+        if (self.nfcWatchKeyCard) {
+            [self.cardList addObject:self.nfcWatchKeyCard];
+        }else{
+            self.nfcWatchKeyCard = [XPBLEKeyCard new];
+            self.nfcWatchKeyCard.cardType = XPBLEKeyCardType_NFCWatchKey;
+            self.nfcWatchKeyCard.status = XPBLEKeyCardStatusInvalid;
+            [self.cardList addObject:self.nfcWatchKeyCard];
+        }
+    }
+    
+
+    [self.tableView reloadData];
+}
+
+- (void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    self.isShowBleLocation = [self showBleLocation];
+    if(self.trySwitchAutoUnlock){
+        self.trySwitchAutoUnlock = NO;
+        if([XPMultiBleManager checkIfPermissionGranted]){
+            [XPMultiBleManager.sharedManager switchPollingUnLockAndLock:YES];
+            [self.tableView reloadData];
+        }else{
+            @weakify(self)
+            [QMUIAlertController showAlertWithTitle:@"若遇到设置问题，请查看操作视频"
+                                            message:nil
+                                   leftButtionTitle:@"取消"
+                                     leftButtonType:QMUIAlertActionStyleCancel
+                                         leftAction:nil
+                                   rightButtonTitle:@"查看视频"
+                                    rightButtonType:QMUIAlertActionStyleDefault
+                                        rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+                UIViewController* vc=  [CTMediator createBBSArticleViewController:@{
+                    @"fromRNInfo": @{},
+                    @"tid":PermissionInstructionBBSArticleTID
+                }];
+                [self safePushViewController:vc animated:YES];
+            }];
+        }
+    }
+    
+    [self refreshData];
+}
+
+- (void)refreshData{
+    DLogTagInfo(kBLECarKeyTag, @"carkey refreshData");
+    [self getPollingSetting];
+    //获取数据
+    if ([CTMediator isSDK2ndCar]) {
+        [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager refreshRemoteKeyList];
+        [self updateCardsData];
+    } else {
+        [self.keyViewModel refeshList];
+    }
+    [self.tableView reloadData];
+}
+
+- (void)getPollingSetting {
+    PollingRunMode pollingModel = [[XPMultiBleManager sharedManager] getPollingSettingFromMMKV];
+    if (pollingModel != PollingRunModeLockAndUnlock ) {
+        self.isPollingOn = NO;
+    }else{
+        self.isPollingOn = YES;
+    }
+    
+    self.doorHandleLockUnlockOn = [[XPMultiBleManager sharedManager] getCurrentKeyPollingEnable];
+    self.autoLockOn = [[XPMultiBleManager sharedManager] getCurrentKeyLock];
+    self.autoUnlockOn = [[XPMultiBleManager sharedManager] getCurrentKeyUnlock];
+}
+
+- (void)getLocalKeyPhone {
+    @weakify(self);
+    [[[XPAPIRequestManager sharedManager] getLocalWalletKeyPhoneNumber:[XPCarKeyHelp.shared localCarKeyId] withVin:CTMediator.vin] subscribeNext:^(Response * _Nullable x) {
+        @strongify(self);
+        NSDictionary *data = x.data;
+        if ([data.allKeys containsObject:@"tel"]) {
+            NSString *tel = [data valueForKey:@"tel"];
+            for (XPBLEKeyCard *appleCard in self.cardList) {
+                if ([appleCard.cardNo isEqualToString:[XPCarKeyHelp.shared localCarKeyId]]) {
+                    appleCard.tel = tel;
+                    DLogTagInfo(kBLECarKeyTag, @"有绑定电话:%@",tel);
+                    break;
+                }
+            }
+        }
+        if ([data.allKeys containsObject:@"uid"]) {
+            NSNumber *uid = [data valueForKey:@"uid"];
+            if (uid.intValue > 0) {
+                //绑定过用户
+                DLogTagInfo(kBLECarKeyTag, @"绑定过用户");
+                XPCarKeyHelp.shared.bindType = XPCarKeyBindTypeBinded;
+                for (XPBLEKeyCard *appleCard in self.cardList) {
+                    if ([appleCard.cardNo isEqualToString:[XPCarKeyHelp.shared localCarKeyId]]) {
+                        appleCard.uid = uid.intValue;
+                        DLogTagInfo(kBLECarKeyTag, @"有绑定uid:%d",uid.intValue);
+                        break;
+                    }
+                }
+            } else {
+                DLogTagInfo(kBLECarKeyTag, @"没绑定过用户");
+                XPCarKeyHelp.shared.bindType = XPCarKeyBindTypeNotBinded;
+            }
+        }
+        [self.tableView reloadData];
+    }];
+}
+
+- (void)getAuthList {
+    if ([CTMediator defaultCarInfo].releationType == ReleationType_Owner) {
+        @weakify(self);
+        self.isPendingAuthList = YES;
+        [[[XPAPIRequestManager sharedManager] getVehicleDriversListWithVin:CTMediator.vin] subscribeNext:^(Response * _Nullable x) {
+            @strongify(self);
+            if (x.isSuccess) {
+                NewAuthListModel *model = [NewAuthListModel yy_modelWithJSON:x.data];
+                self.authListCount = model.driverCount.grantedNum;
+            }
+            self.isPendingAuthList = NO;
+            [self.tableView reloadData];
+        }];
+    }
+}
+
+#pragma mark - 数字钥匙2.0处理卡片
+- (void)getShowCardList{
+    
+}
+
+- (BOOL)isBLECardValid{
+    
+    self.bleKeyCard = [self findBLECard];
+    if ([CTMediator isMona]) {
+        if ([XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager existValidBlePrivateKey]) {
+            return YES;
+        }
+        return NO;
+    }
+    return [CTMediator isSDK2ndCar]?[XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager existValidBlePrivateKey]:[self cardIsValid:self.bleKeyCard];
+}
+
+- (BOOL)monaWaitToActive{
+    BOOL waitToActive = NO;
+    
+    NSString *keyWithVin = [NSString stringWithFormat:@"com.xiaopeng.XPCreateMonaKeyViewController.waitNearCar.%@.%lld", XPVehicleSDK.shared.vehicleManager.currentVehicle.vehiclePreference.vin,[CTMediator uid]];
+    if (CTMediator.isMona) {
+        if (![XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager existValidBlePrivateKey] && [MMKV.defaultMMKV getBoolForKey:keyWithVin] && [XPVehicleSDK existToBeActivateBLEKey]) {
+            waitToActive = YES;
+        }
+    }
+    return waitToActive;
+}
+
+
+
+- (XPBLEKeyCard *)findCardWithType:(XPBLEKeyCardType)type {
+    if ([CTMediator isSDK2ndCar]) {
+        return [XPBLEKeyCard yy_modelWithDictionary:[XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager digitalKeyWithKeyCardType:(XPKeyCardType)type].bleKeyCard.toDict];
+    }
+    for (XPBLEKeyCard *aCard in self.downloadCardList) {
+        if(aCard.cardType == type) {
+            return aCard;
+        }
+    }
+    return nil;
+}
+
+- (XPBLEKeyCard *)findAppleWatchCard{
+    XPBLEKeyCard *card = [CTMediator isSDK2ndCar]?[XPBLEKeyCard yy_modelWithDictionary: [[XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager digitalKeyWithKeyCardType:XPKeyCardTypeAPPLE_WATCH].bleKeyCard toDict]]:[self findCardWithType:XPBLEKeyCardType_WatchCertKey];
+    if(card.status == XPBLEKeyCardStatusPreCreated && !CTMediator.defaultCarInfo.isMyOwnerCar){
+        return nil;
+    }
+    return card;
+}
+
+- (XPBLEKeyCard *)findBLECard {
+    XPBLEKeyCard *bleMonaCard = [self findCardWithType:XPBLEKeyCardType_BLEMonaKey];
+    if (bleMonaCard) {
+        return bleMonaCard;
+    }
+
+    XPBLEKeyCard *bleCard = [self findCardWithType:XPBLEKeyCardType_BLEKey];
+    XPBLEKeyCard *bleCertKeyCard = [self findCardWithType:XPBLEKeyCardType_BLECertKey];
+    if(!bleCertKeyCard) {
+        bleCertKeyCard = [self findCardWithType:XPBLEKeyCardType_BLESelfKey];
+    }
+    
+    XPBLEKeyCard *mergeBleCard = nil;
+    if(bleCard && bleCertKeyCard) {
+        DLogTagInfo(kBLEKeyTag, @"服务器的安全和证书钥匙都存在, 安全钥匙：%@, 证书钥匙：%@", bleCard, bleCertKeyCard);
+        if(bleCard.isValid){
+            mergeBleCard = bleCard;
+        }else{
+            mergeBleCard = bleCertKeyCard;
+        }
+    } else if(bleCard) {
+        DLogTagInfo(kBLEKeyTag, @"只存在安全钥匙：%@", bleCard);
+        mergeBleCard = bleCard;
+    } else if(bleCertKeyCard) {
+        DLogTagInfo(kBLEKeyTag, @"只存在证书钥匙：%@", bleCertKeyCard);
+        mergeBleCard = bleCertKeyCard;
+    } else {
+        DLogTagInfo(kBLEKeyTag, @"安全和证书钥匙都不存在");
+    }
+
+    return mergeBleCard;
+}
+
+- (XPBLEKeyCard *)findLocalCarkeyCard {
+    if ([XPCarKeyHelp.shared localCarKeyIsVaild]) {
+        if ([XPDigitalKeyManageViewModel remoteCurrentDeviceCarKeyCard] != nil) {
+            DLogTagInfo(kBLEKeyTag, @"服务器有carkey");
+            XPBLEKeyCard *appleCard = [XPDigitalKeyManageViewModel remoteCurrentDeviceCarKeyCard];
+            appleCard.status = XPBLEKeyCardStatusNormal;
+            return appleCard;
+        }else{
+            NSDictionary *carKeyInfo = [XPCarKeyHelp.shared localCarKeyInfo];
+            DLogTagInfo(kBLEKeyTag, @"本地carkey信息%@",carKeyInfo);
+            XPBLEKeyCard *appleCard = [XPBLEKeyCard new];
+            appleCard.cardType = XPBLEKeyCardType_V3_Phone_CCCKey;
+            appleCard.cardNo = [XPCarKeyHelp.shared localCarKeyId];
+            appleCard.status = XPBLEKeyCardStatusNormal;
+            appleCard.nickName = [XPUtility getPollingDeviceName];
+            return appleCard;
+        }
+
+    }
+    return nil;
+}
+
+- (BOOL)cardIsValid:(XPBLEKeyCard *)card{
+    if(!card) return NO;
+    
+    //安全钥匙需要判断设备，证书钥匙没那么多状态，安全钥匙（一砂）才需要检测各种状态
+    if(card.cardType == XPBLEKeyCardType_BLEKey || card.cardType == XPBLEKeyCardType_BLEMonaKey) return card.isValid;
+    
+    return card.status == XPBLEKeyCardStatusNormal;
+}
+
+- (void)getOtherDeviceList {
+    [self.otherDeviceList removeAllObjects];
+    NSArray *targetCardTypeArrray = @[@(XPKeyCardTypeCCC), @(XPKeyCardTypeCCC_WATCH), @(XPKeyCardTypeICCOA), @(XPKeyCardTypeICCE)];
+    NSArray *cardList = [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager digitalMultiKeyListWithKeyCardTypeArray:targetCardTypeArrray];
+    if (cardList.count > 0) {
+        for (NSDictionary *dic in cardList) {
+            XPBLEKeyCard *card = [XPBLEKeyCard yy_modelWithDictionary:dic];
+            if (![card.cardNo isEqualToString:[XPCarKeyHelp.shared localCarKeyId]]) {
+                [self.otherDeviceList addObject:card];
+            }
+        }
+    }
+    DLogTagInfo(kBLEKeyTag, @"SDK其他设备钥匙%@",self.otherDeviceList);
+}
+
+
+#pragma mark - BLE Key
+
+- (void)createKeyButtonDidClick{
+
+    if ([CTMediator isMona]) {
+        if (XPVehicleSDK.shared.vehicleManager.bleSysState != XPBLESysStatePoweredOn) {
+            [QMUIAlertController showAlertWithTitle:nil
+                                            message:@"激活钥匙需先开启手机蓝牙，请前往系统设置"
+                                   leftButtionTitle:@"取消"
+                                     leftButtonType:QMUIAlertActionStyleCancel
+                                         leftAction:nil
+                                   rightButtonTitle:@"设置"
+                                    rightButtonType:QMUIAlertActionStyleDefault
+                                        rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+                NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                if ([[UIApplication sharedApplication] canOpenURL:url])
+                {
+                    [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+                }
+            }];
+            return;
+        }
+        if ([self monaWaitToActive]) {
+            [XPToast showMessage:@"请先靠近车辆激活钥匙"];
+            return;
+        }
+        [self.createKeyViewModel createKeyWithViewController:self andCarInfo:CTMediator.defaultCarInfo];
+    } else {
+        [self.createKeyViewModel createKeyWithViewController:self andCarInfo:CTMediator.defaultCarInfo];
+    }
+}
+
+- (BOOL)checkBluetooth{
+    if (XPVehicleSDK.shared.vehicleManager.bleSysState != XPBLESysStatePoweredOn) {
+        [QMUIAlertController showAlertWithTitle:nil
+                                        message:@"激活钥匙需先开启手机蓝牙，请前往系统设置"
+                               leftButtionTitle:@"取消"
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:nil
+                               rightButtonTitle:@"设置"
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+            if ([[UIApplication sharedApplication] canOpenURL:url])
+            {
+                [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+            }
+        }];
+        return YES;
+    }
+    return NO;
+}
+
+- (void)deleteKeyButtonDidClickWithCard:(XPBLEKeyCard *)card{
+    [XPStatisticsMgr sendEvent:XP_DELETE_BLE_KEY module:XP_DIGITAL_KEY_MANAGER_MODULE];
+    
+    MyCarInfo *carInfo = CTMediator.defaultCarInfo;
+    if(carInfo.isE28) {
+        DLogTagInfo(kBLEKeyTag, @"是e28，跳到原来钥匙删除流程");
+        BOOL existSafeOld = ![CTMediator isSDK2ndCar] && XPBLEKeyManager.instance.defaultCard;
+        BOOL existSafeNew = [CTMediator isSDK2ndCar] && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager digitalKeyWithKeyCardType:XPKeyCardTypeSAFE];
+        BOOL existCertOld = ![CTMediator isSDK2ndCar] && [XPBLEKeyManager.instance checkIsCertKeyCreatedWithVin:carInfo.vin uid:CTMediator.uid];
+        BOOL existCertNew = [CTMediator isSDK2ndCar] && [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager digitalKeyWithKeyCardType:XPKeyCardTypeCERT];
+        if(existSafeOld || existSafeNew) {
+            DLogTagInfo(kBLEKeyTag, @"存在安全钥匙，走删除安全钥匙流程（可能存在证书钥匙）");
+            JRDeleteKeyViewController *deleteKeyViewController = [[JRDeleteKeyViewController alloc] init];
+            deleteKeyViewController.vin = carInfo.vin;
+            deleteKeyViewController.card = XPBLEKeyManager.instance.defaultCard;
+            [self safePushViewController:deleteKeyViewController animated:YES];
+        } else if(existCertOld || existCertNew) {
+            DLogTagInfo(kBLEKeyTag, @"不存在安全钥匙，走删除证书钥匙流程");
+            JRDeleteCertKeyViewController *deleteCertKeyViewController = [[JRDeleteCertKeyViewController alloc] init];
+            deleteCertKeyViewController.vin = carInfo.vin;
+            [self safePushViewController:deleteCertKeyViewController animated:YES];
+        } else {
+            DLogTagInfo(kBLEKeyTag, @"很奇怪钥匙不存在，走删除安全钥匙流程");
+            JRDeleteKeyViewController *deleteKeyViewController = [[JRDeleteKeyViewController alloc] init];
+            deleteKeyViewController.vin = carInfo.vin;
+            deleteKeyViewController.card = card;
+            [self safePushViewController:deleteKeyViewController animated:YES];
+        }
+    } else {
+        DLogTagInfo(kBLEKeyTag, @"是新车型，跳到自研钥匙删除流程");
+        if (![CTMediator isMona]) {
+            JRDeleteCertKeyViewController *deleteCertKeyViewController = [[JRDeleteCertKeyViewController alloc] init];
+            deleteCertKeyViewController.vin = carInfo.vin;
+            [self safePushViewController:deleteCertKeyViewController animated:YES];
+        } else {
+            XPDeleteMonaKeyViewController *deleteMonaKeyViewController = [[XPDeleteMonaKeyViewController alloc] init];
+            deleteMonaKeyViewController.vin = carInfo.vin;
+            [self safePushViewController:deleteMonaKeyViewController animated:YES];
+        }
+    }
+}
+
+#pragma mark - 联登
+- (RACCommand *)transferBigScreenLoginCodeCommand{
+    if(_transferBigScreenLoginCodeCommand == nil){
+        _transferBigScreenLoginCodeCommand = [[RACCommand alloc] initWithSignalBlock:^RACSignal * _Nonnull(id  _Nullable input) {
+            return [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+                RACDisposable *disposable = [[XPAPIRequestManager.sharedManager transferBigScreenLoginCodeWithVin:input[@"vin"]] subscribeNext:^(Response * _Nullable x) {
+                    if(x.isSuccess) {
+                        [subscriber sendNext:x];
+                        [subscriber sendCompleted];
+                    } else {
+                        [subscriber sendError:x.error];
+                    }
+                } error:^(NSError * _Nullable error) {
+                    [subscriber sendError:error];
+                }];
+                return disposable;
+            }];
+        }];
+    }
+    return _transferBigScreenLoginCodeCommand;
+}
+- (void)transferBigScreenLoginCode{
+    [[self.transferBigScreenLoginCodeCommand execute:@{@"vin": CTMediator.defaultCarVin}].deliverOnMainThread subscribeNext:^(id  _Nullable x) {
+        
+    } error:^(NSError * _Nullable error) {
+        DLogTagInfo(kBLEKeyTag, @"联登大屏Code推送失败 domain=%@ code=%ld", error.domain, error.code);
+    } completed:^{
+        DLogTagInfo(kBLEKeyTag, @"联登大屏Code推送成功");
+    }];
+}
+
+- (void)showLoginAgreementPopViewWithConfirmBlock:(void(^)(void))confirmBlock{
+    //主线程处理UI
+    dispatch_async(dispatch_get_main_queue(), ^{
+        //初始化内容视图
+        JRCarPopChooseLoginView *contentView = [[JRCarPopChooseLoginView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, kScreenHeight)];
+
+        //****** 弹框视图
+        XPAnimationPopView * popView = [[XPAnimationPopView alloc] initWithCustomView:contentView popStyle:XPAnimationPopStyleNO dismissStyle:XPAnimationDismissStyleNO];
+        popView.popAnimationDuration = 0.25;
+        popView.dismissAnimationDuration = 0.25;
+        popView.isDismissWhenClickedBackground = NO;
+
+        //全局显示弹框
+        [popView pop];
+
+        //****** 配置内容视图的block
+        [contentView setConfirmBlock:^{
+            [popView dismiss];
+            if(confirmBlock) confirmBlock();
+        }];
+        
+        [contentView setCancelBlock:^{
+            [popView dismiss];
+        }];
+        
+        [contentView setUserAgreementBlock:^{
+            [popView dismiss];
+            [XPRouterUtil openURL:BigScreenUserAgreementURL];
+        }];
+        
+        [contentView setPrivacyAgreementBlock:^{
+            [popView dismiss];
+            [XPRouterUtil openURL:BigScreenPrivacyAgreementURL];
+        }];
+    });
+}
+
+#pragma mark - Watch Key
+
+- (void)createWatchKeyButtonDidClick{
+    NSString *url = @"amazfit://nfccard/create_car_card?";
+    NSString *huamiDownloadUrl = @"https://a.app.qq.com/o/simple.jsp?pkgname=com.huami.watch.hmwatchmanager&channel=0002160650432d595942&fromcase=60001";
+    
+    if (![UIApplication.sharedApplication canOpenURL:[NSURL URLWithString:url]]) {
+        [XPStatisticsMgr sendEvent:XP_CREATE_WATCH_KEY module:XP_DIGITAL_KEY_MANAGER_MODULE data:@{@"result": @0}];
+        [QMUIAlertController showAlertWithTitle:@"请先下载华米手表App"
+                                        message:nil
+                               leftButtionTitle:@"取消"
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:nil
+                               rightButtonTitle:@"前往下载"
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            [UIApplication.sharedApplication openURL:[NSURL URLWithString:huamiDownloadUrl]];
+        }];
+    } else {
+        [XPStatisticsMgr sendEvent:XP_CREATE_WATCH_KEY module:XP_DIGITAL_KEY_MANAGER_MODULE data:@{@"result": @1}];
+
+        JRCreateWatchKeyViewController *keyViewController = [[JRCreateWatchKeyViewController alloc] init];
+        keyViewController.vin = CTMediator.vin;
+        [self safePushViewController:keyViewController animated:YES];
+    }
+}
+
+- (void)deleteWatchKeyButtonDidClickWithCard:(XPBLEKeyCard *)card{
+    [XPStatisticsMgr sendEvent:XP_DELETE_WATCH_KEY module:XP_DIGITAL_KEY_MANAGER_MODULE data:@{@"result": @1}];
+    
+    MyCarInfo *carInfo = CTMediator.defaultCarInfo;
+    DLogTagInfo(kBLEKeyTag, @"跳到手表钥匙删除页面");
+    JRDeleteKeyViewController *deleteKeyViewController = [[JRDeleteKeyViewController alloc] init];
+    deleteKeyViewController.vin = carInfo.vin;
+    deleteKeyViewController.card = card;
+    [self safePushViewController:deleteKeyViewController animated:YES];
+}
+
+- (BOOL)getIsDriverMode {
+    return [CTMediator isMona] ? [[XPMultiBleManager sharedManager] getMonaIsDriverMode]: [[XPMultiBleManager sharedManager] getIsDriverMode];
+}
+
+#pragma mark - Apple Watch Key
+
+- (void)deleteAppleWatchKeyButtonDidClickWithCard:(XPBLEKeyCard *)card{
+    MyCarInfo *carInfo = CTMediator.defaultCarInfo;
+    DLogTagInfo(kBLEKeyTag, @"跳到苹果手表钥匙删除页面");
+    XPDeleteAppleWatchKeyViewController *vc = [[XPDeleteAppleWatchKeyViewController alloc] init];
+    vc.carInfo = carInfo;
+    vc.uid = card.uid;
+    [self safePushViewController:vc animated:YES];
+}
+
+#pragma mark - tableView
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 8;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    switch (section) {
+        case XPKeyManageSectionBleHeader:
+            return 1;
+            break;
+        case XPKeyManageSectionCardList:
+            return self.cardList.count;
+            break;
+        case XPKeyManageSectionOtherDeviceList:
+            return self.otherDeviceList.count>0?1:0;
+            break;
+        case XPKeyManageSectionPollingSetting:
+            if ([self showPollingSetting]) {
+                if ([self getPollingShowStyle] == PollingSettingStyleSwitch) {//v3
+                    if ([CTMediator isMona]) {
+                        return 1;
+                    } else {
+                        return [self numberOfPollingSettings];
+                    }
+                } else {
+                    if ([self notSupportPassengerMode]) {
+                        return 1;
+                    }
+                    if ([self getIsDriverMode]) {
+                        return 2;
+                    } else {
+                        return 1;
+                    }
+                }
+            } else {
+                return 0;
+            }
+            
+            break;
+        case XPKeyManageSectionBleLocation:
+            return self.isShowBleLocation ? 1 : 0;
+            break;
+            
+        case XPKeyManageSectionNFCCarkey:
+            return [XPCarKeyHelp.shared localCarKeyIsExist] ? 1 : 0;
+            break;
+        case XPKeyManageSectionLoginScreen:
+            if ([self showLoginScreen]) {
+                return 1;
+            }else{
+                return 0;
+            }
+            break;
+        case XPKeyManageSectionInstruction:
+            return 1;
+        default:
+            return 0;
+            break;
+    }
+    return 0;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == XPKeyManageSectionBleHeader) {
+        XPKeyManageBleHeaderCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPKeyManageBleHeaderCell.class) forIndexPath:indexPath];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.isPendingAuthList = self.isPendingAuthList;
+        cell.authListCount = self.authListCount;
+        [cell configStatus];
+        cell.delegate = self;
+        cell.passEntryState = self.state;
+        return cell;
+    }
+    if (indexPath.section == XPKeyManageSectionCardList) {
+        XPBLEKeyCard *card = self.cardList[indexPath.row];
+        self.currentCard = card;
+        XPCardKeyTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyTableViewCell.class) forIndexPath:indexPath];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.delegate = self;
+        cell.card = card;
+        return cell;
+        
+    }
+    if (indexPath.section == XPKeyManageSectionOtherDeviceList) {
+        XPCardKeyClickCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyClickCell.class) forIndexPath:indexPath];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.titleLabel.text = @"其他设备钥匙";
+        cell.subTitle = @"";
+        return cell;
+    }
+    if (indexPath.section == XPKeyManageSectionPollingSetting) {
+        //Polling 设置
+        if ([self getPollingShowStyle] == PollingSettingStyleSwitch) {
+            if ([CTMediator isMona]) {
+                XPCardKeySwitchCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeySwitchCell.class) forIndexPath:indexPath];
+                cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                cell.delegate = self;
+                cell.switchStyle = SwitchStyleLockandUnlock;
+                cell.isOn = self.isPollingOn;
+                return cell;
+            }else {
+                if (self.isDK3) {
+                    if (indexPath.row == 0) {
+                        XPCardKeySwitchCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeySwitchCell.class) forIndexPath:indexPath];
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        cell.delegate = self;
+                        cell.switchStyle = SwitchStyleDoorHandleLockUnlock;
+                        cell.isOn = self.doorHandleLockUnlockOn;
+                        return cell;
+                        
+                    } else if (indexPath.row == 1) {
+                        XPCardKeySwitchCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeySwitchCell.class) forIndexPath:indexPath];
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        cell.delegate = self;
+                        cell.switchStyle = SwitchStyleAutoUnlock;
+                        cell.isOn = self.autoUnlockOn;
+                        return cell;
+                    } else if (indexPath.row == 2) {
+                        XPCardKeySwitchCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeySwitchCell.class) forIndexPath:indexPath];
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        cell.delegate = self;
+                        cell.switchStyle = SwitchStyleAutoLock;
+                        cell.isOn = self.autoLockOn;
+                        return cell;
+                    }
+                }else {
+                    if (indexPath.row == 0) {
+                        XPCardKeySwitchCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeySwitchCell.class) forIndexPath:indexPath];
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        cell.delegate = self;
+                        cell.switchStyle = SwitchStyleAutoUnlock;
+                        cell.isOn = self.autoUnlockOn;
+                        return cell;
+                    } else if (indexPath.row == 1) {
+                        XPCardKeySwitchCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeySwitchCell.class) forIndexPath:indexPath];
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        cell.delegate = self;
+                        cell.switchStyle = SwitchStyleAutoLock;
+                        cell.isOn = self.autoLockOn;
+                        return cell;
+                    }
+                }
+                
+            }
+        } else {
+            if ([self notSupportPassengerMode]) {
+                XPCardKeyStatusClickCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyStatusClickCell.class) forIndexPath:indexPath];
+                cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                cell.pollingStatus = [self getPollingStatus];
+                cell.titleLabel.text = @"自动解闭锁";
+                cell.isBeta = NO;
+                cell.isMona = [CTMediator isMona];
+                return cell;
+            } else {
+                if (indexPath.row == 0) {
+                    XPCardKeyStatusClickCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyStatusClickCell.class) forIndexPath:indexPath];
+                    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                    cell.titleLabel.text = @"多人用车模式";
+                    cell.isDriverMode = [self getIsDriverMode];
+                    cell.isBeta = NO;
+                    cell.isMona = [CTMediator isMona];
+                    return cell;
+                } else {
+                    XPCardKeyStatusClickCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyStatusClickCell.class) forIndexPath:indexPath];
+                    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                    cell.pollingStatus = [self getPollingStatus];
+                    cell.titleLabel.text = @"自动解闭锁";
+                    cell.isBeta = NO;
+                    cell.isMona = [CTMediator isMona];
+                    return cell;
+                }
+            }
+        }
+    }
+    if (indexPath.section == XPKeyManageSectionBleLocation) {
+        if (self.isShowBleLocation) {
+            XPCardKeyClickCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyClickCell.class) forIndexPath:indexPath];
+            cell.selectionStyle = UITableViewCellSelectionStyleNone;
+            cell.titleLabel.text = @"自动解闭锁定位优化";
+            cell.subTitle = @"";
+            return cell;
+        }else {
+            return nil;
+        }
+    }
+    
+    if (indexPath.section == XPKeyManageSectionNFCCarkey) {
+        XPCardKeyClickCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyClickCell.class) forIndexPath:indexPath];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.titleLabel.text = @"NFC钥匙";
+        cell.subTitle = @"需开启系统-NFC功能";
+        return cell;
+    }
+    
+    if (indexPath.section == XPKeyManageSectionLoginScreen) {
+//        XPCardKeySwitchCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeySwitchCell.class) forIndexPath:indexPath];
+//        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+//        cell.delegate = self;
+//        cell.switchStyle = 1;
+//        cell.isOn = self.bleLoginScreen;
+//        return cell;
+        
+        XPCardKeyStatusClickCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyStatusClickCell.class) forIndexPath:indexPath];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.titleLabel.text = @"解锁并登录大屏";
+        cell.isBleLoginScreen = [self bleLoginScreen];
+        cell.isMona = [CTMediator isMona];
+        cell.isBeta = NO;
+        return cell;
+    }
+    
+    if (indexPath.section == XPKeyManageSectionInstruction) {
+        XPCardKeyClickCell *cell = [tableView dequeueReusableCellWithIdentifier:NSStringFromClass(XPCardKeyClickCell.class) forIndexPath:indexPath];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.titleLabel.text = @"使用说明";
+        cell.subTitle = @"";
+        return cell;
+    }
+    return nil;
+    
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == XPKeyManageSectionCardList) {
+        return 170;
+    }
+    if (indexPath.section == XPKeyManageSectionBleHeader) {
+        if ([self bleIsConnected]) {
+            return self.state == XPBLESysStatePoweredOn ? kBleConnectHeight : kBleNotConnectHeight;
+        }else{
+            return kBleNotConnectHeight;
+        }
+    }
+    if (indexPath.section == XPKeyManageSectionBleLocation) {
+        return self.isShowBleLocation ? 72 : 0;
+    }
+    return 72;
+    
+}
+
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+
+    if (indexPath.section == XPKeyManageSectionOtherDeviceList) {
+        XPKeyOtherDeviceViewController *vc = [XPKeyOtherDeviceViewController new];
+        vc.cardList = [self.otherDeviceList mutableCopy];
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+    if (indexPath.section == XPKeyManageSectionPollingSetting) {
+        if ([self getPollingShowStyle] == PollingSettingStyleSwitch) {
+            
+        } else {
+            if ([self notSupportPassengerMode]) {
+                if (indexPath.row == 0) {
+                    [self.navigationController pushViewController:[[XPCPollingSettingViewController alloc] initWithCarInfo:CTMediator.defaultCarInfo] animated:YES];
+                }
+            } else {
+                if ([self getIsDriverMode]) {
+                    // 主驾模式，显示2行
+                    if (indexPath.row == 0) {
+                        [self.navigationController pushViewController:[[XPUseVehicleModeViewController alloc] init] animated:YES];
+                    } else {
+                        [self.navigationController pushViewController:[[XPCPollingSettingViewController alloc] initWithCarInfo:CTMediator.defaultCarInfo] animated:YES];
+                    }
+                } else {
+                    // 乘客模式，1行，隐藏polling设置详情的行
+                    if (indexPath.row == 0) {
+                        [self.navigationController pushViewController:[[XPUseVehicleModeViewController alloc] init] animated:YES];
+                    }
+                }
+            }
+        }
+    }
+    if (indexPath.section == XPKeyManageSectionBleLocation) {
+        if (self.isShowBleLocation) {
+            XPKeyThreePollingMoreSettingViewController *vc = [XPKeyThreePollingMoreSettingViewController new];
+            [self.navigationController pushViewController:vc animated:YES];
+        }
+    }
+    
+    if (indexPath.section == XPKeyManageSectionNFCCarkey && [XPCarKeyHelp.shared localCarKeyIsExist]) {
+        [QMUIAlertController showAlertWithTitle:@"" message:@"激活与使用NFC钥匙需启用“NFC功能”，请通过“手机系统设置>通用>NFC”查看" leftButtionTitle:@"好的" leftButtonType:QMUIAlertActionStyleCancel leftAction:nil rightButtonTitle:@"" rightButtonType:QMUIAlertActionStyleCancel rightAction:nil];
+    }
+    
+    if (indexPath.section == XPKeyManageSectionLoginScreen) {
+        [self.navigationController pushViewController:[[XPLoginScreenSwitchViewController alloc] init] animated:YES];
+    }
+    if (indexPath.section == XPKeyManageSectionInstruction) {
+        [XPStatisticsMgr sendEvent:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_NOTE module:XP_CAR_CONTROL_KEY_MANAGEMENT_PAGE_MODULE data:nil];
+        
+        if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+            if (CTMediator.defaultCarInfo.carFunction.BIG_CUSTOMER) {
+                NSString *requestUrl = @"https://static.xiaopeng.com/apps/xp_activities/e28/index/DigitalKeyInstrucion-bigCustomer.html";
+                if (BBEnvironment.env == BBEnvTest) {
+                    requestUrl = @"http://static.test.xiaopeng.local/apps/xp_activities/e28/index/DigitalKeyInstrucion-bigCustomer.html";
+                }else if(BBEnvironment.env == BBEnvPreview){
+                    requestUrl = @"https://static.deploy-test.xiaopeng.com/apps/xp_activities/e28/index/DigitalKeyInstrucion-bigCustomer.html";
+                }
+                [XPRouterUtil openURL:requestUrl title:@"使用说明" ignoreDocumentTitle:YES];
+                return;
+            }
+            //TODO
+            NSString *requestUrl = @"https://static.xiaopeng.com/apps/xp_activities/e28/index/DigitalKeyInstruction-v3.html";
+            // D01A 支持钥匙3.0的协议，但是需要区分其他的车型
+            if (CTMediator.isD01A) {
+                NSString *domain = [BBEnvironment configForKeyPath:@"CarControl.domain.HTTPApiRequestCommonDomain"]; // 链接域名
+                requestUrl = [NSString stringWithFormat:@"%@/apps/xp_activities/e28/index/DigitalKeyInstructionNewForMona.html", domain];
+            } else {
+                if (BBEnvironment.env == BBEnvTest) {
+                    requestUrl = @"http://static.test.xiaopeng.local/apps/xp_activities/e28/index/DigitalKeyInstruction-v3.html";
+                }else if(BBEnvironment.env == BBEnvPreview){
+                    requestUrl = @"https://static.deploy-test.xiaopeng.com/apps/xp_activities/e28/index/DigitalKeyInstruction-v3.html";
+                }
+            }
+            [XPRouterUtil openURL:requestUrl title:@"使用说明" ignoreDocumentTitle:YES];
+            return;
+        }else{
+            if (CTMediator.isE28) {
+                //ToDo
+                NSString *requestUrl = @"https://static.xiaopeng.com/apps/xp_activities/e28/index/DigitalKeyInstructionAndNFC-P7.html";
+                if (BBEnvironment.env == BBEnvTest) {
+                    requestUrl = @"http://static.test.xiaopeng.local/apps/xp_activities/e28/index/DigitalKeyInstructionAndNFC-P7.html";
+                }else if(BBEnvironment.env == BBEnvPreview){
+                    requestUrl = @"https://static.deploy-test.xiaopeng.com/apps/xp_activities/e28/index/DigitalKeyInstructionAndNFC-P7.html";
+                }
+                [XPRouterUtil openURL:requestUrl title:@"使用说明" ignoreDocumentTitle:YES];
+            }else{
+                [CTMediator openDigitalKeyInstructionURLWithType:XPDigitalKeyInstructionURLTypeBLE];
+            }
+        }
+    }
+}
+
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    switch (section) {
+        case XPKeyManageSectionBleHeader:
+            return 0;
+            break;
+        case XPKeyManageSectionCardList:
+            return self.cardList.count>0?10:0;
+            break;
+        case XPKeyManageSectionOtherDeviceList:
+            return self.otherDeviceList.count>0?10:0;
+            break;
+        case XPKeyManageSectionPollingSetting:
+            if ([self showPollingSetting]) {
+                if ([self getPollingShowStyle] == PollingSettingStyleSwitch) {//v3
+                    if ([CTMediator isMona]) {
+                        return 52;
+                    } else {
+                        NSInteger num = [self numberOfPollingSettings];
+                        return num == 0 ? 0 : 52;
+                    }
+                } else {
+                    return 52;
+                }
+            }else{
+                return 0;
+            }
+            break;
+        case XPKeyManageSectionBleLocation:
+            if (self.isShowBleLocation) {
+                CGFloat calHeight = [[self footerText] boundingRectWithSize:CGSizeMake(kScreenWidth - 2 * kKeyThreeManageSideSpace, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName:[self footerFont]} context:nil].size.height;
+                return kFooterAdditionalHeight + (calHeight < kFooterMinTextHeight? kFooterMinTextHeight : calHeight);
+            }else {
+                return 0;
+            }
+            break;
+        case XPKeyManageSectionNFCCarkey:
+            return [XPCarKeyHelp.shared localCarKeyIsExist] ? 10 : 0;
+            break;
+        case XPKeyManageSectionLoginScreen:
+            if ([self showLoginScreen]) {
+                return 10;
+            }else{
+                return 0;
+            }
+            break;
+        case XPKeyManageSectionInstruction:
+            return 10;
+            break;
+        default:
+            return 0;
+            break;
+    }
+    return 0;
+
+}
+
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    if (section == XPKeyManageSectionPollingSetting) {
+        if ([self showPollingSetting]) {
+            UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, 52)];
+            UILabel *headerLable = [UILabel new];
+            headerLable.font = [XPTheme regularPingFangSCFontWithSize:14];
+            headerLable.textColor = UIColor.xp_complementaryTextColor;
+            [headerView addSubview:headerLable];
+            headerLable.text = @"蓝牙钥匙设置";
+            [headerLable mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.left.mas_equalTo(kKeyThreeManageSideSpace);
+                make.top.mas_equalTo(22);
+                make.height.mas_equalTo(20);
+            }];
+            
+            return headerView;
+        }
+    }
+    if (section == XPKeyManageSectionBleLocation) {
+        if (self.isShowBleLocation) {
+            UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, 30)];
+            UILabel *footLable = [UILabel new];
+            footLable.font = [self footerFont];
+            footLable.textColor = UIColor.xp_complementaryTextColor;
+            footLable.numberOfLines = 0;
+            [footerView addSubview:footLable];
+            footLable.text = [self footerText];
+            [footLable mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.left.mas_equalTo(kKeyThreeManageSideSpace);
+                make.right.mas_equalTo(-kKeyThreeManageSideSpace);
+                make.top.mas_equalTo(10);
+            }];
+            return footerView;
+        }else {
+            return nil;
+        }
+    }
+    UIView *headView = [UIView new];
+    if (section == XPKeyManageSectionCardList) {
+        headView.backgroundColor = [UIColor clearColor];
+    }else{
+        headView.backgroundColor = [UIColor clearColor];
+    }
+    return headView;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    return 0;
+}
+
+- (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    return [UIView new];
+}
+
+
+
+- (UITableView *)tableView{
+    if (!_tableView) {
+        _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+        _tableView.dataSource = self;
+        _tableView.delegate = self;
+        _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+        _tableView.backgroundColor = UIColor.xp_baseBackgroundColor;
+        [_tableView registerClass:[XPCardKeyTableViewCell class] forCellReuseIdentifier:NSStringFromClass([XPCardKeyTableViewCell class])];
+        [_tableView registerClass:[XPCardKeySwitchCell class] forCellReuseIdentifier:NSStringFromClass([XPCardKeySwitchCell class])];
+        [_tableView registerClass:[XPCardKeyClickCell class] forCellReuseIdentifier:NSStringFromClass([XPCardKeyClickCell class])];
+        [_tableView registerClass:[XPCardKeyStatusClickCell class] forCellReuseIdentifier:NSStringFromClass([XPCardKeyStatusClickCell class])];
+        [_tableView registerClass:[XPKeyManageBleHeaderCell class] forCellReuseIdentifier:NSStringFromClass([XPKeyManageBleHeaderCell class])];
+    }
+    return _tableView;
+}
+
+- (BOOL)notSupportPassengerMode {
+    return [CTMediator isMona] || ![[XPMultiBleManager sharedManager] supportPassengerMode];
+}
+
+- (BOOL)bleIsConnected{
+    return [XPBLEHandlerManager.manager getCommuicateBLEConnectState] == XPBLEHanderConnectStateAuthorized;
+}
+
+//　私有蓝牙钥匙&carkey不支持uwb钥匙展示蓝牙定位优化
+- (BOOL)showBleLocation {
+    if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion != BleKeyProtocolVesionV3) {
+        return false;
+    }
+    BOOL hasBle = [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager existValidBleKey];
+    if ([XPCarKeyHelp.shared localCarKeyIsVaild]) {
+        //wub & NFC
+        if (XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager.vaildBleKeyCategory == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+            return false;
+        }else {
+            return hasBle;
+        }
+    }
+    return hasBle;
+}
+
+#pragma mark - Cell Delegate
+- (void)cellPollingSwitchButtonClick {
+    //靠近自动解锁
+    if(!self.isPollingOn){
+        @weakify(self)
+        [XPCarStatisticsManager.sharedInstance addEvent:[XPCarStatisticsEvent eventWithPageId:XP_DIGITAL_KEY_MANAGER_MODULE buttonId:XP_DIGITAL_KEY_MANAGER_AUTO_UNLOCK data:@{@"operation": @(1)}]];
+        
+        //打开，先检查白名单
+        if(CTMediator.isPollingFirst && !PollingEffectDataManager.sharedManager.getPollingWhitelistFromMMKV && ![CTMediator isMona]) {
+            [QMUIAlertController showAlertWithTitle:@"自动解闭锁设置"
+                                            message:@"为保证使用体验，正在进行机型适配，请点击查看已适配机型"
+                                   leftButtionTitle:@"好的"
+                                     leftButtonType:QMUIAlertActionStyleCancel
+                                         leftAction:nil
+                                   rightButtonTitle:@"查看机型"
+                                    rightButtonType:QMUIAlertActionStyleDefault
+                                        rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+                @strongify(self)
+                [self showPollingDetails:YES];
+            }];
+            return;
+        }
+        
+        BOOL showPermissionPopup = ![MMKV.defaultMMKV getBoolForKey:kPermissionPopup];
+        XPPrivacyPermissionAgreeBlock openPollingBlock = ^{
+            [QMUIAlertController showAlertWithTitle:[CTMediator isMona]?@"自动解锁功能须知":@"自动解闭锁功能须知"
+                                            message:[CTMediator isMona]?@"信号受环境影响，解锁距离可能不稳定":@"信号受环境影响，解闭锁距离可能不稳定"
+                                   leftButtionTitle:nil
+                                     leftButtonType:QMUIAlertActionStyleCancel
+                                         leftAction:nil
+                                   rightButtonTitle:@"好的"
+                                    rightButtonType:QMUIAlertActionStyleDefault
+                                        rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+                @strongify(self)
+                if([XPMultiBleManager checkIfPermissionGranted]){
+                    if ([self monaSwitchUnlock:YES]) {
+                        return;
+                    }
+                    
+                    self.isPollingOn = !self.isPollingOn;
+                    [[XPMultiBleManager sharedManager] switchPollingUnLockAndLock:self.isPollingOn];
+                    [self.tableView reloadData];
+                    [XPToast showMessage:@"开启成功"];
+                    if (!self.vcHandler.allowTurnOnLockWithSelfConfig){
+                        [XPSelfConfigPollingViewController enterSelfConfigWithAnimated:YES currentVC:self delegate:nil];
+                    }
+                    
+                }else{
+                    self.trySwitchAutoUnlock = YES;
+                    [self showPermissionView];
+                }
+            }];
+        };
+        if(showPermissionPopup){
+            [MMKV.defaultMMKV setBool:YES forKey:kPermissionPopup];
+            [self showPopupViewWithAgreeBlock:openPollingBlock];
+        }else{
+            openPollingBlock();
+        }
+    }else{
+        //关闭
+        [XPCarStatisticsManager.sharedInstance addEvent:[XPCarStatisticsEvent eventWithPageId:XP_DIGITAL_KEY_MANAGER_MODULE buttonId:XP_DIGITAL_KEY_MANAGER_AUTO_UNLOCK data:@{@"operation": @(0)}]];
+        if ([self monaSwitchUnlock:NO]) {
+            return;
+        }
+        self.isPollingOn = !self.isPollingOn;
+        [[XPMultiBleManager sharedManager] switchPollingUnLockAndLock:self.isPollingOn];
+        [self.tableView reloadData];
+    }
+}
+
+- (void)cellPolling:(XPCardKeySwitchCell *)cell {
+    if (self.currentCard.cardType == XPBLEKeyCardType_V3_Phone_CCCKey) {
+        //1.钱包钥匙
+        if ([self bleIsConnected]) {
+            [XPUITips showLoading:@"设置生效中"];
+            if ([[XPCarKeyHelp shared] supportCarKeyPairType] == XPCarKeyPairTypeNfc) {
+                [QMUITips hideAllTips];
+                [self switchCurrentKeyByBleWithType:cell.switchStyle];
+                return;
+            }
+            [QMUITips hideAllTips];
+            if (self.state == XPCarKeyPollingSwitchStateOn) {
+                //舒适进入开 >直接设置
+                [self switchCurrentKeyByBleWithType:cell.switchStyle];
+            } else if (self.state == XPCarKeyPollingSwitchStateClose) {
+                //舒适进入关 >弹框提示
+                [self showOpenWalletAlertViewWithTitle:@"设置失败"];
+            }
+        }else {
+            //蓝牙未连接>走网络设置通道
+            [self switchWalletKeyByNetworkWithType:cell.switchStyle];
+        }
+    }else {
+        //2.蓝牙钥匙
+        [self switchCurrentKeyByBleWithType:cell.switchStyle];
+    }
+}
+
+- (void)switchCurrentKeyByBleWithType:(SwitchStyle)type {
+    if (type == SwitchStyleAutoUnlock) {
+        self.autoUnlockOn = !self.autoUnlockOn;
+        DLogTagInfo(kBLEKeyTag, [NSString stringWithFormat:@"设置自动解锁开关:%d", self.autoUnlockOn]);
+        [[XPMultiBleManager sharedManager] switchPollingUnlock:self.autoUnlockOn];
+    } else if (type == SwitchStyleAutoLock) {
+        self.autoLockOn = !self.autoLockOn;
+        DLogTagInfo(kBLEKeyTag, [NSString stringWithFormat:@"设置自动落锁开关:%d", self.autoLockOn]);
+        [[XPMultiBleManager sharedManager] switchPollingLock:self.autoLockOn];
+    } else if (type == SwitchStyleDoorHandleLockUnlock) {
+        self.doorHandleLockUnlockOn = !self.doorHandleLockUnlockOn;
+        DLogTagInfo(kBLEKeyTag, [NSString stringWithFormat:@"设置门把手锁开关:%d", self.doorHandleLockUnlockOn]);
+        [[XPMultiBleManager sharedManager] setCurrentKeyPollingEnable:self.doorHandleLockUnlockOn];
+    }
+    [self.tableView reloadData];
+}
+
+- (void)showOpenWalletAlertViewWithTitle:(NSString *)title {
+    XPUIAlertController *controller = [XPUIAlertController alertControllerWithTitle:title message:nil imageURLString:nil localImage:nil configuration:^(XPUIAlertControllerConfig * _Nonnull config) {
+        NSString *t = [title stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if (t.length <= 0) {
+            config.titleLabelEdgeInsets = UIEdgeInsetsMake(0, 0, 0, 0);
+        }else {
+            config.titleLabelEdgeInsets = UIEdgeInsetsMake(20, 0, 0, 0);
+        }
+        config.messageTextView = ({
+            
+            QMUITextView *textView = [QMUITextView new];
+            textView.editable = NO;
+            textView.selectable = YES;
+            textView.userInteractionEnabled = YES;
+            textView.layoutManager.allowsNonContiguousLayout=NO; //为解决iOS16获取高度异常问题
+            textView.backgroundColor = UIColor.xp_popupBackgroundColor;
+            //设置行高
+            NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
+            paragraphStyle.minimumLineHeight = 25;
+            paragraphStyle.maximumLineHeight = 25;
+            NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
+            [attributes setObject:paragraphStyle forKey:NSParagraphStyleAttributeName];
+            [attributes setObject:UIColor.xp_primaryTextColor forKey:NSForegroundColorAttributeName];
+            
+            NSMutableAttributedString *message = [[NSMutableAttributedString alloc] initWithString:@"请点击开启将跳转系统钱包App>小鹏车钥匙>点击右上角\"i\">开启舒适进入后重试" attributes: attributes];
+            NSRange range = [message.string rangeOfString:@"开启"];
+            [message addAttribute:NSForegroundColorAttributeName value:UIColor.xp_brandTextColor range:range];
+            NSRange keyRange = [message.string rangeOfString:@"小鹏车钥匙"];
+            [message addAttribute:NSForegroundColorAttributeName value:UIColor.xp_brandTextColor range:keyRange];
+            NSRange infoRange = [message.string rangeOfString:@"i"];
+            [message addAttribute:NSForegroundColorAttributeName value:UIColor.xp_brandTextColor range:infoRange];
+            NSRange okRange = [message.string rangeOfString:@"舒适进入"];
+            [message addAttribute:NSForegroundColorAttributeName value:UIColor.xp_brandTextColor range:okRange];
+            [message addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:16] range:NSMakeRange(0, message.length)];
+            textView.attributedText = message;
+            
+            textView;
+        });
+    }];
+    
+    XPUIAlertAction *cancelAction = [XPUIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel actionHandler:^(XPUIAlertAction * _Nonnull action) {
+        
+    } configuration:nil];
+    [controller addAction:cancelAction];
+    
+    XPUIAlertAction *confirmAction = [XPUIAlertAction actionWithTitle:@"开启" style:UIAlertActionStyleDefault actionHandler:^(XPUIAlertAction * _Nonnull action) {
+        [self openWalletApp];
+    } configuration:nil];
+    [controller addAction:confirmAction];
+    
+    [self presentViewController:controller animated:YES completion:nil];
+}
+
+- (void)openWalletApp {
+    //跳转到钱包app
+    NSURL *url = [NSURL URLWithString:@"wallet://"];
+    if ([[UIApplication sharedApplication] canOpenURL:url]) {
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                DLogTagInfo(kBLEKeyTag, @"跳转到钱包App成功");
+            } else {
+                DLogTagInfo(kBLEKeyTag, @"跳转到钱包App失败");
+            }
+        }];
+    }
+}
+
+- (void)switchWalletKeyByNetworkWithType:(SwitchStyle)type {
+    [XPUITips showLoading:@"设置生效中"];
+    BOOL autoUnlockOn = self.autoUnlockOn;
+    BOOL autoLockOn = self.autoLockOn;
+    BOOL doorHandleLockUnlockOn = self.doorHandleLockUnlockOn;
+    float unlockDistance = [PollingEffectDataManager.sharedManager.keySettingTool getUnlockDistance];
+    if (type == SwitchStyleAutoUnlock) {
+        autoUnlockOn = !autoUnlockOn;
+    } else if (type == SwitchStyleAutoLock) {
+        autoLockOn = !autoLockOn;
+    } else if (type == SwitchStyleDoorHandleLockUnlock) {
+        doorHandleLockUnlockOn = !doorHandleLockUnlockOn;
+    }
+    NSString *keyId = [XPCarKeyHelp.shared localCarKeyId];
+
+    @weakify(self);
+    CarKeyAutoLockRequestParam *param = [[CarKeyAutoLockRequestParam alloc]
+                                         initWithKeyIds:@[keyId]
+                                         pe:doorHandleLockUnlockOn
+                                         pollingLock:autoLockOn
+                                         pollingUnLock:autoUnlockOn
+                                         lockDistance:kDeafultLockDistance
+                                         unLockDistance:unlockDistance];
+    DLogTagInfo(kBLEKeyTag, [NSString stringWithFormat:@"设置云端解闭锁request param:%@ uid:%llu vin:%@", param.toDictionary, CTMediator.uid,CTMediator.vin]);
+    [XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager setDigitalKeySwitchWithLockParam:param vin:CTMediator.vin uid:CTMediator.uid success:^(BOOL success) {
+        @strongify(self);
+        DLogTagInfo(kBLEKeyTag, [NSString stringWithFormat:@"设置云端解闭锁成功vin:%@",CTMediator.vin]);
+        [QMUITips hideAllTips];
+        //同步本地设置
+        [self switchCurrentKeyByBleWithType:type];
+    } failed:^(XPVehicleError *error) {
+        [QMUITips hideAllTips];
+        if(![NetworkMonitorManager sharedManager].isReachable) {
+            [XPToast showMessage:@"请检查手机网络" delay:2];
+        }else {
+            [XPToast showMessage:@"车辆离线，设置失败" delay:2];
+        }
+        DLogTagError(kBLEKeyTag, [NSString stringWithFormat:@"设置云端解闭锁code:%ld,error:%@", (long)error.code, error.msg]);
+    }];
+}
+    
+
+- (void)cellLoginScreenSwitchButtonClick{
+    if (self.bleLoginScreen) {
+        @weakify(self);
+        [QMUIAlertController showAlertWithTitle:@"关闭后解锁将不登录大屏，若大屏登录非本账户，将无法收到车门/车窗/后备箱未关等车辆消息，请谨慎"
+                                        message:@""
+                               leftButtionTitle:@"我再想想"
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:nil
+                               rightButtonTitle:@"确认关闭"
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            @strongify(self)
+            self.bleLoginScreen = !self.bleLoginScreen;
+            [self.tableView reloadData];
+        }];
+    }else{
+        @weakify(self);
+        [self showLoginAgreementPopViewWithConfirmBlock:^{
+            @strongify(self)
+            [self transferBigScreenLoginCode];
+            self.bleLoginScreen = !self.bleLoginScreen;
+            [self.tableView reloadData];
+        }];
+        
+    }
+    
+}
+
+- (void)cellManageButtonClick{
+    [XPCarKeyHelp.shared openCarKeyPass];
+}
+
+- (void)showError{
+    [QMUIAlertController showAlertWithTitle:@""
+                                    message:@"缺失预制证书,请联系售后处理"
+                           leftButtionTitle:@"好的"
+                             leftButtonType:QMUIAlertActionStyleCancel
+                                 leftAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+        DLogTagInfo(kBLECarKeyTag, @"好的");
+    }
+                           rightButtonTitle:nil
+                            rightButtonType:QMUIAlertActionStyleDefault
+                                rightAction:nil];
+}
+
+- (void)showGuide{
+    @weakify(self);
+    [QMUIAlertController showAlertWithTitle:@"车主钥匙已存在"
+                                    message:@"1.如已开通车主钥匙，请通过“其他设备钥匙”删除后重试\n2.如已删除过“其他设备钥匙”，请在1分钟后重试"
+                           leftButtionTitle:nil
+                             leftButtonType:QMUIAlertActionStyleCancel
+                                 leftAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+    }
+                           rightButtonTitle:@"好的"
+                            rightButtonType:QMUIAlertActionStyleDefault
+                                rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+        @strongify(self);
+        DLogTagInfo(kBLECarKeyTag, @"好的");
+        XPKeyOtherDeviceViewController *vc = [XPKeyOtherDeviceViewController new];
+        vc.cardList = [self.otherDeviceList mutableCopy];
+        [self.navigationController pushViewController:vc animated:YES];
+    }];
+}
+
+- (void)carKeyActiveClick:(XPBLEKeyCard *)card {
+    //看有没有预知证书，看本地是不是有钥匙
+    @weakify(self);
+    [[XPAPIRequestManager.sharedManager requestMyOwnBLEKeyListUid:[XPLoginSDKBridge sharedInstance].loginHandle.uid vin:CTMediator.vin].deliverOnMainThread subscribeNext:^(Response * _Nullable x) {
+        @strongify(self);
+        if (x.isSuccess) {
+            DLogTagInfo(kBLECarKeyTag, @"成功，继续下一步");
+            NSArray<XPBLEKeyCard*>* cardList = [NSArray yy_modelArrayWithClass:XPBLEKeyCard.class json:[x.data objectForKey:@"ownList"]];
+            BOOL hasBind = NO;
+            for (XPBLEKeyCard *card in cardList) {
+                if (card.cardType == XPBLEKeyCardType_V3_Phone_CCCKey && card.uid == CTMediator.uid) {
+                    hasBind = YES;
+                }
+            }
+            if (hasBind) {
+                //弹窗
+                [self showGuide];
+            } else {
+                DLogTagInfo(kBLECarKeyTag, @"真正的升级");
+                [XPCarKeyHelp.shared startCarKeyPairWithDelegate:self complete:^(enum XPCarKeyPassEventError error, UIViewController * _Nonnull pairController) {
+                    if (error == XPCarKeyPassEventErrorNone) {
+                        [self.navigationController presentViewController:pairController animated:YES completion:nil];
+                    } else if (error == XPCarKeyPassEventErrorSystemNotSupport) {
+                        [QMUIAlertController showAlertWithTitle:@""
+                                                        message:@"开通钥匙需将系统更新至iOS18及以上，建议前往“系统设置>通用>软件更新”"
+                                               leftButtionTitle:@""
+                                                 leftButtonType:QMUIAlertActionStyleCancel
+                                                     leftAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+                        }
+                                               rightButtonTitle:@"好的"
+                                                rightButtonType:QMUIAlertActionStyleDefault
+                                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+                        }];
+                    } else {
+                        [self handleCarKeyPassError:error];
+                        DLogTagInfo(kBLEKeyTag, @"error: %ld", (long)error);
+                    }
+                }];
+            }
+        } else {
+            if (x.code == 1005) {
+                DLogTagInfo(kBLECarKeyTag, @"失败，Game Over");
+                [self showError];
+            }
+        }
+    } error:^(NSError * _Nullable error) {
+    } completed:^{
+    }];
+    
+}
+
+
+- (void)cellDeleteButtonClickWithCard:(XPBLEKeyCard *)card{
+    
+    //1蓝牙钥匙删除
+    if (card.cardType == XPBLEKeyCardType_BLESelfKey || card.cardType == XPBLEKeyCardType_BLEKey || card.cardType == XPBLEKeyCardType_BLECertKey || card.cardType == XPBLEKeyCardType_BLEMonaKey) {
+        @weakify(self);
+        [QMUIAlertController showAlertWithTitle:@"删除钥匙须知"
+                                        message:@"删除后将无法启动车辆，如需继续使用请重新激活"
+                               leftButtionTitle:@"取消"
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            DLogTagInfo(kBLEKeyTag, @"用户点击取消删除蓝牙钥匙");
+        }
+                               rightButtonTitle:@"确定删除"
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            @strongify(self);
+            DLogTagInfo(kBLEKeyTag, @"用户点击确定删除，删除蓝牙钥匙");
+            [self deleteKeyButtonDidClickWithCard:card];
+        }];
+        return;
+    }
+    //2.手表nfc
+    if (card.cardType == XPBLEKeyCardType_NFCWatchKey) {
+        @weakify(self);
+        [QMUIAlertController showAlertWithTitle:@"删除钥匙须知"
+                                        message:@"删除后将无法启动车辆，如需继续使用请重新激活"
+                               leftButtionTitle:@"取消"
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:nil
+                               rightButtonTitle:@"确定删除"
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            @strongify(self);
+            [self deleteWatchKeyButtonDidClickWithCard:card];
+        }];
+        return;
+    }
+    // 3 手表钥匙
+    if (card.cardType == XPBLEKeyCardType_WatchCertKey) {
+        @weakify(self);
+        [QMUIAlertController showAlertWithTitle:@"删除钥匙须知"
+                                        message:@"删除后，手表将无法脱离手机独立控车"
+                               leftButtionTitle:@"取消"
+                                 leftButtonType:QMUIAlertActionStyleCancel
+                                     leftAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            DLogTagInfo(kBLEKeyTag, @"用户点击取消删除手表蓝牙钥匙");
+        }
+                               rightButtonTitle:@"确定"
+                                rightButtonType:QMUIAlertActionStyleDefault
+                                    rightAction:^(__kindof QMUIAlertController * _Nonnull alertVC, QMUIAlertAction * _Nonnull action) {
+            @strongify(self);
+            DLogTagInfo(kBLEKeyTag, @"用户点击确定删除，删除手表蓝牙钥匙");
+            [self deleteAppleWatchKeyButtonDidClickWithCard:card];
+        }];
+    }
+}
+
+- (void)cellActiveButtonClickWithCard:(XPBLEKeyCard *)card{
+    if (![[NetworkMonitorManager sharedManager] isReachable]) {
+        [XPToast showMessage:@"网络未连接，请检查手机网络"];
+        return;
+    }
+    
+    //1,私有钥匙创建
+    if (card.cardType == XPBLEKeyCardType_BLESelfKey || card.cardType == XPBLEKeyCardType_BLEKey || card.cardType == XPBLEKeyCardType_BLECertKey || card.cardType == XPBLEKeyCardType_BLEMonaKey){
+        [self createKeyButtonDidClick];
+        return;
+    }
+    //2,手表nfc
+    if (card.cardType == XPBLEKeyCardType_NFCWatchKey) {
+        [self createWatchKeyButtonDidClick];
+        return;
+    }
+    //3,手表钥匙
+    if (card.cardType == XPBLEKeyCardType_WatchCertKey){
+        XPBLEKeyCard *bleCard = [self findBLECard];
+        if (!bleCard) {
+            [XPToast showMessage:@"请先激活手机钥匙"];
+            return;
+        }
+        XPCreateAppleWatchKeyViewController *vc = [XPCreateAppleWatchKeyViewController new];
+        vc.carInfo = CTMediator.defaultCarInfo;
+        vc.idfv = card.deviceId;
+        [self safePushViewController:vc animated:YES];
+        return;
+    }
+}
+
+- (void)cellBindCardClick:(NSString *)keyId{
+    if ([XPDigitalKeyManageViewModel remoteCurrentDeviceCarKeyCard] == nil) {
+        XPKeyThreeBindingViewController *vc = [XPKeyThreeBindingViewController new];
+        @weakify(self);
+        vc.confirmBlock = ^{
+            @strongify(self);
+            [self refreshData];
+        };
+        [vc showInViewController:self];
+    }
+}
+
+- (void)showPermissionView{
+    JRPermissionViewController *permissionVC = [[JRPermissionViewController alloc] init];
+    [self.navigationController pushViewController:permissionVC animated:YES];
+}
+
+- (void)showPollingDetails:(BOOL)isAnchored{
+    NSString *url;
+    if (XPVehicleSDK.currentAbilityConfig.digitalKeyBLEInstructionURL.length) {
+        url = XPVehicleSDK.currentAbilityConfig.digitalKeyBLEInstructionURL;
+    } else {
+        url = DigitalKeyInstructionD55URL;
+    }
+    
+    if(isAnchored)
+        [XPRouterUtil openURL:[url stringByAppendingString:@"#3-2"] title:@"使用说明" ignoreDocumentTitle:YES];
+    else
+        [XPRouterUtil openURL:url title:@"使用说明" ignoreDocumentTitle:YES];
+}
+
+- (BOOL)monaSwitchUnlock:(BOOL)isOn{
+    if ([CTMediator isMona]) {
+        [XPMonaSDKSpecialManager.shared setUnlockWithIsOn:isOn success:^{
+            [XPToast showMessage:isOn?@"开启成功":@"关闭成功"];
+            [self.tableView reloadData];
+        } failed:^(XPVehicleError * error) {
+            if (error.msg) [XPToast showMessage:error.msg];
+            [self.tableView reloadData];
+        }];
+        return YES;
+    }
+    return NO;
+}
+
+- (void)showPopupViewWithAgreeBlock:(XPPrivacyPermissionAgreeBlock)agreeBlock {
+    //主线程处理UI
+    xp_async_execute_in_main_thread(^{
+
+        //初始化内容视图
+        XPAutoUnlockPermissionPopupView *contentView = [[XPAutoUnlockPermissionPopupView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, kScreenHeight)];
+        
+        //****** 弹框视图
+        XPAnimationPopView * popView = [[XPAnimationPopView alloc] initWithCustomView:contentView popStyle:XPAnimationPopStyleShakeFromTop dismissStyle:XPAnimationDismissStyleDropToBottom];
+        popView.popAnimationDuration = 0.25;
+        popView.dismissAnimationDuration = 0.25;
+        popView.isDismissWhenClickedBackground = NO;
+        popView.popCompletionBlock = ^{
+
+        };
+        popView.dismissCompletionBlock = ^{
+            
+        };
+        
+        @weakify(popView);
+        [contentView setAgreeBlock:^{
+            @strongify(popView);
+            if (agreeBlock) {
+                agreeBlock();
+            }
+            [popView dismiss];
+        }];
+        
+        [contentView setCloseBlock:^{
+            @strongify(popView);
+            [popView dismiss];
+        }];
+        
+        [popView pop];
+    });
+}
+
+#pragma mark XPCarKeyEventDelegate
+- (void)carKeyAddPassResultWithError:(enum XPCarKeyPassEventError)error {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.navigationController dismissViewControllerAnimated:YES completion: nil];
+    });
+}
+
+- (void)carKeySharePassResultWithError:(enum XPCarKeyPassEventError)error {
+//    [self handleCarKeyPassError:error];
+    
+}
+
+- (void)carKeyShareDidCreateShareWithUniversalShareURL:(NSURL *)universalShareURL activationCode:(NSString *)activationCode {
+    
+}
+
+#pragma mark - XPKeyManageBleHeaderCellDelegate
+
+- (void)bindCarkeyAction {
+    if ([XPDigitalKeyManageViewModel remoteCurrentDeviceCarKeyCard] == nil) {
+        XPKeyThreeBindingViewController *vc = [XPKeyThreeBindingViewController new];
+        @weakify(self);
+        vc.confirmBlock = ^{
+            @strongify(self);
+            [self refreshData];
+        };
+        [vc showInViewController:self];
+    }
+}
+
+- (void)activateComfortEnterWithTitle:(NSString *)title {
+    [self showOpenWalletAlertViewWithTitle:title];
+}
+
+#pragma mark -  private
+
+- (XPCSelfConfigVCHandler *)vcHandler{
+    if (!_vcHandler) {
+        _vcHandler = [XPCSelfConfigVCHandler new];
+    }
+    return _vcHandler;
+}
+
+- (XPCreateDigitalKeyViewModel *)createKeyViewModel{
+    if(!_createKeyViewModel){
+        _createKeyViewModel = [[XPCreateDigitalKeyViewModel alloc] init];
+    }
+    return _createKeyViewModel;
+}
+
+- (BOOL)bleLoginScreen{
+    return [[PollingEffectDataManager sharedManager].keySettingTool getUnlockLogin];
+}
+
+- (void)setBleLoginScreen:(BOOL)bleLoginScreen{
+    [[PollingEffectDataManager sharedManager].keySettingTool switchUnlockLoginOn:bleLoginScreen];
+}
+
+- (PollingSettingStyle)getPollingShowStyle{
+    if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+        return PollingSettingStyleSwitch;
+    }else{
+        return PollingSettingStyleShow;
+    }
+}
+
+
+- (BOOL)showLoginScreen {
+    //Mona大屏联登入口
+    if (CTMediator.isMona && [self isBLECardValid]) {
+        return YES;
+    }
+    //P7 数字钥匙1.0 数字钥匙2.0 只要钥匙激活，就显示
+    if ([XPKeyManageHelp notSupportPolling] || [XPKeyManageHelp supportPolling]){
+        self.appleWatchKeyCard = [self findAppleWatchCard];
+        if ([self isBLECardValid] || [self cardIsValid:self.appleWatchKeyCard]) {
+            return YES;
+        }
+    }
+    
+    return NO;
+}
+
+- (BOOL)showPollingSetting {
+    if (CTMediator.defaultCarInfo.carFunction.BIG_CUSTOMER) {
+        return NO;
+    }
+    if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+        if (XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager.vaildBleKeyCategory == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+            return YES;
+        }else if ([XPBLEKeyManager.instance isSafeKeyOrCertKeyExisted]) {
+            return YES;
+        }else{
+            return NO;
+        }
+    }
+    if (CTMediator.isMona && ([self isBLECardValid] || [self monaWaitToActive])) {
+        return YES;
+    }
+    if ([XPKeyManageHelp supportPolling] && [self isBLECardValid]) {
+        return YES;
+    }
+    return NO;
+}
+
+- (NSInteger)numberOfPollingSettings {
+    if (XPVehicleSDK.currentAbilityConfig.bleKeyVersion == BleKeyProtocolVesionV3) {
+        if (XPVehicleSDK.shared.vehicleManager.currentVehicle.digitalKeyManager.vaildBleKeyCategory == XPDigitalKeyCategoryPHONE_UWB_KEY) {
+            return self.isDK3 ? 3 : 0;
+        }else if ([XPBLEKeyManager.instance isSafeKeyOrCertKeyExisted]) {
+            return self.isDK3 ? 3 : 2;
+        }else{
+            return 0;
+        }
+    }
+    return 0;
+}
+
+//因为Mona奇怪，所以要用这个方法转化
+- (PollingRunMode)getPollingStatus{
+    if (CTMediator.isMona) {
+        if([XPMonaSDKSpecialManager.shared getUnlock] || [XPMonaSDKSpecialManager.shared getLock]){
+            if ([XPMonaSDKSpecialManager.shared getUnlock] && [XPMonaSDKSpecialManager.shared getLock]) {
+                return PollingRunModeLockAndUnlock;
+            }else if([XPMonaSDKSpecialManager.shared getUnlock]){
+                return PollingRunModeUnLock;
+            }else {
+                return PollingRunModeLock;
+            }
+        }else{
+            return PollingRunModeNone;
+        }
+    }else{
+        return [[XPMultiBleManager sharedManager] getPollingSettingFromMMKV];
+    }
+    
+}
+
+- (void)handleCarKeyPassError:(XPCarKeyPassEventError)error {
+    if (error == XPCarKeyPassEventErrorNone) {
+        DLogTagInfo(kBLEKeyTag, @"car key no error");
+    } else if (error == XPCarKeyPassEventErrorNoPassword) {
+        [XPToast showMessage:@"carkey_pass_password_not_found".xpString];
+    } else if (error == XPCarKeyPassEventErrorCarKeyIsExist) {
+        [XPToast showMessage:@"carkey_pass_password_is_exist".xpString];
+    } else if (error == XPCarKeyPassEventErrorSystemNotSupport) {
+        [XPToast showMessage:@"carkey_pass_system_not_support".xpString];
+    } else if (error == XPCarKeyPassEventErrorConfigNotSupport) {
+        [XPToast showMessage:@"carkey_pass_vehicle_not_support".xpString];
+    } else if (error == XPCarKeyPassEventErrorHadPaired) {
+        [XPToast showMessage:@"carkey_pass_had_paired".xpString];
+    } else if (error == XPCarKeyPassEventErrorLocalPassNotFound) {
+        [XPToast showMessage:@"carkey_pass_local_pass_not_found".xpString];
+    } else if (error == XPCarKeyPassEventErrorRequiresActivation) {
+        [XPToast showMessage:@"carkey_pass_local_pass_require_active".xpString];
+    } else if (error == XPCarKeyPassEventErrorActivating) {
+        [XPToast showMessage:@"carkey_pass_local_pass_activing".xpString];
+    } else if (error == XPCarKeyPassEventErrorSuspended) {
+        [XPToast showMessage:@"carkey_pass_local_pass_suspended".xpString];
+    } else if (error == XPCarKeyPassEventErrorDeactivated) {
+        [XPToast showMessage:@"carkey_pass_local_pass_deactivated".xpString];
+    } else if (error == XPCarKeyPassEventErrorShareCanceled) {
+        [XPToast showMessage:@"carkey_pass_local_pass_share_cancel".xpString];
+    } else if (error == XPCarKeyPassEventErrorShareFailed) {
+        [XPToast showMessage:@"carkey_pass_local_pass_share_failed".xpString];
+    } else {
+        [XPToast showMessage:@"carkey_pass_unknown_error".xpString];
+    }
+}
+
+- (NSString *)footerText{
+//    return @"蓝牙信号不稳定，不同环境的解闭锁距离可能不同。如遇门把手未展开，请尝试把手按键解锁，再次触碰按键闭锁";
+    return @"受不同环境和遮挡物影响,蓝牙信号定位不稳定,解闭锁距离可能不同";
+}
+
+- (UIFont *)footerFont{
+    return [XPTheme regularPingFangSCFontWithSize:14];
+}
+
+@end
+

@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant U as 用户/PM
+    participant SP as spec-proposal
+    participant SD as spec-design
+    participant ST as spec-tasks
+    participant KR as knowledge-recall
+    participant KB as 知识库
+    participant CODE as 代码库
+
+    Note over U,CODE: Phase 1: 需求提案 spec-proposal
+    U->>SP: PRD / 需求描述
+    SP->>KB: 加载 constitution.md 最高约束
+    SP->>KB: 加载 pitfalls/spec-workflow.md
+    SP->>KR: 知识召回 关键词+路径
+    KR-->>SP: 命中知识点 + 踩坑 + 模块文档
+    SP->>CODE: grep/glob 影响分析
+    SP->>CODE: 疑问点自证 先自证后求证
+    SP-->>SP: ✅ 代码确认 / ⚠️ 需确认
+    SP->>U: AskUserQuestion 仅⚠️级
+    U-->>SP: 确认
+    SP->>KB: 保存 proposal.md
+    SP->>KB: 沉淀新知识 Phase 5.5
+
+    Note over U,CODE: Phase 2: 技术方案 spec-design
+    U->>SD: 开始设计
+    SD->>KB: 读取 proposal.md + constitution.md
+    SD->>CODE: 正向调用链 UI→Presenter→SDK→Connection→Protocol
+    SD->>CODE: 反向调用链 Protocol→Event→VM→UI
+    SD-->>SD: 标注验证状态 + 修改策略
+    SD->>SD: 冲突风险标注 方案A/B
+    SD->>SD: Constitution 逐项检查
+    SD->>U: AskUserQuestion 仅⚠️级决策
+    SD->>KB: 保存 design.md
+
+    Note over U,CODE: Phase 3: 任务拆解 spec-tasks
+    U->>ST: 开始拆解
+    ST->>KB: 读取 design.md + proposal.md
+    ST->>CODE: 任务拆解 文件路径级
+    ST->>CODE: 路径验证 glob/grep
+    ST->>CODE: 隐含依赖检测
+    ST->>ST: 约束注入 submodule/OC-Swift/车型
+    ST->>KB: 保存 tasks.md
+    ST->>U: TodoWrite 创建跟踪项

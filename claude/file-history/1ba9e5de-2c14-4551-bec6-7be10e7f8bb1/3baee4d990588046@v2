@@ -1,0 +1,44 @@
+# XPVehicleExt — Submodule 规范
+
+> ⚠️ 本仓库为独立 git 仓，本文件与同目录 `.ai-knowledge/` 需在子仓单独提交
+
+## 模块定位
+
+车控 SDK 扩展功能集（Pod: XPVehicleExt）。在 XPVehicleSDK 基础上提供数字车钥匙、BLE Key 管理、文件传输、车载摄像头、AI 日历、质保、Xcombo 等扩展能力。同时支持 iOS 12+ 和 watchOS 9+。
+
+## 本层加载时机
+
+knowledge-recall 路径命中 `submodule/XPVehicleExt/**` 或关键词命中时加载。
+
+## 语言与架构规范
+
+Swift（主）+ OC（桥接），通过 Bridging-Header 互操作。新增代码优先 Swift。
+
+## 对外 API 边界
+
+- 入口：`XPVehicleExt.swift`（模块门面）
+- 扩展：`XPVehicleExt+CarKeyInteraction`（车钥匙交互）、`XPVehicleExt+VehicleTransferFileManager`（文件传输）
+- 功能模块：CarKey/、BLEKey/、VehicleCameraManager/、AiCalendar/、Warrant/、Xcombo/ 等
+- Mona 专用：MonaSDKSpecialManager/
+
+## 仓内部架构
+
+按功能域划分：CarKey（车钥匙管理）、BLEKey（BLE 钥匙操作）、BleCheckManager（BLE 检查）、FileTransfer（文件传输）、VehicleCameraManager（车载摄像头）、AiCalendar（AI 日历）、Warrant（质保）、Xcombo、DBModel（数据库模型）、Utilities、Ext（通用扩展）。各功能域平行，通过 XPVehicleExt 门面类协调。
+
+## 关键依赖
+
+参见同级 `.ai-knowledge/deps.yml`。依赖 XPVehicleSDK、YYModel、MMKV、XPDBClient、GRDB.swift、XPDeviceInfo。
+
+## 禁止行为
+
+- 禁止绕过 XPVehicleSDK 直接操作 BLE/MQTT 连接
+- 禁止在本模块中实现 UI 展示逻辑
+- 禁止 watchOS 代码依赖 UIKit（使用条件编译 `#if os(iOS)`）
+
+## 下沉说明
+
+以下内容**不应**出现在本层：
+
+- 语言通用语法规范 → 主仓 `.claude/rules/ios-coding.md`
+- 主工程 App 如何调用本 submodule → L2 `CLAUDE.app.md` 的"与 submodule 的边界"
+- 本 submodule 的演进历史与设计决策 → 子仓 ADR 文档

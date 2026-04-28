@@ -1,0 +1,85 @@
+---
+name: deps-lint
+description: 离线校验 deps.yml 与代码实际依赖的一致性，对比 Podfile/import 语句，输出 stale/missing/keyword-gap 报告
+---
+
+## 触发条件
+
+关键词: "deps-lint", "依赖校验", "deps 检查", "依赖一致性"
+
+## 输入
+
+- `--module <module-id>`：校验指定模块的 deps.yml（必填，或使用 `--all`）
+- `--all`：校验 module-registry 中所有模块
+- `--fix`：自动修复模式（输出修复后的 deps.yml 内容，不自动写入，需用户确认）
+
+## 执行步骤
+
+### Phase 1: 加载目标模块信息
+
+1. 读取 `.ai-knowledge/module-registry.md`，解析所有 module YAML block
+2. 若 `--module` 指定 → 定位目标模块条目，获取 `path` 和 `knowledge`
+3. 若 `--all` → 遍历所有已注册模块
+4. 读取目标模块的 `<knowledge>/deps.yml`（不存在则标记为 `[NO_DEPS_YML]`）
+
+### Phase 2: 收集代码事实
+
+5. **Podspec 依赖**（仅 LocalPod 和 submodule）：
+   - 在 `<module.path>/` 下搜索 `*.podspec`
+   - 提取 `s.dependency '<PodName>'` 声明
+   - 将 PodName 映射到 module-registry 中的 module id（通过 `id` 或 `path` 模糊匹配）
+6. **import 语句扫描**：
+   - 扫描 `<module.path>/` 下所有 `.swift` 文件的 `import <ModuleName>` 语句
+   - 扫描 `<module.path>/` 下所有 `.h/.m/.mm` 文件的 `#import <ModuleName/...>` 和 `@import ModuleName` 语句
+   - 将 ModuleName 映射到 registry 中的 module id
+   - 过滤系统框架（UIKit, Foundation, CoreBluetooth 等）
+
+### Phase 3: 对比 deps.yml
+
+7. **MISSING**：代码中 import/依赖了但 deps.yml 未声明的模块
+   - 输出建议的 deps.yml 条目（id + reason 占位）
+8. **STALE**：deps.yml 声明了但代码中无 import 且 Podspec 无依赖的模块
+   - 标注 `[STALE]` 建议移除或确认是否为间接依赖
+9. **KEYWORD_GAP**：deps.yml 中 `trigger_keywords` 为空或缺失
+   - 对有 `trigger_keywords` 的条目：检查关键词是否覆盖了常见使用场景
+   - 对无 `trigger_keywords` 的条目：提示"该依赖将始终加载，考虑添加 trigger_keywords 减少噪声"
+
+### Phase 4: Podfile 交叉校验（仅 --all 模式）
+
+10. 读取根 `Podfile`，提取所有 `pod '<Name>'` 声明
+11. **REGISTRY_ORPHAN**：module-registry 中 level=localpod 的模块，但 Podfile 中无对应 pod 声明
+12. **PODFILE_UNREGISTERED**：Podfile 中声明的本地 pod（`LocalPods/` 路径下），但 registry 中无对应条目
+    - 排除第三方 pod（非 LocalPods/ 路径）
+
+### Phase 5: 输出报告
+
+13. 按模块分组输出，格式：
+
+```
+=== deps-lint 报告 ===
+
+--- XiaoPengQiChe (L2 app) ---
+  [MISSING] import XPBase_Theme → deps.yml 未声明
+    建议: depends_on: { id: XPBase_Theme, reason: "TODO", trigger_keywords: [Theme, 主题] }
+  [STALE]   depends_on: XPKits → 代码中未发现 import
+    建议: 确认是否间接依赖，否则移除
+  [OK]      depends_on: XPVehicleSDK (trigger_keywords: 6 个)
+  [OK]      depends_on: XPBase_Router (trigger_keywords: 4 个)
+
+--- Podfile 交叉校验 ---
+  [PODFILE_UNREGISTERED] pod 'XPNonModular' → registry 无对应条目
+  [OK] 其余 LocalPod 均已注册
+
+统计: 1 MISSING / 1 STALE / 0 KEYWORD_GAP / 1 PODFILE_UNREGISTERED
+```
+
+14. 若 `--fix` 模式：输出修复后的 deps.yml 内容（MISSING 已补充、STALE 已注释），但不自动写入
+
+## 约束
+
+- **只读操作**：默认不修改任何文件，仅输出报告
+- **`--fix` 模式**：输出建议内容，需用户确认后手动写入
+- **系统框架排除列表**：UIKit / Foundation / CoreBluetooth / CoreLocation / SwiftUI / Combine / Security / CryptoKit / UserNotifications / WidgetKit / WatchKit / Intents
+- **第三方库排除**：不在 module-registry 中注册的 import 目标视为第三方库，不报告 MISSING（但可在 verbose 模式列出）
+- **import 扫描深度**：仅扫描 `<module.path>/` 一级，不递归进入子模块或 Pods/
+- **性能**：单模块 lint 应在 30s 内完成；--all 可能较慢但不应超过 5 分钟

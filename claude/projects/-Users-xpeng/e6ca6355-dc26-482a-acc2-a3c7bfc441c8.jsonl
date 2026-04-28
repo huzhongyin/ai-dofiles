@@ -1,0 +1,3 @@
+{"type":"queue-operation","operation":"enqueue","timestamp":"2026-04-20T13:23:01.558Z","sessionId":"e6ca6355-dc26-482a-acc2-a3c7bfc441c8","content":"生成模块文档"}
+{"type":"queue-operation","operation":"dequeue","timestamp":"2026-04-20T13:23:15.581Z","sessionId":"e6ca6355-dc26-482a-acc2-a3c7bfc441c8"}
+{"type":"file-history-snapshot","messageId":"1bacdc40-98e1-427c-9cc6-1144d7e1f207","snapshot":{"messageId":"1bacdc40-98e1-427c-9cc6-1144d7e1f207","trackedFileBackups":{},"timestamp":"2026-04-20T13:23:17.581Z"},"isSnapshotUpdate":false}

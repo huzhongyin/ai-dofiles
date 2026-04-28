@@ -1,0 +1,21 @@
+# Polling 与普通车控指令码差异
+
+## 元信息
+- 触发关键词: ["PLXPTBoxCommand", "PollingUnlock", "Polling指令", "TBox指令", "解锁指令码", "Polling解锁"]
+- 分类: 业务逻辑
+- 优先级: 高
+- 最后更新: 2026-04-08
+
+## 内容
+Polling 解锁和普通车控解锁走的是**不同的指令码**：
+
+| 操作 | Polling 指令 | 普通车控指令 |
+|------|-------------|-------------|
+| 解锁 | `PLXPTBoxCommandPollingUnlock` | `PLXPTBoxCommandUnlock` / `BLEBoxCommandUnlock(0x01)` |
+| 闭锁 | `PLXPTBoxCommandPollingLock` | `PLXPTBoxCommandLock` / `BLEBoxCommandLock(0x02)` |
+
+**PLXPTBoxCommand** 共约 30 个指令，包括：解锁/闭锁/后备箱/充电口/滑门/剪刀门/泊车等。
+
+**核心规则**: 混用指令码会导致车端识别错误的指令来源（无感 vs 手动），可能影响计费、安全策略等。
+
+**代码位置**: `submodule/XPPollingSDK/XPPollingSDK/sourceFile/Polling/PLXPPollingManager.h`

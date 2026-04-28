@@ -1,0 +1,677 @@
+//
+//  BLEKeyV3EncodeMessage.cpp
+//  VehicleSDK
+//
+//  Created by huzy2 on 2024/8/18.
+//
+
+#include "BLEKeyV3EncodeMessage.hpp"
+#include "../tools/DataCovertTool.h"
+#include "ble_key_apdu_parser.hpp"
+#include "BLEKeyV3MsgAlgorithm.hpp"
+#include <cstring>
+#include <cstdlib>
+
+using namespace SDKBleKeyV3;
+    
+BleKeyV3Auth0RequestCreateResult getAuth0FactorTlvData(uint64_t uid, const uint8_t *keyIdData,size_t keyIdSize, uint32_t r0,uint64_t timeStamp,uint8_t **authFactorTlvResultData) {
+    __CHECK_RET(keyIdData != NULL && keyIdSize != 0,BleKeyV3Auth0RequestCreateKeyIdIsNull)
+    uint64_t uidLittleEndian = host_int64_to_little_endian(uid);
+    uint8_t *uidTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth0RequestFactorTypeUid, sizeof(uint64_t), &uidLittleEndian);
+    
+    uint8_t *keyIdTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth0RequestFactorTypeKid,keyIdSize,keyIdData);
+    
+    uint32_t r0LittleEndian = host_int32_to_little_endian(r0);
+    uint8_t *r0TlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth0RequestFactorTypeRand0, sizeof(uint32_t), &r0LittleEndian);
+    
+    uint64_t timeStampLittleEndian = host_int64_to_little_endian(timeStamp);
+    uint8_t *timeStampTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth0RequestFactorTypeTimeStamp, sizeof(uint64_t), &timeStampLittleEndian);
+    size_t uidTlvDataSize = getTlvTotalSize(uidTlvData);
+    size_t keyIdTlvDataSize = getTlvTotalSize(keyIdTlvData);
+    size_t r0TlvDataSize = getTlvTotalSize(r0TlvData);
+    size_t timeStampTlvDataSize = getTlvTotalSize(timeStampTlvData);
+    size_t authFactorLength = uidTlvDataSize + keyIdTlvDataSize + r0TlvDataSize + timeStampTlvDataSize;
+    uint8_t *authFactorData = (uint8_t *)malloc(authFactorLength);
+    size_t offset = 0;
+    memcpy(authFactorData+offset, uidTlvData, uidTlvDataSize);
+    offset += uidTlvDataSize;
+    memcpy(authFactorData+offset, keyIdTlvData, keyIdTlvDataSize);
+    offset += keyIdTlvDataSize;
+    memcpy(authFactorData+offset, r0TlvData, r0TlvDataSize);
+    offset += r0TlvDataSize;
+    memcpy(authFactorData+offset, timeStampTlvData,timeStampTlvDataSize);
+    offset += timeStampTlvDataSize;
+    safe_free(uidTlvData);
+    safe_free(keyIdTlvData);
+    safe_free(r0TlvData);
+    safe_free(timeStampTlvData);
+    uint8_t *authFactorTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3AuthDataTypeAuth0RequestFactor, authFactorLength, authFactorData);
+    safe_free(authFactorData);
+    *authFactorTlvResultData =  authFactorTlvData;
+    return BleKeyV3Auth0RequestCreateSuccess;
+}
+
+BleKeyV3Auth1RequestCreateResult getAuth1FactorTlvData(uint32_t r12,uint8_t *certMessageData,size_t certMessageLength,uint8_t **authFactorTlvResultData) {
+    __CHECK_RET(certMessageData != NULL && certMessageLength != 0,BleKeyV3Auth1RequestCreateCertMessageIsNull)
+    uint32_t r12LittleEndian = host_int32_to_little_endian(r12);
+    uint8_t *r12TlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth1RequestFactorTypeRand12, sizeof(r12LittleEndian), &r12LittleEndian);
+    uint8_t *certMessageTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth1RequestFactorTypeCertMessage, certMessageLength, certMessageData);
+    size_t r12TlvDataSize = getTlvTotalSize(r12TlvData);
+    size_t certMessageTlvDataSize = getTlvTotalSize(certMessageTlvData);
+    size_t authFactorLength = r12TlvDataSize + certMessageTlvDataSize;
+    uint8_t *authFactorData = (uint8_t *)malloc(authFactorLength);
+    size_t offset = 0;
+    memcpy(authFactorData+offset, r12TlvData, r12TlvDataSize);
+    offset += r12TlvDataSize;
+    memcpy(authFactorData+offset, certMessageTlvData, getTlvTotalSize(certMessageTlvData));
+    offset += certMessageTlvDataSize;
+    safe_free(r12TlvData);
+    safe_free(certMessageTlvData);
+    uint8_t *authFactorTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3AuthDataTypeAuth1RequestFactor, authFactorLength, authFactorData);
+    safe_free(authFactorData);
+    *authFactorTlvResultData = authFactorTlvData;
+    return BleKeyV3Auth1RequestCreateSuccess;
+}
+
+uint8_t * getPollingCustomeData(BleKeyV3PollingConfigParams *pollingConfigParams, uint8_t tag) {
+    size_t pollingDataHeaderLength = sizeof(BleKeyV3PollingConfigParams) - sizeof(pollingConfigParams->selfCalibrationData);
+    size_t pollingDataLength = 0;
+    if (pollingConfigParams->selfCalibrationLen != 0) {
+        pollingDataLength = pollingConfigParams->selfCalibrationLen;
+    }
+    uint8_t *pollingData = (uint8_t *)malloc(pollingDataHeaderLength+pollingDataLength);
+    memcpy(pollingData, pollingConfigParams, pollingDataHeaderLength);
+    if (pollingConfigParams->selfCalibrationLen != 0) {
+        memcpy(pollingData+pollingDataHeaderLength, pollingConfigParams->selfCalibrationData, pollingConfigParams->selfCalibrationLen);
+    }
+    uint8_t *pollingTlvData = (uint8_t *)encodeTlvMessage(tag, pollingDataHeaderLength+pollingDataLength, pollingData);
+    safe_free(pollingData);
+    return pollingTlvData;
+}
+
+BleKeyV3Auth0RequestCreateResult getPollingConfigTlvData(BleKeyV3PollingConfigParams *pollingConfigParams, uint8_t pollingEnableSwitch, uint8_t *deviceModelData, size_t deviceModelLen, uint8_t *bleNameData, size_t bleNameLen, uint8_t **pollingConfigTlvResultData) {
+    __CHECK_RET(deviceModelData != NULL && deviceModelLen != 0,BleKeyV3Auth0RequestCreateDeviceModelIsNull)
+    __CHECK_RET(bleNameData != NULL && bleNameLen != 0,BleKeyV3Auth0RequestCreateDeviceNameIsNull)
+    uint8_t *pollingTlvData = getPollingCustomeData(pollingConfigParams, BLEKeyV3Auth0RequestPollingConfigTypeCustomeRssi);
+    uint8_t *deviceModelTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth0RequestPollingConfigTypeDeviceModel, deviceModelLen, deviceModelData);
+    uint8_t *bleNameTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth0RequestPollingConfigTypeBleName, bleNameLen, bleNameData);
+    uint8_t *pollingEnableConfigTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3Auth0RequestPollingConfigEnableSwitch, sizeof(pollingEnableSwitch), &pollingEnableSwitch);
+
+    size_t pollingTlvDataSize = getTlvTotalSize(pollingTlvData);
+    size_t deviceModelTlvDataSize = getTlvTotalSize(deviceModelTlvData);
+    size_t bleNameTlvDataSize = getTlvTotalSize(bleNameTlvData);
+    size_t pollingEnableConfigTlvDataSize = getTlvTotalSize(pollingEnableConfigTlvData);
+    uint8_t pollingConfigLenth = pollingTlvDataSize + deviceModelTlvDataSize + bleNameTlvDataSize + pollingEnableConfigTlvDataSize;
+    uint8_t *pollingConfigData = (uint8_t *)malloc(pollingConfigLenth);
+    uint8_t offset = 0;
+    memcpy(pollingConfigData+offset, pollingTlvData, pollingTlvDataSize);
+    offset += pollingTlvDataSize;
+    memcpy(pollingConfigData+offset, deviceModelTlvData, deviceModelTlvDataSize);
+    offset += deviceModelTlvDataSize;
+    memcpy(pollingConfigData+offset, bleNameTlvData, bleNameTlvDataSize);
+    offset += bleNameTlvDataSize;
+    memcpy(pollingConfigData+offset, pollingEnableConfigTlvData, pollingEnableConfigTlvDataSize);
+    offset += pollingEnableConfigTlvDataSize;
+    
+    safe_free(pollingTlvData);
+    safe_free(deviceModelTlvData);
+    safe_free(bleNameTlvData);
+    safe_free(pollingEnableConfigTlvData);
+    uint8_t *pollingConfigTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3AuthDataTypePollingConfig, pollingConfigLenth, pollingConfigData);
+    safe_free(pollingConfigData);
+    *pollingConfigTlvResultData = pollingConfigTlvData;
+    return BleKeyV3Auth0RequestCreateSuccess;
+}
+
+BleKeyV3RkeRequestCreateResult getRKEDataWithRkeType(BLEKeyV3RKERequestType rkeType,uint8_t controlId,uint8_t *controlData,size_t controlDataSize,uint8_t **rkeTlvResultData) {
+    __CHECK_RET(controlData != NULL && controlDataSize != 0,BleKeyV3RkeRequestCreateRkeDataIsNull)
+    uint8_t *controlIdTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3RKEDataTypeControlId, sizeof(uint8_t), &controlId);
+    uint8_t *controlDataTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3RKEDataTypeControlData, controlDataSize, controlData);
+    size_t controlIdTlvDataSize = getTlvTotalSize(controlIdTlvData);
+    size_t controlDataTlvDataSize = getTlvTotalSize(controlDataTlvData);
+    size_t rkeDataLength = controlIdTlvDataSize +controlDataTlvDataSize;
+    uint8_t *rkeData = (uint8_t *)malloc(rkeDataLength);
+    uint8_t offset = 0;
+    memcpy(rkeData+offset, controlIdTlvData, controlIdTlvDataSize);
+    offset += controlIdTlvDataSize;
+    memcpy(rkeData+offset, controlDataTlvData, controlDataTlvDataSize);
+    offset += controlDataTlvDataSize;
+    safe_free(controlIdTlvData);
+    safe_free(controlDataTlvData);
+    uint8_t *rkeTlvData = (uint8_t *)encodeTlvMessage(rkeType, rkeDataLength, rkeData);
+    safe_free(rkeData);
+    *rkeTlvResultData = rkeTlvData;
+    return BleKeyV3RkeRequestCreateSuccess;
+}
+
+
+// auth0
+BleKeyV3Auth0RequestCreateResult createBleKeyV3Auth0RequestWithInput(BleKeyV3Auth0Params *auth0Params, uint8_t pollingEnableSwitch, uint8_t *auth0EncodeData, size_t *auth0EncodeDataSize) {
+    __CHECK_RET(auth0Params != NULL, BleKeyV3Auth0RequestCreateAuth0ParamsIsNull)
+    __CHECK_RET(auth0Params->authKey != NULL, BleKeyV3Auth0RequestCreateAuth0ParamsIsNull)
+    uint8_t *indicatorTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3AuthDataTypeIndictor, auth0Params->indicatorSize, auth0Params->indictor);
+    __CHECK_RET(indicatorTlvData != NULL, BleKeyV3Auth0RequestCreateIndicatorIsNull)
+    uint8_t *authFactorTlvData = NULL;
+    BleKeyV3Auth0RequestCreateResult authFactorResult = getAuth0FactorTlvData(auth0Params->uid, auth0Params->keyId, auth0Params->keyIdSize, auth0Params->rand0, auth0Params->timeStamp,&authFactorTlvData);
+    if (authFactorResult != BleKeyV3Auth0RequestCreateSuccess) {
+        return authFactorResult;
+    }
+    uint8_t *pollingConfigTlvData = NULL;
+    BleKeyV3Auth0RequestCreateResult pollingConfigResult = getPollingConfigTlvData(&auth0Params->pollingConfig, pollingEnableSwitch, auth0Params->deviceModel, auth0Params->deviceModelSize, auth0Params->bleName, auth0Params->bleNameSize,&pollingConfigTlvData);
+    if (pollingConfigResult != BleKeyV3Auth0RequestCreateSuccess) {
+        return authFactorResult;
+    }
+    size_t indicatorSize = getTlvTotalSize(indicatorTlvData);
+    size_t authFactorSize = getTlvTotalSize(authFactorTlvData);
+    size_t pollingConfigSize = getTlvTotalSize(pollingConfigTlvData);
+
+    size_t rawDataSize = authFactorSize + pollingConfigSize ;
+    memcpy(auth0EncodeData, authFactorTlvData, authFactorSize);
+    memcpy(auth0EncodeData+authFactorSize, pollingConfigTlvData, pollingConfigSize);
+    safe_free(authFactorTlvData);
+    safe_free(pollingConfigTlvData);
+//    DLogTagInfo(kBLEKeyTag, @"加密前数据:%@",[NSData dataWithBytes:rawData length:authFactorSize+pollingConfigSize].hexString);
+    unsigned int encodeDataSize = 0;
+    unsigned char iv_copy[16];
+    memcpy(iv_copy, bleKeyV3IvData, 16);
+    unsigned char *key = (unsigned char *)calloc(1, auth0Params->authKeySize);
+    memcpy(key, auth0Params->authKey, auth0Params->authKeySize);
+    unsigned char *encodedData = aes_256_cbc_encrypt((unsigned char *)auth0EncodeData, rawDataSize, key, (unsigned char *)iv_copy,&encodeDataSize);
+    safe_free(key);
+    size_t auth0DataLength = encodeDataSize + indicatorSize;
+    memcpy(auth0EncodeData, indicatorTlvData, indicatorSize);
+    memcpy(auth0EncodeData+indicatorSize, encodedData, encodeDataSize);
+    safe_free(indicatorTlvData);
+    uint16_t checkSum = calc_crc16_ccitt(auth0EncodeData,auth0DataLength);
+    uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+    BLEKeyV3Message v3Message;
+    v3Message.msgId = BLEKeyV3MessageTypeAuth0;
+    v3Message.msgLength = auth0DataLength;
+    v3Message.messageData = (uint8_t *)malloc(auth0DataLength);
+    memcpy(v3Message.messageData, auth0EncodeData, auth0DataLength);
+    v3Message.checkSum = checkSumLittleEndian;
+    copyBleV3MessageRawData(&v3Message,auth0EncodeData);
+    *auth0EncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+    return BleKeyV3Auth0RequestCreateSuccess;
+}
+
+
+// auth1
+BleKeyV3Auth1RequestCreateResult createBleKeyV3Auth1RequestWithInput(BleKeyV3Auth1Params *auth1Params,uint8_t *auth1EncodeData,size_t *auth1EncodeDataSize) {
+    __CHECK_RET(auth1Params != NULL, BleKeyV3Auth1RequestCreateAuth1ParamsIsNull)
+    __CHECK_RET(auth1Params->sessionKey != NULL && auth1Params->sessionKeySize != 0, BleKeyV3Auth1RequestCreateSessionKeyIsNull)
+    uint8_t *authFactorTlvData = NULL;
+    BleKeyV3Auth1RequestCreateResult authFactorResult = getAuth1FactorTlvData(auth1Params->rand12, auth1Params->certMessage, auth1Params->certMessageSize,&authFactorTlvData);
+    if (authFactorResult != BleKeyV3Auth1RequestCreateSuccess) {
+        return authFactorResult;
+    }
+    size_t authFactorSize = getTlvTotalSize(authFactorTlvData);
+    uint32_t xorResultSize = 0;
+    uint8_t *sessionXorResult = getXorResult(&xorResultSize, authFactorTlvData, authFactorSize, auth1Params->sessionKey, auth1Params->sessionKeySize);
+    safe_free(authFactorTlvData);
+    uint16_t checkSum = calc_crc16_ccitt(sessionXorResult,xorResultSize);
+    uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+    BLEKeyV3Message v3Message;
+    v3Message.msgId = BLEKeyV3MessageTypeAuth1;
+    v3Message.msgLength = xorResultSize;
+    v3Message.messageData = (uint8_t *)malloc(xorResultSize);
+    memcpy(v3Message.messageData, sessionXorResult, xorResultSize);
+    safe_free(sessionXorResult);
+    v3Message.checkSum = checkSumLittleEndian;
+    copyBleV3MessageRawData(&v3Message,auth1EncodeData);
+    *auth1EncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+    return BleKeyV3Auth1RequestCreateSuccess;
+}
+
+
+// rke
+BleKeyV3RkeRequestCreateResult createBleKeyV3RkeRequestWithInput(BleKeyV3RkeParams *rkeParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize) {
+    __CHECK_RET(rkeParams != NULL, BleKeyV3RkeRequestCreateRkeParamsIsNull)
+    __CHECK_RET(rkeParams->rkeData != NULL && rkeParams->rkeDataSize != 0, BleKeyV3RkeRequestCreateRkeDataIsNull)
+    uint8_t *rkeTlvData = NULL;
+    BleKeyV3RkeRequestCreateResult rkeDataResult = getRKEDataWithRkeType(rkeParams->rkeType, rkeParams->rkeId, rkeParams->rkeData, rkeParams->rkeDataSize,&rkeTlvData);
+    if (rkeDataResult != BleKeyV3RkeRequestCreateSuccess) {
+        return rkeDataResult;
+    }
+    size_t rkeTlvSize = getTlvTotalSize(rkeTlvData);
+    if (isSecure) {
+        __CHECK_RET(rkeParams->sessionKey != NULL && rkeParams->sessionKeySize != 0, BleKeyV3RkeRequestCreateSessionKeyIsNull)
+        __CHECK_RET(rkeParams->hmacKey != NULL && rkeParams->hmacKeySize != 0, BleKeyV3RkeRequestCreateHmacKeyIsNull)
+        size_t xorResultSize = 0;
+        uint8_t * sessionXorResult = getXorResult((unsigned int *)&xorResultSize, rkeTlvData, rkeTlvSize, rkeParams->sessionKey, rkeParams->sessionKeySize);
+        size_t hmacDataSize = 0;
+        uint8_t *hmacData = hmac_sha256(rkeParams->hmacKey, rkeParams->hmacKeySize, rkeTlvData, rkeTlvSize, (unsigned int *)&hmacDataSize);
+        safe_free(rkeTlvData);
+        size_t authedDataLength = xorResultSize + hmacDataSize;
+        memcpy(rkeEncodeData, sessionXorResult, xorResultSize);
+        memcpy(rkeEncodeData+xorResultSize, hmacData, hmacDataSize);
+        safe_free(sessionXorResult);
+        safe_free(hmacData);
+        uint16_t checkSum = calc_crc16_ccitt(rkeEncodeData,authedDataLength);
+        uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+        BLEKeyV3Message v3Message;
+        v3Message.msgId = BLEKeyV3MessageTypeRKE;
+        v3Message.msgLength = authedDataLength;
+        v3Message.messageData = (uint8_t *)malloc(authedDataLength);
+        memcpy(v3Message.messageData, rkeEncodeData, authedDataLength);
+        v3Message.checkSum = checkSumLittleEndian;
+        copyBleV3MessageRawData(&v3Message,rkeEncodeData);
+        *rkeEncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+        return BleKeyV3RkeRequestCreateSuccess;
+    } else {
+        uint16_t checkSum = calc_crc16_ccitt(rkeTlvData,rkeTlvSize);
+        uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+        BLEKeyV3Message v3Message;
+        v3Message.msgId = BLEKeyV3MessageTypeRKE;
+        v3Message.msgLength = rkeTlvSize;
+        v3Message.messageData = (uint8_t *)malloc(rkeTlvSize);
+        memcpy(v3Message.messageData, rkeTlvData, rkeTlvSize);
+        v3Message.checkSum = checkSumLittleEndian;
+        copyBleV3MessageRawData(&v3Message,rkeEncodeData);
+        *rkeEncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+        return BleKeyV3RkeRequestCreateSuccess;
+    }
+}
+
+BleKeyV3RkeRequestCreateResult createBleKeyV3QueryStateRequestWithInput(BleKeyV3QueryStateParams *queryStateParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize) {
+    __CHECK_RET(queryStateParams != NULL, BleKeyV3RkeRequestCreateQueryStateParamsIsNull)
+    __CHECK_RET(queryStateParams->carStateType != NULL && queryStateParams->carStateTypeLen != 0, BleKeyV3RkeRequestCreateQueryCarStateIsNull)
+    BleKeyV3RkeParams rkeParams;
+    rkeParams.rkeType = BLEKeyV3RKERequestTypeQueryCarState;
+    rkeParams.rkeId = queryStateParams->controlId;
+    uint8_t carStateType = 0;
+    for (uint8_t i = 0; i<queryStateParams->carStateTypeLen; i++) {
+        carStateType = carStateType | queryStateParams->carStateType[i];
+    }
+    rkeParams.rkeData = &carStateType;
+    rkeParams.rkeDataSize = sizeof(carStateType);
+    rkeParams.sessionKey = queryStateParams->sessionKey;
+    rkeParams.sessionKeySize = queryStateParams->sessionKeySize;
+    rkeParams.hmacKey = queryStateParams->hmacKey;
+    rkeParams.hmacKeySize = queryStateParams->hmacKeySize;
+    return createBleKeyV3RkeRequestWithInput(&rkeParams, isSecure, rkeEncodeData, rkeEncodeDataSize);
+}
+
+BleKeyV3RkeRequestCreateResult createBleKeyV3NotifyStateRequestWithInput(BleKeyV3NotifyStateParams *notifyStateParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize) {
+    __CHECK_RET(notifyStateParams != NULL, BleKeyV3RkeRequestCreateNotifyStateParamsIsNull)
+    __CHECK_RET(notifyStateParams->carStateType != NULL && notifyStateParams->carStateTypeLen != 0, BleKeyV3RkeRequestCreateNotifyCarStateIsNull)
+    BleKeyV3RkeParams rkeParams;
+    rkeParams.rkeType = BLEKeyV3RKERequestTypeNotifyCarState;
+    rkeParams.rkeId = notifyStateParams->controlId;
+    uint8_t carStateType = 0;
+    for (uint8_t i = 0; i<notifyStateParams->carStateTypeLen; i++) {
+        carStateType = carStateType | notifyStateParams->carStateType[i];
+    }
+    rkeParams.rkeData = &carStateType;
+    rkeParams.rkeDataSize = sizeof(carStateType);
+    rkeParams.sessionKey = notifyStateParams->sessionKey;
+    rkeParams.sessionKeySize = notifyStateParams->sessionKeySize;
+    rkeParams.hmacKey = notifyStateParams->hmacKey;
+    rkeParams.hmacKeySize = notifyStateParams->hmacKeySize;
+    return createBleKeyV3RkeRequestWithInput(&rkeParams, isSecure, rkeEncodeData, rkeEncodeDataSize);
+}
+
+BleKeyV3RkeRequestCreateResult createBleKeyV3RkeControlRequestWithInput(BleKeyV3RkeControlParams *rkeControlParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize) {
+    __CHECK_RET(rkeControlParams != NULL, BleKeyV3RkeRequestCreateRkeControlParamsIsNull)
+    __CHECK_RET(rkeControlParams->controlData != NULL && rkeControlParams->controlDataLen != 0, BleKeyV3RkeRequestCreateRkeControlDataIsNull)
+    BleKeyV3RkeParams rkeParams;
+    rkeParams.rkeType = BLEKeyV3RKERequestTypeControlRequest;
+    rkeParams.rkeId = rkeControlParams->controlId;
+    rkeParams.rkeData = rkeControlParams->controlData;
+    rkeParams.rkeDataSize = rkeControlParams->controlDataLen;
+    rkeParams.sessionKey = rkeControlParams->sessionKey;
+    rkeParams.sessionKeySize = rkeControlParams->sessionKeySize;
+    rkeParams.hmacKey = rkeControlParams->hmacKey;
+    rkeParams.hmacKeySize = rkeControlParams->hmacKeySize;
+    return createBleKeyV3RkeRequestWithInput(&rkeParams, isSecure, rkeEncodeData, rkeEncodeDataSize);
+}
+
+BleKeyV3RkeRequestCreateResult createBleKeyV3NotifyPollingFuncStateWithInput(BleKeyV3PollingFuncStateParams *pollingFuncParams,int isSecure,uint8_t *rkeEncodeData,size_t *rkeEncodeDataSize) {
+    __CHECK_RET(pollingFuncParams != NULL, BleKeyV3RkeRequestCreateRkeControlParamsIsNull)
+    __CHECK_RET(pollingFuncParams->funcType != NULL && pollingFuncParams->funcLen != 0, BleKeyV3RkeRequestCreatePollingFuncTypeIsNull)
+    BleKeyV3RkeParams rkeParams;
+    rkeParams.rkeType = BLEKeyV3RKERequestTypeNotifyPollingFuncState;
+    rkeParams.rkeId = pollingFuncParams->controlId;
+    uint8_t funcType = 0;
+    for (uint8_t i = 0; i<pollingFuncParams->funcLen; i++) {
+        funcType = funcType | pollingFuncParams->funcType[i];
+    }
+    rkeParams.rkeData = &funcType;
+    rkeParams.rkeDataSize = sizeof(funcType);
+    rkeParams.sessionKey = pollingFuncParams->sessionKey;
+    rkeParams.sessionKeySize = pollingFuncParams->sessionKeySize;
+    rkeParams.hmacKey = pollingFuncParams->hmacKey;
+    rkeParams.hmacKeySize = pollingFuncParams->hmacKeySize;
+    return createBleKeyV3RkeRequestWithInput(&rkeParams, isSecure, rkeEncodeData, rkeEncodeDataSize);
+}
+
+
+// notify
+BleKeyV3NotifyRequestCreateResult createBleKeyV3NotifyRequestWithInput(BleKeyV3NotifyParams *notifyParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(notifyParams != NULL, BleKeyV3NotifyRequestCreateNotifyParamsIsNull)
+    __CHECK_RET(notifyParams->notifyData != NULL && notifyParams->notifyDataSize != 0, BleKeyV3NotifyRequestCreateNotifyDataIsNull)
+    if (isSecure) {
+        __CHECK_RET(notifyParams->sessionKey != NULL && notifyParams->sessionKeySize != 0, BleKeyV3NotifyRequestCreateSessionKeyIsNull)
+        size_t xorResultSize = 0;
+        uint8_t * sessionXorResult = getXorResult((unsigned int *)&xorResultSize, notifyParams->notifyData, notifyParams->notifyDataSize, notifyParams->sessionKey, notifyParams->sessionKeySize);
+        uint16_t checkSum = calc_crc16_ccitt(sessionXorResult,xorResultSize);
+        uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+        BLEKeyV3Message v3Message;
+        v3Message.msgId = BLEKeyV3MessageTypeNotification;
+        v3Message.msgLength = xorResultSize;
+        v3Message.messageData = (uint8_t *)malloc(xorResultSize);
+        memcpy(v3Message.messageData, sessionXorResult, xorResultSize);
+        v3Message.checkSum = checkSumLittleEndian;
+        copyBleV3MessageRawData(&v3Message,notifyEncodeData);
+        *notifyEncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+        return BleKeyV3NotifyRequestCreateSuccess;
+    } else {
+        uint16_t checkSum = calc_crc16_ccitt(notifyParams->notifyData,notifyParams->notifyDataSize);
+        uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+        BLEKeyV3Message v3Message;
+        v3Message.msgId = BLEKeyV3MessageTypeNotification;
+        v3Message.msgLength = notifyParams->notifyDataSize;
+        v3Message.messageData = (uint8_t *)malloc(notifyParams->notifyDataSize);
+        memcpy(v3Message.messageData, notifyParams->notifyData, notifyParams->notifyDataSize);
+        v3Message.checkSum = checkSumLittleEndian;
+        copyBleV3MessageRawData(&v3Message,notifyEncodeData);
+        *notifyEncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+        return BleKeyV3NotifyRequestCreateSuccess;
+    }
+}
+
+BleKeyV3NotifyRequestCreateResult generateBleKeyV3NotifyRequestContent(BleKeyV3NotifyParams *notifyParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(notifyParams != NULL, BleKeyV3NotifyRequestCreateNotifyParamsIsNull)
+    __CHECK_RET(notifyParams->notifyData != NULL && notifyParams->notifyDataSize != 0, BleKeyV3NotifyRequestCreateNotifyDataIsNull)
+    if (isSecure) {
+        __CHECK_RET(notifyParams->sessionKey != NULL && notifyParams->sessionKeySize != 0, BleKeyV3NotifyRequestCreateSessionKeyIsNull)
+        size_t xorResultSize = 0;
+        uint8_t * sessionXorResult = getXorResult((unsigned int *)&xorResultSize, notifyParams->notifyData, notifyParams->notifyDataSize, notifyParams->sessionKey, notifyParams->sessionKeySize);
+        *notifyEncodeDataSize = xorResultSize;
+        return BleKeyV3NotifyRequestCreateSuccess;
+    } else {
+        uint16_t checkSum = calc_crc16_ccitt(notifyParams->notifyData,notifyParams->notifyDataSize);
+        uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+        BLEKeyV3Message v3Message;
+        v3Message.msgId = BLEKeyV3MessageTypeNotification;
+        v3Message.msgLength = notifyParams->notifyDataSize;
+        v3Message.messageData = (uint8_t *)malloc(notifyParams->notifyDataSize);
+        memcpy(v3Message.messageData, notifyParams->notifyData, notifyParams->notifyDataSize);
+        v3Message.checkSum = checkSumLittleEndian;
+        copyBleV3MessageRawData(&v3Message,notifyEncodeData);
+        *notifyEncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+        return BleKeyV3NotifyRequestCreateSuccess;
+    }
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3ParkingHeartWithInput(BleKeyV3ParkingHeartParams *parkingHeartParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(parkingHeartParams != NULL, BleKeyV3NotifyRequestCreateParkingHeartParamsIsNull)
+    size_t parkingDataLength = sizeof(parkingHeartParams->parkingData) + sizeof(parkingHeartParams->parkingId);
+    memcpy(notifyEncodeData, parkingHeartParams, parkingDataLength);
+    uint8_t *parkingTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyTypeParkingHeart, parkingDataLength, notifyEncodeData);
+    size_t parkingTlvDataSize = getTlvTotalSize(parkingTlvData);
+    //    DLogTagInfo(kBLEKeyTag, @"泊车加密前数据:%@",[NSData dataWithBytes:parkingTlvData length:parkingDataSize].hexString);
+    BleKeyV3NotifyParams notifyParams;
+    notifyParams.notifyType = BLEKeyV3NotifyTypeParkingHeart;
+    notifyParams.notifyData = parkingTlvData;
+    notifyParams.notifyDataSize = parkingTlvDataSize;
+    notifyParams.sessionKey = parkingHeartParams->sessionKey;
+    notifyParams.sessionKeySize = parkingHeartParams->sessionKeySize;
+    BleKeyV3NotifyRequestCreateResult createResult = createBleKeyV3NotifyRequestWithInput(&notifyParams, isSecure, notifyEncodeData, notifyEncodeDataSize);
+    safe_free(parkingTlvData);
+    return createResult;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3SelfCalibrationWithInput(BleKeyV3SelfCalibrationParams *selfCalirationParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(selfCalirationParams != NULL, BleKeyV3NotifyRequestCreateSelfCalibrationParamsIsNull)
+    __CHECK_RET(selfCalirationParams->deviceModel != NULL && selfCalirationParams->deviceModelSize != 0, BleKeyV3NotifyRequestCreateSelfCalibrationDeviceModelIsNull)
+    size_t offset = 0;
+    memcpy(notifyEncodeData, &selfCalirationParams->direction, sizeof(selfCalirationParams->direction));
+    offset += sizeof(selfCalirationParams->direction);
+    uint8_t distance = (uint8_t)(selfCalirationParams->distance * 10);
+    memcpy(notifyEncodeData+offset, &distance, sizeof(distance));
+    offset += sizeof(distance);
+    uint32_t collectCountLittleEndian = host_int32_to_little_endian(selfCalirationParams->collectCount);
+    memcpy(notifyEncodeData+offset, &collectCountLittleEndian, sizeof(collectCountLittleEndian));
+    offset += sizeof(collectCountLittleEndian);
+    uint32_t timeoutLittleEndian = host_int32_to_little_endian(selfCalirationParams->timeout);
+    memcpy(notifyEncodeData+offset, &timeoutLittleEndian, sizeof(timeoutLittleEndian));
+    offset += sizeof(timeoutLittleEndian);
+    uint32_t uidLittleEndian = host_int32_to_little_endian(selfCalirationParams->uid);
+    memcpy(notifyEncodeData+offset, &uidLittleEndian, sizeof(uidLittleEndian));
+    offset += sizeof(uidLittleEndian);
+    memcpy(notifyEncodeData+offset, selfCalirationParams->deviceModel, selfCalirationParams->deviceModelSize);
+    offset += selfCalirationParams->deviceModelSize;
+    uint8_t *selfCalibrationTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyTypeSelfCalibration, offset, notifyEncodeData);
+    size_t selfCalibrationTlvDataSize = getTlvTotalSize(selfCalibrationTlvData);
+    BleKeyV3NotifyParams notifyParams;
+    notifyParams.notifyType = BLEKeyV3NotifyTypeSelfCalibration;
+    notifyParams.notifyData = selfCalibrationTlvData;
+    notifyParams.notifyDataSize = selfCalibrationTlvDataSize;
+    notifyParams.sessionKey = selfCalirationParams->sessionKey;
+    notifyParams.sessionKeySize = selfCalirationParams->sessionKeySize;
+    BleKeyV3NotifyRequestCreateResult createResult = createBleKeyV3NotifyRequestWithInput(&notifyParams, isSecure, notifyEncodeData, notifyEncodeDataSize);
+    safe_free(selfCalibrationTlvData);
+    return createResult;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3RssiCollectWithInput(BleKeyV3RssiCollectParams *rssiCollectParams,int isSecure,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(rssiCollectParams != NULL, BleKeyV3NotifyRequestCreateRssiCollectParamsIsNull)
+    __CHECK_RET(rssiCollectParams->deviceModel != NULL && rssiCollectParams->deviceModelSize != 0, BleKeyV3NotifyRequestCreateRssiCollectDeviceModelIsNull)
+    size_t offset = 0;
+    memcpy(notifyEncodeData, &rssiCollectParams->direction, sizeof(rssiCollectParams->direction));
+    offset += sizeof(rssiCollectParams->direction);
+    uint8_t distance = (uint8_t)(rssiCollectParams->distance * 10);
+    memcpy(notifyEncodeData+offset, &distance, sizeof(distance));
+    offset += sizeof(distance);
+    uint32_t collectCountLittleEndian = host_int32_to_little_endian(rssiCollectParams->collectCount);
+    memcpy(notifyEncodeData+offset, &collectCountLittleEndian, sizeof(collectCountLittleEndian));
+    offset += sizeof(collectCountLittleEndian);
+    memcpy(notifyEncodeData+offset, &rssiCollectParams->isPocket, sizeof(rssiCollectParams->isPocket));
+    offset += sizeof(rssiCollectParams->isPocket);
+    uint16_t angleLittleEndian = host_int16_to_little_endian(rssiCollectParams->angle);
+    memcpy(notifyEncodeData+offset, &angleLittleEndian, sizeof(angleLittleEndian));
+    offset += sizeof(angleLittleEndian);
+    uint32_t uidLittleEndian = host_int32_to_little_endian(rssiCollectParams->uid);
+    memcpy(notifyEncodeData+offset, &uidLittleEndian, sizeof(uidLittleEndian));
+    offset += sizeof(uidLittleEndian);
+    memcpy(notifyEncodeData+offset, rssiCollectParams->deviceModel, rssiCollectParams->deviceModelSize);
+    offset += rssiCollectParams->deviceModelSize;
+    uint8_t *rssiCollectTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyTypeRssiCollect, offset, notifyEncodeData);
+    size_t rssiCollectTlvDataSize = getTlvTotalSize(rssiCollectTlvData);
+    BleKeyV3NotifyParams notifyParams;
+    notifyParams.notifyType = BLEKeyV3NotifyTypeRssiCollect;
+    notifyParams.notifyData = rssiCollectTlvData;
+    notifyParams.notifyDataSize = rssiCollectTlvDataSize;
+    notifyParams.sessionKey = rssiCollectParams->sessionKey;
+    notifyParams.sessionKeySize = rssiCollectParams->sessionKeySize;
+    BleKeyV3NotifyRequestCreateResult createResult = createBleKeyV3NotifyRequestWithInput(&notifyParams, isSecure, notifyEncodeData, notifyEncodeDataSize);
+    safe_free(rssiCollectTlvData);
+    return createResult;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3ParkingLimitDistanceWithInput(BleKeyV3ParkingLimitDistanceParams *parkingLimitParams, int isSecure, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize) {
+    __CHECK_RET(parkingLimitParams != NULL, BleKeyV3NotifyRequestCreateParkingLimitParamsIsNull)
+    size_t offset = 0;
+    memcpy(notifyEncodeData, &parkingLimitParams->isLimit, sizeof(parkingLimitParams->isLimit));
+    offset += sizeof(parkingLimitParams->isLimit);
+    uint8_t *parkingLimitTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyTypeParkingLimitDistance, offset, notifyEncodeData);
+    size_t parkingLimitTlvDataSize = getTlvTotalSize(parkingLimitTlvData);
+    BleKeyV3NotifyParams notifyParams;
+    notifyParams.notifyType = BLEKeyV3NotifyTypeParkingLimitDistance;
+    notifyParams.notifyData = parkingLimitTlvData;
+    notifyParams.notifyDataSize = parkingLimitTlvDataSize;
+    notifyParams.sessionKey = parkingLimitParams->sessionKey;
+    notifyParams.sessionKeySize = parkingLimitParams->sessionKeySize;
+    BleKeyV3NotifyRequestCreateResult createResult = createBleKeyV3NotifyRequestWithInput(&notifyParams, isSecure, notifyEncodeData, notifyEncodeDataSize);
+    safe_free(parkingLimitTlvData);
+    return createResult;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3ParkingLimitDistanceWithInputV2(BleKeyV3ParkingLimitDistanceParams *parkingLimitParams, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize) {
+    __CHECK_RET(parkingLimitParams != NULL, BleKeyV3NotifyRequestCreateParkingLimitParamsIsNull)
+    size_t offset = 0;
+    memcpy(notifyEncodeData, &parkingLimitParams->isLimit, sizeof(parkingLimitParams->isLimit));
+    offset += sizeof(parkingLimitParams->isLimit);
+    uint8_t *parkingLimitTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyTypeParkingLimitDistance, offset, notifyEncodeData);
+    size_t parkingLimitTlvDataSize = getTlvTotalSize(parkingLimitTlvData);
+    memcpy(notifyEncodeData, parkingLimitTlvData, parkingLimitTlvDataSize);
+    *notifyEncodeDataSize = parkingLimitTlvDataSize;
+    safe_free(parkingLimitTlvData);
+    return BleKeyV3NotifyRequestCreateSuccess;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3PollingEnableConfigDataWithInput(BleKeyV3PollingEnableConfigParams *pollingEnableParams, int isSecure, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize) {
+    __CHECK_RET(pollingEnableParams != NULL, BleKeyV3NotifyRequestCreatePollingEnableParamsIsNull)
+    size_t offset = 0;
+    memcpy(notifyEncodeData, &pollingEnableParams->pollingEnableSwitch, sizeof(pollingEnableParams->pollingEnableSwitch));
+    offset += sizeof(pollingEnableParams->pollingEnableSwitch);
+    uint8_t *pollingEnableTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyTypePollingEnableData, offset, notifyEncodeData);
+    size_t pollingEnableTlvDataSize = getTlvTotalSize(pollingEnableTlvData);
+    BleKeyV3NotifyParams notifyParams;
+    notifyParams.notifyType = BLEKeyV3NotifyTypePollingEnableData;
+    notifyParams.notifyData = pollingEnableTlvData;
+    notifyParams.notifyDataSize = pollingEnableTlvDataSize;
+    notifyParams.sessionKey = pollingEnableParams->sessionKey;
+    notifyParams.sessionKeySize = pollingEnableParams->sessionKeySize;
+    BleKeyV3NotifyRequestCreateResult createResult = createBleKeyV3NotifyRequestWithInput(&notifyParams, isSecure, notifyEncodeData, notifyEncodeDataSize);
+    free(pollingEnableTlvData);
+    return createResult;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3PollingEnableConfigDataWithInputV2(BleKeyV3PollingEnableConfigParams *pollingEnableParams, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize) {
+    __CHECK_RET(pollingEnableParams != NULL, BleKeyV3NotifyRequestCreatePollingEnableParamsIsNull)
+    size_t offset = 0;
+    memcpy(notifyEncodeData, &pollingEnableParams->pollingEnableSwitch, sizeof(pollingEnableParams->pollingEnableSwitch));
+    offset += sizeof(pollingEnableParams->pollingEnableSwitch);
+    uint8_t *pollingEnableTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyTypePollingEnableData, offset, notifyEncodeData);
+    size_t pollingEnableTlvDataSize = getTlvTotalSize(pollingEnableTlvData);
+    memcpy(notifyEncodeData, pollingEnableTlvData, pollingEnableTlvDataSize);
+    *notifyEncodeDataSize = pollingEnableTlvDataSize;
+    safe_free(pollingEnableTlvData);
+    return BleKeyV3NotifyRequestCreateSuccess;
+}
+
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3PollingCustomeDataWithInput(BleKeyV3PollingConfigParams *pollingConfigParams,int isSecure,uint8_t *sessionKey,int sessionKeySize,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(pollingConfigParams != NULL, BleKeyV3NotifyRequestCreatePollingConfigParamsIsNull)
+    uint8_t *pollingTlvData = getPollingCustomeData(pollingConfigParams, BLEKeyV3NotifyTypePollingCustomerData);
+    size_t pollingTlvDataSize = getTlvTotalSize(pollingTlvData);
+    BleKeyV3NotifyParams notifyParams;
+    notifyParams.notifyType = BLEKeyV3NotifyTypePollingCustomerData;
+    notifyParams.notifyData = pollingTlvData;
+    notifyParams.notifyDataSize = pollingTlvDataSize;
+    notifyParams.sessionKey = sessionKey;
+    notifyParams.sessionKeySize = sessionKeySize;
+    BleKeyV3NotifyRequestCreateResult createResult = createBleKeyV3NotifyRequestWithInput(&notifyParams, isSecure, notifyEncodeData, notifyEncodeDataSize);
+    safe_free(pollingTlvData);
+    return createResult;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3PollingCustomeDataWithInputV2(BleKeyV3PollingConfigParams *pollingConfigParams, uint8_t *notifyEncodeData, size_t *notifyEncodeDataSize) {
+    __CHECK_RET(pollingConfigParams != NULL, BleKeyV3NotifyRequestCreatePollingConfigParamsIsNull)
+    uint8_t *pollingTlvData = getPollingCustomeData(pollingConfigParams, BLEKeyV3NotifyTypePollingCustomerData);
+    size_t pollingTlvDataSize = getTlvTotalSize(pollingTlvData);
+    memcpy(notifyEncodeData, pollingTlvData, pollingTlvDataSize);
+    *notifyEncodeDataSize = pollingTlvDataSize;
+    safe_free(pollingTlvData);
+    return BleKeyV3NotifyRequestCreateSuccess;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3DeviceModelDataWithInput(uint8_t *deviceModel, int deviceModelSize, int isSecure,uint8_t *sessionKey,int sessionKeySize,uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(deviceModel != NULL && deviceModelSize != 0, BleKeyV3NotifyRequestCreateDeviceModelIsNull)
+    uint8_t *deviceModelTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyDeviceModel, deviceModelSize, deviceModel);
+    size_t deviceModelTlvDataSize = getTlvTotalSize(deviceModelTlvData);
+    BleKeyV3NotifyParams notifyParams;
+    notifyParams.notifyType = BLEKeyV3NotifyDeviceModel;
+    notifyParams.notifyData = deviceModelTlvData;
+    notifyParams.notifyDataSize = deviceModelTlvDataSize;
+    notifyParams.sessionKey = sessionKey;
+    notifyParams.sessionKeySize = sessionKeySize;
+    BleKeyV3NotifyRequestCreateResult createResult = createBleKeyV3NotifyRequestWithInput(&notifyParams, isSecure, notifyEncodeData, notifyEncodeDataSize);
+    free(deviceModelTlvData);
+    return createResult;
+}
+
+BleKeyV3NotifyRequestCreateResult createBleKeyV3DeviceModelDataWithInputV2(uint8_t *deviceModel, int deviceModelSize, uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(deviceModel != NULL && deviceModelSize != 0, BleKeyV3NotifyRequestCreateDeviceModelIsNull)
+    uint8_t *deviceModelTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3NotifyDeviceModel, deviceModelSize, deviceModel);
+    size_t deviceModelTlvDataSize = getTlvTotalSize(deviceModelTlvData);
+    memcpy(notifyEncodeData, deviceModelTlvData, deviceModelTlvDataSize);
+    *notifyEncodeDataSize = deviceModelTlvDataSize;
+    safe_free(deviceModelTlvData);
+    return BleKeyV3NotifyRequestCreateSuccess;
+}
+
+BleKeyV3NotifyRequestCreateResult createCombinedNotifyData(uint8_t *combinedData, int combinedDataSize, int isSecure,uint8_t *sessionKey,int sessionKeySize, uint8_t *notifyEncodeData,size_t *notifyEncodeDataSize) {
+    __CHECK_RET(combinedData != NULL && combinedDataSize != 0, BleKeyV3NotifyRequestCreateNotifyParamsIsNull)
+    if (isSecure) {
+        size_t xorResultSize = 0;
+        uint8_t * sessionXorResult = getXorResult((unsigned int *)&xorResultSize, combinedData, combinedDataSize, sessionKey, sessionKeySize);
+        uint16_t checkSum = calc_crc16_ccitt(sessionXorResult,xorResultSize);
+        uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+        BLEKeyV3Message v3Message;
+        v3Message.msgId = BLEKeyV3MessageTypeNotification;
+        v3Message.msgLength = xorResultSize;
+        v3Message.messageData = (uint8_t *)malloc(xorResultSize);
+        memcpy(v3Message.messageData, sessionXorResult, xorResultSize);
+        v3Message.checkSum = checkSumLittleEndian;
+        copyBleV3MessageRawData(&v3Message,notifyEncodeData);
+        *notifyEncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+        return BleKeyV3NotifyRequestCreateSuccess;
+    } else {
+        uint16_t checkSum = calc_crc16_ccitt(combinedData, combinedDataSize);
+        uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+        BLEKeyV3Message v3Message;
+        v3Message.msgId = BLEKeyV3MessageTypeNotification;
+        v3Message.msgLength = combinedDataSize;
+        v3Message.messageData = (uint8_t *)malloc(combinedDataSize);
+        memcpy(v3Message.messageData, combinedData, combinedDataSize);
+        v3Message.checkSum = checkSumLittleEndian;
+        copyBleV3MessageRawData(&v3Message, notifyEncodeData);
+        *notifyEncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+        return BleKeyV3NotifyRequestCreateSuccess;
+    }
+}
+
+// rtAuth — 明文传输
+BleKeyV3RtAuthRequestCreateResult createBleKeyV3RtAuthRequestWithInput(BleKeyV3RtAuthParams *rtAuthParams, uint8_t *rtAuthEncodeData, size_t *rtAuthEncodeDataSize) {
+    __CHECK_RET(rtAuthParams != NULL, BleKeyV3RtAuthRequestCreateParamsIsNull)
+    __CHECK_RET(rtAuthParams->certificate != NULL && rtAuthParams->certificateSize != 0, BleKeyV3RtAuthRequestCreateCertificateIsNull)
+    __CHECK_RET(rtAuthParams->deviceModel != NULL && rtAuthParams->deviceModelSize != 0, BleKeyV3RtAuthRequestCreateDeviceModelIsNull)
+
+    // 构造二级 TLV: certificate(0x01) + deviceModel(0x02)
+    uint8_t *certificateTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3RtAuthRequestFactorTypeCertificate, rtAuthParams->certificateSize, rtAuthParams->certificate);
+    uint8_t *deviceModelTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3RtAuthRequestFactorTypeDeviceModel, rtAuthParams->deviceModelSize, rtAuthParams->deviceModel);
+
+    size_t certificateTlvSize = getTlvTotalSize(certificateTlvData);
+    size_t deviceModelTlvSize = getTlvTotalSize(deviceModelTlvData);
+    size_t innerDataLength = certificateTlvSize + deviceModelTlvSize;
+
+    uint8_t *innerData = (uint8_t *)malloc(innerDataLength);
+    memcpy(innerData, certificateTlvData, certificateTlvSize);
+    memcpy(innerData + certificateTlvSize, deviceModelTlvData, deviceModelTlvSize);
+    safe_free(certificateTlvData);
+    safe_free(deviceModelTlvData);
+
+    // 构造一级 TLV: tag=0x7F54
+    uint8_t *rtAuthTlvData = (uint8_t *)encodeTlvMessage(BLEKeyV3RtAuthRequestTag, innerDataLength, innerData);
+    safe_free(innerData);
+    size_t rtAuthTlvSize = getTlvTotalSize(rtAuthTlvData);
+
+    // 明文 — 不加密，直接构造 BLEKeyV3Message
+    uint16_t checkSum = calc_crc16_ccitt(rtAuthTlvData, rtAuthTlvSize);
+    uint16_t checkSumLittleEndian = host_int16_to_little_endian(checkSum);
+    BLEKeyV3Message v3Message;
+    v3Message.msgId = BLEKeyV3MessageTypeRtAuth;
+    v3Message.msgLength = rtAuthTlvSize;
+    v3Message.messageData = (uint8_t *)malloc(rtAuthTlvSize);
+    memcpy(v3Message.messageData, rtAuthTlvData, rtAuthTlvSize);
+    v3Message.checkSum = checkSumLittleEndian;
+    safe_free(rtAuthTlvData);
+
+    copyBleV3MessageRawData(&v3Message, rtAuthEncodeData);
+    *rtAuthEncodeDataSize = sizeOfBLEKeyV3Message(&v3Message);
+    free(v3Message.messageData);
+    return BleKeyV3RtAuthRequestCreateSuccess;
+}

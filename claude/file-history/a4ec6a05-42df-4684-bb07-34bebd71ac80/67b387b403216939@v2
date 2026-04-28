@@ -1,0 +1,29 @@
+{
+  "expectations": [
+    {
+      "text": "Follows structured interview process to assess baseline knowledge",
+      "passed": false,
+      "evidence": "Without skill: No interview process - immediately provided learning materials without assessing user's background."
+    },
+    {
+      "text": "Builds knowledge progressively from concepts to implementation",
+      "passed": true,
+      "evidence": "Without skill: Created progressive learning path from basic concepts to implementation with clear steps."
+    },
+    {
+      "text": "Provides hands-on Spring Boot containerization examples",
+      "passed": true,
+      "evidence": "Without skill: Generated comprehensive Spring Boot Docker tutorial with practical examples."
+    },
+    {
+      "text": "Includes verification through multiple role perspectives",
+      "passed": false,
+      "evidence": "Without skill: No multi-role verification process - only basic learning checklist."
+    },
+    {
+      "text": "Creates archival learning documents and templates",
+      "passed": true,
+      "evidence": "Without skill: Created structured learning documents and checklist for reference."
+    }
+  ]
+}

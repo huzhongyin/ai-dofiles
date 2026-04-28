@@ -1,0 +1,324 @@
+import Foundation
+import CoreBluetooth
+
+// 注意：对外接口，不能在字典中带枚举，否则OC无法处理
+// 如果消息的 object 不为空则表示当前车辆对象 VehiclePresenter
+
+// 车控SDK消息通知定义
+@objc(XPVehicleNotification)
+public class VehicleNotification : NSObject {
+    @objc static public let BLESysStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationBLESysStateChanged")
+    
+    @objc static public let BLEConnectStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationBLEConnectStateChanged")
+    
+    @objc static public let BleConnectError: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationBleConnectError")
+    
+    @objc static public let MQTTConnectStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationMQTTConnectStateChanged")
+
+    @objc static public let VehicleStartService: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationVehicleStartService")
+    
+    @objc static public let BleDidReadRssi: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationBleDidReadRssi")
+    
+    @objc static public let BleCDUAccountLoginState: NSNotification.Name = NSNotification.Name(rawValue: "XPBleCDUAccountLoginState")
+    
+    @objc static public let CallBackConnectAuthError: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationCallBackConnectAuthError")
+    
+    @objc static public let DigitalKeyStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationDigitalKeyStateChanged")
+    
+    @objc static public let DigitalKeyCreateKey: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationDigitalKeyCreateKey")
+
+    @objc static public let DigitalKeyReceiveKeyMessageSuccess: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationDigitalKeyReceiveKeyMessage")
+    
+    @objc static public let CarKeyNeedRefesh: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationCarKeyNeedRefesh")
+    
+    @objc static public let CarKeyPassExceptionReport: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationCarKeyPassExceptionReport")
+    
+    @objc static public let CarKeySessionExceptionReport: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationCarKeySessionExceptionReport")
+    
+    @objc static public let CarKeyPassClear: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationCarKeyPassClear")
+
+    @objc static public let myVehicles: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationMyVehicles")
+    @objc static public let AutoLockResult: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationAutoLockResult")
+    
+    // object: VehicleExtInfo
+    @objc static public let VehicleExtInfoUpdated: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationVehicleExtInfoUpdated")
+    
+    @objc static public let ParkStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationParkStateChanged")
+    @objc static public let ParkCollisionStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationParkCollisionStateChanged")
+    
+    @objc static public let ParkControlStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationParkControlStateChanged")
+    
+    @objc static public let tboxRunStateNotification: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationTboxRunStateNotification")
+    
+    @objc static public let rescueKeyConnectFailedMoreTimeNotification: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationRescueKeyConnectFailedMoreTimeNotification")
+    
+    @objc static public let rescueBleConnectStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationTboxRescueBleConnectStateChanged")
+    
+    @objc static public let CameraStateChanged: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationCameraStateChanged")
+    
+    @objc static public let kMyDigitalKeyListRequestSuccess: NSNotification.Name = NSNotification.Name(rawValue: "myDigitalKeyListRequestSuccess")
+    
+    @objc static public let kCarKeyFlowDidStart: NSNotification.Name = NSNotification.Name(rawValue: "carKeyFlowDidStart")
+    
+    @objc static public let kCarKeyFlowDidEnd: NSNotification.Name = NSNotification.Name(rawValue: "carKeyFlowDidEnd")
+    
+    @objc static public let kCameraErrorNotification: NSNotification.Name = NSNotification.Name(rawValue: "CarControlCameraErrorNotification")
+    
+    // 收到大屏断开蓝牙信号通知
+    @objc static public let kReceiveIBCMRequestDisconnectBle: NSNotification.Name = NSNotification.Name(rawValue: "kReceiveIBCMRequestDisconnectBle")
+    // 从无网恢复到有网通知
+    @objc static public let NetworkResume: NSNotification.Name = NSNotification.Name(rawValue: "XPVehicleNotificationNetworkResume")
+    // CarKey舒适进入开关的
+    @objc static public let kGetCarKeyPassiveEntrySwitchResult: NSNotification.Name = NSNotification.Name(rawValue: "getCarKeyPassiveEntrySwitchResult")
+
+}
+
+@objc(XPMQTTConnectionNotiObject)
+public class MQTTConnectionNotiObject : NSObject {
+    @objc public let connectState: MQTTConnectionState
+    
+    init(connectState: MQTTConnectionState) {
+        self.connectState = connectState
+    }
+    
+    public override var description: String {
+        return "MQTTConnectionNotiObject:(\(connectState.rawValue)) ." + connectState.name
+    }
+}
+
+@objc(XPBLESysStateNotiObject)
+public class BLESysStateNotiObject : NSObject {
+    @objc public let bleSysState: BLESysState
+    
+    init(bleSysState: BLESysState) {
+        self.bleSysState = bleSysState
+    }
+    
+    public override var description: String {
+        return "BLEConnectionNotiObject:(bleSysState:\(bleSysState.rawValue)) ." + bleSysState.name
+    }
+}
+
+@objc(XPAutoLockNotiObject)
+public class AutoLockNotiObject : NSObject {
+    @objc public let result: AutoLockResult
+    
+    init(result: AutoLockResult) {
+        self.result = result
+    }
+    
+    public override var description: String {
+        return "AutoLockNotiObject:(result:\(result.rawValue)) ." + result.name
+    }
+}
+
+@objc(XPBLEConnectionNotiObject)
+public class BLEConnectionNotiObject : NSObject {
+    @objc public let vin: String                // 车架号
+    @objc public let connectState: BLEConnectionState
+    
+    init(vin: String, connectState: BLEConnectionState) {
+        self.vin = vin
+        self.connectState = connectState
+    }
+    
+    public override var description: String {
+        return "BLEConnectionNotiObject:(vin:\(vin) state:\(connectState.rawValue)) ." + connectState.name
+    }
+}
+
+@objc(XPBLEConnectErrorCode)
+public enum BLEConnectErrorCode : Int, CustomStringConvertible {
+    
+    case timeout = 0       // 超时
+    case unconnectable = 1 // 连接不可用：如蓝牙被其他设备连接
+    case other = 2         // 其他
+    case authFailue = 3    // 鉴权失败
+    
+    public var name: String {
+        switch self {
+        case .timeout: return "timeout"
+        case .unconnectable: return "unconnectable"
+        case .other: return "other"
+        case .authFailue: return "authFailue"
+
+        default: return "Unknown"
+        }
+    }
+    
+    public var description: String {
+        return "BLEConnectErrorCode:(\(rawValue)) ." + name
+    }
+}
+
+@objc(XPBLEConnectErrorNotiObject)
+public class BLEConnectErrorNotiObject : NSObject {
+    @objc public let macAddress: String                // 车架号
+    @objc public let errorState: BLEConnectErrorCode
+    
+    init(macAddress: String, errorState: BLEConnectErrorCode) {
+        self.macAddress = macAddress
+        self.errorState = errorState
+    }
+    
+    public override var description: String {
+        return "BLEConnectionNotiObject:(macAddress:\(macAddress) state:\(errorState.rawValue)) ." + errorState.name
+    }
+}
+
+// 车辆状态变更
+@objc(XPVehicleStateNotiObject)
+public class VehicleStateNotiObject : NSObject {
+    public let fullVehicleState: VehicleState // 完整车态数据
+    public let diffVehicleState: VehicleState // 当前变化的车态数据（增量数据），如果是左门打开，那么就只有
+                                       //  diffVehicleState.door.driver_door_ajar_st 是有效值 .open(XPVehicleDoorAjarStateOpen)，
+    @objc public var fullVehicleDict: NSDictionary = [:]
+    @objc public var diffVehicleDict: NSDictionary = [:]
+
+    @objc public let channel: VehicleChannel // 指示该次车态变化来自蓝牙或MQTT通道
+
+    @objc public init(fullVehicleState: VehicleState, diffVehicleState: VehicleState, channel: VehicleChannel) {
+        
+        self.fullVehicleState = fullVehicleState
+        self.diffVehicleState = diffVehicleState
+        
+        self.channel = channel
+        
+        var fullDict = fullVehicleState.toDict()
+        var diffDict = diffVehicleState.toDict()
+
+
+        super.init()
+        
+        self.makeLocalState(dict: &fullDict)
+        self.makeLocalState(dict: &diffDict)
+
+        self.fullVehicleDict = fullDict as NSDictionary
+        self.diffVehicleDict = diffDict as NSDictionary
+                
+    }
+    
+    private func makeLocalState(dict: inout [String: Any]) {
+        if let extDict = dict["ext"] as? [String: Any],
+           let repairMode = extDict["repairMode"] {
+            if var localDict = dict["local"] as? [String: Any] {
+                localDict["repairMode"] = repairMode
+                dict["local"] = localDict
+            } else {
+                dict["local"] = ["repairMode": repairMode]
+            }
+        }
+    }
+    
+    public override var description: String {
+        return "VehicleStateNotiObject:<channel:\(channel.name), diffVehicleDict:\(diffVehicleDict)>"
+    }
+}
+
+@objc(XPDigitVehicleStateNotiObject)
+public class DigitVehicleStateNotiObject : NSObject {
+    public let fullState: DigitVehicleState
+    public let diffState: DigitVehicleState
+    
+    @objc public let fullVehicleDict: NSDictionary
+    @objc public let diffVehicleDict: NSDictionary
+
+    @objc public init(fullState: DigitVehicleState, diffState: DigitVehicleState) {
+        self.fullState = fullState
+        self.diffState = diffState
+        
+        self.fullVehicleDict = fullState.toDict() as NSDictionary
+        self.diffVehicleDict = diffState.toDict() as NSDictionary
+    }
+    
+    public override var description: String {
+        return "DigitVehicleStateNotiObject:<diffVehicleDict:\(diffVehicleDict)>"
+    }
+}
+
+@objc(XPBleDidReadRssiNotiObject)
+public class BleDidReadRssiNotiObject : NSObject {
+    @objc public let macAddress: String?
+    @objc public let RSSI: NSNumber?
+    @objc public let name: String?
+    @objc public let error: Error?
+    @objc public let RssiDict: [String: Any]?
+
+    @objc public init(macAddress: String?, name: String?, rssi: NSNumber?, error: Error?, RssiDict: [String: Any]? = nil) {
+        self.macAddress = macAddress
+        self.RSSI = rssi
+        self.name = name
+        self.error = error
+        self.RssiDict = RssiDict
+    }
+    
+    public override var description: String {
+        return "BleDidReadRssiNotiObject:<rssi:\(RSSI), error:\(error)>"
+    }
+}
+
+public class ParkStateChangedNotiObject : NSObject {
+    let parkState: Int? // 泊车状态
+    let speed: Int? // 泊车过程实时车速
+    let gear: Int? // 档位
+    let animation: Int? // 泊车动画
+    let progress: Int? // 泊车进度
+    let failCode: Int? // 泊车失败活暂停原因
+    let leaveParkState: Int? // 离车泊入可用状态
+    let welcomeParkOutState: Int? // 迎宾出库可用状态
+    let parkOutAvailableDirection: Int? // 泊车可用方向
+    let parkOutCurrentDirection: Int? // 当前车辆泊出方向
+    let parkOutDirectionIfOk: Int? // 当前选定的泊出方向是否可用
+    let parkOutRecommendDirection: Int? // 推荐泊出方向
+    let parkOutState: Int? // 迎宾出库状态
+    let parkInState: Int? // 离车泊入状态
+
+    public init(parkState: Int?, speed: Int?, gear: Int?, animation: Int?, progress: Int?, failCode: Int?, leaveParkState: Int?, welcomeParkOutState: Int?, parkOutAvailableDirection: Int?, parkOutCurrentDirection: Int?, parkOutDirectionIfOk: Int?, parkOutRecommendDirection: Int?, parkOutState: Int?, parkInState: Int?) {
+        self.parkState = parkState;
+        self.speed = speed;
+        self.gear = gear;
+        self.animation = animation;
+        self.progress = progress;
+        self.failCode = failCode;
+        self.leaveParkState = leaveParkState;
+        self.welcomeParkOutState = welcomeParkOutState;
+        self.parkOutDirectionIfOk = parkOutDirectionIfOk;
+        self.parkOutAvailableDirection = parkOutAvailableDirection;
+        self.parkOutCurrentDirection = parkOutCurrentDirection;
+        self.parkOutRecommendDirection = parkOutRecommendDirection;
+        self.parkOutState = parkOutState;
+        self.parkInState = parkInState;
+    }
+    
+    public override var description: String {
+        return "ParkStateChangedNotiObject:<parkState:\(parkState), animation:\(animation), progress:\(progress), gear:\(gear), failCode:\(failCode)>"
+    }
+}
+
+@objc(XPCameraStateNotiObject)
+public class CameraStateChangedNotiObject : NSObject {
+    @XPDefault<NullInt>
+    @objc public var live_push_status: Int = 0// 推流状态
+    @objc public var camera_status: Int = 0 // 摄像头状态
+    @objc public var camera_type: Int = -2 // 摄像头类型
+    @objc public var camera_live_url: String = "" //推流地址
+    @objc public var vin: String? //推流地址
+    @objc public var camera_360:Camera360Object?
+    @objc public var oms_sw: Int = 0
+    @objc public var oms_work_st: Int = 0
+    
+    @objc public override var description: String {
+        return "CameraStateChangedNotiObject:<live_push_status:\(live_push_status), camera_status:\(camera_status), camera_type:\(camera_type), camera_live_url:\(camera_live_url), vin:\(vin)"
+    }
+}
+
+@objc(XPCamera360Object)
+public class Camera360Object : NSObject {
+    @XPDefault<NullInt>
+    @objc public var camera_right: Int = 0
+    @objc public var camera_back: Int = 0
+    @objc public var camera_front: Int = 0
+    @objc public var camera_four: Int = 0
+    @objc public var camera_left: Int = 0
+    @objc public var camera_oms: Int = 0
+}

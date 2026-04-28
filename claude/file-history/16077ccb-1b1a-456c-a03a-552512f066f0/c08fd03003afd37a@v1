@@ -1,0 +1,18 @@
+module: XPVehicleSDK
+
+depends_on:
+  - id: XPBLEDataProcessor
+    reason: BLE 数据编解码
+    trigger_keywords: [BLE, 蓝牙, 字节流, 数据解析, DataProcessor]
+    critical_constraints:
+      - submodule/XPBLEDataProcessor/.ai-knowledge/specs/constitution.md#禁止事项
+  - id: XPMQTTLibrary
+    reason: MQTT 远程连接
+    trigger_keywords: [MQTT, 远程, 长连接, 消息发布]
+    critical_constraints:
+      - submodule/XPMQTTLibrary/.ai-knowledge/specs/constitution.md#禁止事项
+  - id: XPCarControlCore
+    reason: 车控业务封装（反向依赖需警惕，仅类型共享）
+    trigger_keywords: [车控业务, 数字钥匙, 自动泊车, CarControl]
+    critical_constraints:
+      - submodule/XPCarControlCore/.ai-knowledge/specs/constitution.md#架构约束
